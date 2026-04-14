@@ -209,17 +209,118 @@ Phase 2 form builder and extensions. In the original intake, not in the signed 1
 
 ## Traceability
 
-*Filled during roadmap creation by gsd-roadmapper.*
+*Filled by gsd-roadmapper — 2026-04-15.*
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (pending roadmap) | — | Pending |
+| FOUND-01 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FOUND-02 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FOUND-03 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FOUND-04 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FOUND-05 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FOUND-06 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FOUND-07 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FOUND-08 | Phase 1: Scaffolding + Security Foundation | Pending |
+| AUTH-01 | Phase 1: Scaffolding + Security Foundation | Pending |
+| AUTH-02 | Phase 1: Scaffolding + Security Foundation | Pending |
+| AUTH-03 | Phase 1: Scaffolding + Security Foundation | Pending |
+| AUTH-04 | Phase 1: Scaffolding + Security Foundation | Pending |
+| AUTH-05 | Phase 1: Scaffolding + Security Foundation | Pending |
+| AUTH-06 | Phase 1: Scaffolding + Security Foundation | Pending |
+| AUTH-07 | Phase 1: Scaffolding + Security Foundation | Pending |
+| OPS-05 | Phase 1: Scaffolding + Security Foundation | Pending |
+| FORM-01 | Phase 2: Form Prerequisites | Pending |
+| FORM-02 | Phase 2: Form Prerequisites | Pending |
+| FORM-03 | Phase 2: Form Prerequisites | Pending |
+| FORM-04 | Phase 2: Form Prerequisites | Pending |
+| FORM-05 | Phase 2: Form Prerequisites | Pending |
+| FORM-06 | Phase 2: Form Prerequisites | Pending |
+| FORM-07 | Phase 2: Form Prerequisites | Pending |
+| FORM-08 | Phase 2: Form Prerequisites | Pending |
+| FORM-09 | Phase 2: Form Prerequisites | Pending |
+| FORM-10 | Phase 2: Form Prerequisites | Pending |
+| TMPL-01 | Phase 3: Template System + Schema Versioning | Pending |
+| TMPL-02 | Phase 3: Template System + Schema Versioning | Pending |
+| TMPL-03 | Phase 3: Template System + Schema Versioning | Pending |
+| TMPL-04 | Phase 3: Template System + Schema Versioning | Pending |
+| TMPL-05 | Phase 3: Template System + Schema Versioning | Pending |
+| TMPL-06 | Phase 3: Template System + Schema Versioning | Pending |
+| ASMT-01 | Phase 4: Assessment Workflow | Pending |
+| ASMT-02 | Phase 4: Assessment Workflow | Pending |
+| ASMT-03 | Phase 4: Assessment Workflow | Pending |
+| ASMT-04 | Phase 4: Assessment Workflow | Pending |
+| ASMT-05 | Phase 4: Assessment Workflow | Pending |
+| ASMT-06 | Phase 4: Assessment Workflow | Pending |
+| REPORT-01 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-02 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-03 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-04 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-05 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-06 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-07 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-08 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-09 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-10 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-11 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-12 | Phase 5: AI Report Pipeline | Pending |
+| PORTAL-01 | Phase 6: Client Compliance Portal | Pending |
+| PORTAL-02 | Phase 6: Client Compliance Portal | Pending |
+| PORTAL-03 | Phase 6: Client Compliance Portal | Pending |
+| PORTAL-04 | Phase 6: Client Compliance Portal | Pending |
+| PORTAL-05 | Phase 6: Client Compliance Portal | Pending |
+| PORTAL-06 | Phase 6: Client Compliance Portal | Pending |
+| PORTAL-07 | Phase 6: Client Compliance Portal | Pending |
+| DOCS-01 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| DOCS-02 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| DOCS-03 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| DOCS-04 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| DOCS-05 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| DOCS-06 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| EXPIRY-01 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| EXPIRY-02 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| EXPIRY-03 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| EXPIRY-04 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| EXPIRY-05 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| EXPIRY-06 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| EXPIRY-07 | Phase 7: Document Upload, Notifications + Expiry Alerts | Pending |
+| PAY-01 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PAY-02 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PAY-03 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PAY-04 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PAY-05 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PAY-06 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PAY-07 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PAY-08 | Phase 8: Hours Balance + PayPal Checkout | Pending |
+| PROP-01 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| PROP-02 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| PROP-03 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| PROP-04 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| PROP-05 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| PROP-06 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| PROP-07 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| CONTRACT-01 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| CONTRACT-02 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| CONTRACT-03 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| CONTRACT-04 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| CONTRACT-05 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| CONTRACT-06 | Phase 9: Proposal + Auto-Contract Pipeline | Pending |
+| ADMIN-01 | Phase 10: Admin Dashboard | Pending |
+| ADMIN-02 | Phase 10: Admin Dashboard | Pending |
+| ADMIN-03 | Phase 10: Admin Dashboard | Pending |
+| ADMIN-04 | Phase 10: Admin Dashboard | Pending |
+| ADMIN-05 | Phase 10: Admin Dashboard | Pending |
+| ADMIN-06 | Phase 10: Admin Dashboard | Pending |
+| ADMIN-07 | Phase 10: Admin Dashboard | Pending |
+| OPS-01 | Phase 11: Ops, Seed Data + Handover | Pending |
+| OPS-02 | Phase 11: Ops, Seed Data + Handover | Pending |
+| OPS-03 | Phase 11: Ops, Seed Data + Handover | Pending |
+| OPS-04 | Phase 11: Ops, Seed Data + Handover | Pending |
 
 **Coverage:**
-- v1 requirements: *(to be counted after roadmap)*
-- Mapped to phases: 0
-- Unmapped: *(filled after roadmap)* ⚠️
+- v1 requirements: 102
+- Mapped to phases: 102
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-15*
-*Last updated: 2026-04-15 after initial definition*
+*Last updated: 2026-04-15 — traceability filled by gsd-roadmapper*
