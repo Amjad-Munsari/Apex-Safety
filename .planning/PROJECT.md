@@ -20,9 +20,9 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 
 ### Active
 
-<!-- Current scope. Phase 1 is signed; Phase 2 is in the original intake but not yet quoted. -->
+<!-- Current scope. Building toward these. Phase 1 is signed; Phase 2 is in the original intake but not yet quoted. -->
 
-**Phase 1 — Signed Scope**
+**Phase 1 — Signed Scope (11 deliverables)**
 
 - [ ] D1 — Fire Risk Assessment form (tablet-first, STT on every text field, per-field photo upload, renders via form renderer against FRA seed template)
 - [ ] D2 — Site Risk Assessment form (same infrastructure, different template) — *blocked on template + example from Matt*
@@ -34,6 +34,7 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 - [ ] D8 — Proposal + Auto-Contract Pipeline (service selection from Packages.docx + Course List Master.xlsx → OpenAI-drafted proposal PDF matching Blank Proposal template → e-sign → n8n #4 generates Service Agreement → dual-sign)
 - [ ] D9 — Admin Dashboard (single-pane view: clients, compliance, expiries, proposals, hours, assessments, uploads)
 - [ ] D10 — Walkthrough + Handover (live session, quick-reference guide, 5–10 seed clients from Sample Contacts.xlsx)
+- [ ] D11 — Walkthrough seed data + PayPal credentials migrated to shared project account (ops hand-off)
 
 **Phase 2 — Form Builder (in original intake, not yet quoted — re-quote required)**
 
@@ -71,16 +72,13 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 
 **Infrastructure ownership (interim).** Ayman's personal GitHub/Vercel/Supabase accounts until Finley provisions a shared project Gmail. PayPal developer credentials pending.
 
-**Build team.** Ayman (lead, architecture, client-facing) + Amjad (pair programmer). Dev environment: Zed. Pair-programming rules: one drives, one reviews, swap ~45 mins.
-
-**Scaffold state (2026-04-15).** A fresh Next.js 16.1.7 + React 19 + Tailwind 4 scaffold already exists in the project root (app/, components/theme-provider.tsx, hooks/, lib/). Stage 1 scaffolding partially complete; Supabase wiring + migrations + auth + RLS not yet done.
+**Build team.** Ayman (lead, architecture, client-facing) + Amjad (pair programmer). Dev environment: Zed. Pair-programming rules locked: one drives, one reviews, swap ~45 mins.
 
 **Open questions still blocking scope.** Site Risk template + completed example (blocks D2 entirely and the site-risk half of D3); compliance taxonomy + renewal periods (blocks full D4/D7); hours pricing model (blocks D5 beyond plumbing); editable-forms ambiguity (affects Stage 3 scope only — Stages 1–2 are unblocked); e-sign provider preference; brand assets. See Open Questions register below.
 
 ## Constraints
 
-- **Tech stack (locked, updated 2026-04-15):** **Next.js 16.1.7 (App Router)**, **React 19**, **Tailwind CSS 4** (replaces the original "Next.js 14" line in the context doc — the scaffold is already on 16). Supabase (Postgres + Auth + Storage + RLS), Vercel (hosting + cron), n8n (4 workflows Phase 1, 1 Phase 2, 1 optional future), OpenAI GPT-4 (via OpenRouter for proposal gen), **PayPal Orders API v2** (not Stripe), Twilio (SMS), Web Speech API (browser-native STT with text fallback), @coltorapps/builder (Phase 2 form builder, MIT, React, zero deps). E-signature provider TBD (default SignWell if Matt doesn't specify).
-- **Next.js 16 implications to watch:** caching defaults changed vs 14; `fetch()` no longer caches by default; Turbopack is stable dev default (see scripts). React 19 brings `use()` / Actions. Don't assume 14-era docs when writing route handlers or Server Actions.
+- **Tech stack (locked):** Next.js 14 App Router, Supabase (Postgres + Auth + Storage + RLS), Vercel (hosting + cron), n8n (4 workflows Phase 1, 1 Phase 2, 1 optional future), OpenAI GPT-4 (via OpenRouter for proposal gen), **PayPal Orders API v2** (not Stripe), Twilio (SMS), Web Speech API (browser-native STT with text fallback), @coltorapps/builder (Phase 2 form builder, MIT, React, zero deps). E-signature provider TBD (default SignWell if Matt doesn't specify).
 - **Architecture split (ADR 2026-04-15):** n8n owns AI-heavy/multi-step/visible-automation work (report gen, universal email sender, expiry engine, contract gen). Code owns transactional/idempotent/auth-gated work (PayPal webhooks, document upload, SMS send).
 - **Multi-tenant isolation:** RLS on every Supabase table with client data, non-negotiable. Verification: log in as Client A, attempt to access Client B's data; if you can, you failed.
 - **Form architecture — unified template:** FRA and Site Risk are NOT hardcoded forms. They are seed templates inside the form builder. Matt edits them post-launch without a deploy. Schema versioning is required from day one; submissions pin to the schema version they were filled against.
@@ -95,7 +93,7 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Next.js 16 (App Router) + React 19 + Tailwind 4 + Supabase + Vercel | Scaffold delivered on 16 (not 14 as in the original doc). Keeping it — fresh caching model, Turbopack dev, React 19 Actions are net-positives for a new build. | — Pending |
+| Next.js 14 (App Router) + Supabase + Vercel | Signed stack. Familiar to both devs, fast to build, RLS solves multi-tenant isolation cleanly. | — Pending |
 | PayPal (Orders v2) over Stripe | Finley relayed Matt's preference on 2026-04-06. Proposal text is stale on this point. | — Pending |
 | n8n-vs-code split (ADR 2026-04-15) | Keep AI-quality-sensitive and multi-step back-and-forth work in n8n for visibility + team iteration; keep auth-gated transactional work in code for correctness. | — Pending |
 | Unified-template form architecture | FRA and Site Risk ride on top of the form builder from day one. Shipping the builder first gets D1 "almost for free" once Matt seeds the template. | — Pending |
@@ -148,4 +146,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-15 after initialization (stack corrected to Next.js 16 after scaffold landed)*
+*Last updated: 2026-04-15 after initialization*
