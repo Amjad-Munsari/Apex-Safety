@@ -78,7 +78,7 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 
 ## Constraints
 
-- **Tech stack (locked):** Next.js 14 App Router, Supabase (Postgres + Auth + Storage + RLS), Vercel (hosting + cron), n8n (4 workflows Phase 1, 1 Phase 2, 1 optional future), OpenAI GPT-4 (via OpenRouter for proposal gen), **PayPal Orders API v2** (not Stripe), Twilio (SMS), Web Speech API (browser-native STT with text fallback), @coltorapps/builder (Phase 2 form builder, MIT, React, zero deps). E-signature provider TBD (default SignWell if Matt doesn't specify).
+- **Tech stack (locked, updated 2026-04-15):** Next.js 16.1.7 App Router (scaffold landed on 16, not 14 as in the original context doc), React 19, Tailwind CSS 4, Supabase (Postgres + Auth + Storage + RLS), Vercel (hosting + cron), n8n (4 workflows Phase 1, 1 Phase 2, 1 optional future), OpenAI GPT-4 (via OpenRouter for proposal gen), **PayPal Orders API v2** (not Stripe), Twilio (SMS), Web Speech API (browser-native STT with text fallback), @coltorapps/builder (Phase 2 form builder, MIT, React, zero deps). E-signature provider TBD (default SignWell if Matt doesn't specify).
 - **Architecture split (ADR 2026-04-15):** n8n owns AI-heavy/multi-step/visible-automation work (report gen, universal email sender, expiry engine, contract gen). Code owns transactional/idempotent/auth-gated work (PayPal webhooks, document upload, SMS send).
 - **Multi-tenant isolation:** RLS on every Supabase table with client data, non-negotiable. Verification: log in as Client A, attempt to access Client B's data; if you can, you failed.
 - **Form architecture — unified template:** FRA and Site Risk are NOT hardcoded forms. They are seed templates inside the form builder. Matt edits them post-launch without a deploy. Schema versioning is required from day one; submissions pin to the schema version they were filled against.
@@ -93,7 +93,7 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Next.js 14 (App Router) + Supabase + Vercel | Signed stack. Familiar to both devs, fast to build, RLS solves multi-tenant isolation cleanly. | — Pending |
+| Next.js 16.1.7 (App Router) + React 19 + Tailwind 4 + Supabase + Vercel | Scaffold landed on 16 (not 14 as in the original context doc). Keeping it — fresh caching model, Turbopack dev, React 19 Actions are net-positives for a new build. | — Pending |
 | PayPal (Orders v2) over Stripe | Finley relayed Matt's preference on 2026-04-06. Proposal text is stale on this point. | — Pending |
 | n8n-vs-code split (ADR 2026-04-15) | Keep AI-quality-sensitive and multi-step back-and-forth work in n8n for visibility + team iteration; keep auth-gated transactional work in code for correctness. | — Pending |
 | Unified-template form architecture | FRA and Site Risk ride on top of the form builder from day one. Shipping the builder first gets D1 "almost for free" once Matt seeds the template. | — Pending |
@@ -146,4 +146,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-15 after initialization*
+*Last updated: 2026-04-15 after initialization (stack re-corrected to Next.js 16 after scaffold landed)*
