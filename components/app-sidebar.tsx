@@ -1,3 +1,4 @@
+"use client";
 import {
   Sidebar,
   SidebarContent,
@@ -26,72 +27,94 @@ export function AppSidebar() {
         <SidebarMenu className="gap-1.5">
           {/* Active Dashboard */}
           <SidebarMenuItem>
-            <SidebarMenuButton asChild isActive className="h-11 text-white bg-white/10 hover:bg-white/15 relative rounded-[4px] border border-white/5 shadow-sm">
-              <Link href="/admin" className="flex w-full items-center px-3">
-                <span className="text-white/40 font-mono tracking-widest w-5 mr-3">-</span>
-                <span className="font-medium tracking-wide text-sm">Dashboard</span>
-              </Link>
-            </SidebarMenuButton>
+            <SidebarMenuButton 
+              isActive 
+              className="h-11 text-white bg-white/10 hover:bg-white/15 relative rounded-[4px] border border-white/5 shadow-sm"
+              render={(props) => (
+                <Link {...props} href="/admin" className="flex w-full items-center px-3">
+                  <span className="text-white/40 font-mono tracking-widest w-5 mr-3">-</span>
+                  <span className="font-medium tracking-wide text-sm">Dashboard</span>
+                </Link>
+              )}
+            />
           </SidebarMenuItem>
 
           {/* Other Links */}
           <SidebarMenuItem>
-             <SidebarMenuButton asChild className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]">
-              <Link href="/admin/clients" className="flex w-full items-center px-3">
-                <span className="text-white/30 font-mono text-[11px] w-5 mr-4">01</span>
-                <span className="text-sm tracking-wide">Clients</span>
-                <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">8</span>
-              </Link>
-            </SidebarMenuButton>
+             <SidebarMenuButton 
+               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+               render={(props) => (
+                <Link {...props} href="/admin/clients" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">01</span>
+                  <span className="text-sm tracking-wide">Clients</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">8</span>
+                </Link>
+              )}
+            />
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton asChild className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]">
-              <Link href="#" className="flex w-full items-center px-3">
-                <span className="text-white/30 font-mono text-[11px] w-5 mr-4">02</span>
-                <span className="text-sm tracking-wide">Assessments</span>
-                <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">34</span>
-              </Link>
-            </SidebarMenuButton>
+             <SidebarMenuButton 
+               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+               render={(props) => (
+                <Link {...props} href="#" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">02</span>
+                  <span className="text-sm tracking-wide">Assessments</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">34</span>
+                </Link>
+              )}
+            />
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton asChild className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]">
-              <Link href="#" className="flex w-full items-center px-3">
-                <span className="text-white/30 font-mono text-[11px] w-5 mr-4">03</span>
-                <span className="text-sm tracking-wide">Documents</span>
-                <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">142</span>
-              </Link>
-            </SidebarMenuButton>
+             <SidebarMenuButton 
+               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+               render={(props) => (
+                <Link {...props} href="#" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">03</span>
+                  <span className="text-sm tracking-wide">Documents</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">142</span>
+                </Link>
+              )}
+            />
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton asChild className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]">
-              <Link href="#" className="flex w-full items-center px-3">
-                <span className="text-white/30 font-mono text-[11px] w-5 mr-4">04</span>
-                <span className="text-sm tracking-wide">Proposals</span>
-                <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">4</span>
-              </Link>
-            </SidebarMenuButton>
+             <SidebarMenuButton 
+               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+               render={(props) => (
+                <Link {...props} href="#" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">04</span>
+                  <span className="text-sm tracking-wide">Proposals</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">4</span>
+                </Link>
+              )}
+            />
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton asChild className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]">
-              <Link href="#" className="flex w-full items-center px-3">
-                <span className="text-white/30 font-mono text-[11px] w-5 mr-4">05</span>
-                <span className="text-sm tracking-wide">Hours</span>
-              </Link>
-            </SidebarMenuButton>
+             <SidebarMenuButton 
+               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+               render={(props) => (
+                <Link {...props} href="#" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">05</span>
+                  <span className="text-sm tracking-wide">Hours</span>
+                </Link>
+              )}
+            />
           </SidebarMenuItem>
 
           <SidebarMenuItem className="mt-6 border-t border-white/5 pt-4">
-             <SidebarMenuButton asChild className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]">
-              <Link href="#" className="flex w-full items-center px-3">
-                <span className="text-white/30 font-mono text-[11px] w-5 mr-4">06</span>
-                <span className="text-sm tracking-wide">Workflow errors</span>
-                <span className="ml-auto text-[10px] font-mono text-danger border border-danger/20 px-1.5 py-0.5 rounded-[3px]">3</span>
-              </Link>
-            </SidebarMenuButton>
+             <SidebarMenuButton 
+               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+               render={(props) => (
+                <Link {...props} href="#" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">06</span>
+                  <span className="text-sm tracking-wide">Workflow errors</span>
+                  <span className="ml-auto text-[10px] font-mono text-danger border border-danger/20 px-1.5 py-0.5 rounded-[3px]">3</span>
+                </Link>
+              )}
+            />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
