@@ -10,7 +10,7 @@ export default function AdminLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="flex h-screen overflow-hidden bg-background w-full">
+      <div className="dark flex h-screen overflow-hidden bg-background w-full text-foreground antialiased">
         <AppSidebar />
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
           {/* Top Bar */}

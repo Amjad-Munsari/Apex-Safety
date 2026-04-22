@@ -29,7 +29,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("dark h-full antialiased", serif.variable, geistMono.variable, inter.variable)}
+      className={cn("h-full antialiased", serif.variable, geistMono.variable, inter.variable)}
     >
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
         <TooltipProvider>{children}</TooltipProvider>
