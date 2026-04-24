@@ -70,12 +70,12 @@ export default function ClientLayout({
       </header>
 
       {/* Main Content */}
-      <main className="max-w-[1024px] mx-auto px-10 py-8">
+      <main className="max-w-[1024px] mx-auto px-6 py-8">
         {children}
       </main>
 
       {/* Portal Footer */}
-      <footer className="max-w-[1024px] mx-auto px-10 py-8 mt-6 border-t border-[#e5e1d8]">
+      <footer className="max-w-[1024px] mx-auto px-6 py-8 mt-6 border-t border-[#e5e1d8]">
          <div className="flex justify-center items-center gap-6 font-mono text-[8.5px] tracking-[0.2em] text-[#999] uppercase">
            <span>Your Consultant</span>
            <span className="text-[#666] font-bold">&middot;</span>

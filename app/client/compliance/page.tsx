@@ -81,98 +81,101 @@ export default function CompliancePage() {
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* ─── PAGE HEADER ─── */}
-      <section className="space-y-2">
+      <section className="space-y-3">
         <div className="flex items-center gap-3">
-           <span className="font-mono text-[9px] text-[#3b8273] tracking-[0.3em] font-bold uppercase">02 By Category</span>
+           <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">02 By Category</span>
         </div>
-        <h2 className="font-serif text-[38px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">
+        <h2 className="font-serif text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
           Your compliance documents.
         </h2>
       </section>
 
       {/* ─── CATEGORY GROUPS ─── */}
-      <div className="space-y-12">
+      <div className="space-y-16">
         {complianceData.map((category) => (
-          <section key={category.name} className="space-y-5">
+          <section key={category.name} className="space-y-6">
             {/* Category Header */}
-            <div className="flex items-baseline gap-3">
-              <h3 className="font-mono text-[9px] tracking-[0.3em] font-bold text-[#1a1a1a] uppercase">{category.name}</h3>
-              <span className="font-mono text-[9px] text-[#bbb] font-medium tracking-[0.1em]">{category.count} documents</span>
+            <div className="flex items-baseline gap-3 px-1">
+              <h3 className="font-mono text-[9px] tracking-[0.25em] font-medium text-[#777] uppercase">{category.name}</h3>
+              <span className="font-mono text-[9px] text-[#bbb] font-normal tracking-[0.05em] lowercase">{category.count} documents</span>
             </div>
 
-            {/* Document Card */}
-            <div className="bg-white border border-[#e5e1d8] rounded-sm divide-y divide-[#f0ede6] shadow-sm overflow-hidden">
-              {category.documents.map((doc) => (
-                <div key={doc.id} className="px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-6 group hover:bg-[#faf9f6]/80 transition-all">
-                  
-                  {/* Left: Info */}
-                  <div className="flex-1 min-w-[300px]">
-                    <h4 className="font-sans font-extrabold text-[15px] text-[#1a1a1a] tracking-tight group-hover:text-black">
-                      {doc.title}
-                    </h4>
-                    <div className="flex items-center gap-4 font-mono text-[8px] tracking-[0.25em] text-[#999] uppercase font-bold mt-1">
-                      <span>{doc.id}</span>
-                      <span className="opacity-30">&middot;</span>
-                      <span>{doc.size}</span>
+            {/* Document List Container */}
+            <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+              <div className="divide-y divide-[#f0ede6]">
+                {category.documents.map((doc) => (
+                  <div key={doc.id} className="px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-8 group hover:bg-[#faf9f6]/50 transition-all">
+                    
+                    {/* Left: Info */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-sans font-semibold text-[14px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
+                        {doc.title}
+                      </h4>
+                      <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#bbb] uppercase font-medium mt-1.5">
+                        <span>{doc.id}</span>
+                        <span className="opacity-40 font-sans">&mdash;</span>
+                        <span>{doc.size}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Center: Issued/Expires */}
-                  <div className="flex items-center gap-12 shrink-0">
-                    <div className="space-y-1 w-24">
-                      <span className="font-mono text-[8px] uppercase tracking-[0.2em] font-bold text-[#bbb] block">Issued</span>
-                      <span className="font-mono text-[9px] font-bold text-[#1a1a1a] tracking-tight whitespace-nowrap">{doc.issued}</span>
+                    {/* Center: Issued/Expires */}
+                    <div className="flex items-center gap-12 shrink-0">
+                      <div className="space-y-1.5 w-[100px]">
+                        <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#bbb] block">Issued</span>
+                        <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">{doc.issued}</span>
+                      </div>
+                      <div className="space-y-1.5 w-[100px]">
+                        <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#bbb] block">Expires</span>
+                        <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">
+                          {doc.expires || "—"}
+                        </span>
+                      </div>
                     </div>
-                    <div className="space-y-1 w-24">
-                      <span className="font-mono text-[8px] uppercase tracking-[0.2em] font-bold text-[#bbb] block">Expires</span>
-                      <span className="font-mono text-[9px] font-bold text-[#1a1a1a] tracking-tight whitespace-nowrap">
-                        {doc.expires || "—"}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Right: Status & Action */}
-                  <div className="flex items-center gap-5 shrink-0">
-                    <div className={cn(
-                      "px-3 py-1.5 border rounded-full font-mono text-[8px] uppercase tracking-[0.2em] font-bold leading-none flex items-center gap-2 min-w-[90px] justify-center",
-                      doc.status === "EXPIRED" ? "border-[#8b2b21] text-[#8b2b21] bg-transparent" : 
-                      doc.status === "EXPIRING" ? "border-[#c0a66d] text-[#c0a66d] bg-transparent" :
-                      "border-[#3b8273] text-[#3b8273] bg-transparent"
-                    )}>
+                    {/* Status Badge */}
+                    <div className="shrink-0 w-28 flex justify-center">
                       <div className={cn(
-                        "w-1 h-1 rounded-full",
-                        doc.status === "EXPIRED" ? "bg-[#8b2b21]" : 
-                        doc.status === "EXPIRING" ? "bg-[#c0a66d]" : 
-                        "bg-[#3b8273]"
-                      )}></div>
-                      {doc.status.split('').join(' ')}
+                        "w-full py-1.5 border rounded-[2px] font-mono text-[9px] uppercase tracking-[0.2em] font-bold leading-none flex items-center justify-center gap-2 whitespace-nowrap",
+                        doc.status === "EXPIRED" ? "border-[#e06050]/40 text-[#e06050]" : 
+                        doc.status === "EXPIRING" ? "border-[#c0a66d]/40 text-[#c0a66d]" :
+                        "border-[#3b8273]/40 text-[#3b8273]"
+                      )}>
+                        <div className={cn(
+                          "w-1.5 h-1.5 rounded-full shrink-0",
+                          doc.status === "EXPIRED" ? "bg-[#e06050]" : 
+                          doc.status === "EXPIRING" ? "bg-[#c0a66d]" : 
+                          "bg-[#3b8273]"
+                        )}></div>
+                        <span>{doc.status}</span>
+                      </div>
                     </div>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger render={(props) => (
-                        <div className="flex items-center border border-[#e5e1d8] rounded-sm group/btn overflow-hidden">
-                          <Button {...props} variant="ghost" className="rounded-none border-r border-[#e5e1d8] bg-transparent text-[#1a1a1a] hover:bg-[#f9f8f6] h-10 px-4 flex flex-col items-center justify-center gap-0.5 group/btn font-mono text-[8px] font-bold uppercase tracking-[0.1em] shadow-none">
-                            <span className="text-[10px]">Download</span>
-                            <span className="text-[#999] opacity-70 group-hover/btn:text-black">PDF</span>
-                          </Button>
-                          <Button {...props} variant="ghost" className="rounded-none h-10 w-8 px-0 flex items-center justify-center hover:bg-[#f9f8f6]">
-                             <ChevronDown className="h-3 w-3 opacity-30 group-hover/btn:opacity-100 transition-opacity" />
-                          </Button>
-                        </div>
-                      )} />
-                      <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1.5">
-                        <DropdownMenuItem className="text-[10px] font-mono font-bold uppercase tracking-widest p-2 cursor-pointer h-10 flex items-center gap-3">
-                           <Download className="h-3 w-3" /> Download Result
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-[10px] font-mono font-bold uppercase tracking-widest p-2 cursor-pointer h-10 flex items-center gap-3">
-                           <ExternalLink className="h-3 w-3" /> View Online
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                    {/* Right: Action */}
+                    <div className="shrink-0">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="flex items-center border border-[#e5e1d8] rounded-sm group/btn cursor-pointer bg-white overflow-hidden h-12 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all p-0">
+                          <div className="w-8 h-full flex items-center justify-center border-r border-[#e5e1d8] group-hover/btn:bg-[#faf9f6] transition-colors">
+                            <ChevronDown className="h-3.5 w-3.5 text-[#bbb] group-hover/btn:text-[#1a1a1a] transition-colors" />
+                          </div>
+                          <div className="px-5 h-full flex flex-col items-center justify-center gap-0 group-hover/btn:bg-[#faf9f6] transition-colors">
+                            <span className="font-sans text-[11px] font-bold tracking-tight text-[#1a1a1a]">Download</span>
+                            <span className="font-mono text-[9px] font-bold text-[#bbb] tracking-[0.15em] uppercase -mt-0.5">PDF</span>
+                          </div>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1 shadow-md bg-white">
+                          <DropdownMenuItem className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]">
+                             <Download className="h-3.5 w-3.5" /> Download Result
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]">
+                             <ExternalLink className="h-3.5 w-3.5" /> View Online
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
 
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         ))}
