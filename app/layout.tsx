@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Geist_Mono, Inter } from "next/font/google";
+import { Newsreader, JetBrains_Mono, Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 
-
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
-const serif = Playfair_Display({
+const serif = Newsreader({
   subsets: ["latin"],
   variable: "--font-serif",
 });
 
-const geistMono = Geist_Mono({
+const geistMono = JetBrains_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
 });
