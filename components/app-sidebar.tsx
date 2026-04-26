@@ -16,7 +16,7 @@ export function AppSidebar() {
       <SidebarHeader className="pt-10 px-8 pb-8 border-b border-white/5">
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase font-mono mb-2 opacity-50">Practice</span>
-          <h1 className="font-serif text-[32px] leading-[0.9] text-white font-medium tracking-tight">
+          <h1 className="font-serif text-[28px] leading-[0.9] text-white font-medium tracking-tight">
             Dineen Fire<br />
             &amp; Safety.
           </h1>
@@ -24,11 +24,11 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent className="px-5 py-8">
-        <SidebarMenu className="gap-1.5">
+        <SidebarMenu className="gap-4">
           {/* Active Dashboard */}
           <SidebarMenuItem>
-            <SidebarMenuButton 
-              isActive 
+            <SidebarMenuButton
+              isActive
               className="h-11 text-white bg-white/10 hover:bg-white/15 relative rounded-[4px] border border-white/5 shadow-sm"
               render={(props) => (
                 <Link {...props} href="/admin" className="flex w-full items-center px-3">
@@ -41,9 +41,9 @@ export function AppSidebar() {
 
           {/* Other Links */}
           <SidebarMenuItem>
-             <SidebarMenuButton 
-               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-               render={(props) => (
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
                 <Link {...props} href="/admin/clients" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">01</span>
                   <span className="text-sm tracking-wide">Clients</span>
@@ -54,9 +54,9 @@ export function AppSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton 
-               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-               render={(props) => (
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">02</span>
                   <span className="text-sm tracking-wide">Assessments</span>
@@ -67,9 +67,9 @@ export function AppSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton 
-               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-               render={(props) => (
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">03</span>
                   <span className="text-sm tracking-wide">Documents</span>
@@ -80,9 +80,9 @@ export function AppSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton 
-               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-               render={(props) => (
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">04</span>
                   <span className="text-sm tracking-wide">Proposals</span>
@@ -93,9 +93,9 @@ export function AppSidebar() {
           </SidebarMenuItem>
 
           <SidebarMenuItem>
-             <SidebarMenuButton 
-               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-               render={(props) => (
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">05</span>
                   <span className="text-sm tracking-wide">Hours</span>
@@ -104,10 +104,10 @@ export function AppSidebar() {
             />
           </SidebarMenuItem>
 
-          <SidebarMenuItem className="mt-6 border-t border-white/5 pt-4">
-             <SidebarMenuButton 
-               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-               render={(props) => (
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">06</span>
                   <span className="text-sm tracking-wide">Workflow errors</span>
@@ -119,17 +119,13 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-8 border-t border-white/5">
-         <div className="flex flex-col gap-2 font-mono text-[11px]">
-           <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-              <span className="text-white font-semibold tracking-wide">Matt Dineen</span>
-           </div>
-           <span className="text-white/40 hover:text-white/60 transition-colors cursor-pointer">matt@dineen-fire.co.uk</span>
-           <div className="mt-4 flex flex-col gap-1 opacity-20">
-             <span className="text-[9px] uppercase tracking-widest leading-none">Hexona Office</span>
-             <span className="text-[9px] uppercase tracking-widest leading-none">v2026.04 &middot; Build 142</span>
-           </div>
-         </div>
+        <div className="flex flex-col gap-2 font-mono text-[11px]">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
+            <span className="text-white font-semibold tracking-wide">Matt Dineen</span>
+          </div>
+          <span className="text-white/40 hover:text-white/60 transition-colors cursor-pointer">matt@dineen-fire.co.uk</span>
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
