@@ -1,3 +1,18 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+current_phase: 1 — Scaffolding + Security Foundation
+current_plan: None started
+status: unknown
+last_updated: "2026-04-28T21:16:06.907Z"
+progress:
+  total_phases: 12
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+---
+
 # Project State: 888 Safety & Training Platform
 
 **Last updated:** 2026-04-15
@@ -95,6 +110,7 @@ Progress: [░░░░░░░░░░░░░░░░░░░░░░░
 ## Accumulated Context
 
 ### Architecture Constraints
+
 - `lib/supabase/admin.ts` must have `import 'server-only'` — build fails if leaked to client
 - All Storage buckets are private from day one; Storage RLS is separate from table RLS
 - `proxy.ts` replaces `middleware.ts` in Next.js 16; all request APIs are async
@@ -105,6 +121,7 @@ Progress: [░░░░░░░░░░░░░░░░░░░░░░░
 - Report review gate is a legal requirement under RRO (Fire Safety) 2005 — no auto-deliver
 
 ### Critical Tests to Wire
+
 - "Client A attempts Client B's Storage URL → returns 403" (integration test, Phase 1)
 - "Logged-out request for any Storage URL → returns 403" (integration test, Phase 1)
 - "Import admin.ts from client component → build error" (build-time check, Phase 1)
@@ -112,6 +129,7 @@ Progress: [░░░░░░░░░░░░░░░░░░░░░░░
 - "Replay same PayPal event twice → balance credited once" (idempotency test, Phase 8)
 
 ### Assets Received (2026-04-15)
+
 - Blank FRA (Type 3) template — seeds TMPL-04
 - YELLOW BROOM completed FRA — few-shot for REPORT-03
 - Blank Service Agreement (20 clauses + 3 schedules) — seeds CONTRACT-02
@@ -121,9 +139,11 @@ Progress: [░░░░░░░░░░░░░░░░░░░░░░░
 - Sample Contacts.xlsx — seeds OPS-01 client import
 
 ### Roadmap Evolution
+
 - Phase 12 added: Admin Dashboard UI Fixes — wire up non-functional buttons, navigation arrows, interactive elements (2026-04-29)
 
 ### Stage 5 Parallelisation Note
+
 Phases 6, 7, 8, 9, and 10 share almost no code. They can be built in parallel if two developers are available (Ayman + Amjad). The only shared dependency is Phase 1 (auth + schema) and Phase 5 (n8n error workflow pattern). Phase 10 (Admin Dashboard) depends on all other Stage 5 phases to aggregate their data panels.
 
 ---
@@ -131,13 +151,17 @@ Phases 6, 7, 8, 9, and 10 share almost no code. They can be built in parallel if
 ## Session Continuity
 
 ### Last Action
+
 Roadmap created and files written (ROADMAP.md, STATE.md, REQUIREMENTS.md traceability).
 
 ### Next Action
+
 `/gsd-plan-phase 1` — plan Phase 1: Scaffolding + Security Foundation.
 
 ### Phase 1 Starting Checklist
+
 Before writing any feature code in Phase 1:
+
 1. Create Supabase project in eu-west-2 — document region in PROJECT.md
 2. Add `.env*` to `.gitignore` on the very first commit
 3. Run Next.js 16 codemod (rename middleware.ts → proxy.ts, async APIs, revalidateTag)
