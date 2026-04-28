@@ -382,6 +382,16 @@ The following are in the original intake but are NOT in the signed Phase 1 scope
 
 **Total mapped: 102/102**
 
+### Phase 12: Admin Dashboard UI Fixes
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 11
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 12 to break down)
+
 ---
 
 *Roadmap created: 2026-04-15*

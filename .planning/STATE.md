@@ -120,6 +120,9 @@ Progress: [░░░░░░░░░░░░░░░░░░░░░░░
 - Course List Master.xlsx — seeds PROP-01 service catalogue
 - Sample Contacts.xlsx — seeds OPS-01 client import
 
+### Roadmap Evolution
+- Phase 12 added: Admin Dashboard UI Fixes — wire up non-functional buttons, navigation arrows, interactive elements (2026-04-29)
+
 ### Stage 5 Parallelisation Note
 Phases 6, 7, 8, 9, and 10 share almost no code. They can be built in parallel if two developers are available (Ayman + Amjad). The only shared dependency is Phase 1 (auth + schema) and Phase 5 (n8n error workflow pattern). Phase 10 (Admin Dashboard) depends on all other Stage 5 phases to aggregate their data panels.
 
