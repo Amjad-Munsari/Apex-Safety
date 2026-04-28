@@ -119,12 +119,17 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-8 border-t border-white/5">
-        <div className="flex flex-col gap-2 font-mono text-[11px]">
+        <div className="flex flex-col gap-3 font-mono text-[11px]">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
             <span className="text-white font-semibold tracking-wide">Matt Dineen</span>
           </div>
-          <span className="text-white/40 hover:text-white/60 transition-colors cursor-pointer">matt@dineen-fire.co.uk</span>
+          <span className="text-white/40">matt@dineen-fire.co.uk</span>
+          <form action="/auth/signout" method="POST">
+            <button type="submit" className="text-white/30 hover:text-white/60 transition-colors text-[10px] uppercase tracking-[0.15em]">
+              Sign out
+            </button>
+          </form>
         </div>
       </SidebarFooter>
     </Sidebar>

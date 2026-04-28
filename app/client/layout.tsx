@@ -62,9 +62,11 @@ export default function ClientLayout({
               <span className="text-[12px] font-bold tracking-tight text-[#1a1a1a]">Sarah Whitfield</span>
               <span className="text-[8px] uppercase font-mono tracking-[0.2em] text-[#999] opacity-70 leading-none mt-0.5">Facilities Manager</span>
             </div>
-            <Button variant="outline" className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[10px] uppercase tracking-[0.2em] h-10 px-6 font-bold shadow-none transition-all">
-              Sign out
-            </Button>
+            <form action="/auth/signout" method="POST">
+              <Button type="submit" variant="outline" className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[10px] uppercase tracking-[0.2em] h-10 px-6 font-bold shadow-none transition-all">
+                Sign out
+              </Button>
+            </form>
           </div>
         </div>
       </header>
