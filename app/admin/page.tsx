@@ -97,10 +97,10 @@ export default async function AdminDashboardPage() {
                   <tbody className="divide-y divide-white/5">
                     {clients?.map((client) => {
                       // Calculate next expiry
-                      const expiries = client.documents
-                        ?.map(d => ({ date: new Date(d.expiry_date), cat: d.document_category }))
-                        .filter(d => !isNaN(d.date.getTime()))
-                        .sort((a, b) => a.date.getTime() - b.date.getTime());
+                      const expiries = (client.documents as any[])
+                        ?.map((d: any) => ({ date: new Date(d.expiry_date), cat: d.document_category }))
+                        .filter((d: any) => !isNaN(d.date.getTime()))
+                        .sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
                       
                       const nextExpiry = expiries?.[0];
                       const proposalStatus = client.proposals?.[0]?.status;
