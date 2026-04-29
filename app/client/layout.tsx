@@ -11,6 +11,12 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   
+  const isFormPage = pathname?.includes("/forms/");
+
+  if (isFormPage) {
+    return <div className="min-h-screen bg-slate-950">{children}</div>;
+  }
+  
   return (
     <div className="min-h-screen bg-[#fbfaf5] text-[#1a1a1a] font-sans antialiased text-sm">
       {/* Top Navigation */}
@@ -30,6 +36,7 @@ export default function ClientLayout({
                 { id: "02", label: "Compliance", href: "/client/compliance", active: pathname === "/client/compliance" },
                 { id: "03", label: "Reports", href: "/client/reports", active: pathname === "/client/reports" },
                 { id: "04", label: "Hours & billing", href: "/client/billing", active: pathname === "/client/billing" },
+                { id: "05", label: "Assessments", href: "/client/assessments", active: pathname === "/client/assessments" },
               ].map((item) => (
                 <Link
                   key={item.id}

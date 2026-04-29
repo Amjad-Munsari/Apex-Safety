@@ -201,11 +201,11 @@ export default function AdminDashboardPage() {
             </div>
           </Card>
 
-          {/* 04 REPORTS AWAITING REVIEW */}
+          {/* 03 REPORTS AWAITING REVIEW */}
           <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden flex flex-col pb-4">
             <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-white/40">04</span>
+                <span className="font-mono text-xs text-white/40">03</span>
                 <h3 className="font-sans font-medium text-white tracking-wide text-lg">Reports awaiting review</h3>
                 <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">3 Drafts</span>
               </div>
@@ -330,8 +330,65 @@ export default function AdminDashboardPage() {
         </Card>
       </div>
 
-      {/* ─── ROW 2: 05 HOURS + 06 PROPOSALS + 03 COMPLIANCE ─── */}
+      {/* ─── ROW 2: 04 COMPLIANCE + 06 PROPOSALS + 05 HOURS ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 04 COMPLIANCE STATUS */}
+        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col h-[400px]">
+           <div className="flex items-center gap-3 mb-6">
+             <span className="font-mono text-xs text-white/40">04</span>
+             <h3 className="font-sans font-medium text-white tracking-wide text-lg">Compliance status</h3>
+             <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">50 Docs</span>
+           </div>
+           
+           <div className="flex-1 relative flex items-center justify-center">
+              <div className="w-full h-full min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                     <Pie
+                       data={[
+                         { name: 'Current', value: 27, color: '#3b8273' },
+                         { name: 'Expiring', value: 12, color: '#d4a373' },
+                         { name: 'Expired', value: 11, color: '#e63946' },
+                       ]}
+                       cx="50%"
+                       cy="50%"
+                       innerRadius={80}
+                       outerRadius={100}
+                       stroke="none"
+                       dataKey="value"
+                     >
+                       {
+                         [
+                           { name: 'Current', value: 27, color: '#3b8273' },
+                           { name: 'Expiring', value: 12, color: '#d4a373' },
+                           { name: 'Expired', value: 11, color: '#e63946' }
+                         ].map((entry, index) => (
+                           <Cell key={`cell-${index}`} fill={entry.color} />
+                         ))
+                       }
+                     </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                 <div className="font-serif text-4xl text-white">54%</div>
+                 <div className="font-mono text-[10px] uppercase tracking-widest text-[#888] mt-1">Current</div>
+              </div>
+           </div>
+
+           <div className="flex justify-center gap-6 mt-4 font-mono text-[10px] text-white/80">
+              <div className="flex items-center gap-2">
+                 <div className="w-2.5 h-2.5 rounded-full bg-[#3b8273]"></div> Current 27
+              </div>
+              <div className="flex items-center gap-2">
+                 <div className="w-2.5 h-2.5 rounded-full bg-[#d4a373]"></div> Expiring 12
+              </div>
+              <div className="flex items-center gap-2">
+                 <div className="w-2.5 h-2.5 rounded-full bg-[#e63946]"></div> Expired 11
+              </div>
+           </div>
+        </Card>
+
         {/* 05 HOURS BALANCES */}
         <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden p-6 flex flex-col">
            <div className="flex justify-between items-center mb-6">
@@ -456,63 +513,6 @@ export default function AdminDashboardPage() {
                   <div className="text-white text-sm font-sans mt-0.5">£3,120</div>
                 </div>
              </div>
-           </div>
-        </Card>
-
-        {/* 03 COMPLIANCE STATUS */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col h-[400px]">
-           <div className="flex items-center gap-3 mb-6">
-             <span className="font-mono text-xs text-white/40">03</span>
-             <h3 className="font-sans font-medium text-white tracking-wide text-lg">Compliance status</h3>
-             <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">50 Docs</span>
-           </div>
-           
-           <div className="flex-1 relative flex items-center justify-center">
-              <div className="w-full h-full min-h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                     <Pie
-                       data={[
-                         { name: 'Current', value: 27, color: '#3b8273' },
-                         { name: 'Expiring', value: 12, color: '#d4a373' },
-                         { name: 'Expired', value: 11, color: '#e63946' },
-                       ]}
-                       cx="50%"
-                       cy="50%"
-                       innerRadius={80}
-                       outerRadius={100}
-                       stroke="none"
-                       dataKey="value"
-                     >
-                       {
-                         [
-                           { name: 'Current', value: 27, color: '#3b8273' },
-                           { name: 'Expiring', value: 12, color: '#d4a373' },
-                           { name: 'Expired', value: 11, color: '#e63946' }
-                         ].map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.color} />
-                         ))
-                       }
-                     </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                 <div className="font-serif text-4xl text-white">54%</div>
-                 <div className="font-mono text-[10px] uppercase tracking-widest text-[#888] mt-1">Current</div>
-              </div>
-           </div>
-
-           <div className="flex justify-center gap-6 mt-4 font-mono text-[10px] text-white/80">
-              <div className="flex items-center gap-2">
-                 <div className="w-2.5 h-2.5 rounded-full bg-[#3b8273]"></div> Current 27
-              </div>
-              <div className="flex items-center gap-2">
-                 <div className="w-2.5 h-2.5 rounded-full bg-[#d4a373]"></div> Expiring 12
-              </div>
-              <div className="flex items-center gap-2">
-                 <div className="w-2.5 h-2.5 rounded-full bg-[#e63946]"></div> Expired 11
-              </div>
            </div>
         </Card>
       </div>

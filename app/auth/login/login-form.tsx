@@ -12,6 +12,7 @@ import { Mail, Lock, Loader2, ArrowRight } from "lucide-react"
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [tab, setTab] = useState("password")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -67,7 +68,7 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="password" classname="w-full">
+        <Tabs defaultValue="password" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white/5 mb-6">
             <TabsTrigger value="password">Password</TabsTrigger>
             <TabsTrigger value="magic">Magic Link</TabsTrigger>
@@ -83,7 +84,7 @@ export function LoginForm() {
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500"
+                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500 h-12"
                     required
                   />
                 </div>
@@ -96,7 +97,7 @@ export function LoginForm() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500"
+                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500 h-12"
                     required
                   />
                 </div>
@@ -118,7 +119,7 @@ export function LoginForm() {
                     placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500"
+                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500 h-12"
                     required
                   />
                 </div>

@@ -30,9 +30,16 @@ export default function ClientDashboard() {
           </div>
           <div className="space-y-1">
             <h2 className="font-serif text-[30px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">Good morning, Sarah.</h2>
-            <p className="text-[#888] text-[13px] font-sans tracking-tight">
-              Here's where things stand for Hallam House Care Home as of Saturday, 18 April 2026.
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-[#888] text-[13px] font-sans tracking-tight">
+                Here's where things stand for Hallam House Care Home as of Saturday, 18 April 2026.
+              </p>
+              <Link href="/client/forms/new">
+                <Button className="bg-amber-600 hover:bg-amber-500 text-white text-[10px] uppercase tracking-[0.2em] font-bold h-10 px-6 rounded-sm shadow-none">
+                  Start New Assessment &rarr;
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
 

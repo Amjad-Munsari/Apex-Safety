@@ -24,27 +24,27 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       <SidebarContent className="px-5 py-8">
-        <SidebarMenu className="gap-4">
+        <SidebarMenu className="gap-2">
           {/* Active Dashboard */}
           <SidebarMenuItem>
             <SidebarMenuButton
               isActive
-              className="h-11 text-white bg-white/10 hover:bg-white/15 relative rounded-[4px] border border-white/5 shadow-sm"
+              className="h-11 text-white bg-white/10 hover:bg-white/15 relative rounded-[4px] border border-white/5 shadow-sm mb-4"
               render={(props) => (
                 <Link {...props} href="/admin" className="flex w-full items-center px-3">
                   <span className="text-white/40 font-mono tracking-widest w-5 mr-3">-</span>
-                  <span className="font-medium tracking-wide text-sm">Dashboard</span>
+                  <span className="font-medium tracking-wide text-sm">Dashboard Overview</span>
                 </Link>
               )}
             />
           </SidebarMenuItem>
 
-          {/* Other Links */}
+          {/* Core Analytics / Operations */}
           <SidebarMenuItem>
             <SidebarMenuButton
               className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
               render={(props) => (
-                <Link {...props} href="/admin/clients" className="flex w-full items-center px-3">
+                <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">01</span>
                   <span className="text-sm tracking-wide">Clients</span>
                   <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">8</span>
@@ -59,8 +59,8 @@ export function AppSidebar() {
               render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">02</span>
-                  <span className="text-sm tracking-wide">Assessments</span>
-                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">34</span>
+                  <span className="text-sm tracking-wide">Expiries</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">12</span>
                 </Link>
               )}
             />
@@ -72,8 +72,8 @@ export function AppSidebar() {
               render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">03</span>
-                  <span className="text-sm tracking-wide">Documents</span>
-                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">142</span>
+                  <span className="text-sm tracking-wide">Reports</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">3</span>
                 </Link>
               )}
             />
@@ -85,8 +85,8 @@ export function AppSidebar() {
               render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">04</span>
-                  <span className="text-sm tracking-wide">Proposals</span>
-                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">4</span>
+                  <span className="text-sm tracking-wide">Compliance</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">50</span>
                 </Link>
               )}
             />
@@ -110,12 +110,53 @@ export function AppSidebar() {
               render={(props) => (
                 <Link {...props} href="#" className="flex w-full items-center px-3">
                   <span className="text-white/30 font-mono text-[11px] w-5 mr-4">06</span>
-                  <span className="text-sm tracking-wide">Workflow errors</span>
+                  <span className="text-sm tracking-wide">Proposals</span>
+                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">4</span>
+                </Link>
+              )}
+            />
+          </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
+                <Link {...props} href="#" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">07</span>
+                  <span className="text-sm tracking-wide">Workflow Errors</span>
                   <span className="ml-auto text-[10px] font-mono text-danger border border-danger/20 px-1.5 py-0.5 rounded-[3px]">3</span>
                 </Link>
               )}
             />
           </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
+                <Link {...props} href="#" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">08</span>
+                  <span className="text-sm tracking-wide">Month Summary</span>
+                </Link>
+              )}
+            />
+          </SidebarMenuItem>
+
+          {/* Tools Section */}
+          <div className="mt-8 pt-8 border-t border-white/5">
+            <span className="px-3 text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">System Tools</span>
+            <SidebarMenuItem className="mt-4">
+              <SidebarMenuButton
+                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+                render={(props) => (
+                  <Link {...props} href="/admin/templates" className="flex w-full items-center px-3">
+                    <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
+                    <span className="text-sm tracking-wide">Form Builder</span>
+                  </Link>
+                )}
+              />
+            </SidebarMenuItem>
+          </div>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-8 border-t border-white/5">
