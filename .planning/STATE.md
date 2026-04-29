@@ -152,11 +152,11 @@ Phases 6, 7, 8, 9, and 10 share almost no code. They can be built in parallel if
 
 ### Last Action
 
-Roadmap created and files written (ROADMAP.md, STATE.md, REQUIREMENTS.md traceability).
+Phase 2 context gathered (autonomous). Implementation decisions for STT, media pipeline, and draft sync are locked in `02-CONTEXT.md`.
 
 ### Next Action
 
-`/gsd-plan-phase 1` — plan Phase 1: Scaffolding + Security Foundation.
+`/gsd-plan-phase 2` — create detailed plan for Phase 2: Form Prerequisites.
 
 ### Phase 1 Starting Checklist
 
