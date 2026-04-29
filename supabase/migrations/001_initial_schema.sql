@@ -18,13 +18,15 @@ CREATE TABLE clients (
   site_address    TEXT,
   hours_balance   NUMERIC(10,2) NOT NULL DEFAULT 0,
   active          BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at      TIMESTAMPTZ
 );
 
 CREATE TABLE admin_users (
   id       UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name     TEXT NOT NULL,
-  email    TEXT NOT NULL
+  email    TEXT NOT NULL,
+  deleted_at TIMESTAMPTZ
 );
 
 CREATE TABLE client_users (
@@ -33,7 +35,8 @@ CREATE TABLE client_users (
   name        TEXT NOT NULL,
   email       TEXT NOT NULL,
   role        TEXT NOT NULL DEFAULT 'member',
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at  TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────────────────────────
@@ -47,7 +50,8 @@ CREATE TABLE form_templates (
   owner_id      UUID REFERENCES admin_users(id),
   owner_type    TEXT DEFAULT 'admin',
   is_published  BOOLEAN DEFAULT FALSE,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at    TIMESTAMPTZ
 );
 
 CREATE TABLE template_versions (
@@ -57,6 +61,7 @@ CREATE TABLE template_versions (
   schema_json     JSONB NOT NULL,
   published_at    TIMESTAMPTZ,
   created_by      UUID REFERENCES admin_users(id),
+  deleted_at      TIMESTAMPTZ,
   UNIQUE(template_id, version_number)
 );
 
@@ -72,7 +77,8 @@ CREATE TABLE form_assignments (
   assigned_by         UUID REFERENCES admin_users(id),
   due_date            DATE,
   status              TEXT NOT NULL DEFAULT 'assigned',
-  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at          TIMESTAMPTZ
 );
 
 CREATE TABLE form_submissions (
@@ -87,7 +93,18 @@ CREATE TABLE form_submissions (
   report_storage_path  TEXT,
   reviewed_by          UUID REFERENCES admin_users(id),
   reviewed_at          TIMESTAMPTZ,
-  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at           TIMESTAMPTZ
+);
+
+CREATE TABLE field_media (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  submission_id  UUID NOT NULL REFERENCES form_submissions(id) ON DELETE CASCADE,
+  field_id       TEXT NOT NULL,
+  storage_path   TEXT NOT NULL,
+  media_type     TEXT NOT NULL, -- 'image', 'audio'
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at     TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────────────────────────
@@ -103,7 +120,8 @@ CREATE TABLE documents (
   expiry_date       DATE,
   uploaded_by       UUID REFERENCES admin_users(id),
   uploaded_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  active            BOOLEAN NOT NULL DEFAULT TRUE
+  active            BOOLEAN NOT NULL DEFAULT TRUE,
+  deleted_at        TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────────────────────────
@@ -119,7 +137,8 @@ CREATE TABLE hours_transactions (
   gbp_amount       NUMERIC(10,2),
   notes            TEXT,
   created_by       UUID,
-  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at       TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────────────────────────
@@ -132,7 +151,8 @@ CREATE TABLE services (
   description TEXT,
   unit_price  NUMERIC(10,2),
   category    TEXT,
-  active      BOOLEAN DEFAULT TRUE
+  active      BOOLEAN DEFAULT TRUE,
+  deleted_at  TIMESTAMPTZ
 );
 
 CREATE TABLE proposals (
@@ -146,7 +166,8 @@ CREATE TABLE proposals (
   signwell_contract_doc_id  TEXT,
   created_by                UUID REFERENCES admin_users(id),
   created_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  updated_at                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at                TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────────────────────────
@@ -160,7 +181,18 @@ CREATE TABLE notifications_sent (
   document_id       UUID REFERENCES documents(id),
   alert_window      INTEGER,
   sent_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at        TIMESTAMPTZ,
   UNIQUE (document_id, alert_window, notification_type)
+);
+
+CREATE TABLE workflow_errors (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workflow_name   TEXT NOT NULL,
+  error_message   TEXT NOT NULL,
+  payload         JSONB,
+  resolved        BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at      TIMESTAMPTZ
 );
 
 -- ─────────────────────────────────────────────────────────────
@@ -179,6 +211,8 @@ ALTER TABLE hours_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE proposals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications_sent ENABLE ROW LEVEL SECURITY;
+ALTER TABLE field_media ENABLE ROW LEVEL SECURITY;
+ALTER TABLE workflow_errors ENABLE ROW LEVEL SECURITY;
 
 -- ─────────────────────────────────────────────────────────────
 -- RLS POLICIES: admin_users
@@ -341,6 +375,33 @@ CREATE POLICY "proposals_client_visible" ON proposals
 
 CREATE POLICY "notifications_sent_admin_select" ON notifications_sent
   FOR SELECT USING (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+-- ─────────────────────────────────────────────────────────────
+-- RLS POLICIES: field_media
+-- ─────────────────────────────────────────────────────────────
+
+CREATE POLICY "field_media_admin_all" ON field_media
+  FOR ALL USING (
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
+  );
+
+CREATE POLICY "field_media_client_select" ON field_media
+  FOR SELECT USING (
+    submission_id IN (
+      SELECT id FROM form_submissions WHERE client_id IN (
+        SELECT client_id FROM client_users WHERE id = auth.uid()
+      )
+    )
+  );
+
+-- ─────────────────────────────────────────────────────────────
+-- RLS POLICIES: workflow_errors
+-- ─────────────────────────────────────────────────────────────
+
+CREATE POLICY "workflow_errors_admin_all" ON workflow_errors
+  FOR ALL USING (
     (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin'
   );
 
