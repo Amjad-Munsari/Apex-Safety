@@ -16,7 +16,8 @@ import {
   CheckSquare,
   Image as ImageIcon,
   Settings2,
-  Calendar
+  Calendar,
+  FileText
 } from "lucide-react"
 import Link from "next/link"
 import { updateTemplateDraftAction, publishTemplateVersionAction } from "../actions"
