@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 5 — Document Upload, Notifications + Expiry Alerts
+current_phase: 6 — Assessment Workflow
 current_plan: None started
 status: active
 last_updated: "2026-04-29T18:05:00Z"
@@ -51,8 +51,8 @@ Progress: [▓▓▓▓░░░░░░░░░░░░░░░░░░░
 | 2 | Form Prerequisites | Completed |
 | 3 | Template System + Schema Versioning | Completed |
 | 4 | Client Compliance Portal | Completed |
-| 5 | Document Upload, Notifications + Expiry Alerts | Not started |
-| 6 | Assessment Workflow [GREEN-LIGHT GATE] | Not started |
+| 5 | Document Upload, Notifications + Expiry Alerts | Completed |
+| 6 | Assessment Workflow [GREEN-LIGHT GATE] | Active |
 | 7 | AI Report Pipeline | Not started |
 | 8 | Hours Balance + PayPal Checkout | Not started |
 | 9 | Proposal + Auto-Contract Pipeline | Not started |

@@ -29,7 +29,7 @@ The stage sequence is locked and must not be reordered:
 - [x] **Phase 2: Form Prerequisites** — Form renderer, STT with text-input primary fallback, HEIC + EXIF photo upload, per-field media, draft persistence
 - [x] **Phase 3: Template System + Schema Versioning** — Mutable template metadata, immutable version rows, FRA seed, Site Risk placeholder, admin-gated builder UI
 - [x] **Phase 4: Client Compliance Portal** — Magic-link portal login, RAG compliance dashboard, document library, assessment downloads, onboarding state, mobile-responsive
-- [ ] **Phase 5: Document Upload, Notifications + Expiry Alerts** — Admin document upload, Twilio SMS, n8n #2 email, 30/14/7-day expiry cron (n8n #3), dedup constraint, expiry surface
+- [x] **Phase 5: Document Upload, Notifications + Expiry Alerts** — Admin document upload, Twilio SMS, n8n #2 email, 30/14/7-day expiry cron (n8n #3), dedup constraint, expiry surface
 - [ ] **Phase 6: Assessment Workflow** — Form assignment, on-site unassigned FRA flow, "anything else" field, draft recovery — **GREEN-LIGHT GATE: Matt live-demo sign-off required before Stage 4/5**
 - [ ] **Phase 7: AI Report Pipeline** — n8n workflow #1 (GPT-4 structured output, YELLOW BROOM few-shot), PDF to Storage, review gate UI (side-by-side STT + draft), approve/regenerate/edit, n8n error workflow
 - [ ] **Phase 8: Hours Balance + PayPal Checkout** — Portal hours display, PayPal Orders v2 checkout, idempotent webhook, atomic credit write, receipt email, configurable pricing
@@ -89,7 +89,7 @@ The stage sequence is locked and must not be reordered:
 | 2. Form Prerequisites | 1/1 | Completed | 2026-04-29 |
 | 3. Template System + Schema Versioning | 1/1 | Completed | 2026-04-29 |
 | 4. Client Compliance Portal | 1/1 | Completed | 2026-04-29 |
-| 5. Document Upload + Expiry Alerts | 0/1 | Not started | - |
+| 5. Document Upload + Expiry Alerts | 2/2 | Completed | 2026-04-29 |
 | 6. Assessment Workflow | 0/1 | Not started | - |
 | 7. AI Report Pipeline | 0/1 | Not started | - |
 | 8. Hours Balance + PayPal Checkout | 0/1 | Not started | - |

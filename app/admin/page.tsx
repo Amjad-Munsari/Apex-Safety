@@ -1,12 +1,36 @@
-"use client";
-
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { ComplianceChart } from "./compliance-chart";
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  const supabase = await createClient();
+
+  // Fetch real clients for the list with related data
+  const { data: clients } = await supabase
+    .from("clients")
+    .select(`
+      *,
+      documents (
+        expiry_date,
+        document_category,
+        filename
+      ),
+      proposals (
+        status
+      )
+    `)
+    .order("name", { ascending: true })
+    .limit(8);
+
+  const complianceData = [
+    { name: 'Current', value: 27, color: '#3b8273' },
+    { name: 'Expiring', value: 12, color: '#d4a373' },
+    { name: 'Expired', value: 11, color: '#e63946' },
+  ];
   return (
     <div className="flex flex-col gap-10 pb-20">
       
@@ -51,11 +75,11 @@ export default function AdminDashboardPage() {
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xs text-white/40">01</span>
                 <h3 className="font-sans font-medium text-white tracking-wide text-lg">Clients</h3>
-                <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">8 Active</span>
+                <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">{clients?.length || 0} Active</span>
               </div>
-              <a href="#" className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
+              <Link href="/admin/clients/new" className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
                 + New client
-              </a>
+              </Link>
             </div>
             
             <div className="w-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
@@ -71,131 +95,65 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    <tr className="group hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4">
-                           <div className="flex items-start gap-4">
-                             <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br/>0142</span>
-                             <div>
-                               <div className="font-medium text-white mb-0.5">Merlin Print Works Ltd</div>
-                               <div className="text-xs text-white/40">Manufacturing</div>
-                             </div>
-                           </div>
-                        </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-gold/40 rounded text-gold text-[10px] font-mono uppercase tracking-wider bg-gold/5 leading-none">
-                             <div className="w-1.5 h-1.5 rounded-full bg-gold"></div> Expiring
-                           </div>
-                        </td>
-                        <td className="px-4 py-4 font-mono text-xs text-danger text-right">3.5h</td>
-                        <td className="px-4 py-4">
-                           <div className="text-white text-sm mb-0.5">24 Apr 2026</div>
-                           <div className="text-xs text-[#666]">PAT Testing</div>
-                        </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex px-2.5 py-1 border border-[#3b8273]/40 text-[#3b8273] text-[10px] font-mono uppercase tracking-wider rounded leading-none">Signed</div>
-                        </td>
-                        <td className="px-6 py-4 font-mono text-xs text-right text-white/50">1 <span className="ml-2 text-white/20">&gt;</span></td>
-                     </tr>
-                     
-                     <tr className="group hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4">
-                           <div className="flex items-start gap-4">
-                             <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br/>0039</span>
-                             <div>
-                               <div className="font-medium text-white mb-0.5">Rowan &amp; Ashe Solicitors</div>
-                               <div className="text-xs text-white/40">Professional</div>
-                             </div>
-                           </div>
-                        </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-success/40 rounded text-success text-[10px] font-mono uppercase tracking-wider bg-success/5 leading-none">
-                             <div className="w-1.5 h-1.5 rounded-full bg-success"></div> Current
-                           </div>
-                        </td>
-                        <td className="px-4 py-4 font-mono text-xs text-white/70 text-right">14.0h</td>
-                        <td className="px-4 py-4">
-                           <div className="text-white text-sm mb-0.5">11 Jul 2026</div>
-                           <div className="text-xs text-[#666]">Emergency Lighting</div>
-                        </td>
-                        <td className="px-4 py-4 text-[#444]">—</td>
-                        <td className="px-6 py-4 font-mono text-xs text-right text-white/50">2 <span className="ml-2 text-white/20">&gt;</span></td>
-                     </tr>
+                    {clients?.map((client) => {
+                      // Calculate next expiry
+                      const expiries = client.documents
+                        ?.map(d => ({ date: new Date(d.expiry_date), cat: d.document_category }))
+                        .filter(d => !isNaN(d.date.getTime()))
+                        .sort((a, b) => a.date.getTime() - b.date.getTime());
+                      
+                      const nextExpiry = expiries?.[0];
+                      const proposalStatus = client.proposals?.[0]?.status;
 
-                     <tr className="group hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4">
-                           <div className="flex items-start gap-4">
-                             <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br/>0088</span>
-                             <div>
-                               <div className="font-medium text-white mb-0.5">Hallam House Care Home</div>
-                               <div className="text-xs text-white/40">Healthcare</div>
-                             </div>
-                           </div>
-                        </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-danger/40 rounded text-danger text-[10px] font-mono uppercase tracking-wider bg-danger/5 leading-none">
-                             <div className="w-1.5 h-1.5 rounded-full bg-danger"></div> Action
-                           </div>
-                        </td>
-                        <td className="px-4 py-4 font-mono text-xs text-danger text-right">0.5h</td>
-                        <td className="px-4 py-4">
-                           <div className="text-white text-sm mb-0.5">03 Apr 2026</div>
-                           <div className="text-xs text-[#666]">EICR</div>
-                        </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex px-2.5 py-1 border border-gold/40 text-gold text-[10px] font-mono uppercase tracking-wider rounded leading-none">Sent</div>
-                        </td>
-                        <td className="px-6 py-4 font-mono text-xs text-right text-white/50">1 <span className="ml-2 text-white/20">&gt;</span></td>
-                     </tr>
+                      // Calculate RAG status based on expiry
+                      const today = new Date();
+                      const daysUntil = nextExpiry ? Math.ceil((nextExpiry.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                      
+                      let ragLabel = "Current";
+                      let ragColor = "success";
+                      if (daysUntil !== null) {
+                        if (daysUntil < 0) { ragLabel = "Expired"; ragColor = "danger"; }
+                        else if (daysUntil < 30) { ragLabel = "Expiring"; ragColor = "gold"; }
+                      }
 
-                     <tr className="group hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4">
-                           <div className="flex items-start gap-4">
-                             <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br/>0295</span>
-                             <div>
-                               <div className="font-medium text-white mb-0.5">Parkgate Primary School</div>
-                               <div className="text-xs text-white/40">Education</div>
+                      return (
+                        <tr key={client.id} className="group hover:bg-white/[0.02] transition-colors cursor-pointer relative">
+                          <td className="px-6 py-4">
+                             <Link href={`/admin/clients/${client.id}`} className="absolute inset-0 z-0" />
+                             <div className="flex items-start gap-4 relative z-10 pointer-events-none">
+                               <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br/>{client.id.slice(0, 4).toUpperCase()}</span>
+                               <div>
+                                 <div className="font-medium text-white mb-0.5">{client.name}</div>
+                                 <div className="text-xs text-white/40">Client Record</div>
+                               </div>
                              </div>
-                           </div>
-                        </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-success/40 rounded text-success text-[10px] font-mono uppercase tracking-wider bg-success/5 leading-none">
-                             <div className="w-1.5 h-1.5 rounded-full bg-success"></div> Current
-                           </div>
-                        </td>
-                        <td className="px-4 py-4 font-mono text-xs text-white/70 text-right">8.5h</td>
-                        <td className="px-4 py-4">
-                           <div className="text-white text-sm mb-0.5">12 Jun 2026</div>
-                           <div className="text-xs text-[#666]">Fire Warden</div>
-                        </td>
-                        <td className="px-4 py-4 text-[#444]">—</td>
-                        <td className="px-6 py-4 font-mono text-xs text-right text-white/50">1 <span className="ml-2 text-white/20">&gt;</span></td>
-                     </tr>
-
-                     <tr className="group hover:bg-white/[0.02] transition-colors">
-                        <td className="px-6 py-4">
-                           <div className="flex items-start gap-4">
-                             <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br/>0117</span>
-                             <div>
-                               <div className="font-medium text-white mb-0.5">Argyll Self-Storage</div>
-                               <div className="text-xs text-white/40">Logistics</div>
+                          </td>
+                          <td className="px-4 py-4">
+                             <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 border border-${ragColor}/40 rounded text-${ragColor} text-[10px] font-mono uppercase tracking-wider bg-${ragColor}/5 leading-none`}>
+                               <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor}`}></div> {ragLabel}
                              </div>
-                           </div>
+                          </td>
+                          <td className="px-4 py-4 font-mono text-xs text-white/70 text-right">{client.hours_balance}h</td>
+                          <td className="px-4 py-4">
+                             <div className="text-white text-sm mb-0.5">{nextExpiry ? nextExpiry.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "—"}</div>
+                             <div className="text-xs text-[#666]">{nextExpiry?.cat || "No upcoming"}</div>
+                          </td>
+                          <td className="px-4 py-4">
+                             <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === 'Signed' ? '#3b8273' : 'gold') : 'white'}/40 text-${proposalStatus ? (proposalStatus === 'Signed' ? '#3b8273' : 'gold') : 'white'}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
+                               {proposalStatus || "None"}
+                             </div>
+                          </td>
+                          <td className="px-6 py-4 font-mono text-xs text-right text-white/50">{client.documents?.length || 0} <span className="ml-2 text-white/20">&gt;</span></td>
+                        </tr>
+                      );
+                    })}
+                    {!clients || clients.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-10 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+                          No clients found in database
                         </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-gold/40 rounded text-gold text-[10px] font-mono uppercase tracking-wider bg-gold/5 leading-none">
-                             <div className="w-1.5 h-1.5 rounded-full bg-gold"></div> Expiring
-                           </div>
-                        </td>
-                        <td className="px-4 py-4 font-mono text-xs text-gold text-right">4.0h</td>
-                        <td className="px-4 py-4">
-                           <div className="text-white text-sm mb-0.5">29 Apr 2026</div>
-                           <div className="text-xs text-[#666]">Extinguisher</div>
-                        </td>
-                        <td className="px-4 py-4">
-                           <div className="inline-flex px-2.5 py-1 border border-white/20 text-white/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none">Draft</div>
-                        </td>
-                        <td className="px-6 py-4 font-mono text-xs text-right text-white/50">3 <span className="ml-2 text-white/20">&gt;</span></td>
-                     </tr>
+                      </tr>
+                    )}
                   </tbody>
                </table>
             </div>
@@ -340,41 +298,7 @@ export default function AdminDashboardPage() {
              <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">50 Docs</span>
            </div>
            
-           <div className="flex-1 relative flex items-center justify-center">
-              <div className="w-full h-full min-h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                     <Pie
-                       data={[
-                         { name: 'Current', value: 27, color: '#3b8273' },
-                         { name: 'Expiring', value: 12, color: '#d4a373' },
-                         { name: 'Expired', value: 11, color: '#e63946' },
-                       ]}
-                       cx="50%"
-                       cy="50%"
-                       innerRadius={80}
-                       outerRadius={100}
-                       stroke="none"
-                       dataKey="value"
-                     >
-                       {
-                         [
-                           { name: 'Current', value: 27, color: '#3b8273' },
-                           { name: 'Expiring', value: 12, color: '#d4a373' },
-                           { name: 'Expired', value: 11, color: '#e63946' }
-                         ].map((entry, index) => (
-                           <Cell key={`cell-${index}`} fill={entry.color} />
-                         ))
-                       }
-                     </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                 <div className="font-serif text-4xl text-white">54%</div>
-                 <div className="font-mono text-[10px] uppercase tracking-widest text-[#888] mt-1">Current</div>
-              </div>
-           </div>
+           <ComplianceChart data={complianceData} />
 
            <div className="flex justify-center gap-6 mt-4 font-mono text-[10px] text-white/80">
               <div className="flex items-center gap-2">
