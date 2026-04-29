@@ -25,7 +25,7 @@ The stage sequence is locked and must not be reordered:
 
 ## Phases
 
-- [ ] **Phase 1: Scaffolding + Security Foundation** — Supabase region lock, server-only guard, migration 001, RLS + Storage RLS, Next.js 16 codemod, Twilio sender ID initiated
+- [x] **Phase 1: Scaffolding + Security Foundation** — Supabase region lock, server-only guard, migration 001, RLS + Storage RLS, Next.js 16 codemod, Twilio sender ID initiated
 - [ ] **Phase 2: Form Prerequisites** — Form renderer, STT with text-input primary fallback, HEIC + EXIF photo upload, per-field media, draft persistence
 - [ ] **Phase 3: Template System + Schema Versioning** — Mutable template metadata, immutable version rows, FRA seed, Site Risk placeholder, admin-gated builder UI
 - [ ] **Phase 4: Assessment Workflow** — Form assignment, on-site unassigned FRA flow, "anything else" field, draft recovery — **GREEN-LIGHT GATE: Matt live-demo sign-off required before Stage 4/5**
@@ -248,7 +248,7 @@ The stage sequence is locked and must not be reordered:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scaffolding + Security Foundation | 0/? | Not started | - |
+| 1. Scaffolding + Security Foundation | 1/1 | Completed | 2026-04-29 |
 | 2. Form Prerequisites | 0/? | Not started | - |
 | 3. Template System + Schema Versioning | 0/? | Not started | - |
 | 4. Assessment Workflow | 0/? | Not started | - |
