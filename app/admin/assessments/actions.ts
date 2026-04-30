@@ -35,7 +35,7 @@ export async function startAssessment(clientId: string, templateVersionId: strin
     .single()
     
   if (assignError || !assignment) {
-    throw new Error(`Failed to create assignment: ${assignError.message}`)
+    throw new Error(`Failed to create assignment: ${assignError?.message || "Unknown error"}`)
   }
   
   // 3. Insert form_submission
@@ -53,7 +53,7 @@ export async function startAssessment(clientId: string, templateVersionId: strin
     .single()
     
   if (submitError || !submission) {
-    throw new Error(`Failed to create draft submission: ${submitError.message}`)
+    throw new Error(`Failed to create draft submission: ${submitError?.message || "Unknown error"}`)
   }
   
   redirect(`/admin/assessments/${submission.id}`)
@@ -85,7 +85,7 @@ export async function submitAssessment(submissionId: string, finalAnswers: Recor
     .single()
     
   if (error || !submission) {
-    throw new Error(`Failed to submit: ${error?.message}`)
+    throw new Error(`Failed to submit: ${error?.message || "Unknown error"}`)
   }
   
   // Fire and forget webhook
