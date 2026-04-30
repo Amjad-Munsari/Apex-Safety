@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 6 — Assessment Workflow
-current_plan: None started
+current_plan: 06-1-PLAN.md
 status: active
 last_updated: "2026-04-29T18:05:00Z"
 progress:
@@ -33,8 +33,8 @@ progress:
 ## Current Position
 
 **Current Phase:** 5 — Document Upload + Expiry Alerts
-**Current Plan:** None started
-**Phase Status:** Not started
+**Current Plan:** 06-1-PLAN.md
+**Phase Status:** Planned
 **Milestone Status:** In progress
 
 ```
