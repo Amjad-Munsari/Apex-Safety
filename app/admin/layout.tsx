@@ -2,6 +2,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function AdminLayout({
   children,
@@ -36,9 +37,11 @@ export default function AdminLayout({
                  <span className="text-[10px] uppercase font-mono tracking-widest text-[#555]">Today</span>
                  <span className="text-sm font-medium text-white/90 font-sans tracking-wide">Saturday, 18 April 2026</span>
                </div>
-               <Button variant="secondary" className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none">
-                 + Upload document
-               </Button>
+               <Link href="/proposals/new">
+                 <Button variant="secondary" className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none">
+                   Proposal Generator
+                 </Button>
+               </Link>
             </div>
           </header>
 

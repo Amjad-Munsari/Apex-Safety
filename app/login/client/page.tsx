@@ -33,12 +33,6 @@ export default function LoginPage() {
     router.refresh()
   }
 
-  function handleDemoMode() {
-    setLoading(true)
-    // Set a session cookie for demo mode bypass
-    document.cookie = "demo_mode=1; path=/; max-age=3600"
-    router.push("/client")
-  }
 
   return (
     <div className="min-h-screen flex bg-[#fbfaf5]">
@@ -136,33 +130,6 @@ export default function LoginPage() {
             </button>
           </form>
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-[#e5e1d8]" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-[#fbfaf5] px-4 text-[9px] font-mono uppercase tracking-[0.2em] text-[#bbb] font-bold">
-                Demo access
-              </span>
-            </div>
-          </div>
-
-          {/* Demo Mode CTA */}
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handleDemoMode}
-              disabled={loading}
-              className="w-full h-14 border-2 border-[#1a1a1a] bg-transparent hover:bg-[#1a1a1a] text-[#1a1a1a] hover:text-white rounded-sm font-sans text-[13px] font-bold tracking-tight transition-all disabled:opacity-50 disabled:cursor-not-allowed group flex items-center justify-center gap-3"
-            >
-              <span>Enter Demo Mode</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <p className="text-center text-[10px] text-[#bbb] font-sans leading-relaxed">
-              Explore the portal using sample data. No account needed.
-            </p>
-          </div>
 
         </div>
       </div>
