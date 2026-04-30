@@ -9,13 +9,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { Plus } from "lucide-react";
-import { useState } from "react";
-import { AssessmentSelectorDialog } from "./assessments/assessment-selector-dialog";
 
 export function AppSidebar() {
-  const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
-
   return (
     <Sidebar className="border-none bg-black">
       <SidebarHeader className="pt-10 px-8 pb-8 border-b border-white/5">
@@ -147,17 +142,6 @@ export function AppSidebar() {
             />
           </SidebarMenuItem>
 
-          {/* Action Button */}
-          <div className="mt-4 px-2">
-            <button 
-              onClick={() => setIsAssessmentDialogOpen(true)}
-              className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm rounded-sm px-4 py-2.5 w-full flex items-center justify-center transition-colors"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              New Assessment
-            </button>
-          </div>
-
           {/* Tools Section */}
           <div className="mt-8 pt-8 border-t border-white/5">
             <span className="px-3 text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">System Tools</span>
@@ -167,7 +151,7 @@ export function AppSidebar() {
                 render={(props) => (
                   <Link {...props} href="/admin/templates" className="flex w-full items-center px-3">
                     <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
-                    <span className="text-sm tracking-wide">Form Builder</span>
+                    <span className="text-sm tracking-wide">Form Templates</span>
                   </Link>
                 )}
               />
@@ -189,11 +173,6 @@ export function AppSidebar() {
           </form>
         </div>
       </SidebarFooter>
-
-      <AssessmentSelectorDialog 
-        open={isAssessmentDialogOpen} 
-        onOpenChange={setIsAssessmentDialogOpen} 
-      />
     </Sidebar>
   );
 }

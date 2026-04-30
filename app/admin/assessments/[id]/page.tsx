@@ -10,7 +10,11 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
     .select(`
       *,
       client:clients(name),
-      template:template_versions(name, schema_json, template_id)
+      template:template_versions(
+        schema_json,
+        template_id,
+        form_template:form_templates(name)
+      )
     `)
     .eq("id", id)
     .single()

@@ -48,14 +48,26 @@ export function AssessmentSelectorDialog({
   }
 
   async function fetchTemplates() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("template_versions")
-      .select("id, name, version")
+      .select(`
+        id, 
+        version_number,
+        template:form_templates!inner(name)
+      `)
       .not("published_at", "is", null)
-      .order("created_at", { ascending: false })
-    // In a real scenario we'd group by template_id and get the latest published version.
-    // Assuming these are all valid choices.
-    setTemplates(data || [])
+      .order("published_at", { ascending: false })
+    
+    if (error) console.error("Error fetching templates:", error)
+    
+    // Transform to flat structure for UI
+    const mapped = (data || []).map(t => ({
+      id: t.id,
+      name: Array.isArray(t.template) ? t.template[0].name : (t.template as any).name,
+      version: t.version_number
+    }))
+    
+    setTemplates(mapped)
   }
 
   const handleNext = () => {

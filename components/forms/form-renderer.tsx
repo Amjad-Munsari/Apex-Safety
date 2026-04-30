@@ -26,8 +26,8 @@ export function FormRenderer({ schema, data, onChange }: FormRendererProps) {
       {schema.sections.map((section) => (
         <div key={section.id} className="space-y-6">
           <div className="pt-8 pb-2 border-b border-slate-800/50">
-             <h3 className="text-xl font-medium text-slate-200 font-outfit uppercase tracking-wider">{section.title}</h3>
-             {section.description && <p className="text-slate-500 text-sm mt-1">{section.description}</p>}
+            <h3 className="text-xl font-medium text-slate-200 font-outfit uppercase tracking-wider">{section.title}</h3>
+            {section.description && <p className="text-slate-500 text-sm mt-1">{section.description}</p>}
           </div>
 
           {section.fields.map((field) => (
@@ -46,8 +46,8 @@ export function FormRenderer({ schema, data, onChange }: FormRendererProps) {
                       value={data[field.id] || ""}
                       onChange={(e) => onChange(field.id, e.target.value)}
                     />
-                    <MicButton 
-                      onTranscript={(text) => onChange(field.id, (data[field.id] || "") + " " + text)} 
+                    <MicButton
+                      onTranscript={(text) => onChange(field.id, (data[field.id] || "") + " " + text)}
                     />
                   </div>
                 )}
@@ -60,22 +60,22 @@ export function FormRenderer({ schema, data, onChange }: FormRendererProps) {
                       value={data[field.id] || ""}
                       onChange={(e) => onChange(field.id, e.target.value)}
                     />
-                    <MicButton 
-                      className="top-2"
-                      onTranscript={(text) => onChange(field.id, (data[field.id] || "") + " " + text)} 
+                    <MicButton
+                      className="top-3 translate-y-0"
+                      onTranscript={(text) => onChange(field.id, (data[field.id] || "") + " " + text)}
                     />
                   </div>
                 )}
 
                 {field.type === "media" && (
-                  <MediaField 
+                  <MediaField
                     value={data[field.id] || []}
                     onChange={(urls) => onChange(field.id, urls)}
                   />
                 )}
 
                 {field.type === "dropdown" && (
-                  <select 
+                  <select
                     className="w-full bg-slate-950 border border-slate-800 text-slate-100 h-12 px-4 rounded-sm outline-none focus:border-amber-500 transition-colors"
                     value={data[field.id] || ""}
                     onChange={(e) => onChange(field.id, e.target.value)}

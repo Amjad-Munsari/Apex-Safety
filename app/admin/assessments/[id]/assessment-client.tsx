@@ -16,11 +16,11 @@ interface AssessmentClientProps {
 export function AssessmentClient({ submission }: AssessmentClientProps) {
   const router = useRouter()
   const schema = submission.template.schema_json as FormSchema
-  
+
   const [answers, setAnswers] = useState<Record<string, any>>(submission.answers_json || {})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
-  
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pendingAnswersRef = useRef<Record<string, any>>(answers)
 
@@ -29,7 +29,7 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
   const calculateProgress = useCallback((currentAnswers: Record<string, any>) => {
     let totalFields = 0
     let filledFields = 0
-    
+
     schema.sections.forEach(section => {
       section.fields.forEach(field => {
         totalFields++
@@ -39,7 +39,7 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
         }
       })
     })
-    
+
     // Add 2 fields for appendix (notes, media) if we consider them part of progress.
     // For now, let's just base it strictly on schema fields.
     if (totalFields === 0) return 100
@@ -80,7 +80,7 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
 
     window.addEventListener("beforeunload", handleBeforeUnload)
     document.addEventListener("visibilitychange", handleVisibilityChange)
-    
+
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload)
       document.removeEventListener("visibilitychange", handleVisibilityChange)
@@ -92,15 +92,15 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
     setAnswers(prev => {
       const updated = { ...prev, [id]: value }
       pendingAnswersRef.current = updated
-      
+
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
-      
+
       timeoutRef.current = setTimeout(() => {
         triggerAutosave(updated)
       }, 800)
-      
+
       return updated
     })
   }
@@ -127,24 +127,24 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
 
   return (
     <div className="min-h-screen bg-slate-950 px-8 pb-24">
-      <AssessmentFormHeader 
+      <AssessmentFormHeader
         clientName={submission.client?.name || "Unknown Client"}
-        templateName={submission.template?.name || "Unknown Template"}
+        templateName={submission.template?.form_template?.name || "Unknown Template"}
         progress={progress}
         onSaveDraft={handleSaveDraft}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
         isSaving={isSaving}
       />
-      
-      <FormRenderer 
+
+      <FormRenderer
         schema={schema}
         data={answers}
         onChange={handleFieldChange}
       />
-      
+
       <div className="max-w-3xl mx-auto">
-        <AppendixField 
+        <AppendixField
           notesValue={answers.__appendix_notes || ""}
           mediaValue={answers.__appendix_media || []}
           onChangeNotes={(val) => handleFieldChange("__appendix_notes", val)}

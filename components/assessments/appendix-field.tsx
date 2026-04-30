@@ -41,9 +41,9 @@ export function AppendixField({
               value={notesValue}
               onChange={(e) => onChangeNotes(e.target.value)}
             />
-            <MicButton 
-              className="top-2"
-              onTranscript={(text) => onChangeNotes((notesValue ? notesValue + " " : "") + text)} 
+            <MicButton
+              className="top-3 translate-y-0"
+              onTranscript={(text) => onChangeNotes((notesValue ? notesValue + " " : "") + text)}
             />
           </div>
         </div>
@@ -52,7 +52,7 @@ export function AppendixField({
           <Label className="uppercase text-[0.65rem] tracking-[0.1em] text-slate-500 font-bold mb-3 block">
             Appendix Evidence
           </Label>
-          <MediaField 
+          <MediaField
             value={mediaValue || []}
             onChange={onChangeMedia}
           />

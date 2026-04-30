@@ -16,7 +16,7 @@ export default async function AdminTemplatesPage() {
   const templates = await getFormTemplates()
 
   return (
-    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">

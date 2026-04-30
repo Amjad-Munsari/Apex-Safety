@@ -24,7 +24,7 @@ export function AssessmentFormHeader({
   isSaving
 }: AssessmentFormHeaderProps) {
   return (
-    <div className="sticky top-0 z-20 bg-black/95 backdrop-blur border-b border-white/5 py-4 -mx-8 px-8 mb-8 shadow-sm">
+    <div className="sticky top-0 z-30 bg-black/95 backdrop-blur border-b border-white/5 py-4 -mx-8 px-8 mb-8 shadow-sm">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-6">
           <Link href="/admin" className="text-slate-500 hover:text-white transition-colors">
@@ -48,7 +48,7 @@ export function AssessmentFormHeader({
               {Math.round(progress)}% COMPLETE
             </div>
             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-amber-500 transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               />
