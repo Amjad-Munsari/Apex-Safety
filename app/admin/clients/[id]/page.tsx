@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { UploadDocumentModal } from "./upload-document-modal"
 import { Card } from "@/components/ui/card"
 import { FileText, Calendar, Building, Clock, MapPin } from "lucide-react"
+import { AdjustHoursDialog } from "@/components/clients/adjust-hours-dialog"
 
 export default async function ClientDetailsPage({
   params
@@ -29,6 +30,13 @@ export default async function ClientDetailsPage({
     .select("*")
     .eq("client_id", id)
     .order("uploaded_at", { ascending: false })
+
+  // Fetch proposals for this client
+  const { data: proposals } = await supabase
+    .from("proposals")
+    .select("*")
+    .eq("client_id", id)
+    .order("created_at", { ascending: false })
 
   return (
     <div className="flex flex-col gap-10 pb-20 max-w-6xl mx-auto w-full">
@@ -62,11 +70,14 @@ export default async function ClientDetailsPage({
          </Card>
 
          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-[#888] font-mono text-[10px] uppercase tracking-widest mb-2">
-              <Clock className="w-3 h-3" /> Retained Hours
+            <div className="flex items-center justify-between gap-2 text-[#888] font-mono text-[10px] uppercase tracking-widest mb-2">
+              <div className="flex items-center gap-2">
+                <Clock className="w-3 h-3" /> Retained Hours
+              </div>
+              <AdjustHoursDialog clientId={client.id} currentBalance={client.hours_balance || 0} />
             </div>
             <div className="text-white font-serif text-3xl">
-              {client.hours_balance} <span className="text-sm font-sans text-white/40">hrs</span>
+              {client.hours_balance || 0} <span className="text-sm font-sans text-white/40">hrs</span>
             </div>
          </Card>
 
@@ -150,6 +161,61 @@ export default async function ClientDetailsPage({
                        </td>
                      </tr>
                    )
+                 })}
+               </tbody>
+             </table>
+           )}
+        </div>
+      </Card>
+
+      {/* ─── PROPOSALS TABLE ─── */}
+      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden flex flex-col">
+        <div className="px-6 py-4 flex justify-between items-center border-b border-white/5 shrink-0">
+          <div className="flex items-center gap-3">
+            <FileText className="w-4 h-4 text-white/40" />
+            <h3 className="font-sans font-medium text-white tracking-wide text-lg">Sales Proposals</h3>
+          </div>
+        </div>
+        
+        <div className="w-full overflow-x-auto">
+           {(!proposals || proposals.length === 0) ? (
+             <div className="p-10 text-center flex flex-col items-center justify-center">
+               <p className="text-white/50 text-sm">No proposals generated yet.</p>
+             </div>
+           ) : (
+             <table className="w-full text-left font-sans text-sm">
+               <thead className="bg-[#151515]">
+                 <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
+                   <th className="font-normal px-6 py-3 border-b border-white/5">Status</th>
+                   <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Created</th>
+                   <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Actions</th>
+                 </tr>
+               </thead>
+               <tbody className="divide-y divide-white/5">
+                 {proposals.map((prop) => {
+                    const documentUrl = prop.proposal_pdf_path ? (supabase as any).storage.from('proposals').getPublicUrl(prop.proposal_pdf_path).data.publicUrl : null
+                    return (
+                      <tr key={prop.id} className="group hover:bg-white/[0.02] transition-colors">
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-white">{prop.status}</div>
+                        </td>
+                        <td className="px-4 py-4 font-mono text-xs text-right text-white/50">
+                           {new Date(prop.created_at).toLocaleDateString('en-GB')}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {documentUrl && (
+                            <a 
+                              href={documentUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-gold hover:underline font-mono text-[10px] uppercase tracking-widest"
+                            >
+                              Download PDF
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    )
                  })}
                </tbody>
              </table>

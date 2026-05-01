@@ -55,6 +55,7 @@ export async function getDashboardStats() {
   return {
     overdueCount: overdueCount || 0,
     expiringCount: expiringCount || 0,
+    totalExpiries: (overdueCount || 0) + (expiringCount || 0),
     reviewCount: reviewCount || 0,
     errorCount: errorCount || 0,
     clientCount: clientCount || 0,
@@ -85,7 +86,7 @@ export async function getReportsAwaitingReview(limit: number = 3) {
   return data || []
 }
 
-export async function getUpcomingExpiries() {
+export async function getUpcomingExpiries(limit: number = 100) {
   const now = new Date().toISOString()
   const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
@@ -98,10 +99,9 @@ export async function getUpcomingExpiries() {
       document_category,
       client:clients(name)
     `)
-    .gte("expiry_date", now)
     .lt("expiry_date", thirtyDaysFromNow)
     .order("expiry_date", { ascending: true })
-    .limit(10)
+    .limit(limit)
 
   if (error) {
     console.error("getUpcomingExpiries error:", { code: error.code, message: error.message })

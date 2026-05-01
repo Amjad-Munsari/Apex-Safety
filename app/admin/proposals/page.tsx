@@ -40,7 +40,7 @@ export default async function ProposalsPage() {
           </p>
         </div>
         
-        <Link href="/proposals/new">
+        <Link href="/admin/proposals/new">
           <Button className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none flex gap-2">
             + New Proposal
           </Button>
@@ -62,19 +62,35 @@ export default async function ProposalsPage() {
               <div className="flex flex-col gap-4 min-h-[500px] p-2 rounded-sm bg-white/[0.02] border border-white/[0.05]">
                   {filtered.map((prop) => {
                     const total = (prop as any).total_price || calculateProposalTotal(prop.services_json)
+                    const documentUrl = prop.proposal_pdf_path ? adminClient.storage.from('proposals').getPublicUrl(prop.proposal_pdf_path).data.publicUrl : null
+
                     return (
-                      <Card key={prop.id} className="bg-[#1c1c1c] border-white/5 p-4 rounded-sm hover:border-white/20 transition-all cursor-pointer group">
+                      <Card key={prop.id} className="bg-[#1c1c1c] border-white/5 p-4 rounded-sm hover:border-white/20 transition-all group relative">
                         <div className="font-medium text-white mb-1 group-hover:text-gold transition-colors">{(prop.client as any)?.name}</div>
                         <div className="font-serif text-lg text-white/90 mb-3">£{total.toLocaleString()}</div>
+                        
                         <div className="flex justify-between items-center">
                           <div className="font-mono text-[9px] uppercase tracking-widest text-[#555]">
                             {new Date(prop.created_at).toLocaleDateString('en-GB')}
                           </div>
-                          <div className="text-white/20">
-                            {status === 'Draft' && <FileSignature className="w-3.5 h-3.5" />}
-                            {status === 'Sent' && <Send className="w-3.5 h-3.5" />}
-                            {status === 'Signed' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                            {status === 'Contract Issued' && <Search className="w-3.5 h-3.5" />}
+                          <div className="flex items-center gap-3">
+                            {documentUrl && (
+                              <a 
+                                href={documentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-white/40 hover:text-white transition-colors p-1"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <FileSignature className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                            <div className="text-white/20">
+                              {status === 'Draft' && !documentUrl && <FileSignature className="w-3.5 h-3.5" />}
+                              {status === 'Sent' && <Send className="w-3.5 h-3.5" />}
+                              {status === 'Signed' && <CheckCircle2 className="w-3.5 h-3.5" />}
+                              {status === 'Contract Issued' && <Search className="w-3.5 h-3.5" />}
+                            </div>
                           </div>
                         </div>
                       </Card>

@@ -67,9 +67,16 @@ export default async function ExpiriesPage() {
                     {new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="px-6 py-4">
-                    <Badge variant="outline" className="border-gold/40 text-gold bg-gold/5 font-mono text-[10px] uppercase tracking-widest">
-                      {daysLeft} days left
-                    </Badge>
+                    {daysLeft < 0 ? (
+                      <Badge variant="outline" className="border-danger/40 text-danger bg-danger/5 font-mono text-[10px] uppercase tracking-widest gap-2">
+                        <div className="w-1 h-1 rounded-full bg-danger animate-pulse" />
+                        OVERDUE
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-gold/40 text-gold bg-gold/5 font-mono text-[10px] uppercase tracking-widest">
+                        {daysLeft} days left
+                      </Badge>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <Button variant="ghost" className="h-8 text-[10px] font-mono uppercase tracking-widest text-[#666] hover:text-white">

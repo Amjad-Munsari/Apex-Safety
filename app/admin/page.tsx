@@ -20,7 +20,7 @@ export default async function AdminDashboardPage() {
   // Fetch live dashboard metrics
   const stats = await getDashboardStats();
   const reviewQueue = await getReportsAwaitingReview();
-  const upcomingExpiries = await getUpcomingExpiries();
+  const upcomingExpiries = await getUpcomingExpiries(6);
   const compliance = await getComplianceAggregates();
   const recentErrors = await getWorkflowErrors();
 
@@ -236,8 +236,8 @@ export default async function AdminDashboardPage() {
             {upcomingExpiries.length > 0 ? (
               <div>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="px-3 py-1 bg-white/5 border-l-2 border-gold/60 text-white/80 font-mono text-[10px] uppercase tracking-widest leading-none">Next 30 Days</div>
-                  <div className="font-mono text-[10px] text-white/20 uppercase tracking-widest">{upcomingExpiries.length} Items</div>
+                  <div className="px-3 py-1 bg-white/5 border-l-2 border-danger/60 text-white/80 font-mono text-[10px] uppercase tracking-widest leading-none">Attention Required</div>
+                  <div className="font-mono text-[10px] text-white/20 uppercase tracking-widest">{stats.totalExpiries} Items</div>
                 </div>
                 <div className="flex flex-col gap-5">
                   {upcomingExpiries.map((doc) => {
@@ -248,9 +248,15 @@ export default async function AdminDashboardPage() {
                           <div className="text-white text-sm font-medium mb-1">{doc.filename}</div>
                           <div className="text-xs text-[#888]">{(doc.client as any)?.name} <span className="font-mono ml-1 uppercase">{new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                         </div>
-                        <div className="inline-flex items-center px-2.5 py-1 text-gold border border-gold/40 text-[10px] font-mono uppercase tracking-wider rounded-sm shrink-0 mt-0.5 leading-none">
-                          <div className="w-1.5 h-1.5 rounded-full bg-gold mr-1.5"></div> {daysLeft}d left
-                        </div>
+                        {daysLeft < 0 ? (
+                          <div className="inline-flex items-center px-2.5 py-1 text-danger border border-danger/40 text-[10px] font-mono uppercase tracking-wider rounded-sm shrink-0 mt-0.5 leading-none">
+                            <div className="w-1.5 h-1.5 rounded-full bg-danger mr-1.5 animate-pulse"></div> OVERDUE
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center px-2.5 py-1 text-gold border border-gold/40 text-[10px] font-mono uppercase tracking-wider rounded-sm shrink-0 mt-0.5 leading-none">
+                            <div className="w-1.5 h-1.5 rounded-full bg-gold mr-1.5"></div> {daysLeft}d left
+                          </div>
+                        )}
                       </div>
                     );
                   })}
