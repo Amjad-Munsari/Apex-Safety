@@ -78,7 +78,7 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 
 ## Constraints
 
-- **Tech stack (locked, updated 2026-04-15):** Next.js 16.1.7 App Router (scaffold landed on 16, not 14 as in the original context doc), React 19, Tailwind CSS 4, Supabase (Postgres + Auth + Storage + RLS), Vercel (hosting + cron), n8n (4 workflows Phase 1, 1 Phase 2, 1 optional future), OpenAI GPT-4 (via OpenRouter for proposal gen), **PayPal Orders API v2** (not Stripe), Twilio (SMS), Web Speech API (browser-native STT with text fallback), @coltorapps/builder (Phase 2 form builder, MIT, React, zero deps). E-signature provider TBD (default SignWell if Matt doesn't specify).
+- **Tech stack (locked, updated 2026-04-15):** Next.js 16.1.7 App Router (scaffold landed on 16, not 14 as in the original context doc), React 19, Tailwind CSS 4, Supabase (Postgres + Auth + Storage + RLS, **region: eu-west-2 London — locked, one-time decision at project creation**), Vercel (hosting + cron), n8n (4 workflows Phase 1, 1 Phase 2, 1 optional future), OpenAI GPT-4 (via OpenRouter for proposal gen), **PayPal Orders API v2** (not Stripe), Twilio (SMS, **UK sender ID "888Safety" registration initiated**), Web Speech API (browser-native STT with text fallback), @coltorapps/builder (Phase 2 form builder, MIT, React, zero deps). E-signature provider TBD (default SignWell if Matt doesn't specify).
 - **Architecture split (ADR 2026-04-15):** n8n owns AI-heavy/multi-step/visible-automation work (report gen, universal email sender, expiry engine, contract gen). Code owns transactional/idempotent/auth-gated work (PayPal webhooks, document upload, SMS send).
 - **Multi-tenant isolation:** RLS on every Supabase table with client data, non-negotiable. Verification: log in as Client A, attempt to access Client B's data; if you can, you failed.
 - **Form architecture — unified template:** FRA and Site Risk are NOT hardcoded forms. They are seed templates inside the form builder. Matt edits them post-launch without a deploy. Schema versioning is required from day one; submissions pin to the schema version they were filled against.
@@ -104,6 +104,8 @@ The product serves two user types: **Matt** (admin: creates forms, runs assessme
 | Magic-link client onboarding | Matt adds client → email invite → self-register. No password at signup. | — Pending |
 | Coltorapps for Phase 2 form builder | MIT license, React, zero deps, drag-drop out of box. | — Pending |
 | Default e-sign provider = SignWell | Fast integration + cost. Overridable if Matt specifies a preference. | — Pending |
+| Supabase region: eu-west-2 (London) | UK GDPR compliance + low latency for Wakefield users. One-time decision at project creation. | ✅ Locked |
+| Twilio UK Sender ID: "888Safety" | Branding + SMS deliverability. Registration process initiated Phase 1. | ⏳ Initiated |
 
 ## Open Questions (Register)
 

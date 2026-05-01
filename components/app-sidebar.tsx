@@ -1,4 +1,5 @@
 "use client";
+import { usePathname } from "next/navigation";
 import {
   Sidebar,
   SidebarContent,
@@ -10,7 +11,29 @@ import {
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 
-export function AppSidebar() {
+export interface SidebarStats {
+  clients: number;
+  expiries: number;
+  reports: number;
+  compliance: number;
+  proposals: number;
+  errors: number;
+}
+
+const navItems = [
+  { num: "01", label: "Clients",         href: "/admin/clients",       statsKey: "clients",    danger: false },
+  { num: "02", label: "Expiries",        href: "/admin/expiries",      statsKey: "expiries",   danger: false },
+  { num: "03", label: "Reports",         href: "/admin/review-queue",  statsKey: "reports",    danger: false },
+  { num: "04", label: "Compliance",      href: "/admin/compliance",    statsKey: "compliance", danger: false },
+  { num: "05", label: "Hours",           href: "/admin/hours",         statsKey: null,         danger: false },
+  { num: "06", label: "Proposals",       href: "/admin/proposals",     statsKey: "proposals",  danger: false },
+  { num: "07", label: "Workflow Errors", href: "/admin/errors",        statsKey: "errors",     danger: true  },
+  { num: "08", label: "Month Summary",   href: "/admin/month-summary", statsKey: null,         danger: false },
+] as const;
+
+export function AppSidebar({ stats }: { stats?: SidebarStats }) {
+  const pathname = usePathname();
+
   return (
     <Sidebar className="border-none bg-black">
       <SidebarHeader className="pt-10 px-8 pb-8 border-b border-white/5">
@@ -23,113 +46,72 @@ export function AppSidebar() {
           <span className="text-[11px] text-muted-foreground mt-4 font-mono tracking-wider opacity-60 italic">Solo practice &middot; Est. 2019</span>
         </div>
       </SidebarHeader>
+
       <SidebarContent className="px-5 py-8">
-        <SidebarMenu className="gap-4">
-          {/* Active Dashboard */}
+        <SidebarMenu className="gap-2">
+          {/* Dashboard — active only at exact /admin */}
           <SidebarMenuItem>
             <SidebarMenuButton
-              isActive
-              className="h-11 text-white bg-white/10 hover:bg-white/15 relative rounded-[4px] border border-white/5 shadow-sm"
+              isActive={pathname === "/admin"}
+              className="h-11 text-white bg-white/10 hover:bg-white/15 relative rounded-[4px] border border-white/5 shadow-sm mb-4 data-[active=true]:bg-white/10 data-[active=true]:text-white"
               render={(props) => (
                 <Link {...props} href="/admin" className="flex w-full items-center px-3">
                   <span className="text-white/40 font-mono tracking-widest w-5 mr-3">-</span>
-                  <span className="font-medium tracking-wide text-sm">Dashboard</span>
+                  <span className="font-medium tracking-wide text-sm">Dashboard Overview</span>
                 </Link>
               )}
             />
           </SidebarMenuItem>
 
-          {/* Other Links */}
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-              render={(props) => (
-                <Link {...props} href="/admin/clients" className="flex w-full items-center px-3">
-                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">01</span>
-                  <span className="text-sm tracking-wide">Clients</span>
-                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">8</span>
-                </Link>
-              )}
-            />
-          </SidebarMenuItem>
+          {navItems.map((item) => {
+            const isActive = pathname.startsWith(item.href);
+            const count = item.statsKey ? (stats?.[item.statsKey] ?? null) : null;
+            const showDanger = item.danger && count !== null && count > 0;
 
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-              render={(props) => (
-                <Link {...props} href="#" className="flex w-full items-center px-3">
-                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">02</span>
-                  <span className="text-sm tracking-wide">Assessments</span>
-                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">34</span>
-                </Link>
-              )}
-            />
-          </SidebarMenuItem>
+            return (
+              <SidebarMenuItem key={item.num}>
+                <SidebarMenuButton
+                  isActive={isActive}
+                  className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10 data-[active=true]:border data-[active=true]:border-white/5"
+                  render={(props) => (
+                    <Link {...props} href={item.href} className="flex w-full items-center px-3">
+                      <span className="text-white/30 font-mono text-[11px] w-5 mr-4">{item.num}</span>
+                      <span className="text-sm tracking-wide">{item.label}</span>
+                      {count !== null && (
+                        <span className={`ml-auto text-[10px] font-mono border px-1.5 py-0.5 rounded-[3px] ${
+                          showDanger
+                            ? "text-danger border-danger/20"
+                            : "text-white/30 border-white/10"
+                        }`}>
+                          {count}
+                        </span>
+                      )}
+                    </Link>
+                  )}
+                />
+              </SidebarMenuItem>
+            );
+          })}
 
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-              render={(props) => (
-                <Link {...props} href="#" className="flex w-full items-center px-3">
-                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">03</span>
-                  <span className="text-sm tracking-wide">Documents</span>
-                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">142</span>
-                </Link>
-              )}
-            />
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-              render={(props) => (
-                <Link {...props} href="#" className="flex w-full items-center px-3">
-                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">04</span>
-                  <span className="text-sm tracking-wide">Proposals</span>
-                  <span className="ml-auto text-[10px] font-mono text-white/30 border border-white/10 px-1.5 py-0.5 rounded-[3px]">4</span>
-                </Link>
-              )}
-            />
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-              render={(props) => (
-                <Link {...props} href="#" className="flex w-full items-center px-3">
-                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">05</span>
-                  <span className="text-sm tracking-wide">Hours</span>
-                </Link>
-              )}
-            />
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-              render={(props) => (
-                <Link {...props} href="#" className="flex w-full items-center px-3">
-                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">06</span>
-                  <span className="text-sm tracking-wide">Workflow errors</span>
-                  <span className="ml-auto text-[10px] font-mono text-danger border border-danger/20 px-1.5 py-0.5 rounded-[3px]">3</span>
-                </Link>
-              )}
-            />
-          </SidebarMenuItem>
-
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
-              render={(props) => (
-                <Link {...props} href="/admin/templates" className="flex w-full items-center px-3">
-                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">07</span>
-                  <span className="text-sm tracking-wide">Templates</span>
-                </Link>
-              )}
-            />
-          </SidebarMenuItem>
+          {/* System Tools */}
+          <div className="mt-8 pt-8 border-t border-white/5">
+            <span className="px-3 text-[10px] font-mono uppercase tracking-[0.2em] text-white/30">System Tools</span>
+            <SidebarMenuItem className="mt-4">
+              <SidebarMenuButton
+                isActive={pathname.startsWith("/admin/templates")}
+                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
+                render={(props) => (
+                  <Link {...props} href="/admin/templates" className="flex w-full items-center px-3">
+                    <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
+                    <span className="text-sm tracking-wide">Form Templates</span>
+                  </Link>
+                )}
+              />
+            </SidebarMenuItem>
+          </div>
         </SidebarMenu>
       </SidebarContent>
+
       <SidebarFooter className="p-8 border-t border-white/5">
         <div className="flex flex-col gap-3 font-mono text-[11px]">
           <div className="flex items-center gap-2">

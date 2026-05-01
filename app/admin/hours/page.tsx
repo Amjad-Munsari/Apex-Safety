@@ -1,0 +1,94 @@
+import { adminClient } from "@/lib/supabase/admin";
+import { Card } from "@/components/ui/card";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
+export const dynamic = "force-dynamic";
+
+export default async function HoursPage() {
+  const { data: clients } = await adminClient
+    .from("clients")
+    .select("id, name, hours_balance")
+    .order("hours_balance", { ascending: true });
+
+  const items = clients || [];
+  const totalHours = items.reduce((acc, c) => acc + (c.hours_balance || 0), 0);
+  const maxBalance = Math.max(...items.map((c) => c.hours_balance || 0), 1);
+
+  const critical = items.filter((c) => (c.hours_balance || 0) < 3);
+  const warning = items.filter((c) => (c.hours_balance || 0) >= 3 && (c.hours_balance || 0) < 10);
+  const healthy = items.filter((c) => (c.hours_balance || 0) >= 10);
+
+  return (
+    <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* ─── HEADER ─── */}
+      <div className="flex flex-col gap-2">
+        <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
+          <ArrowLeft className="w-4 h-4" />
+          <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
+        </Link>
+        <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <span className="text-white/60 font-semibold">05</span>
+          HOURS MANAGEMENT
+        </div>
+        <h2 className="font-serif text-[34px] leading-tight text-white">Hours Balances</h2>
+        <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+          {totalHours}h total across {items.length} clients — {critical.length} critical, {warning.length} low.
+        </p>
+      </div>
+
+      {/* ─── STAT CARDS ─── */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: "Critical (< 3h)", count: critical.length, color: "danger" },
+          { label: "Low (3–10h)", count: warning.length, color: "gold" },
+          { label: "Healthy (10h+)", count: healthy.length, color: "[#3b8273]" },
+        ].map((s) => (
+          <Card key={s.label} className="bg-[#1c1c1c] border-white/5 rounded-sm p-6">
+            <div className={`font-mono text-[10px] uppercase tracking-widest text-${s.color} mb-3`}>{s.label}</div>
+            <div className="font-serif text-4xl text-white">{s.count}</div>
+          </Card>
+        ))}
+      </div>
+
+      {/* ─── HOURS TABLE ─── */}
+      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-white/5">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-[#555]">All Clients — Sorted by Balance</span>
+        </div>
+        <div className="divide-y divide-white/5">
+          {items.map((client) => {
+            const balance = client.hours_balance || 0;
+            const isDanger = balance < 3;
+            const isWarning = balance < 10;
+            const barColor = isDanger ? "bg-danger" : isWarning ? "bg-gold" : "bg-[#3b8273]";
+            const textColor = isDanger ? "text-danger" : isWarning ? "text-gold" : "text-[#3b8273]";
+            const progressWidth = Math.min(100, (balance / maxBalance) * 100);
+
+            return (
+              <Link
+                key={client.id}
+                href={`/admin/clients/${client.id}`}
+                className="flex items-center gap-6 px-6 py-4 hover:bg-white/[0.02] transition-colors group"
+              >
+                <span className="w-48 truncate text-white/80 text-sm font-medium group-hover:text-white transition-colors">
+                  {client.name}
+                </span>
+                <div className="flex-1 h-1.5 bg-[#222] rounded-full overflow-hidden">
+                  <div className={`h-full ${barColor} transition-all`} style={{ width: `${progressWidth}%` }} />
+                </div>
+                <span className={`font-mono text-sm ${textColor} w-12 text-right`}>{balance}h</span>
+                <span className="font-mono text-[10px] text-white/20 group-hover:text-white/40 transition-colors">&gt;</span>
+              </Link>
+            );
+          })}
+          {items.length === 0 && (
+            <div className="px-6 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+              No clients found
+            </div>
+          )}
+        </div>
+      </Card>
+    </div>
+  );
+}
