@@ -116,6 +116,18 @@ export function AppSidebar() {
               )}
             />
           </SidebarMenuItem>
+
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px]"
+              render={(props) => (
+                <Link {...props} href="/admin/templates" className="flex w-full items-center px-3">
+                  <span className="text-white/30 font-mono text-[11px] w-5 mr-4">07</span>
+                  <span className="text-sm tracking-wide">Templates</span>
+                </Link>
+              )}
+            />
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter className="p-8 border-t border-white/5">
