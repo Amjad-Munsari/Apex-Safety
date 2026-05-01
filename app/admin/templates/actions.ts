@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import type { FormSchema } from "@/lib/types/form-builder";
+import type { FormSchema as LegacyFormSchema, TemplateVersion } from "@/types/forms";
+import { getLatestPublishedVersion } from "@/lib/supabase/templates";
 
 export async function createTemplate(name: string, templateType: string) {
   const supabase = await createClient();
@@ -125,4 +127,68 @@ export async function deleteTemplate(templateId: string) {
 
   await supabase.from("form_templates").delete().eq("id", templateId);
   revalidatePath("/admin/templates");
+}
+
+// Aliases for editor-client.tsx compatibility
+export async function updateTemplateDraftAction(templateId: string, schema: LegacyFormSchema) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Unauthorized");
+
+  const { data: latest } = await supabase
+    .from("template_versions")
+    .select("id, published_at")
+    .eq("template_id", templateId)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (latest && !latest.published_at) {
+    await supabase.from("template_versions").update({ schema_json: schema }).eq("id", latest.id);
+  } else {
+    const { data: max } = await supabase
+      .from("template_versions")
+      .select("version_number")
+      .eq("template_id", templateId)
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .single();
+    await supabase.from("template_versions").insert({
+      template_id: templateId,
+      version_number: (max?.version_number ?? 0) + 1,
+      schema_json: schema,
+      created_by: user.id,
+    });
+  }
+  revalidatePath("/admin/templates");
+}
+
+export async function publishTemplateVersionAction(
+  templateId: string,
+  schema: LegacyFormSchema,
+  userId: string
+): Promise<TemplateVersion> {
+  const supabase = await createClient();
+
+  const latest = await getLatestPublishedVersion(templateId);
+  const nextVersion = (latest?.version_number ?? 0) + 1;
+
+  const { data: version, error } = await supabase
+    .from("template_versions")
+    .insert({
+      template_id: templateId,
+      version_number: nextVersion,
+      schema_json: { ...schema, version: nextVersion },
+      published_at: new Date().toISOString(),
+      created_by: userId,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  await supabase.from("form_templates").update({ is_published: true }).eq("id", templateId);
+
+  revalidatePath("/admin/templates");
+  return version as TemplateVersion;
 }
