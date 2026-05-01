@@ -71,7 +71,7 @@ export async function createProposal(data: {
 
   try {
     // 1. Get Client Name
-    const { data: client } = await adminClient.from("clients").select("name").eq("id", data.clientId).single()
+    const { data: client } = await adminClient.from("clients").select("name, site_address, contact_name").eq("id", data.clientId).single()
     const clientName = client?.name || "Unknown Client"
 
     // 2. Generate PDF Buffer

@@ -43,12 +43,12 @@ export function ServiceActions({ service }: { service: Service }) {
   return (
     <>
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+        <DropdownMenuTrigger render={
           <Button variant="ghost" className="h-8 w-8 p-0 text-white/50 hover:text-white">
             <span className="sr-only">Open menu</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
-        </DropdownMenuTrigger>
+        } />
         <DropdownMenuContent align="end" className="bg-[#1c1c1c] border-white/10 text-white">
           <DropdownMenuItem className="hover:bg-white/10 cursor-pointer" onClick={() => setIsEditDialogOpen(true)}>
             <Edit className="mr-2 h-4 w-4" />
