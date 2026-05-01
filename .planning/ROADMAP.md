@@ -94,8 +94,9 @@ The stage sequence is locked and must not be reordered:
 | 7. AI Report Pipeline | 0/1 | Not started | - |
 | 8. Hours Balance + PayPal Checkout | 0/1 | Not started | - |
 | 9. Proposal + Auto-Contract Pipeline | 0/1 | Not started | - |
-| 10. Admin Dashboard Logic | 0/1 | Not started | - |
-| 11. Ops, Seed Data + Handover | 0/1 | Not started | - |
+| 10. Admin Dashboard Logic | 1/1 | Completed | 2026-04-30 |
+| 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
+| 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 
 ---
 

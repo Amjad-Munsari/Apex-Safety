@@ -4,16 +4,35 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { AssessmentButtonDialog } from "@/components/assessments/assessment-button-dialog";
+import { getDashboardStats } from "@/lib/supabase/dashboard";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const stats = await getDashboardStats();
+
+  const sidebarStats = {
+    clients: stats.clientCount,
+    expiries: stats.expiringCount + stats.overdueCount,
+    reports: stats.reviewCount,
+    compliance: stats.totalDocCount,
+    proposals: stats.proposalCount,
+    errors: stats.errorCount,
+  };
+
+  const today = new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <SidebarProvider>
       <div className="dark flex h-screen overflow-hidden bg-background w-full text-foreground antialiased">
-        <AppSidebar />
+        <AppSidebar stats={sidebarStats} />
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
           {/* Top Bar */}
           <header className="h-[72px] min-h-[72px] flex items-center justify-between px-8 border-b border-white/5 shrink-0 bg-background/50">
@@ -36,11 +55,11 @@ export default function AdminLayout({
             <div className="flex items-center gap-6">
               <div className="flex flex-col items-end">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-[#555]">Today</span>
-                <span className="text-sm font-medium text-white/90 font-sans tracking-wide">Saturday, 18 April 2026</span>
+                <span className="text-sm font-medium text-white/90 font-sans tracking-wide">{today}</span>
               </div>
               <Link href="/proposals/new">
                 <Button variant="secondary" className="bg-white hover:bg-white/90 text-black rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none">
-                  Proposal Generator
+                  + New Proposal
                 </Button>
               </Link>
               <AssessmentButtonDialog />

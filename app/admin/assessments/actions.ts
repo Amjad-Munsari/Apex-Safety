@@ -8,7 +8,10 @@ export async function startAssessment(clientId: string, templateVersionId: strin
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   
-  const userId = user?.id || "00000000-0000-0000-0000-000000000000"
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required to start assessment")
+  }
+  const userId = user.id
 
   // 1. Fetch template_id
   const { data: templateVersion, error: tvError } = await adminClient
@@ -60,11 +63,19 @@ export async function startAssessment(clientId: string, templateVersionId: strin
 }
 
 export async function autosaveAnswers(submissionId: string, answersJson: Record<string, unknown>) {
-  const { error } = await adminClient
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required for autosave")
+  }
+
+  const { error } = await supabase
     .from("form_submissions")
     .update({ answers_json: answersJson })
     .eq("id", submissionId)
     .eq("status", "draft")
+    .eq("submitted_by", user.id) // Extra safety check
     
   if (error) {
     throw new Error(`Failed to autosave: ${error.message}`)
@@ -72,8 +83,15 @@ export async function autosaveAnswers(submissionId: string, answersJson: Record<
 }
 
 export async function submitAssessment(submissionId: string, finalAnswers: Record<string, unknown>) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required for submission")
+  }
+
   // Update status to submitted
-  const { data: submission, error } = await adminClient
+  const { data: submission, error } = await supabase
     .from("form_submissions")
     .update({ 
       answers_json: finalAnswers, 
@@ -81,11 +99,12 @@ export async function submitAssessment(submissionId: string, finalAnswers: Recor
       submitted_at: new Date().toISOString()
     })
     .eq("id", submissionId)
+    .eq("submitted_by", user.id) // Ensure user owns the submission
     .select("client_id")
     .single()
     
   if (error || !submission) {
-    throw new Error(`Failed to submit: ${error?.message || "Unknown error"}`)
+    throw new Error(`Failed to submit: ${error?.message || "Ownership verification failed"}`)
   }
   
   // Fire and forget webhook

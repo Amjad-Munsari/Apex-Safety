@@ -14,7 +14,7 @@ export function AssessmentButtonDialog() {
         className="bg-amber-500 hover:bg-amber-400 text-black rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none transition-colors"
         onClick={() => setOpen(true)}
       >
-        New Assessment
+        + New Assessment
       </Button>
       <AssessmentSelectorDialog 
         open={open} 

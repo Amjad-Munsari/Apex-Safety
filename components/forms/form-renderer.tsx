@@ -47,7 +47,11 @@ export function FormRenderer({ schema, data, onChange }: FormRendererProps) {
                       onChange={(e) => onChange(field.id, e.target.value)}
                     />
                     <MicButton
-                      onTranscript={(text) => onChange(field.id, (data[field.id] || "") + " " + text)}
+                      onTranscript={(text) => {
+                        const current = data[field.id] || "";
+                        const updated = current.trim() ? `${current.trim()} ${text}` : text;
+                        onChange(field.id, updated);
+                      }}
                     />
                   </div>
                 )}
@@ -62,7 +66,11 @@ export function FormRenderer({ schema, data, onChange }: FormRendererProps) {
                     />
                     <MicButton
                       className="top-3 translate-y-0"
-                      onTranscript={(text) => onChange(field.id, (data[field.id] || "") + " " + text)}
+                      onTranscript={(text) => {
+                        const current = data[field.id] || "";
+                        const updated = current.trim() ? `${current.trim()} ${text}` : text;
+                        onChange(field.id, updated);
+                      }}
                     />
                   </div>
                 )}

@@ -1,0 +1,94 @@
+import { getUpcomingExpiries } from "@/lib/supabase/dashboard"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
+import { ArrowLeft, FileText, Calendar, Building2 } from "lucide-react"
+
+export const dynamic = "force-dynamic"
+
+export default async function ExpiriesPage() {
+  const expiries = await getUpcomingExpiries()
+
+  return (
+    <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* ─── HEADER ─── */}
+      <div className="flex justify-between items-end">
+        <div className="flex flex-col gap-2">
+          <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
+            <ArrowLeft className="w-4 h-4" />
+            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
+          </Link>
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+            <span className="text-[#d4a373] font-semibold">02</span>
+            COMPLIANCE MONITORING
+          </div>
+          <h2 className="font-serif text-[34px] leading-tight text-white">
+            Upcoming Expiries
+          </h2>
+          <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+            A comprehensive view of all client documents expiring in the next 30 days.
+          </p>
+        </div>
+      </div>
+
+      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+        <table className="w-full text-left font-sans text-sm">
+          <thead className="bg-[#151515]">
+            <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
+              <th className="font-normal px-6 py-4 border-b border-white/5">Document</th>
+              <th className="font-normal px-6 py-4 border-b border-white/5">Client</th>
+              <th className="font-normal px-6 py-4 border-b border-white/5">Expiry Date</th>
+              <th className="font-normal px-6 py-4 border-b border-white/5">Status</th>
+              <th className="font-normal px-6 py-4 border-b border-white/5 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {expiries.map((doc) => {
+              const daysLeft = Math.ceil((new Date(doc.expiry_date || "").getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              return (
+                <tr key={doc.id} className="group hover:bg-white/[0.02] transition-colors">
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-4 h-4 text-white/20" />
+                      <div>
+                        <div className="font-medium text-white">{doc.filename}</div>
+                        <div className="text-[10px] text-[#666] font-mono uppercase tracking-widest">{doc.document_category}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2 text-white/70">
+                      <Building2 className="w-3.5 h-3.5" />
+                      {(doc.client as any)?.name}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 font-mono text-white/50">
+                    {new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </td>
+                  <td className="px-6 py-4">
+                    <Badge variant="outline" className="border-gold/40 text-gold bg-gold/5 font-mono text-[10px] uppercase tracking-widest">
+                      {daysLeft} days left
+                    </Badge>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <Button variant="ghost" className="h-8 text-[10px] font-mono uppercase tracking-widest text-[#666] hover:text-white">
+                      Remind
+                    </Button>
+                  </td>
+                </tr>
+              )
+            })}
+            {expiries.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-6 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+                  No expiring documents found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  )
+}
