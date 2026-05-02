@@ -115,8 +115,8 @@ function ComplianceView() {
           <section key={category.name} className="space-y-6">
             {/* Category Header */}
             <div className="flex items-baseline gap-3 px-1">
-              <h3 className="font-mono text-[9px] tracking-[0.25em] font-medium text-[#777] uppercase">{category.name}</h3>
-              <span className="font-mono text-[9px] text-[#bbb] font-normal tracking-[0.05em] lowercase">{category.count} documents</span>
+              <h3 className="font-mono text-[9px] tracking-[0.25em] font-medium text-[#8a857f] uppercase">{category.name}</h3>
+              <span className="font-mono text-[9px] text-[#8a857f] font-normal tracking-[0.05em] lowercase">{category.count} documents</span>
             </div>
 
             {/* Document List Container */}
@@ -142,9 +142,9 @@ function ComplianceView() {
                         <h4 className="font-sans font-semibold text-[14px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
                           {doc.title}
                         </h4>
-                        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#bbb] uppercase font-medium mt-1.5">
+                        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#8a857f] uppercase font-medium mt-1.5">
                           <span>{doc.id}</span>
-                          <span className="opacity-40 font-sans">&mdash;</span>
+                          <span className="opacity-60 font-sans">&mdash;</span>
                           <span>{doc.size}</span>
                         </div>
                       </div>
@@ -152,11 +152,11 @@ function ComplianceView() {
                       {/* Center: Issued/Expires */}
                       <div className="flex items-center gap-12 shrink-0">
                         <div className="space-y-1.5 w-[100px]">
-                          <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#bbb] block">Issued</span>
+                          <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#8a857f] block">Issued</span>
                           <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">{doc.issued}</span>
                         </div>
                         <div className="space-y-1.5 w-[100px]">
-                          <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#bbb] block">Expires</span>
+                          <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#8a857f] block">Expires</span>
                           <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">
                             {doc.expires || "—"}
                           </span>
@@ -186,11 +186,11 @@ function ComplianceView() {
                         <DropdownMenu>
                           <DropdownMenuTrigger className="flex items-center border border-[#e5e1d8] rounded-sm group/btn cursor-pointer bg-white overflow-hidden h-12 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all p-0">
                             <div className="w-8 h-full flex items-center justify-center border-r border-[#e5e1d8] group-hover/btn:bg-[#faf9f6] transition-colors">
-                              <ChevronDown className="h-3.5 w-3.5 text-[#bbb] group-hover/btn:text-[#1a1a1a] transition-colors" />
+                              <ChevronDown className="h-3.5 w-3.5 text-[#8a857f] group-hover/btn:text-[#1a1a1a] transition-colors" />
                             </div>
                             <div className="px-5 h-full flex flex-col items-center justify-center gap-0 group-hover/btn:bg-[#faf9f6] transition-colors">
                               <span className="font-sans text-[11px] font-bold tracking-tight text-[#1a1a1a]">Download</span>
-                              <span className="font-mono text-[9px] font-bold text-[#bbb] tracking-[0.15em] uppercase -mt-0.5">PDF</span>
+                              <span className="font-mono text-[9px] font-bold text-[#8a857f] tracking-[0.15em] uppercase -mt-0.5">PDF</span>
                             </div>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1 shadow-md bg-white">

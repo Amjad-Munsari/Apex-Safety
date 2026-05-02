@@ -56,7 +56,7 @@ export default function ReportsPage() {
 
               {/* Left: Number & Info */}
               <div className="flex flex-1 items-center gap-8 min-w-0">
-                <span className="font-serif text-[24px] text-[#ccc] group-hover:text-[#aaa] transition-colors tabular-nums shrink-0">
+                <span className="font-serif text-[24px] text-[#8a857f] group-hover:text-[#1a1a1a] transition-colors tabular-nums shrink-0">
                   {report.number}
                 </span>
 
@@ -64,13 +64,13 @@ export default function ReportsPage() {
                   <h4 className="font-sans font-semibold text-[15px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
                     {report.title}
                   </h4>
-                  <div className="flex items-center gap-2 font-mono text-[9px] tracking-[0.05em] text-[#bbb] uppercase font-medium mt-1.5 whitespace-nowrap overflow-hidden">
+                  <div className="flex items-center gap-2 font-mono text-[9px] tracking-[0.05em] text-[#8a857f] uppercase font-medium mt-1.5 whitespace-nowrap overflow-hidden">
                     <span>{report.location}</span>
-                    <span className="opacity-40">&middot;</span>
+                    <span className="opacity-60">&middot;</span>
                     <span>{report.date}</span>
-                    <span className="opacity-40">&middot;</span>
+                    <span className="opacity-60">&middot;</span>
                     <span>{report.consultant}</span>
-                    <span className="opacity-40">&middot;</span>
+                    <span className="opacity-60">&middot;</span>
                     <span>{report.pages}</span>
                   </div>
                 </div>
@@ -99,7 +99,7 @@ export default function ReportsPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger className="flex items-center border border-[#e5e1d8] rounded-sm group/btn cursor-pointer bg-white overflow-hidden h-12 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all p-0">
                     <div className="w-8 h-full flex items-center justify-center border-r border-[#e5e1d8] group-hover/btn:bg-[#faf9f6] transition-colors">
-                      <ChevronDown className="h-3.5 w-3.5 text-[#bbb] group-hover/btn:text-[#1a1a1a] transition-colors" />
+                      <ChevronDown className="h-3.5 w-3.5 text-[#8a857f] group-hover/btn:text-[#1a1a1a] transition-colors" />
                     </div>
                     <div className="px-5 h-full flex items-center justify-center gap-2 group-hover/btn:bg-[#faf9f6] transition-colors min-w-[140px]">
                       <span className="font-sans text-[12px] font-bold tracking-tight text-[#1a1a1a]">Download report</span>

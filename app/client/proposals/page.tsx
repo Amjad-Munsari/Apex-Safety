@@ -16,7 +16,7 @@ export default function ClientProposalsPage() {
         <h2 className="font-serif text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
           Proposals from Matt.
         </h2>
-        <p className="text-[#888] text-[13px] font-sans tracking-tight max-w-xl">
+        <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
           Review what&apos;s been quoted, accept directly, or decline if it isn&apos;t a fit yet.
         </p>
       </section>
@@ -34,15 +34,15 @@ export default function ClientProposalsPage() {
               <div className="flex items-start justify-between gap-6">
                 {/* Left */}
                 <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#999] uppercase font-bold">
+                  <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
                     <span>{p.reference}</span>
-                    <span className="opacity-30">·</span>
+                    <span className="opacity-50">·</span>
                     <span>Received {p.receivedAt}</span>
                   </div>
                   <h3 className="font-serif text-[24px] text-[#1a1a1a] tracking-tight leading-tight group-hover:text-black">
                     {p.title}
                   </h3>
-                  <p className="font-sans text-[13px] text-[#666]">
+                  <p className="font-sans text-[13px] text-[#6b6560]">
                     {p.scope.length} services · £{p.total.toLocaleString()} for {p.termMonths} months
                   </p>
                 </div>
@@ -60,7 +60,7 @@ export default function ClientProposalsPage() {
                     <div className={cn("w-1.5 h-1.5 rounded-full", isSigned ? "bg-[#3b8273]" : "bg-[#c0a66d]")} />
                     {p.status}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[#999] group-hover:text-black transition-colors font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
+                  <div className="flex items-center gap-1.5 text-[#6b6560] group-hover:text-black transition-colors font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
                     Open
                     <ChevronRight className="w-3 h-3" />
                   </div>

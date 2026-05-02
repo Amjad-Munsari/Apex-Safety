@@ -44,11 +44,11 @@ const surfaceTokens = {
     title: "text-[#1a1a1a]",
     sectionRule: "border-[#e5e1d8]",
     sectionTitle: "text-[#1a1a1a]",
-    sectionDesc: "text-[#888]",
+    sectionDesc: "text-[#6b6560]",
     card: "bg-white border-[#e5e1d8] shadow-sm",
     cardHeader: "bg-[#faf9f6] border-b border-[#f0ede6]",
-    fieldLabel: "text-[#999]",
-    input: "bg-white border-[#e5e1d8] text-[#1a1a1a] placeholder:text-[#bbb] focus:ring-amber-500/20 focus:border-amber-500",
+    fieldLabel: "text-[#8a857f]",
+    input: "bg-white border-[#e5e1d8] text-[#1a1a1a] placeholder:text-[#a8a39d] focus:ring-amber-500/20 focus:border-amber-500",
     select: "bg-white border border-[#e5e1d8] text-[#1a1a1a] focus:border-amber-500",
   },
 } as const
@@ -131,7 +131,7 @@ export function FormRenderer({ schema, data, onChange, surface = "dark" }: FormR
                       onValueChange={(value) => onChange(field.id, value)}
                     >
                       <SelectTrigger
-                        className="w-full h-12 px-4 rounded-sm bg-white border border-[#e5e1d8] text-[#1a1a1a] text-sm font-sans data-placeholder:text-[#bbb] focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/20 hover:bg-[#faf9f6]"
+                        className="w-full h-12 px-4 rounded-sm bg-white border border-[#e5e1d8] text-[#1a1a1a] text-sm font-sans data-placeholder:text-[#a8a39d] focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/20 hover:bg-[#faf9f6]"
                       >
                         <SelectValue placeholder={field.placeholder || "Select option..."}>
                           {(value: any) =>

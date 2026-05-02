@@ -34,8 +34,20 @@ Defined in `app/globals.css`. The dark `:root` is the **admin theme**; the light
 
 **Client (cream) theme** (observed in browser; not yet tokenised — currently page-level styling):
 - Surface: warm off-white (~`#FAF8F3`)
+- Card surface: white over cream
 - Primary CTA: black/near-black filled (`Start New Assessment`, `Buy More Hours`)
 - RAG: muted earth — sage green / olive amber / brick red
+
+**Client text colors** (cream surface — readable on `#faf9f6` / white):
+
+| Role | Hex | Use |
+|---|---|---|
+| Primary | `#1a1a1a` | Headlines, body copy, table cell values, document titles |
+| Secondary / muted | `#6b6560` | Sub-headings, descriptive paragraphs, supporting metadata (e.g. `4.2MB`, `Due 22 Nov 2025`), inactive nav items |
+| Label / caption / eyebrow | `#8a857f` | Mono uppercase tracked labels (`ISSUED`, `EXPIRES`, `01 TODAY`), category headers (`FIRE SAFETY`, `5 documents`), document IDs (`DOC-1408`), table column headers, footer chrome |
+| Decorative chrome (icons, dividers) | `#8a857f` (text), `#d8d4cc` (hairlines/dots) | Chevrons next to interactive rows, separator dots — kept subordinate but never invisible |
+
+**Contrast rule (WCAG AA on cream `#faf9f6`):** `#6b6560` ≈ 5.7:1 (passes AA for normal text), `#8a857f` ≈ 4.0:1 (passes AA for ≥14px bold or ≥18px regular — fine for our uppercase tracked label sizes). **Never use anything lighter than `#8a857f` for text** on a cream/white client surface — `#999`, `#bbb`, `#ccc`, `#ddd` are all banned for text and label use here.
 
 > **TODO:** lift the cream theme into `globals.css` as a `.client` (or `[data-theme="client"]`) variant so its colors live as tokens, not hard-coded page styles.
 

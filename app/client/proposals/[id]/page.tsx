@@ -14,7 +14,7 @@ export default async function ClientProposalDetailPage({
 
   if (!proposal) {
     return (
-      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#999]">
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
         Proposal not found
       </div>
     )
@@ -23,22 +23,22 @@ export default async function ClientProposalDetailPage({
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Back */}
-      <Link href="/client/proposals" className="inline-flex items-center gap-2 text-[#999] hover:text-black transition-colors">
+      <Link href="/client/proposals" className="inline-flex items-center gap-2 text-[#6b6560] hover:text-black transition-colors">
         <ArrowLeft className="w-3.5 h-3.5" />
         <span className="font-mono text-[9px] uppercase tracking-[0.25em] font-bold">Back to Proposals</span>
       </Link>
 
       {/* Header */}
       <section className="space-y-3">
-        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#999] uppercase font-bold">
+        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
           <span className="text-[#3b8273]">{proposal.reference}</span>
-          <span className="opacity-30">·</span>
+          <span className="opacity-50">·</span>
           <span>Received {proposal.receivedAt}</span>
         </div>
         <h2 className="font-serif text-[40px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
           {proposal.title}.
         </h2>
-        <p className="text-[#888] text-[13px] font-sans tracking-tight max-w-xl">
+        <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
           £{proposal.total.toLocaleString()} for {proposal.termMonths} months · {proposal.scope.length} services bundled
         </p>
       </section>

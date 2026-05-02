@@ -41,20 +41,13 @@ export default function ClientDashboard() {
       <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-             <span className="font-mono text-[8px] text-[#999] tracking-[0.3em] font-bold uppercase">01 Today</span>
+             <span className="font-mono text-[8px] text-[#8a857f] tracking-[0.3em] font-bold uppercase">01 Today</span>
           </div>
           <div className="space-y-1">
             <h2 className="font-serif text-[30px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">Good morning, Sarah.</h2>
-            <div className="flex items-center justify-between">
-              <p className="text-[#888] text-[13px] font-sans tracking-tight">
-                Here's where things stand for Hallam House Care Home as of Saturday, 18 April 2026.
-              </p>
-              <Link href="/client/forms/new">
-                <Button className="bg-amber-600 hover:bg-amber-500 text-white text-[10px] uppercase tracking-[0.2em] font-bold h-10 px-6 rounded-sm shadow-none">
-                  Start New Assessment &rarr;
-                </Button>
-              </Link>
-            </div>
+            <p className="text-[#6b6560] text-[13px] font-sans tracking-tight">
+              Here's where things stand for Hallam House Care Home as of Saturday, 18 April 2026.
+            </p>
           </div>
         </div>
 
@@ -82,25 +75,25 @@ export default function ClientDashboard() {
         <section className="bg-white border border-[#e5e1d8] rounded-sm p-6 flex flex-col h-full shadow-sm">
           <div className="flex justify-between items-start mb-6">
             <div className="flex items-center gap-3">
-               <span className="font-mono text-[8px] text-[#999] tracking-[0.3em] font-bold uppercase">02</span>
+               <span className="font-mono text-[8px] text-[#8a857f] tracking-[0.3em] font-bold uppercase">02</span>
                <h3 className="font-sans font-bold text-[8.5px] uppercase tracking-[0.25em] text-[#1a1a1a]">Compliance summary</h3>
             </div>
-            <Link href="/client/compliance" className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#999] hover:text-black border-b border-[#ddd] pb-0.5 font-bold transition-all">View All</Link>
+            <Link href="/client/compliance" className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#8a857f] hover:text-black border-b border-[#d8d4cc] pb-0.5 font-bold transition-all">View All</Link>
           </div>
 
           <div className="flex-1 flex flex-col justify-center">
             <div className="grid grid-cols-3 gap-4 mb-8">
               <div className="text-center space-y-1">
                 <div className="font-serif text-[42px] text-[#3b8273] leading-none">9</div>
-                <div className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#999] font-bold">Current</div>
+                <div className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#8a857f] font-bold">Current</div>
               </div>
               <div className="text-center space-y-1">
                 <div className="font-serif text-[42px] text-[#c0a66d] leading-none">2</div>
-                <div className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#999] font-bold">Expiring</div>
+                <div className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#8a857f] font-bold">Expiring</div>
               </div>
               <div className="text-center space-y-1">
                 <div className="font-serif text-[42px] text-[#8b2b21] leading-none">2</div>
-                <div className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#999] font-bold">Expired</div>
+                <div className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#8a857f] font-bold">Expired</div>
               </div>
             </div>
 
@@ -112,7 +105,7 @@ export default function ClientDashboard() {
                 <div className="h-full w-[15%] bg-[#8b2b21] ml-[1.5px]"></div>
                 <div className="h-full flex-1 bg-[#f0ede6] ml-[1.5px]"></div>
               </div>
-              <p className="font-mono text-[8px] text-[#bbb] italic tracking-widest font-bold">13 compliance documents tracked</p>
+              <p className="font-mono text-[8px] text-[#8a857f] italic tracking-widest font-bold">13 compliance documents tracked</p>
             </div>
           </div>
         </section>
@@ -120,16 +113,16 @@ export default function ClientDashboard() {
         {/* 03 CONSULTING HOURS */}
         <section className="bg-white border border-[#e5e1d8] rounded-sm p-6 flex flex-col h-full shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-             <span className="font-mono text-[8px] text-[#999] tracking-[0.3em] font-bold uppercase">03</span>
+             <span className="font-mono text-[8px] text-[#8a857f] tracking-[0.3em] font-bold uppercase">03</span>
              <h3 className="font-sans font-bold text-[8.5px] uppercase tracking-[0.25em] text-[#1a1a1a]">Consulting hours</h3>
           </div>
 
           <div className="flex-1 flex flex-col">
             <div className="mb-5">
-              <span className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#999] font-bold">Current Balance</span>
+              <span className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#8a857f] font-bold">Current Balance</span>
               <div className="flex items-baseline gap-1.5 mt-1">
                 <span className="font-serif text-[46px] text-[#8b2b21] leading-none">4.5</span>
-                <span className="font-serif text-[18px] text-[#888] font-light">hours</span>
+                <span className="font-serif text-[18px] text-[#6b6560] font-light">hours</span>
               </div>
             </div>
 
@@ -140,7 +133,7 @@ export default function ClientDashboard() {
               </p>
             </div>
 
-            <p className="font-mono text-[8px] text-[#bbb] tracking-[0.1em] font-bold mb-6">
+            <p className="font-mono text-[8px] text-[#8a857f] tracking-[0.1em] font-bold mb-6">
               18.5h used this year &middot; last top-up 10 Apr
             </p>
 
@@ -163,7 +156,7 @@ export default function ClientDashboard() {
       {/* ─── SECTION 04: NEEDS ATTENTION ─── */}
       <section className="space-y-4 pt-2 animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
         <div className="flex items-center gap-3">
-           <span className="font-mono text-[8px] text-[#999] tracking-[0.3em] font-bold uppercase">04</span>
+           <span className="font-mono text-[8px] text-[#8a857f] tracking-[0.3em] font-bold uppercase">04</span>
            <h3 className="font-sans font-bold text-[8.5px] uppercase tracking-[0.25em] text-[#1a1a1a]">Needs attention</h3>
         </div>
 
@@ -172,9 +165,9 @@ export default function ClientDashboard() {
             <div key={doc.id} className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-5 group hover:bg-[#faf9f6]/80 transition-all">
               <div className="space-y-1 flex-1">
                 <h4 className="font-sans font-extrabold text-[14px] text-[#1a1a1a] tracking-tight group-hover:text-black">{doc.title}</h4>
-                <div className="flex items-center gap-3 font-mono text-[8px] tracking-[0.25em] text-[#999] uppercase font-bold">
+                <div className="flex items-center gap-3 font-mono text-[8px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
                    <span>{doc.id}</span>
-                   <span className="opacity-30">&middot;</span>
+                   <span className="opacity-50">&middot;</span>
                    <span>{doc.type} {doc.date}</span>
                 </div>
               </div>

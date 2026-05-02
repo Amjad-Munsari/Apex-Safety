@@ -43,7 +43,7 @@ export default function ClientLayout({
           {/* Brand */}
           <div className="flex items-center gap-6 lg:gap-8 min-w-0">
             <Link href="/client" className="flex flex-col gap-0.5 min-w-0 shrink-0">
-              <span className="hidden lg:inline font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase opacity-70 whitespace-nowrap">
+              <span className="hidden lg:inline font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase whitespace-nowrap">
                 CL-8889 &middot; Compliance Portal
               </span>
               <span className="font-serif text-[15px] lg:text-[17px] text-[#1a1a1a] font-medium tracking-tight whitespace-nowrap truncate max-w-[180px] lg:max-w-[260px]">
@@ -61,13 +61,13 @@ export default function ClientLayout({
                     href={item.href}
                     className={cn(
                       "flex items-center gap-1.5 group transition-all whitespace-nowrap shrink-0",
-                      active ? "text-black" : "text-[#999] hover:text-black"
+                      active ? "text-black" : "text-[#6b6560] hover:text-black"
                     )}
                   >
                     <span
                       className={cn(
                         "hidden xl:inline font-mono text-[9px] tracking-[0.2em] transition-colors",
-                        active ? "text-black" : "text-[#ccc] group-hover:text-[#999]"
+                        active ? "text-black" : "text-[#8a857f] group-hover:text-black"
                       )}
                     >
                       {item.id}
@@ -92,7 +92,7 @@ export default function ClientLayout({
               <span className="text-[12px] font-bold tracking-tight text-[#1a1a1a] whitespace-nowrap">
                 Sarah Whitfield
               </span>
-              <span className="text-[8px] uppercase font-mono tracking-[0.2em] text-[#999] opacity-70 mt-0.5 whitespace-nowrap">
+              <span className="text-[8px] uppercase font-mono tracking-[0.2em] text-[#8a857f] mt-0.5 whitespace-nowrap">
                 Facilities Manager
               </span>
             </div>
@@ -123,12 +123,12 @@ export default function ClientLayout({
               />
               <SheetContent side="right" className="bg-white text-[#1a1a1a] p-0">
                 <div className="px-6 pt-6 pb-4 border-b border-[#e5e1d8]">
-                  <div className="font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase opacity-70">
+                  <div className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase">
                     CL-8889 &middot; Compliance Portal
                   </div>
                   <div className="font-serif text-[18px] mt-0.5">Hallam House Care Home</div>
                   <div className="mt-3 text-[12px] font-bold">Sarah Whitfield</div>
-                  <div className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#999] opacity-70">
+                  <div className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#8a857f]">
                     Facilities Manager
                   </div>
                 </div>
@@ -142,13 +142,13 @@ export default function ClientLayout({
                         onClick={() => setMobileOpen(false)}
                         className={cn(
                           "px-6 py-3 flex items-center gap-3 transition-colors",
-                          active ? "text-black bg-[#faf9f6]" : "text-[#666] hover:text-black hover:bg-[#faf9f6]"
+                          active ? "text-black bg-[#faf9f6]" : "text-[#6b6560] hover:text-black hover:bg-[#faf9f6]"
                         )}
                       >
                         <span
                           className={cn(
                             "font-mono text-[9px] tracking-[0.2em]",
-                            active ? "text-black" : "text-[#bbb]"
+                            active ? "text-black" : "text-[#8a857f]"
                           )}
                         >
                           {item.id}
@@ -180,14 +180,14 @@ export default function ClientLayout({
 
       {/* Portal Footer */}
       <footer className="max-w-[1024px] mx-auto px-6 py-8 mt-6 border-t border-[#e5e1d8]">
-        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 font-mono text-[8.5px] tracking-[0.2em] text-[#999] uppercase">
+        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 font-mono text-[8.5px] tracking-[0.2em] text-[#8a857f] uppercase">
           <span>Your Consultant</span>
-          <span className="text-[#666] font-bold">&middot;</span>
-          <span className="text-[#666] font-bold">Matt Dineen</span>
-          <span className="text-[#666] font-bold">&middot;</span>
-          <span className="text-[#666] font-bold">matt@dineen-fire.co.uk</span>
-          <span className="text-[#666] font-bold">&middot;</span>
-          <span className="text-[#666] font-bold">0161 552 0918</span>
+          <span className="text-[#6b6560] font-bold">&middot;</span>
+          <span className="text-[#6b6560] font-bold">Matt Dineen</span>
+          <span className="text-[#6b6560] font-bold">&middot;</span>
+          <span className="text-[#6b6560] font-bold">matt@dineen-fire.co.uk</span>
+          <span className="text-[#6b6560] font-bold">&middot;</span>
+          <span className="text-[#6b6560] font-bold">0161 552 0918</span>
         </div>
       </footer>
     </div>

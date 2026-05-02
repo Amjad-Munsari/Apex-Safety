@@ -50,11 +50,11 @@ export function ClientProposalActions({ proposal }: { proposal: ClientProposal }
         <div className="w-14 h-14 rounded-full bg-[#1a1a1a]/5 ring-1 ring-[#1a1a1a]/10 flex items-center justify-center mb-5">
           <X className="w-7 h-7 text-[#1a1a1a]/60" />
         </div>
-        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#888] font-bold mb-2">
+        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#8a857f] font-bold mb-2">
           Proposal Declined
         </div>
         <h3 className="font-serif text-[24px] text-[#1a1a1a] tracking-tight">No further action.</h3>
-        <p className="font-sans text-[13px] text-[#666] mt-2 max-w-md">
+        <p className="font-sans text-[13px] text-[#6b6560] mt-2 max-w-md">
           We&apos;ve let Matt know. If anything changes, drop him a line and he&apos;ll re-issue.
         </p>
       </div>
@@ -65,7 +65,7 @@ export function ClientProposalActions({ proposal }: { proposal: ClientProposal }
 
   return (
     <div className="bg-white border border-[#e5e1d8] rounded-sm p-6 space-y-4">
-      <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#888] font-bold">
+      <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] font-bold">
         Your Decision
       </div>
       <p className="font-sans text-[13px] text-[#1a1a1a]/80 leading-relaxed">

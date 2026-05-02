@@ -41,7 +41,7 @@ export function ClientContractActions({ contract }: { contract: ClientContract }
 
   return (
     <div className="bg-white border border-[#e5e1d8] rounded-sm p-6 space-y-4">
-      <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#888] font-bold">
+      <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] font-bold">
         Signature Required
       </div>
       <p className="font-sans text-[13px] text-[#1a1a1a]/80 leading-relaxed">
@@ -57,7 +57,7 @@ export function ClientContractActions({ contract }: { contract: ClientContract }
           {signing ? "Signing..." : "Sign Contract"}
         </Button>
       </div>
-      <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#999] pt-2 border-t border-[#f0ede6]">
+      <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] pt-2 border-t border-[#f0ede6]">
         Linked to proposal {contract.proposalRef}
       </p>
     </div>

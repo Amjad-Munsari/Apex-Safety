@@ -15,7 +15,7 @@ interface MicButtonProps {
 
 const idleByForSurface = {
   dark: "text-slate-400 hover:text-slate-200",
-  cream: "text-[#999] hover:text-[#1a1a1a]",
+  cream: "text-[#6b6560] hover:text-[#1a1a1a]",
 } as const
 
 export function MicButton({ className, onTranscript, surface = "dark" }: MicButtonProps) {

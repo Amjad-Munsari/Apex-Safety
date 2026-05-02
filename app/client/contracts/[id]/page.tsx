@@ -14,7 +14,7 @@ export default async function ClientContractDetailPage({
 
   if (!contract) {
     return (
-      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#999]">
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
         Contract not found
       </div>
     )
@@ -22,21 +22,21 @@ export default async function ClientContractDetailPage({
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <Link href="/client/contracts" className="inline-flex items-center gap-2 text-[#999] hover:text-black transition-colors">
+      <Link href="/client/contracts" className="inline-flex items-center gap-2 text-[#6b6560] hover:text-black transition-colors">
         <ArrowLeft className="w-3.5 h-3.5" />
         <span className="font-mono text-[9px] uppercase tracking-[0.25em] font-bold">Back to Contracts</span>
       </Link>
 
       <section className="space-y-3">
-        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#999] uppercase font-bold">
+        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
           <span className="text-[#3b8273]">{contract.reference}</span>
-          <span className="opacity-30">·</span>
+          <span className="opacity-50">·</span>
           <span>Issued {contract.issuedAt}</span>
         </div>
         <h2 className="font-serif text-[40px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
           {contract.title}.
         </h2>
-        <p className="text-[#888] text-[13px] font-sans tracking-tight max-w-xl">
+        <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
           £{contract.total.toLocaleString()} for {contract.termMonths} months · linked to proposal{" "}
           <span className="text-[#1a1a1a] font-mono text-[11px]">{contract.proposalRef}</span>
         </p>

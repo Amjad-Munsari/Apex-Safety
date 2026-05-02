@@ -29,7 +29,7 @@ export function PdfPreviewDialog({
           {/* Header */}
           <div className="flex items-start justify-between gap-6 px-8 pt-6 pb-4 border-b border-[#e5e1d8]">
             <div className="flex flex-col gap-1 min-w-0">
-              <span className="font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase font-bold">
+              <span className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
                 Document Preview
                 {documentId && <span className="ml-2 opacity-50">· {documentId}</span>}
               </span>
@@ -37,14 +37,14 @@ export function PdfPreviewDialog({
                 {title}
               </DialogPrimitive.Title>
               {subtitle && (
-                <span className="font-sans text-[11px] text-[#888] tracking-tight mt-0.5">
+                <span className="font-sans text-[11px] text-[#6b6560] tracking-tight mt-0.5">
                   {subtitle}
                 </span>
               )}
             </div>
             <DialogPrimitive.Close
               aria-label="Close"
-              className="shrink-0 rounded-sm p-1.5 text-[#888] hover:bg-[#f0ede6] hover:text-[#1a1a1a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b8273]/30"
+              className="shrink-0 rounded-sm p-1.5 text-[#6b6560] hover:bg-[#f0ede6] hover:text-[#1a1a1a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b8273]/30"
             >
               <X className="w-4 h-4" />
             </DialogPrimitive.Close>
@@ -55,11 +55,11 @@ export function PdfPreviewDialog({
             <div className="mx-auto max-w-2xl bg-white shadow-[0_4px_16px_rgba(26,26,26,0.08)] aspect-[1/1.414] flex flex-col px-12 py-14 text-[#1a1a1a]">
               <div className="flex items-start justify-between mb-10">
                 <div>
-                  <div className="font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase font-bold">888 Safety</div>
+                  <div className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">888 Safety</div>
                   <div className="font-serif text-[12px] text-[#1a1a1a] font-medium tracking-tight">Compliance Report</div>
                 </div>
                 {documentId && (
-                  <div className="font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase font-bold">
+                  <div className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
                     {documentId}
                   </div>
                 )}
@@ -69,13 +69,13 @@ export function PdfPreviewDialog({
                 {title}
               </h1>
               {subtitle && (
-                <p className="font-sans text-[12px] text-[#666] tracking-tight mb-8">
+                <p className="font-sans text-[12px] text-[#6b6560] tracking-tight mb-8">
                   {subtitle}
                 </p>
               )}
 
-              <div className="space-y-4 text-[10px] leading-relaxed text-[#444]">
-                <p className="font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase font-bold">
+              <div className="space-y-4 text-[10px] leading-relaxed text-[#1a1a1a]">
+                <p className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
                   01 Executive Summary
                 </p>
                 <p>
@@ -83,7 +83,7 @@ export function PdfPreviewDialog({
                   full report contains detailed findings, photographs, recommendations, and a
                   signed compliance statement from the consulting fire safety officer.
                 </p>
-                <p className="font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase font-bold pt-3">
+                <p className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase font-bold pt-3">
                   02 Findings
                 </p>
                 <ul className="list-disc list-inside space-y-1.5">
@@ -92,7 +92,7 @@ export function PdfPreviewDialog({
                   <li>Means of escape: clear, signed and lit on all routes.</li>
                   <li>Fire door integrity: 1 self-closer requires adjustment.</li>
                 </ul>
-                <p className="font-mono text-[8.5px] tracking-[0.25em] text-[#999] uppercase font-bold pt-3">
+                <p className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase font-bold pt-3">
                   03 Risk Rating
                 </p>
                 <p>
@@ -103,7 +103,7 @@ export function PdfPreviewDialog({
                 </p>
               </div>
 
-              <div className="mt-auto pt-12 flex items-end justify-between font-mono text-[8px] tracking-[0.25em] text-[#bbb] uppercase font-bold">
+              <div className="mt-auto pt-12 flex items-end justify-between font-mono text-[8px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
                 <span>Page 1 of 12</span>
                 <span>Generated by 888 Safety · Demo</span>
               </div>
@@ -112,7 +112,7 @@ export function PdfPreviewDialog({
 
           {/* Footer */}
           <div className="px-8 py-4 border-t border-[#e5e1d8] flex items-center justify-between bg-white">
-            <span className="font-mono text-[9px] tracking-[0.2em] text-[#bbb] uppercase font-bold">
+            <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a857f] uppercase font-bold">
               Sample preview — full PDF on download
             </span>
             <button

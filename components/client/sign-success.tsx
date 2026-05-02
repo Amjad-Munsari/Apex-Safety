@@ -46,7 +46,7 @@ export function SignSuccess({ title, message }: { title: string; message: string
           Signed & Sealed
         </div>
         <h3 className="font-serif text-[28px] text-[#1a1a1a] tracking-tight">{title}</h3>
-        <p className="font-sans text-[13px] text-[#666] max-w-md mx-auto leading-relaxed">{message}</p>
+        <p className="font-sans text-[13px] text-[#6b6560] max-w-md mx-auto leading-relaxed">{message}</p>
       </div>
 
       <style>{`
