@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
@@ -78,6 +78,14 @@ const complianceData: Category[] = [
 ];
 
 export default function CompliancePage() {
+  return (
+    <Suspense fallback={null}>
+      <ComplianceView />
+    </Suspense>
+  );
+}
+
+function ComplianceView() {
   const searchParams = useSearchParams();
   const highlightId = searchParams?.get("doc") ?? null;
   const [previewDoc, setPreviewDoc] = useState<Document | null>(null);
