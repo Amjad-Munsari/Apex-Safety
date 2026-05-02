@@ -120,6 +120,30 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
                 )}
               />
             </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={pathname.startsWith("/admin/notifications")}
+                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
+                render={(props) => (
+                  <Link {...props} href="/admin/notifications" className="flex w-full items-center px-3">
+                    <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
+                    <span className="text-sm tracking-wide">Notifications</span>
+                  </Link>
+                )}
+              />
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                isActive={pathname.startsWith("/admin/settings")}
+                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
+                render={(props) => (
+                  <Link {...props} href="/admin/settings" className="flex w-full items-center px-3">
+                    <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
+                    <span className="text-sm tracking-wide">Settings</span>
+                  </Link>
+                )}
+              />
+            </SidebarMenuItem>
 
           </div>
         </SidebarMenu>

@@ -135,3 +135,21 @@ export async function createProposal(data: {
   revalidatePath("/admin/proposals")
   return proposal.id
 }
+
+export async function updateProposalStatus(
+  proposalId: string,
+  status: "Draft" | "Sent" | "Signed" | "Contract Issued"
+) {
+  const { error } = await adminClient
+    .from("proposals")
+    .update({ status })
+    .eq("id", proposalId)
+
+  if (error) {
+    console.error("Error updating proposal status:", error)
+    throw new Error(error.message)
+  }
+
+  revalidatePath("/admin/proposals")
+  revalidatePath(`/admin/proposals/${proposalId}`)
+}

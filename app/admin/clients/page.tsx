@@ -1,8 +1,8 @@
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { NewClientButton } from "@/components/clients/new-client-dialog";
 
 export const dynamic = "force-dynamic";
 
@@ -45,9 +45,7 @@ export default async function ClientsPage() {
             {clients?.length || 0} active client records across all service lines.
           </p>
         </div>
-        <Button className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none flex gap-2" disabled>
-          <Plus className="w-4 h-4" /> New Client
-        </Button>
+        <NewClientButton />
       </div>
 
       {/* ─── TABLE ─── */}

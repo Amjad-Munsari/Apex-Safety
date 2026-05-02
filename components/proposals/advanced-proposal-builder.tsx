@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { draftProposalScope, createProposal } from '@/app/admin/proposals/actions';
 
@@ -52,6 +52,7 @@ export function AdvancedProposalBuilder({
   services: Service[] 
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Group services by category
   const categories = useMemo(() => {
@@ -86,6 +87,15 @@ export function AdvancedProposalBuilder({
       handleDraftScope();
     }
   }, [step]);
+
+  // Prefill from /admin/proposals/[id] "Edit" — preselects the client on step 1.
+  useEffect(() => {
+    const prefillId = searchParams?.get('clientId');
+    if (!prefillId || selectedClientId) return;
+    const match = clients.find(c => c.id === prefillId);
+    if (match) selectClient(match);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, clients]);
 
   /* Computed */
   const lineItems = useMemo(() => {

@@ -1,0 +1,194 @@
+"use client"
+
+import * as React from "react"
+import { Upload, Save } from "lucide-react"
+import { toast } from "sonner"
+import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+
+export function SettingsForm() {
+  const [primary, setPrimary] = React.useState("#3b8273")
+  const [secondary, setSecondary] = React.useState("#d97706")
+  const [signOff, setSignOff] = React.useState("Matt Robinson")
+  const [senderName, setSenderName] = React.useState("Dineen Fire & Safety")
+  const [logoName, setLogoName] = React.useState<string | null>(null)
+  const [saving, setSaving] = React.useState(false)
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      setLogoName(file.name)
+      toast.success("Logo staged", { description: `${file.name} will replace the current mark on save.` })
+    }
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    await new Promise((r) => setTimeout(r, 600))
+    setSaving(false)
+    toast.success("Settings saved", { description: "Changes apply to new documents going forward." })
+  }
+
+  return (
+    <div className="flex flex-col gap-8">
+      {/* Branding */}
+      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#666] mb-2">01</div>
+            <h3 className="font-serif text-[22px] text-white leading-tight">Branding</h3>
+            <p className="text-[#888] text-xs mt-2 leading-relaxed">
+              Used on proposals, contracts, reports, and the client portal.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            {/* Logo */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">Logo</span>
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border border-dashed border-white/15 rounded-sm h-32 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-amber-500/40 hover:bg-white/[0.02] transition-all"
+              >
+                <Upload className="w-5 h-5 text-white/40" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">
+                  {logoName ?? "Click to upload SVG or PNG"}
+                </span>
+                <span className="font-mono text-[9px] text-white/30 tracking-[0.2em]">
+                  Recommended 240×60 · max 2MB
+                </span>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoSelect}
+              />
+            </div>
+
+            {/* Colors */}
+            <div className="grid grid-cols-2 gap-6">
+              <ColorPicker label="Primary Colour" value={primary} onChange={setPrimary} />
+              <ColorPicker label="Secondary Colour" value={secondary} onChange={setSecondary} />
+            </div>
+
+            {/* Preview */}
+            <div className="bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
+              <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#666] mb-3">Preview</div>
+              <div className="flex items-center gap-2">
+                <div className="h-8 px-4 rounded-sm flex items-center font-mono text-[10px] uppercase tracking-[0.2em]" style={{ background: primary, color: "#fff" }}>
+                  Primary CTA
+                </div>
+                <div className="h-8 px-4 rounded-sm flex items-center font-mono text-[10px] uppercase tracking-[0.2em]" style={{ background: secondary, color: "#fff" }}>
+                  Secondary
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Notifications */}
+      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#666] mb-2">02</div>
+            <h3 className="font-serif text-[22px] text-white leading-tight">Notifications</h3>
+            <p className="text-[#888] text-xs mt-2 leading-relaxed">
+              Defaults applied to every email and SMS the platform sends on your behalf.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <TextField label="Sign-off Name" value={signOff} onChange={setSignOff} hint="Used at the bottom of automated emails." />
+            <TextField label="Default Sender Name" value={senderName} onChange={setSenderName} hint="Appears as the From: name in client inboxes." />
+            <div className="flex items-center justify-between bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
+              <div>
+                <div className="text-sm text-white">Send 30-day expiry reminders</div>
+                <div className="text-[#888] text-xs mt-1">Email + SMS to the primary contact 30 days before expiry.</div>
+              </div>
+              <Toggle defaultOn />
+            </div>
+            <div className="flex items-center justify-between bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
+              <div>
+                <div className="text-sm text-white">Notify on document upload</div>
+                <div className="text-[#888] text-xs mt-1">Tell the client whenever a new document lands in their portal.</div>
+              </div>
+              <Toggle defaultOn />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Save */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black rounded-sm px-6 font-medium text-[11px] h-10 tracking-wide border-none flex gap-2"
+        >
+          <Save className="w-3.5 h-3.5" />
+          {saving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">{label}</span>
+      <div className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-sm h-10 px-3 focus-within:border-amber-500/50">
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-7 h-7 rounded-sm cursor-pointer border-none bg-transparent"
+        />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="flex-1 bg-transparent text-sm text-white outline-none font-mono uppercase tracking-wider"
+        />
+      </div>
+    </label>
+  )
+}
+
+function TextField({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
+  return (
+    <label className="flex flex-col gap-2">
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-black/40 border border-white/10 rounded-sm h-9 px-3 text-sm text-white outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
+      />
+      {hint && <span className="text-[#666] text-xs">{hint}</span>}
+    </label>
+  )
+}
+
+function Toggle({ defaultOn }: { defaultOn?: boolean }) {
+  const [on, setOn] = React.useState(!!defaultOn)
+  return (
+    <button
+      type="button"
+      onClick={() => setOn((v) => !v)}
+      className={`w-10 h-5 rounded-full relative transition-colors ${on ? "bg-amber-500" : "bg-white/10"}`}
+      aria-pressed={on}
+    >
+      <span
+        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+          on ? "translate-x-5" : "translate-x-0.5"
+        }`}
+      />
+    </button>
+  )
+}

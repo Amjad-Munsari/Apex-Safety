@@ -1,10 +1,11 @@
 import { adminClient } from "@/lib/supabase/admin"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft, FileSignature, Send, CheckCircle2, Search } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
+import { ProposalCard } from "./proposal-card"
+
+type ProposalStatus = "Draft" | "Sent" | "Signed" | "Contract Issued"
 
 export const dynamic = "force-dynamic"
 
@@ -64,36 +65,19 @@ export default async function ProposalsPage() {
                     const total = (prop as any).total_price || calculateProposalTotal(prop.services_json)
                     const documentUrl = prop.proposal_pdf_path ? adminClient.storage.from('proposals').getPublicUrl(prop.proposal_pdf_path).data.publicUrl : null
 
+                    const detailHref = status === 'Contract Issued' ? `/admin/contracts/yellow-broom` : `/admin/proposals/${prop.id}`
+
                     return (
-                      <Card key={prop.id} className="bg-[#1c1c1c] border-white/5 p-4 rounded-sm hover:border-white/20 transition-all group relative">
-                        <div className="font-medium text-white mb-1 group-hover:text-gold transition-colors">{(prop.client as any)?.name}</div>
-                        <div className="font-serif text-lg text-white/90 mb-3">£{total.toLocaleString()}</div>
-                        
-                        <div className="flex justify-between items-center">
-                          <div className="font-mono text-[9px] uppercase tracking-widest text-[#555]">
-                            {new Date(prop.created_at).toLocaleDateString('en-GB')}
-                          </div>
-                          <div className="flex items-center gap-3">
-                            {documentUrl && (
-                              <a 
-                                href={documentUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-white/40 hover:text-white transition-colors p-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <FileSignature className="w-3.5 h-3.5" />
-                              </a>
-                            )}
-                            <div className="text-white/20">
-                              {status === 'Draft' && !documentUrl && <FileSignature className="w-3.5 h-3.5" />}
-                              {status === 'Sent' && <Send className="w-3.5 h-3.5" />}
-                              {status === 'Signed' && <CheckCircle2 className="w-3.5 h-3.5" />}
-                              {status === 'Contract Issued' && <Search className="w-3.5 h-3.5" />}
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
+                      <ProposalCard
+                        key={prop.id}
+                        id={prop.id}
+                        clientName={(prop.client as any)?.name || "Unknown client"}
+                        total={total}
+                        createdAt={prop.created_at}
+                        status={status as ProposalStatus}
+                        documentUrl={documentUrl}
+                        detailHref={detailHref}
+                      />
                     )
                   })}
                 

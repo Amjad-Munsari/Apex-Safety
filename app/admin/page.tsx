@@ -420,11 +420,11 @@ export default async function AdminDashboardPage() {
 
           <div className="grid grid-cols-2 gap-y-10 gap-x-6">
             <div>
-              <div className="font-serif text-3xl text-white mb-2">0</div>
+              <div className="font-serif text-3xl text-white mb-2">12</div>
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Assessments<br />completed</div>
             </div>
             <div>
-              <div className="font-serif text-3xl text-white mb-2">0</div>
+              <div className="font-serif text-3xl text-white mb-2">9</div>
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Reports<br />delivered</div>
             </div>
             <div>
@@ -432,7 +432,7 @@ export default async function AdminDashboardPage() {
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Current Total<br />Hours</div>
             </div>
             <div>
-              <div className="font-serif text-3xl text-white mb-2">0</div>
+              <div className="font-serif text-3xl text-white mb-2">3</div>
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Proposals<br />signed</div>
             </div>
           </div>

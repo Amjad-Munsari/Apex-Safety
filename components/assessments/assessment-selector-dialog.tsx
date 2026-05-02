@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
-import { Loader2, ArrowRight, ArrowLeft } from "lucide-react"
+import { Loader2, ArrowRight, ArrowLeft, Wrench } from "lucide-react"
 
 export function AssessmentSelectorDialog({
   open,
@@ -76,8 +76,12 @@ export function AssessmentSelectorDialog({
     }
   }
 
+  const selectedTemplate = templates.find(t => t.id === selectedTemplateId)
+  const isSiteRisk = !!selectedTemplate?.name?.toLowerCase().includes("site risk")
+
   const handleStart = () => {
     if (selectedClientId && selectedTemplateId) {
+      if (isSiteRisk) return // blocked — placeholder shown instead
       router.push(`/admin/assessments/new?clientId=${selectedClientId}&templateVersionId=${selectedTemplateId}`)
       onOpenChange(false)
     }
@@ -139,6 +143,25 @@ export function AssessmentSelectorDialog({
               {templates.length === 0 && (
                 <div className="text-center text-slate-500 py-8">No published templates found.</div>
               )}
+
+              {isSiteRisk && (
+                <div className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/5 p-5 flex gap-4">
+                  <div className="shrink-0 w-9 h-9 rounded-full bg-amber-500/15 ring-1 ring-amber-500/30 flex items-center justify-center">
+                    <Wrench className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-amber-500 font-semibold">
+                      Template not yet configured
+                    </div>
+                    <p className="font-serif text-base text-slate-100 leading-snug">
+                      Site Risk Assessment template is being configured.
+                    </p>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Contact Matt for details — once the form is published it will start an assessment from here automatically.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -161,12 +184,12 @@ export function AssessmentSelectorDialog({
               Continue <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button 
-              onClick={handleStart} 
-              disabled={!selectedTemplateId}
-              className="bg-amber-500 text-black hover:bg-amber-400 font-medium"
+            <Button
+              onClick={handleStart}
+              disabled={!selectedTemplateId || isSiteRisk}
+              className="bg-amber-500 text-black hover:bg-amber-400 font-medium disabled:opacity-40"
             >
-              Start Assessment
+              {isSiteRisk ? "Unavailable" : "Start Assessment"}
             </Button>
           )}
         </div>

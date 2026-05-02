@@ -79,7 +79,7 @@ export function TemplateBuilder({
   publishedVersionNumber,
 }: Props) {
   const [name, setName] = useState(initialName);
-  const [fields, setFields] = useState<FormField[]>(initialSchema.fields);
+  const [fields, setFields] = useState<FormField[]>(initialSchema?.fields ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [saved, setSaved] = useState(true);

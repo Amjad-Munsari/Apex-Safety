@@ -9,6 +9,7 @@ import Link from "next/link"
 
 import { FormSchema } from "@/types/forms"
 import { createClient } from "@/lib/supabase/client"
+import { HARDCODED_FRA_TEMPLATE } from "@/lib/forms/fra-template"
 
 export default function NewAssessmentPage() {
   const [schema, setSchema] = useState<FormSchema | null>(null)
@@ -19,29 +20,38 @@ export default function NewAssessmentPage() {
   React.useEffect(() => {
     async function loadTemplate() {
       const supabase = createClient()
-      
-      // For demo, we'll just get the latest Fire Risk template
-      const { data: templates } = await supabase
-        .from("form_templates")
-        .select("id")
-        .eq("template_type", "fire_risk")
-        .limit(1)
-        .single()
-
-      if (templates) {
-        const { data: version } = await supabase
-          .from("template_versions")
-          .select("schema_json")
-          .eq("template_id", templates.id)
-          .order("version_number", { ascending: false })
+      try {
+        const { data: templates } = await supabase
+          .from("form_templates")
+          .select("id")
+          .eq("template_type", "fire_risk")
           .limit(1)
           .single()
 
-        if (version) {
-          setSchema(version.schema_json as unknown as FormSchema)
+        if (templates) {
+          const { data: version } = await supabase
+            .from("template_versions")
+            .select("schema_json")
+            .eq("template_id", templates.id)
+            .order("version_number", { ascending: false })
+            .limit(1)
+            .single()
+
+          const dbSchema = version?.schema_json as unknown as FormSchema | undefined
+          // Builder-format schemas store flat `fields`. The renderer needs `sections`.
+          if (dbSchema && Array.isArray((dbSchema as any).sections)) {
+            setSchema(dbSchema)
+          } else {
+            setSchema(HARDCODED_FRA_TEMPLATE)
+          }
+        } else {
+          setSchema(HARDCODED_FRA_TEMPLATE)
         }
+      } catch {
+        setSchema(HARDCODED_FRA_TEMPLATE)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
     loadTemplate()
   }, [])

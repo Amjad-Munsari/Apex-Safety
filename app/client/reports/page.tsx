@@ -1,16 +1,19 @@
 "use client";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { 
+import {
   ChevronDown,
   Download,
   ExternalLink
 } from "lucide-react";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
 
 interface Report {
   id: string;
@@ -31,6 +34,8 @@ const reportsData: Report[] = [
 ];
 
 export default function ReportsPage() {
+  const [previewReport, setPreviewReport] = useState<Report | null>(null);
+
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* ─── PAGE HEADER ─── */}
@@ -48,13 +53,13 @@ export default function ReportsPage() {
         <div className="divide-y divide-[#f0ede6]">
           {reportsData.map((report) => (
             <div key={report.id} className="px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-8 group hover:bg-[#faf9f6]/50 transition-all">
-              
+
               {/* Left: Number & Info */}
               <div className="flex flex-1 items-center gap-8 min-w-0">
                 <span className="font-serif text-[24px] text-[#ccc] group-hover:text-[#aaa] transition-colors tabular-nums shrink-0">
                   {report.number}
                 </span>
-                
+
                 <div className="min-w-0">
                   <h4 className="font-sans font-semibold text-[15px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
                     {report.title}
@@ -75,14 +80,14 @@ export default function ReportsPage() {
               <div className="shrink-0 w-32 flex justify-center">
                 <div className={cn(
                   "w-full py-1.5 border rounded-[2px] font-mono text-[9px] uppercase tracking-[0.3em] font-bold leading-none flex items-center justify-center gap-2.5 whitespace-nowrap",
-                  report.status === "FINAL" ? "border-[#3b8273]/40 text-[#3b8273]" : 
+                  report.status === "FINAL" ? "border-[#3b8273]/40 text-[#3b8273]" :
                   report.status === "DRAFT" ? "border-[#c0a66d]/40 text-[#c0a66d]" :
                   "border-[#e06050]/40 text-[#e06050]"
                 )}>
                   <div className={cn(
                     "w-1.5 h-1.5 rounded-full shrink-0",
-                    report.status === "FINAL" ? "bg-[#3b8273]" : 
-                    report.status === "DRAFT" ? "bg-[#c0a66d]" : 
+                    report.status === "FINAL" ? "bg-[#3b8273]" :
+                    report.status === "DRAFT" ? "bg-[#c0a66d]" :
                     "bg-[#e06050]"
                   )}></div>
                   <span>{report.status}</span>
@@ -101,10 +106,16 @@ export default function ReportsPage() {
                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1 shadow-md bg-white">
-                    <DropdownMenuItem className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]">
+                    <DropdownMenuItem
+                      onClick={() => toast.success(`Downloading ${report.title}…`)}
+                      className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
+                    >
                        <Download className="h-3.5 w-3.5" /> Download PDF
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]">
+                    <DropdownMenuItem
+                      onClick={() => setPreviewReport(report)}
+                      className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
+                    >
                        <ExternalLink className="h-3.5 w-3.5" /> View Online
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -115,6 +126,14 @@ export default function ReportsPage() {
           ))}
         </div>
       </div>
+
+      <PdfPreviewDialog
+        open={previewReport !== null}
+        onOpenChange={(o) => !o && setPreviewReport(null)}
+        title={previewReport?.title || ""}
+        subtitle={previewReport ? `${previewReport.location} · ${previewReport.date} · ${previewReport.consultant}` : undefined}
+        documentId={previewReport?.id}
+      />
     </div>
   );
 }

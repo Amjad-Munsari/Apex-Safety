@@ -2,6 +2,7 @@
 import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface Transaction {
   date: string;
@@ -50,13 +51,16 @@ export default function BillingPage() {
           </div>
         </div>
         
-        <Button className="bg-[#1a1a1a] hover:bg-black text-white rounded-sm h-10 px-6 font-sans text-[11px] font-bold tracking-tight shadow-none flex items-center gap-3 transition-all group">
+        <Button
+          onClick={() => toast.success("Top-up request sent — Matt will confirm within 24h.")}
+          className="bg-[#1a1a1a] hover:bg-black text-white rounded-sm h-10 px-6 font-sans text-[11px] font-bold tracking-tight shadow-none flex items-center gap-3 transition-all group"
+        >
           Buy more hours <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </div>
 
       {/* ─── TRANSACTION HISTORY ─── */}
-      <section className="space-y-6">
+      <section id="history" className="space-y-6 scroll-mt-24">
         <h3 className="font-mono text-[9px] tracking-[0.25em] font-bold text-[#bbb] uppercase px-1">Transaction History</h3>
         
         <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">

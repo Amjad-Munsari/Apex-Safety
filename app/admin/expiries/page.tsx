@@ -1,9 +1,9 @@
 import { getUpcomingExpiries } from "@/lib/supabase/dashboard"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft, FileText, Calendar, Building2 } from "lucide-react"
+import { ArrowLeft, FileText, Building2 } from "lucide-react"
+import { RemindButton } from "./remind-button"
 
 export const dynamic = "force-dynamic"
 
@@ -79,9 +79,7 @@ export default async function ExpiriesPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Button variant="ghost" className="h-8 text-[10px] font-mono uppercase tracking-widest text-[#666] hover:text-white">
-                      Remind
-                    </Button>
+                    <RemindButton clientName={(doc.client as any)?.name || "client"} />
                   </td>
                 </tr>
               )

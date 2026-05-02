@@ -37,6 +37,8 @@ export default function ClientLayout({
                 { id: "03", label: "Reports", href: "/client/reports", active: pathname === "/client/reports" },
                 { id: "04", label: "Hours & billing", href: "/client/billing", active: pathname === "/client/billing" },
                 { id: "05", label: "Assessments", href: "/client/assessments", active: pathname === "/client/assessments" },
+                { id: "06", label: "Proposals", href: "/client/proposals", active: pathname?.startsWith("/client/proposals") },
+                { id: "07", label: "Contracts", href: "/client/contracts", active: pathname?.startsWith("/client/contracts") },
               ].map((item) => (
                 <Link
                   key={item.id}

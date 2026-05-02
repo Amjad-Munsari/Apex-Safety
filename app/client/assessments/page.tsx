@@ -1,19 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { 
-  ClipboardCheck, 
-  Clock, 
-  ChevronRight, 
-  FileText, 
-  CheckCircle2,
-  AlertCircle
+import {
+  ClipboardCheck,
+  Clock,
+  ChevronRight,
+  FileText,
 } from "lucide-react";
+import { toast } from "sonner";
+import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
+
+interface CompletedReport {
+  id: string;
+  title: string;
+  date: string;
+  status: string;
+  client: string;
+}
+
+const completedReports: CompletedReport[] = [
+  { id: "REP-4402", title: "Fire Risk Assessment (Type 3)", date: "12 Mar 2026", status: "DELIVERED", client: "Hallam House Care Home" },
+  { id: "REP-4391", title: "Annual Safety Review", date: "05 Feb 2026", status: "DELIVERED", client: "Hallam House Care Home" },
+];
 
 export default function AssessmentListPage() {
+  const [previewReport, setPreviewReport] = useState<CompletedReport | null>(null);
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
@@ -48,7 +63,7 @@ export default function AssessmentListPage() {
             { id: "ASMT-8801", title: "Monthly Fire Safety Check — April 2026", status: "DUE TODAY", type: "due", date: "18 Apr", template: "Fire Risk Assessment (Type 3)" },
             { id: "ASMT-8802", title: "Quarterly Site Risk Audit", status: "DUE IN 3 DAYS", type: "upcoming", date: "21 Apr", template: "Site Risk Assessment" },
           ].map((item) => (
-            <Link key={item.id} href="/client/forms/new" className="px-6 py-5 flex items-center justify-between group hover:bg-[#faf9f6]/80 transition-all">
+            <Link key={item.id} href={`/client/assessments/${item.id}`} className="px-6 py-5 flex items-center justify-between group hover:bg-[#faf9f6]/80 transition-all">
               <div className="flex items-start gap-5">
                 <div className={cn(
                   "w-10 h-10 rounded-sm flex items-center justify-center shrink-0",
@@ -91,10 +106,7 @@ export default function AssessmentListPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { id: "REP-4402", title: "Fire Risk Assessment (Type 3)", date: "12 Mar 2026", status: "DELIVERED", client: "Hallam House Care Home" },
-            { id: "REP-4391", title: "Annual Safety Review", date: "05 Feb 2026", status: "DELIVERED", client: "Hallam House Care Home" },
-          ].map((report) => (
+          {completedReports.map((report) => (
             <div key={report.id} className="bg-white border border-[#e5e1d8] rounded-sm p-6 space-y-4 hover:shadow-md transition-all group">
               <div className="flex justify-between items-start">
                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-sm">
@@ -104,7 +116,7 @@ export default function AssessmentListPage() {
                   {report.status}
                 </Badge>
               </div>
-              
+
               <div className="space-y-1">
                 <h4 className="font-serif text-[18px] text-[#1a1a1a] font-medium leading-tight">{report.title}</h4>
                 <div className="flex items-center gap-2 font-mono text-[8px] tracking-[0.1em] text-[#999] uppercase font-bold">
@@ -115,10 +127,19 @@ export default function AssessmentListPage() {
               </div>
 
               <div className="pt-2 flex gap-2">
-                <Button variant="outline" className="flex-1 rounded-sm border-[#e5e1d8] h-9 text-[9px] uppercase tracking-widest font-bold">
+                <Button
+                  variant="outline"
+                  onClick={() => setPreviewReport(report)}
+                  className="flex-1 rounded-sm border-[#e5e1d8] h-9 text-[9px] uppercase tracking-widest font-bold"
+                >
                   View PDF
                 </Button>
-                <Button variant="outline" className="rounded-sm border-[#e5e1d8] h-9 px-3">
+                <Button
+                  variant="outline"
+                  onClick={() => toast.info(`Audit history for ${report.id} — last opened 2m ago.`)}
+                  aria-label={`View audit history for ${report.id}`}
+                  className="rounded-sm border-[#e5e1d8] h-9 px-3"
+                >
                   <Clock className="w-3.5 h-3.5 text-[#999]" />
                 </Button>
               </div>
@@ -133,6 +154,14 @@ export default function AssessmentListPage() {
           All data synced with 888 Safety Cloud &middot; Last updated 2m ago
         </p>
       </div>
+
+      <PdfPreviewDialog
+        open={previewReport !== null}
+        onOpenChange={(o) => !o && setPreviewReport(null)}
+        title={previewReport?.title || ""}
+        subtitle={previewReport ? `${previewReport.client} · ${previewReport.date}` : undefined}
+        documentId={previewReport?.id}
+      />
     </div>
   );
 }
