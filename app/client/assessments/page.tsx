@@ -130,7 +130,7 @@ export default function AssessmentListPage() {
                 <Button
                   variant="outline"
                   onClick={() => setPreviewReport(report)}
-                  className="flex-1 rounded-sm border-[#e5e1d8] h-9 text-[9px] uppercase tracking-widest font-bold"
+                  className="flex-1 rounded-sm border-[#e5e1d8] bg-transparent text-[#1a1a1a] hover:bg-[#f9f8f6]! hover:text-[#1a1a1a]! h-9 text-[9px] uppercase tracking-widest font-bold shadow-none"
                 >
                   View PDF
                 </Button>
@@ -138,7 +138,7 @@ export default function AssessmentListPage() {
                   variant="outline"
                   onClick={() => toast.info(`Audit history for ${report.id} — last opened 2m ago.`)}
                   aria-label={`View audit history for ${report.id}`}
-                  className="rounded-sm border-[#e5e1d8] h-9 px-3"
+                  className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6]! h-9 px-3 shadow-none"
                 >
                   <Clock className="w-3.5 h-3.5 text-[#999]" />
                 </Button>

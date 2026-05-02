@@ -189,7 +189,7 @@ export default function ClientDashboard() {
                  </div>
 
                  <Link href={`/client/compliance?doc=${doc.id}`}>
-                   <Button variant="outline" className="rounded-sm border-[#1a1a1a] text-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white h-8 px-5 font-bold text-[8.5px] uppercase tracking-[0.25em] transition-all shadow-none">
+                   <Button variant="outline" className="rounded-sm border-[#1a1a1a] bg-transparent text-[#1a1a1a] hover:bg-[#1a1a1a]! hover:text-white! h-8 px-5 font-bold text-[8.5px] uppercase tracking-[0.25em] transition-all shadow-none">
                      Renew
                    </Button>
                  </Link>
