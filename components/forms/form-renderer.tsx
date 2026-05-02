@@ -127,13 +127,19 @@ export function FormRenderer({ schema, data, onChange, surface = "dark" }: FormR
                 {field.type === "dropdown" && (
                   surface === "cream" ? (
                     <Select
-                      value={data[field.id] || ""}
+                      value={data[field.id] || undefined}
                       onValueChange={(value) => onChange(field.id, value)}
                     >
                       <SelectTrigger
                         className="w-full h-12 px-4 rounded-sm bg-white border border-[#e5e1d8] text-[#1a1a1a] text-sm font-sans data-placeholder:text-[#bbb] focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/20 hover:bg-[#faf9f6]"
                       >
-                        <SelectValue placeholder={field.placeholder || "Select option..."} />
+                        <SelectValue placeholder={field.placeholder || "Select option..."}>
+                          {(value: any) =>
+                            value
+                              ? field.options?.find((o) => o.value === value)?.label ?? String(value)
+                              : null
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent
                         className="bg-white text-[#1a1a1a] ring-1 ring-[#e5e1d8] shadow-md rounded-sm"
@@ -142,7 +148,7 @@ export function FormRenderer({ schema, data, onChange, surface = "dark" }: FormR
                           <SelectItem
                             key={opt.value}
                             value={opt.value}
-                            className="text-sm text-[#1a1a1a]! [&_*]:text-[#1a1a1a]! focus:bg-[#faf9f6] focus:text-[#1a1a1a]! focus:[&_*]:text-[#1a1a1a]! data-[highlighted]:bg-[#faf9f6] data-[highlighted]:text-[#1a1a1a]! data-[highlighted]:[&_*]:text-[#1a1a1a]!"
+                            className="text-sm text-[#1a1a1a]! [&_*]:text-[#1a1a1a]! focus:bg-amber-100 focus:text-[#1a1a1a]! focus:[&_*]:text-[#1a1a1a]! data-[highlighted]:bg-amber-100 data-[highlighted]:text-[#1a1a1a]! data-[highlighted]:[&_*]:text-[#1a1a1a]!"
                           >
                             {opt.label}
                           </SelectItem>
