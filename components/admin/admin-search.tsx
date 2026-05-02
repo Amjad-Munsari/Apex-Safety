@@ -48,6 +48,18 @@ export function AdminSearch() {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  // Keyboard shortcut (Cmd/Ctrl + K)
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault()
+        containerRef.current?.querySelector("input")?.focus()
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [])
+
   function handleSelect(url: string) {
     router.push(url)
     setOpen(false)
@@ -70,7 +82,7 @@ export function AdminSearch() {
         placeholder="Search clients, documents..."
         className="w-full bg-transparent border border-white/10 rounded-sm py-2 pl-10 pr-12 text-sm text-white placeholder:text-muted-foreground outline-none focus:border-white/20 transition-colors"
       />
-      
+
       <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
         {loading ? (
           <Loader2 className="h-3 w-3 animate-spin text-white/40" />

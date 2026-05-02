@@ -62,7 +62,7 @@ export default async function ReviewQueuePage() {
                   </div>
                 </div>
               </div>
-              <Link href={`/admin/assessments/${item.id}`}>
+              <Link href={`/admin/assessments/${item.id}/review`}>
                 <Button className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none flex gap-2">
                   Begin Review &rarr;
                 </Button>

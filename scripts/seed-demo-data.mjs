@@ -8,6 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
+// ── 8 High-quality demo clients ─────────────────────────────────────────────
 const demoClients = [
   {
     name: "The Steel City Hotel",
@@ -76,18 +77,30 @@ const demoClients = [
 ]
 
 async function seed() {
-  console.log('--- Phase 11: High-Fidelity Seeding ---')
+  console.log('--- 888 Safety: Seeding Demo Data (idempotent) ---')
 
-  // 1. Get Template Version (needed for reports/assignments)
-  const { data: versions } = await supabase.from('template_versions').select('id, template_id').limit(1)
+  // ── Step 1: Wipe existing demo data in FK order ────────────────────────────
+  console.log('Clearing existing data...')
+  await supabase.from('form_submissions').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  await supabase.from('form_assignments').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  await supabase.from('documents').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  await supabase.from('clients').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+  console.log('Cleared.')
+
+  // ── Step 2: Get template version ─────────────────────────────────────────
+  const { data: versions } = await supabase
+    .from('template_versions')
+    .select('id, template_id')
+    .limit(1)
+
   if (!versions?.length) {
-    console.error('No template versions found. Please create a template first.')
+    console.error('No template versions found. Create a template first, then re-run.')
     return
   }
   const versionId = versions[0].id
   const templateId = versions[0].template_id
 
-  // 2. Insert Clients
+  // ── Step 3: Insert clients ────────────────────────────────────────────────
   const { data: insertedClients, error: clientError } = await supabase
     .from('clients')
     .insert(demoClients.map(c => ({
@@ -101,66 +114,137 @@ async function seed() {
     console.error('Error inserting clients:', clientError)
     return
   }
-
   console.log(`Inserted ${insertedClients.length} clients.`)
 
-  // 3. Insert random Documents and Reports for each client
+  // ── Step 4: Build documents ───────────────────────────────────────────────
+  // Deliberately staged expiry dates for a realistic RAG mix
   const now = new Date()
-  const documents = []
-  const submissions = []
-  const assignments = []
+  const days = (n) => new Date(now.getTime() + n * 24 * 60 * 60 * 1000).toISOString()
 
-  for (const client of insertedClients) {
-    // Create an assignment
-    const assignmentId = crypto.randomUUID()
-    assignments.push({
-      id: assignmentId,
-      client_id: client.id,
-      template_id: templateId,
-      template_version_id: versionId,
-      status: 'assigned',
-      created_at: now.toISOString()
-    })
+  const documentScenarios = [
+    -60,  // Expired 2 months ago
+    -10,  // Expired 10 days ago
+    6,    // Expiring in 6 days  (critical)
+    12,   // Expiring in 12 days (warning)
+    25,   // Expiring in 25 days (warning)
+    90,   // Current — 3 months out
+    180,  // Current — 6 months out
+    365,  // Current — 1 year out
+  ]
 
-    // Random Document (Expired, Expiring, or Current)
-    const randomDays = Math.floor(Math.random() * 60) - 30 // -30 to +30 days
-    const expiry = new Date(now.getTime() + randomDays * 24 * 60 * 60 * 1000)
-    
-    documents.push({
-      client_id: client.id,
-      filename: `Fire Safety Certificate - ${client.name}.pdf`,
-      document_category: 'Certifications',
-      expiry_date: expiry.toISOString(),
-      uploaded_at: now.toISOString(),
-      storage_path: `documents/${client.id}/cert.pdf`
-    })
+  const documents = insertedClients.map((client, i) => ({
+    client_id: client.id,
+    filename: `Fire Safety Certificate — ${client.name}.pdf`,
+    document_category: 'Certifications',
+    expiry_date: days(documentScenarios[i]),
+    uploaded_at: now.toISOString(),
+    storage_path: `documents/${client.id}/cert.pdf`
+  }))
 
-    // Random Report Awaiting Review (for some clients)
-    if (Math.random() > 0.5) {
-      submissions.push({
-        assignment_id: assignmentId,
-        client_id: client.id,
-        template_version_id: versionId,
-        status: 'draft_ready_for_review',
-        answers_json: { notes: "Site inspection complete. Minor issues with exit signage." },
-        created_at: now.toISOString()
-      })
-    }
+  // ── Step 5: Build assignments ─────────────────────────────────────────────
+  const assignments = insertedClients.map(client => ({
+    id: crypto.randomUUID(),
+    client_id: client.id,
+    template_id: templateId,
+    template_version_id: versionId,
+    status: 'assigned',
+    created_at: now.toISOString()
+  }))
+
+  // ── Step 6: Build submissions (3 deliberate states) ───────────────────────
+  // Client 0 (Steel City Hotel) — submitted, no AI draft yet
+  // Client 1 (Kelham Brewery)   — AI draft ready for review
+  // Client 2 (Park Hill)        — completed, report already generated
+  const submissionBase = {
+    template_version_id: versionId,
+    created_at: now.toISOString()
   }
 
-  // Insert assignments first (FK constraint)
+  const richAnswers = {
+    notes: "Site inspection complete. Emergency lighting tested — 3 units in the east stairwell failed. Exit signage missing on Level 2 corridor near the kitchen. Fire extinguishers checked: 2 CO2 units expired in the server room. General housekeeping in storage areas is poor — combustible materials stacked against wall.",
+    __appendix_notes: "Spoke with site manager David. He confirmed the stairwell lighting has been faulty for 6 weeks. Recommend urgent action before next inspection."
+  }
+
+  const draftReport = {
+    executiveSummary: "An on-site Fire Risk Assessment was conducted at Kelham Island Brewery. The premises presented several fire safety deficiencies requiring prompt attention, particularly regarding emergency lighting, exit signage, and fire extinguisher maintenance. Immediate remediation is recommended to achieve compliance with the Regulatory Reform (Fire Safety) Order 2005.",
+    hazards: [
+      {
+        location: "East Stairwell",
+        description: "3 emergency lighting units found to be non-functional during testing. This presents a significant risk in the event of a power failure.",
+        severity: "High",
+        recommendedAction: "Replace failed emergency lighting units immediately. Arrange monthly testing schedule."
+      },
+      {
+        location: "Level 2 Corridor (near Kitchen)",
+        description: "Exit signage is absent from this corridor, which is a primary evacuation route.",
+        severity: "Critical",
+        recommendedAction: "Install illuminated exit signs in accordance with BS 5266-1 within 7 days."
+      },
+      {
+        location: "Server Room",
+        description: "2 CO2 fire extinguishers have exceeded their service date.",
+        severity: "Medium",
+        recommendedAction: "Service or replace CO2 extinguishers. Arrange annual service contract."
+      },
+      {
+        location: "Storage Areas",
+        description: "Combustible materials stacked directly against walls, creating a potential fire load risk.",
+        severity: "Low",
+        recommendedAction: "Reorganise storage to maintain 500mm clearance from walls. Conduct monthly housekeeping audits."
+      }
+    ],
+    complianceStatus: "Action Required"
+  }
+
+  const submissions = [
+    // State 1: Submitted — waiting for AI draft
+    {
+      ...submissionBase,
+      assignment_id: assignments[0].id,
+      client_id: insertedClients[0].id,
+      answers_json: richAnswers,
+      status: 'submitted',
+    },
+    // State 2: AI draft ready — waiting for Matt to review
+    {
+      ...submissionBase,
+      assignment_id: assignments[1].id,
+      client_id: insertedClients[1].id,
+      answers_json: richAnswers,
+      status: 'draft_ready_for_review',
+      draft_report_json: draftReport,
+    },
+    // State 3: Completed — report already approved and generated
+    {
+      ...submissionBase,
+      assignment_id: assignments[2].id,
+      client_id: insertedClients[2].id,
+      answers_json: richAnswers,
+      status: 'completed',
+      draft_report_json: draftReport,
+      report_storage_path: `${insertedClients[2].id}/report_demo.pdf`,
+    }
+  ]
+
+  // ── Step 7: Insert all ────────────────────────────────────────────────────
   const { error: assignError } = await supabase.from('form_assignments').insert(assignments)
   if (assignError) console.error('Error inserting assignments:', assignError)
 
-  // Insert documents
   const { error: docError } = await supabase.from('documents').insert(documents)
   if (docError) console.error('Error inserting documents:', docError)
 
-  // Insert submissions
   const { error: subError } = await supabase.from('form_submissions').insert(submissions)
   if (subError) console.error('Error inserting submissions:', subError)
 
-  console.log('Seeding complete. Dashboard should now be populated with realistic data.')
+  console.log(`
+✓ 8 clients with staged document expiry dates
+✓ 3 deliberate assessment submissions:
+  — Steel City Hotel: submitted (awaiting AI draft)
+  — Kelham Island Brewery: draft_ready_for_review (ready for Matt to review)
+  — Park Hill Apartments: completed (report generated)
+
+Seeding complete.
+  `)
 }
 
 seed()

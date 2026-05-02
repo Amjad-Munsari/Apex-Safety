@@ -31,6 +31,7 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
   async function handleAdjust(type: "add" | "deduct") {
     const val = parseFloat(amount)
     if (isNaN(val) || val <= 0) return
+    if (type === "deduct" && val > currentBalance) return
 
     setLoading(true)
     try {
@@ -69,6 +70,7 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
                 id="amount"
                 type="number"
                 step="0.5"
+                min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="bg-black/40 border-white/10 pl-10 h-12 text-lg focus:ring-white/20"
@@ -78,17 +80,17 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
           </div>
         </div>
         <DialogFooter className="gap-3 sm:justify-center">
-          <Button 
-            onClick={() => handleAdjust("deduct")} 
-            disabled={loading}
-            variant="destructive" 
+          <Button
+            onClick={() => handleAdjust("deduct")}
+            disabled={loading || (parseFloat(amount) || 0) > currentBalance || (parseFloat(amount) || 0) <= 0}
+            variant="destructive"
             className="flex-1 rounded-sm gap-2 uppercase text-[10px] font-mono tracking-widest"
           >
             <Minus className="w-3 h-3" /> Deduct
           </Button>
-          <Button 
-            onClick={() => handleAdjust("add")} 
-            disabled={loading}
+          <Button
+            onClick={() => handleAdjust("add")}
+            disabled={loading || (parseFloat(amount) || 0) <= 0}
             className="flex-1 bg-white hover:bg-white/90 text-black rounded-sm gap-2 uppercase text-[10px] font-mono tracking-widest"
           >
             <Plus className="w-3 h-3" /> Add Hours

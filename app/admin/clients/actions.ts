@@ -15,7 +15,7 @@ export async function updateClientHours(clientId: string, adjustment: number) {
     throw new Error("Client not found")
   }
 
-  const newBalance = (client.hours_balance || 0) + adjustment
+  const newBalance = Math.max(0, (client.hours_balance || 0) + adjustment)
 
   // 2. Update balance
   const { error: updateError } = await adminClient

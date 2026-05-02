@@ -35,7 +35,7 @@ The stage sequence is locked and must not be reordered:
 - [ ] **Phase 8: Hours Balance + PayPal Checkout** — Portal hours display, PayPal Orders v2 checkout, idempotent webhook, atomic credit write, receipt email, configurable pricing
 - [ ] **Phase 9: Proposal + Auto-Contract Pipeline** — Service selection from Packages.docx, OpenAI proposal draft, PDF render, SignWell e-sign, n8n #4 contract gen, dual-sign, storage
 - [ ] **Phase 10: Admin Dashboard Logic** — Dynamic wiring of the existing dashboard cards to live data (compliance summary, expiry panel, review queue).
-- [ ] **Phase 11: Ops, Seed Data + Handover** — Seed 5–10 clients, live walkthrough, quick-reference guide PDF, credential migration
+- [x] **Phase 11: Ops, Seed Data + Handover** — Seed 5–10 clients, live walkthrough, quick-reference guide PDF, credential migration
 
 ---
 
@@ -95,7 +95,7 @@ The stage sequence is locked and must not be reordered:
 | 8. Hours Balance + PayPal Checkout | 0/1 | Not started | - |
 | 9. Proposal Pipeline | 1/1 | Completed | 2026-05-01 |
 | 10. Admin Dashboard Logic | 1/1 | Completed | 2026-05-01 |
-| 11. Demo Readiness & Polish | 1/1 | In Progress | - |
+| 11. Demo Readiness & Polish | 1/1 | Completed | 2026-05-02 |
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 

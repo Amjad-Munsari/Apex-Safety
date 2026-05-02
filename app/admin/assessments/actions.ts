@@ -3,6 +3,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { adminClient } from "@/lib/supabase/admin"
 import { redirect } from "next/navigation"
+import { revalidatePath } from "next/cache"
+import { generateObject } from "ai"
+import { createOpenAI } from "@ai-sdk/openai"
+import { z } from "zod"
 
 export async function startAssessment(clientId: string, templateVersionId: string) {
   const supabase = await createClient()
@@ -129,4 +133,159 @@ export async function submitAssessment(submissionId: string, finalAnswers: Recor
   }
   
   return { clientId: submission.client_id }
+}
+
+export async function generateReportDraft(submissionId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required to generate draft")
+  }
+
+  // 1. Fetch form_submissions row
+  const { data: submission, error: fetchError } = await adminClient
+    .from("form_submissions")
+    .select("answers_json")
+    .eq("id", submissionId)
+    .single()
+
+  if (fetchError || !submission) {
+    throw new Error("Submission not found or fetch failed")
+  }
+
+  // 2. Initialize createOpenAI
+  const openai = createOpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: process.env.OPENROUTER_API_KEY,
+  })
+
+  // 3. Define the Zod schema
+  const reportSchema = z.object({
+    executiveSummary: z.string(),
+    hazards: z.array(z.object({
+      location: z.string(),
+      description: z.string(),
+      severity: z.enum(["Low", "Medium", "High", "Critical"]),
+      recommendedAction: z.string(),
+    })),
+    complianceStatus: z.enum(["Pass", "Action Required", "Fail"]),
+  })
+
+  // 4. Call generateObject
+  try {
+    const { object } = await generateObject({
+      model: openai('openai/gpt-4o-mini'),
+      schema: reportSchema,
+      prompt: `Act as a Fire Risk Assessor. Draft a professional report based on the following raw assessment answers:\n\n${JSON.stringify(submission.answers_json, null, 2)}\n\nDo NOT invent any hazards that are not explicitly stated in the input data. Summarize appropriately.`,
+    })
+
+    // 5. Update draft_report_json and status
+    const { error: updateError } = await adminClient
+      .from("form_submissions")
+      .update({
+        draft_report_json: object,
+        status: "draft_ready_for_review"
+      })
+      .eq("id", submissionId)
+
+    if (updateError) {
+      throw new Error(`Failed to update draft report: ${updateError.message}`)
+    }
+
+    // 6. Call revalidatePath
+    revalidatePath("/admin/assessments")
+    revalidatePath(`/admin/assessments/${submissionId}/review`)
+
+    return { success: true }
+  } catch (err: any) {
+    console.error("generateReportDraft failed:", err)
+    throw new Error(`Failed to generate report draft via AI: ${err.message || String(err)}`)
+  }
+}
+
+export async function finalizeReport(
+  submissionId: string,
+  approvedDraft: {
+    executiveSummary: string
+    hazards: { location: string; description: string; severity: "Low" | "Medium" | "High" | "Critical"; recommendedAction: string }[]
+    complianceStatus: "Pass" | "Action Required" | "Fail"
+  }
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required to finalize report")
+  }
+
+  // 1. Fetch submission + client details
+  const { data: submission, error: fetchError } = await adminClient
+    .from("form_submissions")
+    .select("id, client_id, created_at, client:clients(name, site_address)")
+    .eq("id", submissionId)
+    .single()
+
+  if (fetchError || !submission) {
+    throw new Error("Submission not found")
+  }
+
+  const client = submission.client as any
+  const assessmentDate = new Date(submission.created_at).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  })
+
+  // 2. Generate PDF buffer
+  const { generateReportPdfBuffer } = await import("@/lib/pdf/generator")
+
+  const pdfBuffer = await generateReportPdfBuffer({
+    clientName: client?.name || "Unknown Client",
+    siteAddress: client?.site_address || "",
+    assessmentDate,
+    executiveSummary: approvedDraft.executiveSummary,
+    hazards: approvedDraft.hazards,
+    complianceStatus: approvedDraft.complianceStatus,
+  })
+
+  // 3. Upload to Supabase Storage (reports bucket)
+  const fileName = `${submission.client_id}/report_${submissionId}.pdf`
+
+  const { error: uploadError } = await adminClient
+    .storage
+    .from("reports")
+    .upload(fileName, pdfBuffer, {
+      contentType: "application/pdf",
+      upsert: true,
+    })
+
+  if (uploadError) {
+    throw new Error(`Failed to upload report PDF: ${uploadError.message}`)
+  }
+
+  // 4. Update submission: store path, update draft_report_json with approved content, mark Completed
+  const { error: updateError } = await adminClient
+    .from("form_submissions")
+    .update({
+      draft_report_json: approvedDraft,
+      report_storage_path: fileName,
+      status: "completed",
+    })
+    .eq("id", submissionId)
+
+  if (updateError) {
+    throw new Error(`Failed to update submission after PDF generation: ${updateError.message}`)
+  }
+
+  revalidatePath("/admin/review-queue")
+  revalidatePath(`/admin/assessments/${submissionId}/review`)
+
+  // 5. Return a signed URL for immediate download
+  const { data: signedUrlData } = await adminClient
+    .storage
+    .from("reports")
+    .createSignedUrl(fileName, 60 * 5) // 5 minute link
+
+  return { success: true, downloadUrl: signedUrlData?.signedUrl ?? null }
 }
