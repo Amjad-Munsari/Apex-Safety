@@ -5,19 +5,26 @@ import { Mic, Square, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSTT } from "@/hooks/use-stt"
 import { cn } from "@/lib/utils"
+import type { FormSurface } from "./form-renderer"
 
 interface MicButtonProps {
   className?: string
   onTranscript: (text: string) => void
+  surface?: FormSurface
 }
 
-export function MicButton({ className, onTranscript }: MicButtonProps) {
+const idleByForSurface = {
+  dark: "text-slate-400 hover:text-slate-200",
+  cream: "text-[#999] hover:text-[#1a1a1a]",
+} as const
+
+export function MicButton({ className, onTranscript, surface = "dark" }: MicButtonProps) {
   const { isRecording, isTranscribing, startRecording, stopRecording, transcript, setTranscript } = useSTT()
 
   React.useEffect(() => {
     if (transcript) {
       onTranscript(transcript)
-      setTranscript("") // Clear for next recording
+      setTranscript("")
     }
   }, [transcript, onTranscript, setTranscript])
 
@@ -38,7 +45,7 @@ export function MicButton({ className, onTranscript }: MicButtonProps) {
         className={cn(
           "h-8 w-8 rounded-full transition-all duration-300",
           isRecording && "bg-amber-500/20 text-amber-500 animate-pulse scale-110",
-          !isRecording && "text-slate-400 hover:text-slate-200"
+          !isRecording && idleByForSurface[surface]
         )}
         onClick={handleClick}
         disabled={isTranscribing}

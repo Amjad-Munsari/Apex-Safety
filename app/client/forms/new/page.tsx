@@ -38,7 +38,6 @@ export default function NewAssessmentPage() {
             .single()
 
           const dbSchema = version?.schema_json as unknown as FormSchema | undefined
-          // Builder-format schemas store flat `fields`. The renderer needs `sections`.
           if (dbSchema && Array.isArray((dbSchema as any).sections)) {
             setSchema(dbSchema)
           } else {
@@ -56,7 +55,6 @@ export default function NewAssessmentPage() {
     loadTemplate()
   }, [])
 
-  // Cloud Draft Sync (interval set to 5s for demo verification)
   useDraftSync(submissionId, data, 5000)
 
   const handleFieldChange = (id: string, value: any) => {
@@ -64,62 +62,80 @@ export default function NewAssessmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/client">
-            <Button variant="ghost" size="icon" className="text-slate-400">
-              <ChevronLeft className="h-5 w-5" />
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* Back link */}
+      <Link
+        href="/client"
+        className="inline-flex items-center gap-2 text-[#999] hover:text-black transition-colors"
+      >
+        <ChevronLeft className="w-3.5 h-3.5" />
+        <span className="font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
+          Back to Dashboard
+        </span>
+      </Link>
+
+      {/* Hero */}
+      <section className="space-y-3">
+        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#999] uppercase font-bold">
+          <span className="text-amber-600">New Assessment</span>
+          <span className="opacity-30">·</span>
+          <span>Draft</span>
+        </div>
+        <div className="flex items-end justify-between gap-6 flex-wrap">
+          <div className="space-y-1">
+            <h2 className="font-serif text-[32px] text-[#1a1a1a] font-medium tracking-tight leading-[1.05]">
+              {schema?.title ?? "New Assessment"}.
+            </h2>
+            <p className="text-[#888] text-[13px] font-sans tracking-tight max-w-xl">
+              Fill in each section. We'll auto-save your draft to the cloud every few seconds.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[#1a1a1a] text-[10px] uppercase tracking-[0.2em] font-bold h-10 px-5 shadow-none"
+            >
+              <Save className="h-3.5 w-3.5 mr-2" />
+              Save draft
             </Button>
-          </Link>
-          <div className="h-6 w-[1px] bg-slate-800" />
-          <h2 className="font-outfit font-medium text-slate-300 tracking-wide uppercase text-sm">
-            Draft Assessment
-          </h2>
+            <Button className="bg-amber-600 hover:bg-amber-500 text-white text-[10px] uppercase tracking-[0.2em] font-bold h-10 px-6 rounded-sm shadow-none">
+              <Send className="h-3.5 w-3.5 mr-2" />
+              Complete &rarr;
+            </Button>
+          </div>
         </div>
+      </section>
 
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" className="text-slate-400 gap-2">
-            <Save className="h-4 w-4" />
-            <span className="hidden sm:inline">Save Draft</span>
-          </Button>
-          <Button className="bg-amber-600 hover:bg-amber-500 text-white gap-2 px-6">
-            <Send className="h-4 w-4" />
-            Complete
-          </Button>
-        </div>
-      </header>
-
-      {/* Form Area */}
-      <main className="container mx-auto px-6 py-12">
+      {/* Form */}
+      <section>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 animate-pulse">
-             <div className="h-8 w-64 bg-slate-800 rounded mb-4" />
-             <div className="h-4 w-48 bg-slate-900 rounded" />
+            <div className="h-8 w-64 bg-[#ece8de] rounded-sm mb-4" />
+            <div className="h-4 w-48 bg-[#f0ede6] rounded-sm" />
           </div>
         ) : schema ? (
-          <FormRenderer 
-            schema={schema} 
-            data={data} 
-            onChange={handleFieldChange} 
+          <FormRenderer
+            schema={schema}
+            data={data}
+            onChange={handleFieldChange}
+            surface="cream"
           />
         ) : (
-          <div className="text-center py-20 text-slate-500">
+          <div className="text-center py-20 font-mono text-[10px] uppercase tracking-widest text-[#999]">
             No template found. Please check Admin settings.
           </div>
         )}
-      </main>
+      </section>
 
-      {/* Sync Status Footer */}
-      <footer className="fixed bottom-6 right-6 pointer-events-none z-50">
-        <div className="bg-slate-900/90 backdrop-blur border border-slate-800 px-4 py-2 rounded-full flex items-center gap-3 shadow-2xl pointer-events-auto">
-          <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[0.6rem] uppercase tracking-widest text-slate-400 font-bold">
-            Cloud Sync Active
+      {/* Sync status */}
+      <div className="fixed bottom-6 right-6 pointer-events-none z-40">
+        <div className="bg-white/95 backdrop-blur border border-[#e5e1d8] px-4 py-2 rounded-full flex items-center gap-3 shadow-sm pointer-events-auto">
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#666] font-bold">
+            Cloud sync active
           </span>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
