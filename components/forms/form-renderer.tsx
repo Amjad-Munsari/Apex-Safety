@@ -5,6 +5,13 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { MicButton } from "./mic-button"
 import { MediaField } from "./media-field"
 import { cn } from "@/lib/utils"
@@ -118,16 +125,42 @@ export function FormRenderer({ schema, data, onChange, surface = "dark" }: FormR
                 )}
 
                 {field.type === "dropdown" && (
-                  <select
-                    className={cn("w-full h-12 px-4 rounded-sm outline-none transition-colors", t.select)}
-                    value={data[field.id] || ""}
-                    onChange={(e) => onChange(field.id, e.target.value)}
-                  >
-                    <option value="" disabled>{field.placeholder || "Select option..."}</option>
-                    {field.options?.map(opt => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
+                  surface === "cream" ? (
+                    <Select
+                      value={data[field.id] || ""}
+                      onValueChange={(value) => onChange(field.id, value)}
+                    >
+                      <SelectTrigger
+                        className="w-full h-12 px-4 rounded-sm bg-white border border-[#e5e1d8] text-[#1a1a1a] text-sm font-sans data-placeholder:text-[#bbb] focus-visible:border-amber-500 focus-visible:ring-2 focus-visible:ring-amber-500/20 hover:bg-[#faf9f6]"
+                      >
+                        <SelectValue placeholder={field.placeholder || "Select option..."} />
+                      </SelectTrigger>
+                      <SelectContent
+                        className="bg-white text-[#1a1a1a] ring-1 ring-[#e5e1d8] shadow-md rounded-sm"
+                      >
+                        {field.options?.map(opt => (
+                          <SelectItem
+                            key={opt.value}
+                            value={opt.value}
+                            className="text-sm text-[#1a1a1a] focus:bg-amber-50 focus:text-amber-700 data-[highlighted]:bg-amber-50 data-[highlighted]:text-amber-700"
+                          >
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <select
+                      className={cn("w-full h-12 px-4 rounded-sm outline-none transition-colors", t.select)}
+                      value={data[field.id] || ""}
+                      onChange={(e) => onChange(field.id, e.target.value)}
+                    >
+                      <option value="" disabled>{field.placeholder || "Select option..."}</option>
+                      {field.options?.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  )
                 )}
               </CardContent>
             </Card>
