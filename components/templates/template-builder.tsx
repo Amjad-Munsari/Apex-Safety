@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { saveDraft, publishTemplate } from "../../actions";
+import { saveDraft, publishTemplate } from "@/app/admin/templates/actions";
 import { FieldPalette } from "./field-palette";
 import { SortableField } from "./sortable-field";
 import { FieldConfig } from "./field-config";

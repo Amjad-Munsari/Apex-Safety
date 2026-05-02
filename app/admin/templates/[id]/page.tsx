@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import { TemplateBuilder } from "./_components/template-builder";
+import { TemplateBuilder } from "@/components/templates/template-builder";
 import type { FormSchema, FormField } from "@/lib/types/form-builder";
 
 interface Props {
