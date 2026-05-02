@@ -22,7 +22,7 @@ type Entry = {
 const entries: Entry[] = [
   { id: "NTF-2188", date: "02 May 2026 · 09:14", recipient: "Sarah Whitfield", recipientEmail: "sarah@hallamhouse.co.uk", channel: "Email", subject: "Fire Risk Assessment expires in 30 days",        status: "Delivered", kind: "Expiry" },
   { id: "NTF-2187", date: "02 May 2026 · 09:14", recipient: "Sarah Whitfield", recipientEmail: "07700 900 412",         channel: "SMS",   subject: "Document expiring — review by 1 Jun",            status: "Delivered", kind: "Expiry" },
-  { id: "NTF-2185", date: "01 May 2026 · 17:42", recipient: "Helena Marsh",    recipientEmail: "helena@yellowbroom.co.uk", channel: "Email", subject: "Your proposal from Dineen Fire & Safety",       status: "Delivered", kind: "Proposal" },
+  { id: "NTF-2185", date: "01 May 2026 · 17:42", recipient: "Helena Marsh",    recipientEmail: "helena@yellowbroom.co.uk", channel: "Email", subject: "Your proposal from 888 Safety & Training",       status: "Delivered", kind: "Proposal" },
   { id: "NTF-2184", date: "01 May 2026 · 17:42", recipient: "Helena Marsh",    recipientEmail: "07700 900 188",         channel: "SMS",   subject: "Proposal sent — please review",                  status: "Pending",   kind: "Proposal" },
   { id: "NTF-2180", date: "30 Apr 2026 · 11:08", recipient: "Owen Greaves",    recipientEmail: "owen@northgatemills.com", channel: "Email", subject: "Contract counter-signed — copy attached",       status: "Delivered", kind: "Contract" },
   { id: "NTF-2179", date: "30 Apr 2026 · 11:07", recipient: "Owen Greaves",    recipientEmail: "owen@northgatemills.com", channel: "Email", subject: "PAT Testing Certificate uploaded to your portal", status: "Delivered", kind: "Upload" },

@@ -40,10 +40,9 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase font-mono mb-2 opacity-50">Practice</span>
           <h1 className="font-serif text-[28px] leading-[0.9] text-white font-medium tracking-tight">
-            Dineen Fire<br />
-            &amp; Safety.
+            888 Safety<br />
+            &amp; Training.
           </h1>
-          <span className="text-[11px] text-muted-foreground mt-4 font-mono tracking-wider opacity-60 italic">Solo practice &middot; Est. 2019</span>
         </div>
       </SidebarHeader>
 
@@ -72,7 +71,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
               <SidebarMenuItem key={item.num}>
                 <SidebarMenuButton
                   isActive={isActive}
-                  className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10 data-[active=true]:border data-[active=true]:border-white/5"
+                  className="h-11 text-white/50 hover:text-white/95 hover:bg-white/[0.06] transition-colors duration-150 rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10 data-[active=true]:border data-[active=true]:border-white/5"
                   render={(props) => (
                     <Link {...props} href={item.href} className="flex w-full items-center px-3">
                       <span className="text-white/30 font-mono text-[11px] w-5 mr-4">{item.num}</span>
@@ -99,7 +98,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={pathname.startsWith("/admin/templates")}
-                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
+                className="h-11 text-white/50 hover:text-white/95 hover:bg-white/[0.06] transition-colors duration-150 rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
                 render={(props) => (
                   <Link {...props} href="/admin/templates" className="flex w-full items-center px-3">
                     <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
@@ -111,7 +110,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={pathname.startsWith("/admin/services")}
-                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
+                className="h-11 text-white/50 hover:text-white/95 hover:bg-white/[0.06] transition-colors duration-150 rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
                 render={(props) => (
                   <Link {...props} href="/admin/services" className="flex w-full items-center px-3">
                     <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
@@ -123,7 +122,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={pathname.startsWith("/admin/notifications")}
-                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
+                className="h-11 text-white/50 hover:text-white/95 hover:bg-white/[0.06] transition-colors duration-150 rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
                 render={(props) => (
                   <Link {...props} href="/admin/notifications" className="flex w-full items-center px-3">
                     <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
@@ -135,7 +134,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 isActive={pathname.startsWith("/admin/settings")}
-                className="h-11 text-white/50 hover:text-white hover:bg-white/[0.03] transition-all rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
+                className="h-11 text-white/50 hover:text-white/95 hover:bg-white/[0.06] transition-colors duration-150 rounded-[4px] data-[active=true]:text-white data-[active=true]:bg-white/10"
                 render={(props) => (
                   <Link {...props} href="/admin/settings" className="flex w-full items-center px-3">
                     <span className="text-white/30 font-mono text-[11px] w-5 mr-4">&gt;</span>
@@ -153,9 +152,9 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         <div className="flex flex-col gap-3 font-mono text-[11px]">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-            <span className="text-white font-semibold tracking-wide">Matt Dineen</span>
+            <span className="text-white font-semibold tracking-wide">Matt Robinson</span>
           </div>
-          <span className="text-white/40">matt@dineen-fire.co.uk</span>
+          <span className="text-white/40">matt@888safetyandtraining.com</span>
           <form action="/auth/signout" method="POST">
             <button type="submit" className="text-white/30 hover:text-white/60 transition-colors text-[10px] uppercase tracking-[0.15em]">
               Sign out

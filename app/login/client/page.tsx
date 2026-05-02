@@ -35,7 +35,7 @@ export default function LoginPage() {
 
 
   return (
-    <div className="min-h-screen flex bg-[#fbfaf5]">
+    <div data-surface="client" className="min-h-screen flex bg-[#fbfaf5]">
       {/* Left panel — branding */}
       <div className="hidden lg:flex flex-col justify-between w-[420px] bg-[#1a1a1a] p-12 shrink-0">
         <div>
@@ -60,8 +60,8 @@ export default function LoginPage() {
 
         <div className="space-y-2">
           <p className="font-mono text-[9px] tracking-widest text-white/20 uppercase font-bold">Your consultant</p>
-          <p className="text-white/60 text-[13px] font-sans">Matt Dineen</p>
-          <p className="text-white/30 text-[11px] font-mono">matt@dineen-fire.co.uk</p>
+          <p className="text-white/60 text-[13px] font-sans">Matt Robinson</p>
+          <p className="text-white/30 text-[11px] font-mono">matt@888safetyandtraining.com</p>
         </div>
       </div>
 

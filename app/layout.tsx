@@ -19,8 +19,8 @@ const geistMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dineen Fire & Safety Admin",
-  description: "Dashboard for Dineen Fire & Safety.",
+  title: "888 Safety & Training Admin",
+  description: "Dashboard for 888 Safety & Training.",
 };
 
 export default function RootLayout({

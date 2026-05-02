@@ -34,7 +34,7 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider>
-      <div className="dark flex h-screen overflow-hidden bg-background w-full text-foreground antialiased">
+      <div data-surface="admin" className="flex h-screen overflow-hidden bg-background w-full text-foreground antialiased">
         <AppSidebar stats={sidebarStats} />
         <div className="flex-1 flex flex-col h-screen overflow-hidden">
           {/* Top Bar */}

@@ -6,7 +6,9 @@ export const metadata = {
 };
 
 export default async function NewProposalPage() {
-  // Fetch all existing clients
+  // Clients still come from the DB. Services are read client-side from the
+  // shared catalog (lib/data/services) so /admin/services and the proposal
+  // builder are guaranteed to see the same list.
   const { data: clients, error: clientsError } = await adminClient
     .from('clients')
     .select('id, name')
@@ -16,22 +18,5 @@ export default async function NewProposalPage() {
     console.error('Error fetching clients:', clientsError);
   }
 
-  // Fetch all active services
-  const { data: services, error: servicesError } = await adminClient
-    .from('services')
-    .select('id, name, description, unit_price, category')
-    .eq('active', true)
-    .order('category', { ascending: true })
-    .order('name', { ascending: true });
-
-  if (servicesError) {
-    console.error('Error fetching services:', servicesError.message, servicesError);
-  }
-
-  return (
-    <AdvancedProposalBuilder 
-      clients={clients || []} 
-      services={services || []} 
-    />
-  );
+  return <AdvancedProposalBuilder clients={clients || []} />;
 }

@@ -48,7 +48,7 @@ export default async function ClientDetailsPage({
   }))
 
   return (
-    <div className="flex flex-col gap-10 pb-20 max-w-6xl mx-auto w-full">
+    <div className="flex flex-col gap-10 pt-8 pb-20 max-w-6xl mx-auto w-full">
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">

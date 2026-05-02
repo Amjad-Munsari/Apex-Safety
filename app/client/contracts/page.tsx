@@ -16,7 +16,7 @@ export default function ClientContractsPage() {
           Service agreements.
         </h2>
         <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
-          Counter-signed agreements between Hallam House and Dineen Fire &amp; Safety.
+          Counter-signed agreements between Hallam House and 888 Safety &amp; Training.
         </p>
       </section>
 

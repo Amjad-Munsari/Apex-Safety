@@ -27,7 +27,7 @@ export default async function ReviewQueuePage() {
             Reports Review Queue
           </h2>
           <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
-            Review AI-generated report drafts before they are delivered to clients.
+            Review report drafts before they are delivered to clients.
           </p>
         </div>
       </div>

@@ -8,14 +8,11 @@ export function ClientProposalPdf({ proposal }: { proposal: ClientProposal }) {
         <div className="flex justify-between items-start mb-12">
           <div>
             <div className="font-serif text-[28px] leading-tight text-[#1a1a1a]">
-              Dineen Fire<br />& Safety.
-            </div>
-            <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] mt-3">
-              Solo practice · Est. 2019
+              888 Safety<br />& Training.
             </div>
           </div>
           <div className="text-right font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] leading-relaxed">
-            <div>matt@dineen-fire.co.uk</div>
+            <div>matt@888safetyandtraining.com</div>
             <div>0161 552 0918</div>
             <div className="mt-2 text-[#1a1a1a]">{proposal.reference}</div>
           </div>

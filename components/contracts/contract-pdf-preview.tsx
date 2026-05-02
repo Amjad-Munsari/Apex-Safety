@@ -16,14 +16,11 @@ export function ContractPdfPreview({ contract }: { contract: MockContract }) {
         <div className="flex justify-between items-start mb-12 relative">
           <div>
             <div className="font-serif text-[28px] leading-tight text-[#1a1a1a]">
-              Dineen Fire<br />& Safety.
-            </div>
-            <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#888] mt-3">
-              Solo practice · Est. 2019
+              888 Safety<br />& Training.
             </div>
           </div>
           <div className="text-right font-mono text-[9px] uppercase tracking-[0.2em] text-[#888] leading-relaxed">
-            <div>matt@dineen-fire.co.uk</div>
+            <div>matt@888safetyandtraining.com</div>
             <div>0161 552 0918</div>
             <div className="mt-2 text-[#1a1a1a]">{contract.reference}</div>
           </div>
@@ -43,9 +40,9 @@ export function ContractPdfPreview({ contract }: { contract: MockContract }) {
         <div className="grid grid-cols-2 gap-6 mb-10 font-sans text-[12px] leading-relaxed">
           <div>
             <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] mb-2">Practice</div>
-            <div>Dineen Fire &amp; Safety Ltd</div>
-            <div className="text-[#666]">Matt Dineen, Principal</div>
-            <div className="text-[#666]">19 Cathedral Yard, Manchester</div>
+            <div>888 Safety &amp; Training Ltd</div>
+            <div className="text-[#666]">Matt Robinson, Principal</div>
+            <div className="text-[#666]">Wakefield</div>
           </div>
           <div>
             <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] mb-2">Client</div>

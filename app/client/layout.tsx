@@ -36,7 +36,7 @@ export default function ClientLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[#fbfaf5] text-[#1a1a1a] font-sans antialiased text-sm">
+    <div data-surface="client" className="min-h-screen bg-[#fbfaf5] text-[#1a1a1a] font-sans antialiased text-sm">
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e5e1d8]">
         <div className="max-w-[1320px] mx-auto h-16 lg:h-20 px-4 lg:px-6 xl:px-8 flex items-center justify-between gap-4">
@@ -183,9 +183,9 @@ export default function ClientLayout({
         <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 font-mono text-[8.5px] tracking-[0.2em] text-[#8a857f] uppercase">
           <span>Your Consultant</span>
           <span className="text-[#6b6560] font-bold">&middot;</span>
-          <span className="text-[#6b6560] font-bold">Matt Dineen</span>
+          <span className="text-[#6b6560] font-bold">Matt Robinson</span>
           <span className="text-[#6b6560] font-bold">&middot;</span>
-          <span className="text-[#6b6560] font-bold">matt@dineen-fire.co.uk</span>
+          <span className="text-[#6b6560] font-bold">matt@888safetyandtraining.com</span>
           <span className="text-[#6b6560] font-bold">&middot;</span>
           <span className="text-[#6b6560] font-bold">0161 552 0918</span>
         </div>

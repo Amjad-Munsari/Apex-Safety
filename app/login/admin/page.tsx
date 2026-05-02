@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
 
 
   return (
-    <div className="min-h-screen flex bg-background w-full text-foreground antialiased dark">
+    <div data-surface="admin" className="min-h-screen flex bg-background w-full text-foreground antialiased">
       {/* Left panel — branding */}
       <div className="hidden lg:flex flex-col justify-between w-[420px] bg-[#111] p-12 shrink-0 border-r border-white/5">
         <div>

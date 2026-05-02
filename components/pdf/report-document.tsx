@@ -140,9 +140,9 @@ export const ReportDocument = ({
         </View>
         <View style={styles.gridCol}>
           <Text style={styles.gridLabel}>PREPARED BY</Text>
-          <Text style={styles.gridName}>Matt Dineen</Text>
-          <Text style={styles.gridDetail}>Lead Consultant · 888 Safety Solutions</Text>
-          <Text style={styles.gridDetail}>matt@888safety.co.uk · 0114 555 0188</Text>
+          <Text style={styles.gridName}>Matt Robinson</Text>
+          <Text style={styles.gridDetail}>Lead Consultant · 888 Safety & Training</Text>
+          <Text style={styles.gridDetail}>matt@888safetyandtraining.com · 0114 555 0188</Text>
         </View>
       </View>
 

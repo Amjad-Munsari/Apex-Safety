@@ -1,9 +1,9 @@
 import { getComplianceAggregates } from "@/lib/supabase/dashboard";
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { ArrowLeft, FileText, Building2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { ComplianceDocRowItem, type ComplianceDocRow } from "./compliance-doc-row";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +12,11 @@ export default async function CompliancePage() {
     getComplianceAggregates(),
     adminClient
       .from("documents")
-      .select(`id, filename, expiry_date, document_category, client:clients(name)`)
+      .select(`id, filename, expiry_date, document_category, client:clients(id, name)`)
       .order("expiry_date", { ascending: true }),
   ]);
 
-  const docs = docsRes.data || [];
+  const docs = (docsRes.data || []) as unknown as ComplianceDocRow[];
   const now = new Date();
   const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
@@ -69,12 +69,12 @@ export default async function CompliancePage() {
 
       {/* ─── EXPIRED ─── */}
       {expired.length > 0 && (
-        <DocTable title="Expired" color="danger" docs={expired} now={now} />
+        <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />
       )}
 
       {/* ─── EXPIRING ─── */}
       {expiring.length > 0 && (
-        <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} />
+        <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />
       )}
 
       {/* ─── CURRENT ─── */}
@@ -85,7 +85,19 @@ export default async function CompliancePage() {
   );
 }
 
-function DocTable({ title, color, docs, now }: { title: string; color: string; docs: any[]; now: Date }) {
+function DocTable({
+  title,
+  color,
+  docs,
+  now,
+  showReminder = false,
+}: {
+  title: string;
+  color: string;
+  docs: ComplianceDocRow[];
+  now: Date;
+  showReminder?: boolean;
+}) {
   return (
     <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
@@ -100,40 +112,25 @@ function DocTable({ title, color, docs, now }: { title: string; color: string; d
             <th className="font-normal px-4 py-3 border-b border-white/5">Client</th>
             <th className="font-normal px-4 py-3 border-b border-white/5">Expiry Date</th>
             <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
+            <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5">
           {docs.map((doc) => {
             const expDate = doc.expiry_date ? new Date(doc.expiry_date) : null;
             const daysLeft = expDate ? Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+            const expDateLabel = expDate
+              ? expDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+              : "—";
             return (
-              <tr key={doc.id} className="hover:bg-white/[0.02] transition-colors">
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-4 h-4 text-white/20" />
-                    <div>
-                      <div className="font-medium text-white">{doc.filename}</div>
-                      <div className="text-[10px] text-[#666] font-mono uppercase tracking-widest">{doc.document_category}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex items-center gap-2 text-white/70">
-                    <Building2 className="w-3.5 h-3.5" />
-                    {(doc.client as any)?.name}
-                  </div>
-                </td>
-                <td className="px-4 py-4 font-mono text-white/50 text-sm">
-                  {expDate ? expDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
-                </td>
-                <td className="px-4 py-4">
-                  {daysLeft !== null && (
-                    <Badge variant="outline" className={`border-${color}/40 text-${color} bg-${color}/5 font-mono text-[10px] uppercase tracking-widest`}>
-                      {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
-                    </Badge>
-                  )}
-                </td>
-              </tr>
+              <ComplianceDocRowItem
+                key={doc.id}
+                doc={doc}
+                color={color}
+                daysLeft={daysLeft}
+                expDateLabel={expDateLabel}
+                showReminder={showReminder}
+              />
             );
           })}
         </tbody>

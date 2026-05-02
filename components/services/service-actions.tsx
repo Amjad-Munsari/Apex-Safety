@@ -1,78 +1,100 @@
 "use client"
 
 import { useState } from "react"
-import { MoreHorizontal, Edit, Trash, EyeOff, Eye } from "lucide-react"
+import { Edit, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ServiceDialog, Service } from "./service-dialog"
-import { toggleServiceActive, deleteService } from "@/app/admin/services/actions"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { ServiceDialog } from "./service-dialog"
+import { Service, deleteService, setServiceActive } from "@/lib/data/services"
 import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 
 export function ServiceActions({ service }: { service: Service }) {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const router = useRouter()
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
 
-  async function onToggleActive() {
-    try {
-      await toggleServiceActive(service.id, !service.active)
-      toast.success(service.active ? "Service deactivated" : "Service activated")
-      router.refresh()
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update service")
-    }
+  function onToggleActive() {
+    setServiceActive(service.id, !service.active)
+    toast.success(service.active ? "Service deactivated" : "Service activated")
   }
 
-  async function onDelete() {
-    if (!confirm("Are you sure you want to delete this service? This action cannot be undone.")) return
-    
-    try {
-      await deleteService(service.id)
-      toast.success("Service deleted")
-      router.refresh()
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete service")
-    }
+  function onConfirmDelete() {
+    deleteService(service.id)
+    setIsDeleteOpen(false)
+    toast.success(`${service.name} removed`)
   }
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger render={
-          <Button variant="ghost" className="h-8 w-8 p-0 text-white/50 hover:text-white">
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        } />
-        <DropdownMenuContent align="end" className="bg-[#1c1c1c] border-white/10 text-white">
-          <DropdownMenuItem className="hover:bg-white/10 cursor-pointer" onClick={() => setIsEditDialogOpen(true)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuItem className="hover:bg-white/10 cursor-pointer" onClick={onToggleActive}>
-            {service.active ? (
-              <>
-                <EyeOff className="mr-2 h-4 w-4" /> Deactivate
-              </>
-            ) : (
-              <>
-                <Eye className="mr-2 h-4 w-4" /> Activate
-              </>
-            )}
-          </DropdownMenuItem>
-          <DropdownMenuItem className="text-danger hover:bg-danger/10 hover:text-danger cursor-pointer" onClick={onDelete}>
-            <Trash className="mr-2 h-4 w-4" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center justify-end gap-1.5">
+        <button
+          onClick={onToggleActive}
+          title={service.active ? "Deactivate" : "Activate"}
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest leading-none transition ${
+            service.active
+              ? "text-success bg-success/10 hover:bg-success/15"
+              : "text-muted-foreground bg-foreground/5 hover:bg-foreground/10"
+          }`}
+        >
+          <span
+            className={`inline-block size-1.5 rounded-full ${
+              service.active ? "bg-success" : "bg-muted-foreground"
+            }`}
+          />
+          {service.active ? "Active" : "Inactive"}
+        </button>
 
-      <ServiceDialog service={service} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsEditOpen(true)}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+        >
+          <span className="sr-only">Edit</span>
+          <Edit className="h-3.5 w-3.5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsDeleteOpen(true)}
+          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+        >
+          <span className="sr-only">Delete</span>
+          <Trash className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <ServiceDialog service={service} open={isEditOpen} onOpenChange={setIsEditOpen} />
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-base">Delete service?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span className="text-foreground">{service.name}</span> will be removed from the
+              catalog and the proposal builder. This is a demo store, so it will reset on reload.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onConfirmDelete}
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

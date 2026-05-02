@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { draftProposalScope, createProposal } from '@/app/admin/proposals/actions';
+import { Service, groupByCategory, useServices } from '@/lib/data/services';
 
 export type Client = {
   id: string;
@@ -14,13 +15,7 @@ export type Client = {
   address?: string;
 }
 
-export type Service = {
-  id: string;
-  name: string;
-  description: string | null;
-  unit_price: number;
-  category: string | null;
-}
+export type { Service };
 
 export interface CategoryGroup {
   title: string;
@@ -44,26 +39,18 @@ const STEPS = [
   { number: 4, label: 'SEND' },
 ];
 
-export function AdvancedProposalBuilder({ 
-  clients, 
-  services 
-}: { 
-  clients: Client[], 
-  services: Service[] 
+export function AdvancedProposalBuilder({
+  clients,
+}: {
+  clients: Client[]
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Group services by category
-  const categories = useMemo(() => {
-    const map = new Map<string, Service[]>();
-    services.forEach(s => {
-      const cat = s.category || 'Other Services';
-      if (!map.has(cat)) map.set(cat, []);
-      map.get(cat)!.push(s);
-    });
-    return Array.from(map.entries()).map(([title, svcs]) => ({ title, services: svcs }));
-  }, [services]);
+  // Read live from the shared services store; only show active entries.
+  const allServices = useServices();
+  const services = useMemo(() => allServices.filter(s => s.active), [allServices]);
+  const categories = useMemo(() => groupByCategory(services), [services]);
 
   const [step, setStep] = useState(1);
   const [isDrafting, setIsDrafting] = useState(false);
@@ -388,7 +375,7 @@ export function AdvancedProposalBuilder({
                         <div className="prop-service-pricing">
                           <div className="prop-service-price-block">
                             <span className="prop-service-price">{formatPrice(svc.unit_price)}</span>
-                            <span className="prop-service-unit">/ each</span>
+                            <span className="prop-service-unit">/ {svc.unit}</span>
                           </div>
                           <div className="prop-qty-control">
                             <button className="prop-qty-btn" onClick={() => updateQty(svc.id, -1)}>−</button>
@@ -525,11 +512,11 @@ export function AdvancedProposalBuilder({
                     
                     {/* EDITABLE SCOPE TEXTAREA */}
                     <div className="prop-paper-text">
-                      <textarea 
-                        value={scopeText} 
+                      <textarea
+                        value={scopeText}
                         onChange={(e) => setScopeText(e.target.value)}
-                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-y min-h-[120px] outline-none"
-                        style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', lineHeight: '1.6', color: 'var(--p-text)' }}
+                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-y min-h-[120px] outline-none text-[#1a1a1a] placeholder:text-[#8a857f]"
+                        style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', lineHeight: '1.6' }}
                       />
                     </div>
 

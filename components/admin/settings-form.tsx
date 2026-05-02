@@ -10,7 +10,7 @@ export function SettingsForm() {
   const [primary, setPrimary] = React.useState("#3b8273")
   const [secondary, setSecondary] = React.useState("#d97706")
   const [signOff, setSignOff] = React.useState("Matt Robinson")
-  const [senderName, setSenderName] = React.useState("Dineen Fire & Safety")
+  const [senderName, setSenderName] = React.useState("888 Safety & Training")
   const [logoName, setLogoName] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
 
@@ -181,12 +181,14 @@ function Toggle({ defaultOn }: { defaultOn?: boolean }) {
     <button
       type="button"
       onClick={() => setOn((v) => !v)}
-      className={`w-10 h-5 rounded-full relative transition-colors ${on ? "bg-amber-500" : "bg-white/10"}`}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97706]/40 ${
+        on ? "bg-[#d97706]" : "bg-white/15"
+      }`}
       aria-pressed={on}
     >
       <span
-        className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-          on ? "translate-x-5" : "translate-x-0.5"
+        className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+          on ? "translate-x-[18px]" : "translate-x-0.5"
         }`}
       />
     </button>
