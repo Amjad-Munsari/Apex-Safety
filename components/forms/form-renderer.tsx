@@ -142,7 +142,7 @@ export function FormRenderer({ schema, data, onChange, surface = "dark" }: FormR
                           <SelectItem
                             key={opt.value}
                             value={opt.value}
-                            className="text-sm text-[#1a1a1a] focus:bg-amber-50 focus:text-amber-700 data-[highlighted]:bg-amber-50 data-[highlighted]:text-amber-700"
+                            className="text-sm text-[#1a1a1a] focus:bg-[#faf9f6] focus:text-[#1a1a1a] focus:[&_*]:text-[#1a1a1a] data-[highlighted]:bg-[#faf9f6] data-[highlighted]:text-[#1a1a1a] data-[highlighted]:[&_*]:text-[#1a1a1a] data-[selected]:text-amber-700 data-[selected]:[&_*]:text-amber-700"
                           >
                             {opt.label}
                           </SelectItem>
