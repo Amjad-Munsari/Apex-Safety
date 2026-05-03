@@ -2,13 +2,18 @@ import type { FormSchema, FormField } from "@/lib/types/form-builder";
 
 /**
  * Returns true if `next` differs structurally from `original`. Compares field
- * identity (id + order), type, label, required flag, and options list. Used
- * by the `forkOnFill` server action to decide whether a customer's edits to
- * a master template warrant creating a forked template record.
+ * identity (id + order), key, type, label, required flag, and options list.
+ * Used by the `forkOnFill` server action to decide whether a customer's edits
+ * to a master template warrant creating a forked template record.
  *
  * NOT compared: helpText, placeholder, maxPhotos, maxRating — these are
  * presentation-only and editing them shouldn't trigger a fork. Adjust if
  * the Finley contract changes.
+ *
+ * Known limitation: nested `fields` on `repeating` field types are NOT
+ * recursed into — a change inside a repeating section's children won't
+ * trigger a fork. The `repeating` type is currently stubbed in the renderer;
+ * revisit this when repeating sections are made real.
  */
 export function hasStructuralChanges(original: FormSchema, next: FormSchema): boolean {
   if (original.fields.length !== next.fields.length) return true;
@@ -20,6 +25,7 @@ export function hasStructuralChanges(original: FormSchema, next: FormSchema): bo
 
 function fieldDiffers(a: FormField, b: FormField): boolean {
   if (a.id !== b.id) return true;
+  if (a.key !== b.key) return true;
   if (a.type !== b.type) return true;
   if (a.label !== b.label) return true;
   if (Boolean(a.required) !== Boolean(b.required)) return true;

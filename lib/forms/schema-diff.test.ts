@@ -79,4 +79,24 @@ describe("hasStructuralChanges", () => {
     };
     expect(hasStructuralChanges(baseSchema, next)).toBe(true);
   });
+
+  it("returns true when a field key changes (answer column rename)", () => {
+    const next: FormSchema = {
+      fields: [
+        { ...baseSchema.fields[0], key: "full_name" },
+        baseSchema.fields[1],
+      ],
+    };
+    expect(hasStructuralChanges(baseSchema, next)).toBe(true);
+  });
+
+  it("returns false when only ignored presentation fields differ", () => {
+    const next: FormSchema = {
+      fields: [
+        { ...baseSchema.fields[0], helpText: "Enter your full legal name", placeholder: "Jane Doe" },
+        { ...baseSchema.fields[1], maxPhotos: 10, maxRating: 7 },
+      ],
+    };
+    expect(hasStructuralChanges(baseSchema, next)).toBe(false);
+  });
 });
