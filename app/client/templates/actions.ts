@@ -12,6 +12,28 @@ async function requireClientContext() {
   return ctx;
 }
 
+/**
+ * Verifies a customer-owned template exists and is owned by the requesting
+ * client. Returns the template row on success, throws on miss.
+ *
+ * RLS already blocks unauthorized writes silently; this surfaces them as
+ * loud errors so the client UI can react and we don't ship false success
+ * states to multi-tenant customers.
+ */
+async function requireOwnedTemplate(templateId: string, clientId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("form_templates")
+    .select("id, owner_id, owner_type")
+    .eq("id", templateId)
+    .single();
+  if (error || !data) throw new Error("Template not found");
+  if (data.owner_type !== "customer" || data.owner_id !== clientId) {
+    throw new Error("Forbidden: not your template");
+  }
+  return data;
+}
+
 export async function createClientTemplate(name: string, templateType: string) {
   const supabase = await createClient();
   const ctx = await requireClientContext();
@@ -43,7 +65,8 @@ export async function createClientTemplate(name: string, templateType: string) {
 
 export async function saveClientDraft(templateId: string, schema: FormSchema, templateName: string) {
   const supabase = await createClient();
-  await requireClientContext();
+  const ctx = await requireClientContext();
+  await requireOwnedTemplate(templateId, ctx.client_id);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
@@ -87,7 +110,8 @@ export async function saveClientDraft(templateId: string, schema: FormSchema, te
 
 export async function publishClientTemplate(templateId: string, schema: FormSchema, templateName: string) {
   const supabase = await createClient();
-  await requireClientContext();
+  const ctx = await requireClientContext();
+  await requireOwnedTemplate(templateId, ctx.client_id);
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
 
@@ -126,7 +150,8 @@ export async function publishClientTemplate(templateId: string, schema: FormSche
 
 export async function deleteClientTemplate(templateId: string) {
   const supabase = await createClient();
-  await requireClientContext();
+  const ctx = await requireClientContext();
+  await requireOwnedTemplate(templateId, ctx.client_id);
   await supabase.from("form_templates").delete().eq("id", templateId);
   revalidatePath("/client/templates");
 }
@@ -162,6 +187,18 @@ export async function forkOnFill(
   const ctx = await requireClientContext();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Unauthorized");
+
+  // Customers can only fork admin-owned (Matt's) published masters — never
+  // another customer's template. RLS scopes the read to admin-owned anyway,
+  // but be loud about violations so the future fill-UI surfaces a real error.
+  const { data: masterCheck, error: masterCheckErr } = await supabase
+    .from("form_templates")
+    .select("owner_type, is_published")
+    .eq("id", masterTemplateId)
+    .single();
+  if (masterCheckErr || !masterCheck) throw new Error("Master template not found");
+  if (masterCheck.owner_type !== "admin") throw new Error("Forbidden: can only fork admin-owned masters");
+  if (!masterCheck.is_published) throw new Error("Cannot fork an unpublished master");
 
   if (!hasStructuralChanges(originalSchema, modifiedSchema)) {
     const { data: masterVersion, error } = await supabase
