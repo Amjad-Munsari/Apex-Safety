@@ -1,3 +1,5 @@
+export type BuilderSurface = "dark" | "cream";
+
 export type FieldType =
   | "text"
   | "textarea"
