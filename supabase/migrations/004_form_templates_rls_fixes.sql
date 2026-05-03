@@ -35,9 +35,21 @@ CREATE POLICY "template_versions_client_published" ON template_versions
 -- template_versions: allow customers to UPDATE drafts of their own templates
 -- ─────────────────────────────────────────────────────────────
 
+-- USING gates which rows are visible/updatable; WITH CHECK gates the post-update
+-- row. Postgres defaults WITH CHECK to USING for FOR UPDATE, but make it explicit
+-- so a customer attempting `UPDATE ... SET template_id = '<other-customer-template>'`
+-- is rejected on the post-image, not just the pre-image.
 DROP POLICY IF EXISTS "template_versions_client_own_update" ON template_versions;
 CREATE POLICY "template_versions_client_own_update" ON template_versions
-  FOR UPDATE USING (
+  FOR UPDATE
+  USING (
+    template_id IN (
+      SELECT id FROM form_templates
+      WHERE owner_type = 'customer'
+        AND owner_id IN (SELECT client_id FROM client_users WHERE id = auth.uid())
+    )
+  )
+  WITH CHECK (
     template_id IN (
       SELECT id FROM form_templates
       WHERE owner_type = 'customer'
