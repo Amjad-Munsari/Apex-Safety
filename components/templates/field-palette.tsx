@@ -1,6 +1,7 @@
 "use client";
 
-import type { FieldType } from "@/lib/types/form-builder";
+import type { FieldType, BuilderSurface } from "@/lib/types/form-builder";
+import { cn } from "@/lib/utils";
 import {
   Type,
   AlignLeft,
@@ -38,13 +39,36 @@ const FIELDS: FieldDef[] = [
 
 interface Props {
   onAdd: (type: FieldType) => void;
+  surface?: BuilderSurface;
 }
 
-export function FieldPalette({ onAdd }: Props) {
+const surfaceTokens = {
+  dark: {
+    headerBorder: "border-white/5",
+    headerLabel: "text-white/30",
+    btnHover: "hover:bg-white/[0.05]",
+    iconBox: "bg-white/5 border-white/10 group-hover:border-white/20",
+    icon: "text-white/50 group-hover:text-white/80",
+    label: "text-white/70 group-hover:text-white",
+    desc: "text-white/25",
+  },
+  cream: {
+    headerBorder: "border-[#e5e1d8]",
+    headerLabel: "text-[#8a857f]",
+    btnHover: "hover:bg-[#f0ede6]",
+    iconBox: "bg-white border-[#e5e1d8] group-hover:border-[#1a1a1a]/30",
+    icon: "text-[#6b6560] group-hover:text-[#1a1a1a]",
+    label: "text-[#1a1a1a] group-hover:text-black",
+    desc: "text-[#8a857f]",
+  },
+} as const;
+
+export function FieldPalette({ onAdd, surface = "dark" }: Props) {
+  const t = surfaceTokens[surface];
   return (
     <div className="flex flex-col gap-0">
-      <div className="px-4 py-3 border-b border-white/5">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-white/30">
+      <div className={cn("px-4 py-3 border-b", t.headerBorder)}>
+        <span className={cn("font-mono text-[10px] uppercase tracking-widest", t.headerLabel)}>
           Field Types
         </span>
       </div>
@@ -53,16 +77,22 @@ export function FieldPalette({ onAdd }: Props) {
           <button
             key={type}
             onClick={() => onAdd(type)}
-            className="flex items-start gap-3 px-3 py-3 rounded-[3px] hover:bg-white/[0.05] transition-colors text-left group w-full"
+            className={cn(
+              "flex items-start gap-3 px-3 py-3 rounded-[3px] transition-colors text-left group w-full",
+              t.btnHover
+            )}
           >
-            <div className="w-7 h-7 rounded-[3px] bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-white/20 transition-colors">
-              <Icon className="w-3.5 h-3.5 text-white/50 group-hover:text-white/80 transition-colors" />
+            <div className={cn(
+              "w-7 h-7 rounded-[3px] border flex items-center justify-center shrink-0 transition-colors",
+              t.iconBox
+            )}>
+              <Icon className={cn("w-3.5 h-3.5 transition-colors", t.icon)} />
             </div>
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors leading-tight">
+              <span className={cn("text-xs font-medium transition-colors leading-tight", t.label)}>
                 {label}
               </span>
-              <span className="text-[10px] text-white/25 leading-tight">
+              <span className={cn("text-[10px] leading-tight", t.desc)}>
                 {description}
               </span>
             </div>
