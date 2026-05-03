@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { FormField, FieldOption, BuilderSurface } from "@/lib/types/form-builder";
+import type { FormField, BuilderSurface } from "@/lib/types/form-builder";
 import { Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 

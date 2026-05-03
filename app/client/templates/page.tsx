@@ -11,6 +11,8 @@ export default async function ClientTemplatesPage() {
   const ctx = await getClientContext();
   if (!ctx) redirect("/login");
 
+  // TODO(phaseB): scope this through form_assignments so customers see only
+  // templates Matt has actually assigned to them, not every admin master.
   // Assigned: admin-owned, published. RLS already scopes this in migration 004.
   const { data: assigned } = await supabase
     .from("form_templates")
@@ -36,7 +38,7 @@ export default async function ClientTemplatesPage() {
       {/* Hero */}
       <section className="space-y-3">
         <div className="flex items-center gap-3 font-mono text-[8px] tracking-[0.3em] uppercase font-bold text-[#8a857f]">
-          <span>08</span>
+          <span>06</span>
           <span className="text-[#d8d4cc]">·</span>
           <span>Templates</span>
         </div>
@@ -52,7 +54,7 @@ export default async function ClientTemplatesPage() {
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#e5e1d8] pb-2">
           <h3 className="font-mono text-[10px] tracking-[0.25em] uppercase font-bold text-[#1a1a1a]">
-            01 — Assigned Templates
+            01 — Available Templates
           </h3>
           <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-[#8a857f]">
             {assigned?.length ?? 0} available
@@ -60,7 +62,7 @@ export default async function ClientTemplatesPage() {
         </div>
         {!assigned || assigned.length === 0 ? (
           <p className="text-[#8a857f] text-sm font-mono uppercase tracking-wider py-6">
-            No assigned templates yet.
+            No templates available yet.
           </p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
