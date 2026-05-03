@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ChevronRight, Download, ExternalLink } from "lucide-react";
-import { toast } from "sonner";
 import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
 
 type AssessmentStatus = "completed" | "in_progress" | "scheduled";
@@ -54,7 +53,7 @@ export default function AssessmentListPage() {
       {/* ─── HEADER ─── */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[8px] text-[#8a857f] tracking-[0.3em] font-bold uppercase">
+          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
             05 Assessments
           </span>
         </div>
@@ -133,7 +132,7 @@ export default function AssessmentListPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => toast.success(`Downloading ${row.id}.pdf…`)}
+                          onClick={() => setPreviewRow(row)}
                           aria-label={`Download ${row.id} PDF`}
                           className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6]! h-8 px-3 shadow-none"
                         >

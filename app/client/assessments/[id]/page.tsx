@@ -11,7 +11,6 @@ import {
   FileText,
 } from "lucide-react"
 import Link from "next/link"
-import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog"
 
@@ -160,7 +159,7 @@ export default function ClientAssessmentDetailPage({
                 View Report
               </Button>
               <Button
-                onClick={() => toast.success(`Downloading ${assessment.id}.pdf…`)}
+                onClick={() => setPreviewOpen(true)}
                 variant="outline"
                 className="rounded-sm border-[#e5e1d8] bg-transparent text-[#1a1a1a] hover:bg-[#f9f8f6] h-10 px-6 font-bold text-[10px] uppercase tracking-[0.25em] shadow-none transition-all"
               >

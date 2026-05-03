@@ -1,8 +1,7 @@
 "use client"
 
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
-import { FileText, X, Download } from "lucide-react"
-import { toast } from "sonner"
+import { X, Download } from "lucide-react"
 
 interface PdfPreviewDialogProps {
   open: boolean
@@ -22,12 +21,13 @@ export function PdfPreviewDialog({
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
-        <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-[#1a1a1a]/40 backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
+        <DialogPrimitive.Backdrop className="no-print fixed inset-0 z-50 bg-[#1a1a1a]/40 backdrop-blur-sm data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Popup
-          className="fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 grid-rows-[auto,1fr] rounded-sm bg-[#fbfaf5] ring-1 ring-[#e5e1d8] shadow-[0_8px_32px_rgba(26,26,26,0.18)] outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95"
+          data-print-target
+          className="fixed top-1/2 left-1/2 z-50 grid w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 -translate-y-1/2 grid-rows-[auto,1fr] rounded-sm bg-[#fbfaf5] ring-1 ring-[#e5e1d8] shadow-[0_8px_32px_rgba(26,26,26,0.18)] outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 print:fixed print:top-0 print:left-0 print:z-auto print:w-full print:max-w-none print:translate-x-0 print:translate-y-0 print:rounded-none print:ring-0 print:bg-white"
         >
           {/* Header */}
-          <div className="flex items-start justify-between gap-6 px-8 pt-6 pb-4 border-b border-[#e5e1d8]">
+          <div className="no-print flex items-start justify-between gap-6 px-8 pt-6 pb-4 border-b border-[#e5e1d8]">
             <div className="flex flex-col gap-1 min-w-0">
               <span className="font-mono text-[8.5px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
                 Document Preview
@@ -111,13 +111,17 @@ export function PdfPreviewDialog({
           </div>
 
           {/* Footer */}
-          <div className="px-8 py-4 border-t border-[#e5e1d8] flex items-center justify-between bg-white">
+          <div className="no-print px-8 py-4 border-t border-[#e5e1d8] flex items-center justify-between bg-white">
             <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a857f] uppercase font-bold">
               Sample preview — full PDF on download
             </span>
             <button
               type="button"
-              onClick={() => toast.success(`Downloading ${title}…`)}
+              onClick={() => {
+                document.body.classList.add("printing-dialog")
+                window.print()
+                document.body.classList.remove("printing-dialog")
+              }}
               className="inline-flex items-center gap-2 rounded-sm bg-[#1a1a1a] hover:bg-black text-white h-9 px-5 font-sans text-[10px] font-bold uppercase tracking-[0.2em] transition-all"
             >
               <Download className="w-3 h-3" /> Download PDF

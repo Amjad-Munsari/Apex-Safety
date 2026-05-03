@@ -1,9 +1,11 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useTransition } from "react"
 import { toast } from "sonner"
 import { Building2, Download, FileText, Send } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { getComplianceDocSignedUrl } from "./actions"
 
 export interface ComplianceDocRow {
   id: string
@@ -23,6 +25,7 @@ interface Props {
 
 export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showReminder }: Props) {
   const router = useRouter()
+  const [pending, startTransition] = useTransition()
   const clientId = doc.client?.id
 
   const goToClient = () => {
@@ -31,8 +34,19 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation()
-    toast.success(`Downloading ${doc.filename}…`, {
-      description: "PDF saved to your Downloads folder.",
+    startTransition(async () => {
+      const { url, filename } = await getComplianceDocSignedUrl(doc.id)
+      if (!url) {
+        toast.error(`Could not prepare ${doc.filename} for download.`)
+        return
+      }
+      const link = document.createElement("a")
+      link.href = url
+      link.download = filename ?? doc.filename
+      link.rel = "noopener noreferrer"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
     })
   }
 
@@ -87,11 +101,12 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
           <button
             type="button"
             onClick={handleDownload}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-white/10 text-white/70 hover:text-white hover:bg-white/[0.04] transition-colors font-mono text-[10px] uppercase tracking-widest"
+            disabled={pending}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-white/10 text-white/70 hover:text-white hover:bg-white/[0.04] disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest"
             aria-label="Download PDF"
           >
             <Download className="w-3 h-3" />
-            PDF
+            {pending ? "…" : "PDF"}
           </button>
         </div>
       </td>

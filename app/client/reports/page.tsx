@@ -12,7 +12,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
 
 interface Report {
@@ -107,7 +106,7 @@ export default function ReportsPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1 shadow-md bg-white">
                     <DropdownMenuItem
-                      onClick={() => toast.success(`Downloading ${report.title}…`)}
+                      onClick={() => setPreviewReport(report)}
                       className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
                     >
                        <Download className="h-3.5 w-3.5" /> Download PDF

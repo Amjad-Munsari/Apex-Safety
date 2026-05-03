@@ -231,3 +231,54 @@
     color: #000000;
   }
 }
+
+@media print {
+  html, body {
+    background: white !important;
+    color: black !important;
+  }
+
+  [data-surface="client"] > header,
+  [data-surface="client"] > footer,
+  [data-surface="admin"] [data-slot="sidebar"],
+  [data-surface="admin"] [data-slot="sidebar-container"],
+  [data-surface="admin"] [data-slot="sidebar-wrapper"] > [data-slot="sidebar"],
+  [data-surface="admin"] > div > header,
+  .no-print {
+    display: none !important;
+  }
+
+  [data-surface="admin"] {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  [data-surface="admin"] > div {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  main {
+    max-width: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  section, article {
+    page-break-inside: avoid;
+  }
+
+  /* When the preview dialog is the print target, hide the page surface beneath it */
+  body.printing-dialog [data-surface="client"],
+  body.printing-dialog [data-surface="admin"] {
+    display: none !important;
+  }
+}

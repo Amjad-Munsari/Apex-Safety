@@ -14,7 +14,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { toast } from "sonner";
 import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
 
 interface AttentionDoc {
@@ -41,7 +40,7 @@ export default function ClientDashboard() {
       <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-             <span className="font-mono text-[8px] text-[#8a857f] tracking-[0.3em] font-bold uppercase">01 Today</span>
+             <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">01 Today</span>
           </div>
           <div className="space-y-1">
             <h2 className="font-serif text-[30px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">Good morning, Sarah.</h2>
@@ -198,7 +197,7 @@ export default function ClientDashboard() {
                     />
                     <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1.5">
                        <DropdownMenuItem
-                         onClick={() => toast.success(`Downloading ${doc.title}…`)}
+                         onClick={() => setPreviewDoc(doc)}
                          className="text-[10px] font-mono font-bold uppercase tracking-widest p-2 cursor-pointer h-10 flex items-center gap-3"
                        >
                           <Download className="h-3 w-3" /> Download Result

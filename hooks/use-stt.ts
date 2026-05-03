@@ -1,72 +1,122 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike
+
+interface SpeechRecognitionLike {
+  continuous: boolean
+  interimResults: boolean
+  lang: string
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null
+  onend: ((event: Event) => void) | null
+  onerror: ((event: { error: string }) => void) | null
+  start: () => void
+  stop: () => void
+  abort: () => void
+}
+
+interface SpeechRecognitionResultEvent {
+  resultIndex: number
+  results: ArrayLike<{
+    isFinal: boolean
+    0: { transcript: string }
+  }>
+}
+
+function getRecognitionCtor(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") return null
+  const w = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionCtor
+    webkitSpeechRecognition?: SpeechRecognitionCtor
+  }
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
+}
 
 export function useSTT() {
   const [isRecording, setIsRecording] = useState(false)
   const [transcript, setTranscript] = useState("")
-  const [isTranscribing, setIsTranscribing] = useState(false)
-  const mediaRecorderRef = useRef<any>(null)
-  const audioChunksRef = useRef<Blob[]>([])
+  const [isTranscribing] = useState(false)
+  const [supported, setSupported] = useState(true)
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
+  const finalRef = useRef<string>("")
+
+  useEffect(() => {
+    setSupported(!!getRecognitionCtor())
+    return () => {
+      recognitionRef.current?.abort()
+    }
+  }, [])
 
   const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mediaRecorder = new MediaRecorder(stream)
-      mediaRecorderRef.current = mediaRecorder
-      audioChunksRef.current = []
+    const Ctor = getRecognitionCtor()
+    if (!Ctor) {
+      setSupported(false)
+      return
+    }
 
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data)
+    finalRef.current = ""
+
+    const recognition = new Ctor()
+    recognition.continuous = false
+    recognition.interimResults = true
+    recognition.lang = "en-GB"
+
+    recognition.onresult = (event) => {
+      let interim = ""
+      let final = ""
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i]
+        const text = result[0].transcript
+        if (result.isFinal) {
+          final += text
+        } else {
+          interim += text
         }
       }
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" })
-        await transcribeAudio(audioBlob)
-        stream.getTracks().forEach(track => track.stop())
+      if (final) {
+        finalRef.current = (finalRef.current + " " + final).trim()
       }
-
-      mediaRecorder.start()
-      setIsRecording(true)
-    } catch (error) {
-      console.error("Failed to start recording:", error)
+      // Show running text — final words plus interim for live feedback.
+      const live = (finalRef.current + " " + interim).trim()
+      if (live) setTranscript(live)
     }
-  }
 
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop()
+    recognition.onend = () => {
+      setIsRecording(false)
+      // Commit the final transcript on end so the consumer's effect fires once with stable text.
+      if (finalRef.current) {
+        setTranscript(finalRef.current)
+      }
+      recognitionRef.current = null
+    }
+
+    recognition.onerror = (event) => {
+      setIsRecording(false)
+      recognitionRef.current = null
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        setSupported(false)
+      }
+    }
+
+    recognitionRef.current = recognition
+    try {
+      recognition.start()
+      setIsRecording(true)
+    } catch {
       setIsRecording(false)
     }
   }
 
-  const transcribeAudio = async (blob: Blob) => {
-    setIsTranscribing(true)
-    const formData = new FormData()
-    formData.append("file", blob, "recording.webm")
-
-    try {
-      const response = await fetch("/api/proxy/stt", {
-        method: "POST",
-        body: formData,
-      })
-      const data = await response.json()
-      if (data.text) {
-        setTranscript(data.text)
-      }
-    } catch (error) {
-      console.error("Transcription failed:", error)
-    } finally {
-      setIsTranscribing(false)
-    }
+  const stopRecording = () => {
+    recognitionRef.current?.stop()
   }
 
   return {
     isRecording,
     transcript,
     isTranscribing,
+    supported,
     startRecording,
     stopRecording,
     setTranscript,

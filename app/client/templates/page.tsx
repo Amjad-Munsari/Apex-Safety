@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
-import Link from "next/link";
 import { NewClientTemplateButton } from "./_components/new-client-template-button";
+import { ClientTemplateCard } from "./_components/client-template-card";
 
 export const dynamic = "force-dynamic";
 
@@ -38,10 +38,10 @@ export default async function ClientTemplatesPage() {
     <div className="space-y-12">
       {/* Hero */}
       <section className="space-y-3">
-        <div className="flex items-center gap-3 font-mono text-[8px] tracking-[0.3em] uppercase font-bold text-[#8a857f]">
-          <span>06</span>
-          <span className="text-[#d8d4cc]">·</span>
-          <span>Templates</span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
+            06 · Templates
+          </span>
         </div>
         <div className="flex items-end justify-between gap-6 flex-wrap">
           <h2 className="font-serif text-[32px] text-[#1a1a1a] font-medium tracking-tight leading-[1.05]">
@@ -114,29 +114,16 @@ export default async function ClientTemplatesPage() {
               const versions = (t.template_versions ?? []) as Array<{ version_number: number; published_at: string | null }>;
               const latest = versions.sort((a, b) => b.version_number - a.version_number)[0];
               return (
-                <Link key={t.id} href={`/client/templates/${t.id}`}>
-                  <div className="bg-white border border-[#e5e1d8] rounded-sm p-5 flex flex-col gap-4 hover:border-[#1a1a1a]/30 transition-colors">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <h4 className="font-serif text-[18px] text-[#1a1a1a] leading-tight truncate">{t.name}</h4>
-                        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">
-                          {t.template_type}
-                          {t.parent_template_id && <span className="ml-2 text-[#c0a66d]">· FORKED</span>}
-                        </span>
-                      </div>
-                      <span className={
-                        t.is_published
-                          ? "font-mono text-[9px] uppercase tracking-[0.25em] text-[#3b8273] bg-[#3b8273]/10 px-2 py-1 rounded-sm"
-                          : "font-mono text-[9px] uppercase tracking-[0.25em] text-[#8a857f] bg-[#f5f3ee] px-2 py-1 rounded-sm"
-                      }>
-                        {t.is_published ? "Live" : "Draft"}
-                      </span>
-                    </div>
-                    <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] mt-auto">
-                      v{latest?.version_number ?? 1} · {new Date(t.created_at).toLocaleDateString("en-GB")}
-                    </div>
-                  </div>
-                </Link>
+                <ClientTemplateCard
+                  key={t.id}
+                  id={t.id}
+                  name={t.name}
+                  templateType={t.template_type}
+                  isPublished={t.is_published}
+                  isForked={!!t.parent_template_id}
+                  createdAt={t.created_at}
+                  versionNumber={latest?.version_number ?? 1}
+                />
               );
             })}
           </div>

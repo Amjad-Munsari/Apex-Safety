@@ -44,10 +44,16 @@ export function ProposalActions({
 
   function handleDownload() {
     if (documentUrl) {
-      window.open(documentUrl, "_blank", "noopener,noreferrer")
+      const link = document.createElement("a")
+      link.href = documentUrl
+      link.download = `proposal-${proposalId.slice(0, 8)}.pdf`
+      link.rel = "noopener noreferrer"
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
       return
     }
-    toast.success(`Downloading proposal-${proposalId.slice(0, 8)}.pdf`)
+    toast.info("PDF will be available once the proposal document has been generated.")
   }
 
   function handleEdit() {

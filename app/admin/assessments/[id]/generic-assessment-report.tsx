@@ -5,7 +5,6 @@ import { ArrowLeft, Download, FileText } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { toast } from "sonner"
 
 interface Props {
   id: string
@@ -64,8 +63,8 @@ export function GenericAssessmentReport({ id }: Props) {
         </div>
         <Button
           variant="outline"
-          className="gap-2"
-          onClick={() => toast.success("PDF export queued")}
+          className="no-print gap-2"
+          onClick={() => window.print()}
         >
           <Download className="w-3.5 h-3.5" />
           Download PDF
