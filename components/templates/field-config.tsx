@@ -1,9 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import type { FormField, BuilderSurface } from "@/lib/types/form-builder";
-import { Plus, X } from "lucide-react";
+import type { FormField, FieldType, BuilderSurface } from "@/lib/types/form-builder";
+import {
+  Plus,
+  X,
+  Type,
+  AlignLeft,
+  Hash,
+  Calendar,
+  Check,
+  ChevronDown,
+  CheckSquare,
+  PenLine,
+  Star,
+  Camera,
+  MapPin,
+  Repeat,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const fieldTypeMeta: Record<FieldType, { label: string; icon: React.ComponentType<{ className?: string }> }> = {
+  text: { label: "Short Text", icon: Type },
+  textarea: { label: "Long Text", icon: AlignLeft },
+  number: { label: "Number", icon: Hash },
+  date: { label: "Date", icon: Calendar },
+  checkbox: { label: "Checkbox", icon: Check },
+  dropdown: { label: "Dropdown", icon: ChevronDown },
+  "multi-select": { label: "Multi-Select", icon: CheckSquare },
+  signature: { label: "Signature", icon: PenLine },
+  rating: { label: "Rating", icon: Star },
+  "multi-photo": { label: "Photos", icon: Camera },
+  geolocation: { label: "Location", icon: MapPin },
+  repeating: { label: "Repeating Section", icon: Repeat },
+};
 
 interface Props {
   field: FormField;
@@ -73,12 +103,21 @@ export function FieldConfig({ field, onChange, surface = "dark" }: Props) {
     });
   }
 
+  const meta = fieldTypeMeta[field.type];
+  const HeaderIcon = meta.icon;
+
   return (
     <div className="flex flex-col gap-0">
-      <div className={cn("px-4 py-3 border-b", t.headerBorder)}>
+      <div className={cn("px-4 py-3 border-b flex items-center gap-2", t.headerBorder)}>
+        <HeaderIcon className={cn("w-4 h-4", t.headerLabel)} />
         <span className={cn("font-mono text-[10px] uppercase tracking-widest", t.headerLabel)}>
-          Field Properties
+          {meta.label}
         </span>
+        {field.label && (
+          <span className={cn("text-xs truncate ml-auto", t.label)} title={field.label}>
+            {field.label}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-5 p-4">

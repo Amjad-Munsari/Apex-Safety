@@ -76,12 +76,15 @@ function defaultField(type: FieldType): FormField {
 
 const surfaceTokens = {
   dark: {
-    toolbar: "bg-[#111] border-white/5",
-    panel: "bg-[#0d0d0d] border-white/5",
+    root: "bg-[#111]",
+    toolbar: "bg-[#111] border-white/10",
+    panel: "bg-[#0d0d0d]",
+    columnDivider: "border-white/10",
     canvasBg: "",
     titleInput: "text-white border-transparent focus:border-white/20",
     typeLabel: "text-white/30",
-    backLink: "text-white/40 hover:text-white",
+    backLink: "text-white/50 hover:text-white",
+    backDivider: "bg-white/10",
     saveLabel: "text-white/50 hover:text-white",
     savedTag: "text-[#3b8273]",
     errorTag: "text-[#8b2b21]",
@@ -90,17 +93,20 @@ const surfaceTokens = {
     emptyIcon: "text-white/20",
     emptyText: "text-white/30",
     emptySubtext: "text-white/20",
-    bottomBar: "bg-[#111] border-white/5 text-white/30",
-    unsavedTag: "text-[#c0a66d]",
+    bottomBar: "bg-white/5 border-white/10 text-white/40",
+    unsavedTag: "text-amber-400",
     selectPanelText: "text-white/20",
   },
   cream: {
+    root: "bg-[#fbfaf5]",
     toolbar: "bg-white border-[#e5e1d8]",
-    panel: "bg-[#faf9f6] border-[#e5e1d8]",
+    panel: "bg-[#faf9f6]",
+    columnDivider: "border-[#e5e1d8]",
     canvasBg: "bg-[#fbfaf5]",
     titleInput: "text-[#1a1a1a] border-transparent focus:border-[#1a1a1a]/20",
     typeLabel: "text-[#8a857f]",
     backLink: "text-[#6b6560] hover:text-black",
+    backDivider: "bg-[#e5e1d8]",
     saveLabel: "text-[#6b6560] hover:text-black",
     savedTag: "text-[#3b8273]",
     errorTag: "text-[#8b2b21]",
@@ -109,8 +115,8 @@ const surfaceTokens = {
     emptyIcon: "text-[#a8a39d]",
     emptyText: "text-[#6b6560]",
     emptySubtext: "text-[#8a857f]",
-    bottomBar: "bg-white border-[#e5e1d8] text-[#8a857f]",
-    unsavedTag: "text-[#c0a66d]",
+    bottomBar: "bg-[#f0ede6] border-[#e5e1d8] text-[#6b6560]",
+    unsavedTag: "text-amber-600",
     selectPanelText: "text-[#8a857f]",
   },
 } as const;
@@ -228,22 +234,28 @@ export function TemplateBuilder({
   const activeField = fields.find(f => f.id === activeId);
 
   return (
-    <div className="flex flex-col h-full gap-0 -mt-8 -mx-8">
+    <div className={cn("fixed inset-0 z-50 flex flex-col", t.root)}>
       {/* Top toolbar */}
-      <div className={cn("flex items-center gap-4 px-8 py-4 border-b shrink-0", t.toolbar)}>
+      <div className={cn("h-14 flex items-center gap-4 px-6 border-b shrink-0", t.toolbar)}>
         <Link
           href={resolvedBackHref}
-          className={cn("transition-colors", t.backLink)}
+          className={cn("flex items-center gap-2 font-mono text-xs uppercase tracking-wider transition-colors shrink-0", t.backLink)}
         >
           <ArrowLeft className="w-4 h-4" />
+          <span>Back to Templates</span>
         </Link>
 
-        <div className="flex items-center gap-3 flex-1">
+        <div className={cn("h-5 w-px shrink-0", t.backDivider)} />
+
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <input
             type="text"
             value={name}
             onChange={e => { setName(e.target.value); setSaved(false); }}
-            className={cn("bg-transparent font-serif text-xl outline-none border-b transition-colors px-0 py-0.5 min-w-0 w-72", t.titleInput)}
+            className={cn(
+              "bg-transparent font-serif text-lg outline-none border-b transition-colors px-0 py-0.5 min-w-0 flex-1 max-w-md truncate",
+              t.titleInput
+            )}
           />
           <span className={cn("font-mono text-[10px] uppercase tracking-wider shrink-0", t.typeLabel)}>
             {templateType}
@@ -298,59 +310,73 @@ export function TemplateBuilder({
       {/* Builder body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Field palette */}
-        <div className={cn("w-56 border-r overflow-y-auto shrink-0", t.panel)}>
+        <div className={cn("w-56 border-r overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
           <FieldPalette onAdd={addField} surface={surface} />
         </div>
 
-        {/* Center: Canvas */}
-        <div className={cn("flex-1 overflow-y-auto p-6", t.canvasBg)}>
-          {fields.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-              <div className={cn("w-14 h-14 rounded-full border flex items-center justify-center", t.emptyIconRing)}>
-                <Eye className={cn("w-6 h-6", t.emptyIcon)} />
-              </div>
-              <p className={cn("text-sm font-mono", t.emptyText)}>Drag fields from the left panel</p>
-              <p className={cn("text-xs", t.emptySubtext)}>or click a field type to add it</p>
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={fields.map(f => f.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="flex flex-col gap-2 max-w-2xl mx-auto">
-                  {fields.map((field) => (
-                    <SortableField
-                      key={field.id}
-                      field={field}
-                      isSelected={selectedId === field.id}
-                      onSelect={() => setSelectedId(field.id)}
-                      onDuplicate={() => duplicateField(field.id)}
-                      onDelete={() => deleteField(field.id)}
-                      surface={surface}
-                    />
-                  ))}
+        {/* Center: Canvas column (canvas + footer) */}
+        <div className={cn("flex-1 flex flex-col overflow-hidden", t.canvasBg)}>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            {fields.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+                <div className={cn("w-14 h-14 rounded-full border flex items-center justify-center", t.emptyIconRing)}>
+                  <Eye className={cn("w-6 h-6", t.emptyIcon)} />
                 </div>
-              </SortableContext>
-
-              <DragOverlay>
-                {activeField ? (
-                  <div className="bg-[#2a2a2a] border border-[#3b8273]/50 rounded-sm px-4 py-3 shadow-2xl opacity-90">
-                    <span className="text-white text-sm font-medium">{activeField.label}</span>
+                <p className={cn("text-sm font-mono", t.emptyText)}>Drag fields from the left panel</p>
+                <p className={cn("text-xs", t.emptySubtext)}>or click a field type to add it</p>
+              </div>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={fields.map(f => f.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="flex flex-col gap-2 max-w-2xl mx-auto">
+                    {fields.map((field) => (
+                      <SortableField
+                        key={field.id}
+                        field={field}
+                        isSelected={selectedId === field.id}
+                        onSelect={() => setSelectedId(field.id)}
+                        onDuplicate={() => duplicateField(field.id)}
+                        onDelete={() => deleteField(field.id)}
+                        surface={surface}
+                      />
+                    ))}
                   </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          )}
+                </SortableContext>
+
+                <DragOverlay>
+                  {activeField ? (
+                    <div className="bg-[#2a2a2a] border border-[#3b8273]/50 rounded-sm px-4 py-3 shadow-2xl opacity-90">
+                      <span className="text-white text-sm font-medium">{activeField.label}</span>
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            )}
+          </div>
+
+          {/* Bottom bar pinned to canvas column */}
+          <div className={cn("h-8 px-4 border-t flex items-center gap-4 shrink-0 text-xs", t.bottomBar)}>
+            <span className="font-mono uppercase tracking-wider">
+              {fields.length} field{fields.length !== 1 ? "s" : ""}
+            </span>
+            {!saved && (
+              <span className={cn("font-mono uppercase tracking-wider animate-pulse", t.unsavedTag)}>
+                Unsaved changes
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Right: Field config */}
-        <div className={cn("w-72 border-l overflow-y-auto shrink-0", t.panel)}>
+        <div className={cn("w-72 border-l overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
           {selectedField ? (
             <FieldConfig
               field={selectedField}
@@ -363,18 +389,6 @@ export function TemplateBuilder({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Bottom bar: field count */}
-      <div className={cn("px-8 py-2.5 border-t flex items-center gap-4 shrink-0", t.bottomBar)}>
-        <span className="font-mono text-[10px] uppercase tracking-wider">
-          {fields.length} field{fields.length !== 1 ? "s" : ""}
-        </span>
-        {!saved && (
-          <span className={cn("font-mono text-[10px] uppercase tracking-wider", t.unsavedTag)}>
-            Unsaved changes
-          </span>
-        )}
       </div>
     </div>
   );
