@@ -17,8 +17,9 @@ const NAV_ITEMS = [
   { id: "03", label: "Reports", href: "/client/reports" },
   { id: "04", label: "Billing", href: "/client/billing" },
   { id: "05", label: "Assessments", href: "/client/assessments" },
-  { id: "06", label: "Proposals", href: "/client/proposals" },
-  { id: "07", label: "Contracts", href: "/client/contracts" },
+  { id: "06", label: "Templates", href: "/client/templates" },
+  { id: "07", label: "Proposals", href: "/client/proposals" },
+  { id: "08", label: "Contracts", href: "/client/contracts" },
 ] as const;
 
 function isActive(href: string, pathname: string | null): boolean {
