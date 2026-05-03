@@ -1,8 +1,11 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowLeft, Download, FileText } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { toast } from "sonner"
 
 interface Props {
   clientId: string
@@ -63,7 +66,7 @@ export function MockAssessmentReport({ clientId, clientName, index }: Props) {
             Delivered to {clientName} on {issuedLabel}. Archived copy — read only.
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
+        <Button variant="outline" className="gap-2" onClick={() => toast.success("PDF export queued")}>
           <Download className="w-3.5 h-3.5" />
           Download PDF
         </Button>

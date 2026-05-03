@@ -182,7 +182,7 @@ function Toggle({ defaultOn }: { defaultOn?: boolean }) {
       type="button"
       onClick={() => setOn((v) => !v)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97706]/40 ${
-        on ? "bg-[#d97706]" : "bg-white/15"
+        on ? "bg-[#d97706]" : "bg-white/20"
       }`}
       aria-pressed={on}
     >

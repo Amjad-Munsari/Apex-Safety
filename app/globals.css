@@ -202,17 +202,30 @@
     animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  /* Native <select> on admin (dark) surfaces — kill OS magenta accent, force dark popup */
-  [data-surface="admin"] select {
+  /* Native <select> on admin (dark) surfaces — kill OS magenta accent, force dark popup.
+     Note: dropdowns are commonly portalled (fixed/absolute) but stay in the DOM under
+     [data-surface="admin"], so descendant selectors still apply. */
+  [data-surface="admin"] select,
+  [data-surface="admin"] ~ * select,
+  body[data-admin-surface] select {
     color-scheme: dark;
     accent-color: #d97706;
+    background-color: #1a1a1a;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.1);
   }
-  [data-surface="admin"] select option {
+  [data-surface="admin"] select option,
+  [data-surface="admin"] ~ * select option,
+  body[data-admin-surface] select option {
     background-color: #1c1c1c;
     color: #ffffff;
   }
   [data-surface="admin"] select option:checked,
-  [data-surface="admin"] select option:hover {
+  [data-surface="admin"] select option:hover,
+  [data-surface="admin"] ~ * select option:checked,
+  [data-surface="admin"] ~ * select option:hover,
+  body[data-admin-surface] select option:checked,
+  body[data-admin-surface] select option:hover {
     background-color: #d97706;
     background: linear-gradient(0deg, #d97706 0%, #d97706 100%);
     color: #000000;

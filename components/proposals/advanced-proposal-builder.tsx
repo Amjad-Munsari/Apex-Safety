@@ -515,8 +515,9 @@ export function AdvancedProposalBuilder({
                       <textarea
                         value={scopeText}
                         onChange={(e) => setScopeText(e.target.value)}
-                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-y min-h-[120px] outline-none text-[#1a1a1a] placeholder:text-[#8a857f]"
-                        style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', lineHeight: '1.6' }}
+                        placeholder="Scope text will appear here once drafted..."
+                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-y min-h-[120px] outline-none placeholder:text-[#a8a39d]"
+                        style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', lineHeight: '1.6', color: '#1a1a1a' }}
                       />
                     </div>
 
