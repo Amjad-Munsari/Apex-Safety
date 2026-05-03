@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { getClientContext } from "@/lib/auth-helpers";
+import { notFound, redirect } from "next/navigation";
 import { TemplateBuilder } from "@/components/templates/template-builder";
-import { saveDraft, publishTemplate } from "../actions";
+import { saveClientDraft, publishClientTemplate } from "../actions";
 import type { FormSchema, FormField } from "@/lib/types/form-builder";
 
 interface Props {
@@ -25,22 +26,25 @@ function normaliseSchema(raw: unknown): FormSchema {
   return { fields: [] };
 }
 
-export default async function TemplateBuilderPage({ params }: Props) {
+export default async function ClientTemplateBuilderPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const ctx = await getClientContext();
+  if (!ctx) redirect("/login");
 
   const { data: template } = await supabase
     .from("form_templates")
-    .select("id, name, template_type, is_published")
+    .select("id, name, template_type, is_published, owner_type, owner_id")
     .eq("id", id)
     .single();
 
-  if (!template) notFound();
+  // Belt-and-braces: RLS already enforces this, but if a client somehow lands
+  // on an admin template's edit URL we want a clean 404 not a render attempt.
+  if (!template || template.owner_type !== "customer" || template.owner_id !== ctx.client_id) {
+    notFound();
+  }
 
-  // Load latest version (draft preferred)
   const { data: versions } = await supabase
     .from("template_versions")
     .select("id, version_number, schema_json, published_at")
@@ -65,8 +69,9 @@ export default async function TemplateBuilderPage({ params }: Props) {
       versionNumber={currentVersionNumber}
       hasDraft={!!hasDraft}
       publishedVersionNumber={latestPublished?.version_number ?? null}
-      saveAction={saveDraft}
-      publishAction={publishTemplate}
+      surface="cream"
+      saveAction={saveClientDraft}
+      publishAction={publishClientTemplate}
     />
   );
 }

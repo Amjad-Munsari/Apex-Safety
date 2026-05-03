@@ -18,7 +18,6 @@ import {
   verticalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import { saveDraft, publishTemplate } from "@/app/admin/templates/actions";
 import { FieldPalette } from "./field-palette";
 import { SortableField } from "./sortable-field";
 import { FieldConfig } from "./field-config";
@@ -28,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Upload, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+
+type TemplateAction = (templateId: string, schema: FormSchema, templateName: string) => Promise<void>;
 
 interface Props {
   templateId: string;
@@ -39,6 +40,9 @@ interface Props {
   hasDraft: boolean;
   publishedVersionNumber: number | null;
   surface?: BuilderSurface;
+  saveAction: TemplateAction;
+  publishAction: TemplateAction;
+  backHref?: string;
 }
 
 function generateId() {
@@ -121,8 +125,12 @@ export function TemplateBuilder({
   hasDraft,
   publishedVersionNumber,
   surface = "dark",
+  saveAction,
+  publishAction,
+  backHref,
 }: Props) {
   const t = surfaceTokens[surface];
+  const resolvedBackHref = backHref ?? (surface === "cream" ? "/client/templates" : "/admin/templates");
   const [name, setName] = useState(initialName);
   const [fields, setFields] = useState<FormField[]>(initialSchema?.fields ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -192,7 +200,7 @@ export function TemplateBuilder({
     setSaveStatus("saving");
     startTransition(async () => {
       try {
-        await saveDraft(templateId, schema, name);
+        await saveAction(templateId, schema, name);
         setSaved(true);
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
@@ -207,7 +215,7 @@ export function TemplateBuilder({
     const schema: FormSchema = { fields };
     startTransition(async () => {
       try {
-        await publishTemplate(templateId, schema, name);
+        await publishAction(templateId, schema, name);
         setSaved(true);
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
@@ -224,7 +232,7 @@ export function TemplateBuilder({
       {/* Top toolbar */}
       <div className={cn("flex items-center gap-4 px-8 py-4 border-b shrink-0", t.toolbar)}>
         <Link
-          href={surface === "cream" ? "/client/templates" : "/admin/templates"}
+          href={resolvedBackHref}
           className={cn("transition-colors", t.backLink)}
         >
           <ArrowLeft className="w-4 h-4" />
