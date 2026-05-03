@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { NewClientTemplateButton } from "./_components/new-client-template-button";
 
@@ -8,12 +7,14 @@ export const dynamic = "force-dynamic";
 
 export default async function ClientTemplatesPage() {
   const supabase = await createClient();
+  // ctx may be null in demo mode if client_users is empty — render the
+  // Available section anyway and skip the My Templates query. Real-prod
+  // unauthenticated traffic is already redirected to /login by proxy.ts.
   const ctx = await getClientContext();
-  if (!ctx) redirect("/login");
 
   // TODO(phaseB): scope this through form_assignments so customers see only
   // templates Matt has actually assigned to them, not every admin master.
-  // Assigned: admin-owned, published. RLS already scopes this in migration 004.
+  // Available: admin-owned, published. RLS already scopes this in migration 004.
   const { data: assigned } = await supabase
     .from("form_templates")
     .select("id, name, template_type, created_at")
@@ -21,17 +22,17 @@ export default async function ClientTemplatesPage() {
     .eq("is_published", true)
     .order("created_at", { ascending: false });
 
-  // Mine: customer-owned for this client_id. RLS scopes this too, but we
-  // add an explicit filter for clarity.
-  const { data: mine } = await supabase
-    .from("form_templates")
-    .select(`
-      id, name, template_type, is_published, created_at, parent_template_id,
-      template_versions(version_number, published_at)
-    `)
-    .eq("owner_type", "customer")
-    .eq("owner_id", ctx.client_id)
-    .order("created_at", { ascending: false });
+  const { data: mine } = ctx
+    ? await supabase
+        .from("form_templates")
+        .select(`
+          id, name, template_type, is_published, created_at, parent_template_id,
+          template_versions(version_number, published_at)
+        `)
+        .eq("owner_type", "customer")
+        .eq("owner_id", ctx.client_id)
+        .order("created_at", { ascending: false })
+    : { data: null };
 
   return (
     <div className="space-y-12">

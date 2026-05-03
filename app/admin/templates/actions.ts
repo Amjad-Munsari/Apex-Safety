@@ -5,15 +5,16 @@ import { revalidatePath } from "next/cache";
 import type { FormSchema } from "@/lib/types/form-builder";
 import type { FormSchema as LegacyFormSchema, TemplateVersion } from "@/types/forms";
 import { getLatestPublishedVersion } from "@/lib/supabase/templates";
+import { requireActorUserId } from "@/lib/auth-helpers";
 
 export async function createTemplate(name: string, templateType: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("admin");
+  
 
   const { data, error } = await supabase
     .from("form_templates")
-    .insert({ name, template_type: templateType, owner_id: user.id })
+    .insert({ name, template_type: templateType, owner_id: userId })
     .select("id")
     .single();
 
@@ -24,7 +25,7 @@ export async function createTemplate(name: string, templateType: string) {
     template_id: data.id,
     version_number: 1,
     schema_json: { fields: [] },
-    created_by: user.id,
+    created_by: userId,
   });
 
   revalidatePath("/admin/templates");
@@ -33,8 +34,8 @@ export async function createTemplate(name: string, templateType: string) {
 
 export async function saveDraft(templateId: string, schema: FormSchema, templateName: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("admin");
+  
 
   // Update template name
   await supabase
@@ -71,7 +72,7 @@ export async function saveDraft(templateId: string, schema: FormSchema, template
       template_id: templateId,
       version_number: (maxVersion?.version_number ?? 0) + 1,
       schema_json: schema,
-      created_by: user.id,
+      created_by: userId,
     });
   }
 
@@ -80,8 +81,8 @@ export async function saveDraft(templateId: string, schema: FormSchema, template
 
 export async function publishTemplate(templateId: string, schema: FormSchema, templateName: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("admin");
+  
 
   // Save name
   await supabase
@@ -112,7 +113,7 @@ export async function publishTemplate(templateId: string, schema: FormSchema, te
       version_number: newVersion,
       schema_json: schema,
       published_at: new Date().toISOString(),
-      created_by: user.id,
+      created_by: userId,
     });
   }
 
@@ -122,8 +123,8 @@ export async function publishTemplate(templateId: string, schema: FormSchema, te
 
 export async function deleteTemplate(templateId: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("admin");
+  
 
   await supabase.from("form_templates").delete().eq("id", templateId);
   revalidatePath("/admin/templates");
@@ -132,8 +133,8 @@ export async function deleteTemplate(templateId: string) {
 // Aliases for editor-client.tsx compatibility
 export async function updateTemplateDraftAction(templateId: string, schema: LegacyFormSchema) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("admin");
+  
 
   const { data: latest } = await supabase
     .from("template_versions")
@@ -157,7 +158,7 @@ export async function updateTemplateDraftAction(templateId: string, schema: Lega
       template_id: templateId,
       version_number: (max?.version_number ?? 0) + 1,
       schema_json: schema,
-      created_by: user.id,
+      created_by: userId,
     });
   }
   revalidatePath("/admin/templates");

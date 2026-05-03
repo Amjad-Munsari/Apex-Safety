@@ -9,8 +9,8 @@ export async function createClient() {
 
   // In demo mode, we use the service role key to bypass RLS since the user
   // doesn't have a real Supabase Auth session.
-  const supabaseKey = isDemoMode 
-    ? process.env.SUPABASE_SERVICE_ROLE_KEY! 
+  const supabaseKey = isDemoMode
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY!
     : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
   return createServerClient(
@@ -19,7 +19,14 @@ export async function createClient() {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          // In demo mode, hide any leftover sb-*-auth-token cookies from
+          // supabase-js. Otherwise it picks up a stale/expired user JWT and
+          // sets it as the Authorization header, which overrides the
+          // service-role apikey and causes "Invalid API key" on writes.
+          const all = cookieStore.getAll()
+          return isDemoMode
+            ? all.filter(c => !c.name.startsWith("sb-"))
+            : all
         },
         setAll(cookiesToSet) {
           try {

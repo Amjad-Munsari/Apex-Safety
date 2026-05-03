@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { getClientContext } from "@/lib/auth-helpers";
+import { requireActorUserId, getClientContext } from "@/lib/auth-helpers";
 import { revalidatePath } from "next/cache";
 import type { FormSchema } from "@/lib/types/form-builder";
 import { hasStructuralChanges } from "@/lib/forms/schema-diff";
@@ -37,8 +37,7 @@ async function requireOwnedTemplate(templateId: string, clientId: string) {
 export async function createClientTemplate(name: string, templateType: string) {
   const supabase = await createClient();
   const ctx = await requireClientContext();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("client");
 
   const { data, error } = await supabase
     .from("form_templates")
@@ -56,7 +55,7 @@ export async function createClientTemplate(name: string, templateType: string) {
     template_id: data.id,
     version_number: 1,
     schema_json: { fields: [] },
-    created_by: user.id,
+    created_by: userId,
   });
 
   revalidatePath("/client/templates");
@@ -67,8 +66,7 @@ export async function saveClientDraft(templateId: string, schema: FormSchema, te
   const supabase = await createClient();
   const ctx = await requireClientContext();
   await requireOwnedTemplate(templateId, ctx.client_id);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("client");
 
   await supabase
     .from("form_templates")
@@ -101,7 +99,7 @@ export async function saveClientDraft(templateId: string, schema: FormSchema, te
       template_id: templateId,
       version_number: (maxVersion?.version_number ?? 0) + 1,
       schema_json: schema,
-      created_by: user.id,
+      created_by: userId,
     });
   }
 
@@ -112,8 +110,7 @@ export async function publishClientTemplate(templateId: string, schema: FormSche
   const supabase = await createClient();
   const ctx = await requireClientContext();
   await requireOwnedTemplate(templateId, ctx.client_id);
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("client");
 
   await supabase
     .from("form_templates")
@@ -140,7 +137,7 @@ export async function publishClientTemplate(templateId: string, schema: FormSche
       version_number: newVersion,
       schema_json: schema,
       published_at: new Date().toISOString(),
-      created_by: user.id,
+      created_by: userId,
     });
   }
 
@@ -185,8 +182,7 @@ export async function forkOnFill(
 ): Promise<{ forked: boolean; templateId: string; versionId: string }> {
   const supabase = await createClient();
   const ctx = await requireClientContext();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("Unauthorized");
+  const userId = await requireActorUserId("client");
 
   // Customers can only fork admin-owned (Matt's) published masters — never
   // another customer's template. RLS scopes the read to admin-owned anyway,
@@ -241,7 +237,7 @@ export async function forkOnFill(
       version_number: 1,
       schema_json: modifiedSchema,
       published_at: new Date().toISOString(),
-      created_by: user.id,
+      created_by: userId,
     })
     .select("id")
     .single();

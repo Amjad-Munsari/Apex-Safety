@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -8,8 +9,12 @@ import { NewTemplateButton } from "./_components/new-template-button";
 
 export default async function TemplatesPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const cookieStore = await cookies();
+  const isDemoMode = cookieStore.get("demo_mode")?.value === "1";
+  if (!isDemoMode) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+  }
 
   const { data: templates } = await supabase
     .from("form_templates")
