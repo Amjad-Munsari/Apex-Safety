@@ -5,18 +5,21 @@
  * Submissions pin to a specific TemplateVersion.
  */
 
-export type FormFieldType = 
-  | "text" 
-  | "textarea" 
-  | "number" 
-  | "date" 
-  | "dropdown" 
-  | "multi-select" 
-  | "signature" 
-  | "rating" 
-  | "media" 
-  | "geolocation" 
-  | "heading" 
+export type FormFieldType =
+  | "text"
+  | "textarea"
+  | "number"
+  | "date"
+  | "checkbox"
+  | "dropdown"
+  | "multi-select"
+  | "signature"
+  | "rating"
+  | "media"
+  | "multi-photo"
+  | "geolocation"
+  | "repeating"
+  | "heading"
   | "separator";
 
 export interface FormFieldOption {
@@ -31,8 +34,10 @@ export interface FormField {
   readonly placeholder?: string;
   readonly helpText?: string;
   readonly required?: boolean;
-  readonly options?: readonly FormFieldOption[]; // For dropdown/multi-select
-  readonly config?: Record<string, any>; // Type-specific configuration
+  readonly options?: readonly FormFieldOption[]; // For dropdown/multi-select/checkbox-group
+  readonly maxRating?: number; // For rating
+  readonly maxPhotos?: number; // For multi-photo
+  readonly config?: Record<string, any>; // Type-specific configuration (e.g. number min/max/step)
 }
 
 export interface FormSection {

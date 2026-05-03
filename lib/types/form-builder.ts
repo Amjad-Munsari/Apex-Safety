@@ -5,6 +5,7 @@ export type FieldType =
   | "textarea"
   | "number"
   | "date"
+  | "checkbox"
   | "dropdown"
   | "multi-select"
   | "signature"

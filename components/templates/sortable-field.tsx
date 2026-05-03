@@ -11,6 +11,7 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
   textarea: "Long Text",
   number: "Number",
   date: "Date",
+  checkbox: "Checkbox",
   dropdown: "Dropdown",
   "multi-select": "Multi-Select",
   signature: "Signature",
@@ -117,8 +118,8 @@ export function SortableField({ field, isSelected, onSelect, onDuplicate, onDele
           )}
         </div>
 
-        {/* Dropdown/multi-select preview */}
-        {(field.type === "dropdown" || field.type === "multi-select") && field.options && field.options.length > 0 && (
+        {/* Dropdown/multi-select/checkbox-group preview */}
+        {(field.type === "dropdown" || field.type === "multi-select" || field.type === "checkbox") && field.options && field.options.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {field.options.slice(0, 4).map(opt => (
               <span key={opt.value} className={cn("text-[10px] font-mono border px-1.5 py-0.5 rounded-[2px]", t.optionPill)}>
