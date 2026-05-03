@@ -22,10 +22,11 @@ import { saveDraft, publishTemplate } from "@/app/admin/templates/actions";
 import { FieldPalette } from "./field-palette";
 import { SortableField } from "./sortable-field";
 import { FieldConfig } from "./field-config";
-import type { FormField, FormSchema, FieldType } from "@/lib/types/form-builder";
+import type { FormField, FormSchema, FieldType, BuilderSurface } from "@/lib/types/form-builder";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save, Upload, Eye } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 interface Props {
@@ -37,6 +38,7 @@ interface Props {
   versionNumber: number;
   hasDraft: boolean;
   publishedVersionNumber: number | null;
+  surface?: BuilderSurface;
 }
 
 function generateId() {
@@ -68,6 +70,47 @@ function defaultField(type: FieldType): FormField {
   };
 }
 
+const surfaceTokens = {
+  dark: {
+    toolbar: "bg-[#111] border-white/5",
+    panel: "bg-[#0d0d0d] border-white/5",
+    titleInput: "text-white border-transparent focus:border-white/20",
+    typeLabel: "text-white/30",
+    backLink: "text-white/40 hover:text-white",
+    saveLabel: "text-white/50 hover:text-white",
+    savedTag: "text-[#3b8273]",
+    errorTag: "text-[#8b2b21]",
+    publishBtn: "bg-[#3b8273] hover:bg-[#3b8273]/90 text-white",
+    emptyIconRing: "border-white/10",
+    emptyIcon: "text-white/20",
+    emptyText: "text-white/30",
+    emptySubtext: "text-white/20",
+    bottomBar: "bg-[#111] border-white/5 text-white/30",
+    unsavedTag: "text-[#c0a66d]",
+    selectPanel: "border-white/5",
+    selectPanelText: "text-white/20",
+  },
+  cream: {
+    toolbar: "bg-white border-[#e5e1d8]",
+    panel: "bg-[#faf9f6] border-[#e5e1d8]",
+    titleInput: "text-[#1a1a1a] border-transparent focus:border-[#1a1a1a]/20",
+    typeLabel: "text-[#8a857f]",
+    backLink: "text-[#6b6560] hover:text-black",
+    saveLabel: "text-[#6b6560] hover:text-black",
+    savedTag: "text-[#3b8273]",
+    errorTag: "text-[#8b2b21]",
+    publishBtn: "bg-[#1a1a1a] hover:bg-black text-white",
+    emptyIconRing: "border-[#e5e1d8]",
+    emptyIcon: "text-[#a8a39d]",
+    emptyText: "text-[#6b6560]",
+    emptySubtext: "text-[#8a857f]",
+    bottomBar: "bg-white border-[#e5e1d8] text-[#8a857f]",
+    unsavedTag: "text-[#c0a66d]",
+    selectPanel: "border-[#e5e1d8]",
+    selectPanelText: "text-[#8a857f]",
+  },
+} as const;
+
 export function TemplateBuilder({
   templateId,
   initialName,
@@ -77,7 +120,9 @@ export function TemplateBuilder({
   versionNumber,
   hasDraft,
   publishedVersionNumber,
+  surface = "dark",
 }: Props) {
+  const t = surfaceTokens[surface];
   const [name, setName] = useState(initialName);
   const [fields, setFields] = useState<FormField[]>(initialSchema?.fields ?? []);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -177,10 +222,10 @@ export function TemplateBuilder({
   return (
     <div className="flex flex-col h-full gap-0 -mt-8 -mx-8">
       {/* Top toolbar */}
-      <div className="flex items-center gap-4 px-8 py-4 border-b border-white/5 bg-[#111] shrink-0">
+      <div className={cn("flex items-center gap-4 px-8 py-4 border-b shrink-0", t.toolbar)}>
         <Link
-          href="/admin/templates"
-          className="text-white/40 hover:text-white transition-colors"
+          href={surface === "cream" ? "/client/templates" : "/admin/templates"}
+          className={cn("transition-colors", t.backLink)}
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
@@ -190,9 +235,9 @@ export function TemplateBuilder({
             type="text"
             value={name}
             onChange={e => { setName(e.target.value); setSaved(false); }}
-            className="bg-transparent text-white font-serif text-xl outline-none border-b border-transparent focus:border-white/20 transition-colors px-0 py-0.5 min-w-0 w-72"
+            className={cn("bg-transparent font-serif text-xl outline-none border-b transition-colors px-0 py-0.5 min-w-0 w-72", t.titleInput)}
           />
-          <span className="font-mono text-[10px] text-white/30 uppercase tracking-wider shrink-0">
+          <span className={cn("font-mono text-[10px] uppercase tracking-wider shrink-0", t.typeLabel)}>
             {templateType}
           </span>
           {hasDraft && !isPublished ? (
@@ -213,10 +258,10 @@ export function TemplateBuilder({
 
         <div className="flex items-center gap-3 shrink-0">
           {saveStatus === "saved" && (
-            <span className="font-mono text-[10px] text-[#3b8273] uppercase tracking-wider">Saved</span>
+            <span className={cn("font-mono text-[10px] uppercase tracking-wider", t.savedTag)}>Saved</span>
           )}
           {saveStatus === "error" && (
-            <span className="font-mono text-[10px] text-[#8b2b21] uppercase tracking-wider">Save failed</span>
+            <span className={cn("font-mono text-[10px] uppercase tracking-wider", t.errorTag)}>Save failed</span>
           )}
 
           <Button
@@ -224,7 +269,7 @@ export function TemplateBuilder({
             size="sm"
             onClick={handleSave}
             disabled={isPending || saved}
-            className="text-white/50 hover:text-white h-8 gap-2 font-mono text-xs"
+            className={cn("h-8 gap-2 font-mono text-xs", t.saveLabel)}
           >
             <Save className="w-3.5 h-3.5" />
             {saveStatus === "saving" ? "Saving…" : "Save draft"}
@@ -234,7 +279,7 @@ export function TemplateBuilder({
             size="sm"
             onClick={handlePublish}
             disabled={isPending || fields.length === 0}
-            className="bg-[#3b8273] hover:bg-[#3b8273]/90 text-white rounded-sm h-8 gap-2 font-mono text-xs px-4"
+            className={cn("rounded-sm h-8 gap-2 font-mono text-xs px-4", t.publishBtn)}
           >
             <Upload className="w-3.5 h-3.5" />
             Publish
@@ -245,19 +290,19 @@ export function TemplateBuilder({
       {/* Builder body */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Field palette */}
-        <div className="w-56 border-r border-white/5 overflow-y-auto bg-[#0d0d0d] shrink-0">
-          <FieldPalette onAdd={addField} />
+        <div className={cn("w-56 border-r overflow-y-auto shrink-0", t.panel)}>
+          <FieldPalette onAdd={addField} surface={surface} />
         </div>
 
         {/* Center: Canvas */}
         <div className="flex-1 overflow-y-auto p-6">
           {fields.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-              <div className="w-14 h-14 rounded-full border border-white/10 flex items-center justify-center">
-                <Eye className="w-6 h-6 text-white/20" />
+              <div className={cn("w-14 h-14 rounded-full border flex items-center justify-center", t.emptyIconRing)}>
+                <Eye className={cn("w-6 h-6", t.emptyIcon)} />
               </div>
-              <p className="text-white/30 text-sm font-mono">Drag fields from the left panel</p>
-              <p className="text-white/20 text-xs">or click a field type to add it</p>
+              <p className={cn("text-sm font-mono", t.emptyText)}>Drag fields from the left panel</p>
+              <p className={cn("text-xs", t.emptySubtext)}>or click a field type to add it</p>
             </div>
           ) : (
             <DndContext
@@ -279,6 +324,7 @@ export function TemplateBuilder({
                       onSelect={() => setSelectedId(field.id)}
                       onDuplicate={() => duplicateField(field.id)}
                       onDelete={() => deleteField(field.id)}
+                      surface={surface}
                     />
                   ))}
                 </div>
@@ -296,27 +342,28 @@ export function TemplateBuilder({
         </div>
 
         {/* Right: Field config */}
-        <div className="w-72 border-l border-white/5 overflow-y-auto bg-[#0d0d0d] shrink-0">
+        <div className={cn("w-72 border-l overflow-y-auto shrink-0", t.panel)}>
           {selectedField ? (
             <FieldConfig
               field={selectedField}
               onChange={(updates) => updateField(selectedField.id, updates)}
+              surface={surface}
             />
           ) : (
             <div className="flex items-center justify-center h-full p-6 text-center">
-              <p className="text-white/20 text-xs font-mono">Select a field to configure</p>
+              <p className={cn("text-xs font-mono", t.selectPanelText)}>Select a field to configure</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Bottom bar: field count */}
-      <div className="px-8 py-2.5 border-t border-white/5 bg-[#111] flex items-center gap-4 shrink-0">
-        <span className="font-mono text-[10px] text-white/30 uppercase tracking-wider">
+      <div className={cn("px-8 py-2.5 border-t flex items-center gap-4 shrink-0", t.bottomBar)}>
+        <span className="font-mono text-[10px] uppercase tracking-wider">
           {fields.length} field{fields.length !== 1 ? "s" : ""}
         </span>
         {!saved && (
-          <span className="font-mono text-[10px] text-[#c0a66d] uppercase tracking-wider">
+          <span className={cn("font-mono text-[10px] uppercase tracking-wider", t.unsavedTag)}>
             Unsaved changes
           </span>
         )}
