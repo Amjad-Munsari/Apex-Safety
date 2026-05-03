@@ -2,7 +2,8 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { FormField } from "@/lib/types/form-builder";
+import type { FormField, BuilderSurface } from "@/lib/types/form-builder";
+import { cn } from "@/lib/utils";
 import { GripVertical, Copy, Trash2 } from "lucide-react";
 
 const FIELD_TYPE_LABELS: Record<string, string> = {
@@ -25,9 +26,41 @@ interface Props {
   onSelect: () => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  surface?: BuilderSurface;
 }
 
-export function SortableField({ field, isSelected, onSelect, onDuplicate, onDelete }: Props) {
+const surfaceTokens = {
+  dark: {
+    base: "bg-[#1c1c1c] border-white/5 hover:border-white/10 hover:bg-[#222]",
+    selected: "bg-[#1e2e2b] border-[#3b8273]/50 shadow-[0_0_0_1px_rgba(59,130,115,0.2)]",
+    grip: "text-white/20 hover:text-white/50",
+    label: "text-white",
+    requiredMark: "text-[#8b2b21]",
+    typeBadge: "text-white/30",
+    helpDivider: "text-white/20",
+    helpText: "text-white/25",
+    optionPill: "text-white/30 bg-white/5 border-white/10",
+    optionExtra: "text-white/20",
+    actionBtn: "text-white/30 hover:text-white/70 hover:bg-white/5",
+    deleteBtn: "text-white/30 hover:text-[#8b2b21] hover:bg-[#8b2b21]/10",
+  },
+  cream: {
+    base: "bg-white border-[#e5e1d8] hover:border-[#1a1a1a]/15 hover:bg-[#faf9f6]",
+    selected: "bg-[#f5f3ee] border-[#1a1a1a] shadow-[0_0_0_1px_rgba(26,26,26,0.15)]",
+    grip: "text-[#8a857f] hover:text-[#1a1a1a]",
+    label: "text-[#1a1a1a]",
+    requiredMark: "text-[#8b2b21]",
+    typeBadge: "text-[#8a857f]",
+    helpDivider: "text-[#d8d4cc]",
+    helpText: "text-[#6b6560]",
+    optionPill: "text-[#6b6560] bg-[#f5f3ee] border-[#e5e1d8]",
+    optionExtra: "text-[#8a857f]",
+    actionBtn: "text-[#8a857f] hover:text-[#1a1a1a] hover:bg-[#f0ede6]",
+    deleteBtn: "text-[#8a857f] hover:text-[#8b2b21] hover:bg-[#8b2b21]/10",
+  },
+} as const;
+
+export function SortableField({ field, isSelected, onSelect, onDuplicate, onDelete, surface = "dark" }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: field.id,
   });
@@ -38,25 +71,24 @@ export function SortableField({ field, isSelected, onSelect, onDuplicate, onDele
     opacity: isDragging ? 0.4 : 1,
   };
 
+  const t = surfaceTokens[surface];
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={onSelect}
-      className={`
-        group relative flex items-start gap-3 px-4 py-4 rounded-sm border cursor-pointer transition-all
-        ${isSelected
-          ? "bg-[#1e2e2b] border-[#3b8273]/50 shadow-[0_0_0_1px_rgba(59,130,115,0.2)]"
-          : "bg-[#1c1c1c] border-white/5 hover:border-white/10 hover:bg-[#222]"
-        }
-      `}
+      className={cn(
+        "group relative flex items-start gap-3 px-4 py-4 rounded-sm border cursor-pointer transition-all",
+        isSelected ? t.selected : t.base
+      )}
     >
       {/* Drag handle */}
       <div
         {...attributes}
         {...listeners}
         onClick={e => e.stopPropagation()}
-        className="mt-0.5 text-white/20 hover:text-white/50 cursor-grab active:cursor-grabbing transition-colors shrink-0"
+        className={cn("mt-0.5 cursor-grab active:cursor-grabbing transition-colors shrink-0", t.grip)}
       >
         <GripVertical className="w-4 h-4" />
       </div>
@@ -64,21 +96,21 @@ export function SortableField({ field, isSelected, onSelect, onDuplicate, onDele
       {/* Field preview */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1.5">
-          <span className="text-sm font-medium text-white leading-tight">
+          <span className={cn("text-sm font-medium leading-tight", t.label)}>
             {field.label}
           </span>
           {field.required && (
-            <span className="text-[#8b2b21] text-xs font-mono">*</span>
+            <span className={cn("text-xs font-mono", t.requiredMark)}>*</span>
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[10px] text-white/30 uppercase tracking-wider">
+          <span className={cn("font-mono text-[10px] uppercase tracking-wider", t.typeBadge)}>
             {FIELD_TYPE_LABELS[field.type] ?? field.type}
           </span>
           {field.helpText && (
             <>
-              <span className="text-white/20">·</span>
-              <span className="text-[11px] text-white/25 truncate max-w-[200px]">
+              <span className={t.helpDivider}>·</span>
+              <span className={cn("text-[11px] truncate max-w-[200px]", t.helpText)}>
                 {field.helpText}
               </span>
             </>
@@ -89,12 +121,12 @@ export function SortableField({ field, isSelected, onSelect, onDuplicate, onDele
         {(field.type === "dropdown" || field.type === "multi-select") && field.options && field.options.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-2">
             {field.options.slice(0, 4).map(opt => (
-              <span key={opt.value} className="text-[10px] font-mono text-white/30 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-[2px]">
+              <span key={opt.value} className={cn("text-[10px] font-mono border px-1.5 py-0.5 rounded-[2px]", t.optionPill)}>
                 {opt.label}
               </span>
             ))}
             {field.options.length > 4 && (
-              <span className="text-[10px] font-mono text-white/20">+{field.options.length - 4} more</span>
+              <span className={cn("text-[10px] font-mono", t.optionExtra)}>+{field.options.length - 4} more</span>
             )}
           </div>
         )}
@@ -104,14 +136,14 @@ export function SortableField({ field, isSelected, onSelect, onDuplicate, onDele
       <div className={`flex items-center gap-1 shrink-0 transition-opacity ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
         <button
           onClick={e => { e.stopPropagation(); onDuplicate(); }}
-          className="w-7 h-7 flex items-center justify-center rounded-[3px] text-white/30 hover:text-white/70 hover:bg-white/5 transition-all"
+          className={cn("w-7 h-7 flex items-center justify-center rounded-[3px] transition-all", t.actionBtn)}
           title="Duplicate"
         >
           <Copy className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={e => { e.stopPropagation(); onDelete(); }}
-          className="w-7 h-7 flex items-center justify-center rounded-[3px] text-white/30 hover:text-[#8b2b21] hover:bg-[#8b2b21]/10 transition-all"
+          className={cn("w-7 h-7 flex items-center justify-center rounded-[3px] transition-all", t.deleteBtn)}
           title="Delete"
         >
           <Trash2 className="w-3.5 h-3.5" />
