@@ -74,6 +74,7 @@ const surfaceTokens = {
   dark: {
     toolbar: "bg-[#111] border-white/5",
     panel: "bg-[#0d0d0d] border-white/5",
+    canvasBg: "",
     titleInput: "text-white border-transparent focus:border-white/20",
     typeLabel: "text-white/30",
     backLink: "text-white/40 hover:text-white",
@@ -87,12 +88,12 @@ const surfaceTokens = {
     emptySubtext: "text-white/20",
     bottomBar: "bg-[#111] border-white/5 text-white/30",
     unsavedTag: "text-[#c0a66d]",
-    selectPanel: "border-white/5",
     selectPanelText: "text-white/20",
   },
   cream: {
     toolbar: "bg-white border-[#e5e1d8]",
     panel: "bg-[#faf9f6] border-[#e5e1d8]",
+    canvasBg: "bg-[#fbfaf5]",
     titleInput: "text-[#1a1a1a] border-transparent focus:border-[#1a1a1a]/20",
     typeLabel: "text-[#8a857f]",
     backLink: "text-[#6b6560] hover:text-black",
@@ -106,7 +107,6 @@ const surfaceTokens = {
     emptySubtext: "text-[#8a857f]",
     bottomBar: "bg-white border-[#e5e1d8] text-[#8a857f]",
     unsavedTag: "text-[#c0a66d]",
-    selectPanel: "border-[#e5e1d8]",
     selectPanelText: "text-[#8a857f]",
   },
 } as const;
@@ -295,7 +295,7 @@ export function TemplateBuilder({
         </div>
 
         {/* Center: Canvas */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className={cn("flex-1 overflow-y-auto p-6", t.canvasBg)}>
           {fields.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
               <div className={cn("w-14 h-14 rounded-full border flex items-center justify-center", t.emptyIconRing)}>
