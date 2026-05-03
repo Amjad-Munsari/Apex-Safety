@@ -7,7 +7,27 @@ import { ComplianceDocRowItem, type ComplianceDocRow } from "./compliance-doc-ro
 
 export const dynamic = "force-dynamic";
 
-export default async function CompliancePage() {
+type FilterKey = "all" | "current" | "expiring" | "expired";
+
+const TABS: { key: FilterKey; label: string }[] = [
+  { key: "all",      label: "All" },
+  { key: "current",  label: "Current" },
+  { key: "expiring", label: "Expiring (30 days)" },
+  { key: "expired",  label: "Expired" },
+];
+
+export default async function CompliancePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
+  const sp = await searchParams;
+  const active: FilterKey = ((): FilterKey => {
+    const v = sp.status;
+    if (v === "current" || v === "expiring" || v === "expired" || v === "all") return v;
+    return "all";
+  })();
+
   const [compliance, docsRes] = await Promise.all([
     getComplianceAggregates(),
     adminClient
@@ -30,6 +50,13 @@ export default async function CompliancePage() {
     return exp && exp >= thirtyDaysFromNow;
   });
 
+  const counts: Record<FilterKey, number> = {
+    all: docs.length,
+    current: current.length,
+    expiring: expiring.length,
+    expired: expired.length,
+  };
+
   const pct = compliance.total > 0 ? Math.round((compliance.current / compliance.total) * 100) : 0;
 
   return (
@@ -42,7 +69,7 @@ export default async function CompliancePage() {
             <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
           </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-[#3b8273] font-semibold">04</span>
+            <span className="text-[#3b8273] font-semibold">03</span>
             COMPLIANCE OVERVIEW
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-white">Document Compliance</h2>
@@ -67,21 +94,61 @@ export default async function CompliancePage() {
         ))}
       </div>
 
-      {/* ─── EXPIRED ─── */}
-      {expired.length > 0 && (
-        <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />
-      )}
+      {/* ─── TABS ─── */}
+      <div className="flex items-center gap-6 border-b border-white/5">
+        {TABS.map((tab) => {
+          const isActive = active === tab.key;
+          const href = tab.key === "all" ? "/admin/compliance" : `/admin/compliance?status=${tab.key}`;
+          return (
+            <Link
+              key={tab.key}
+              href={href}
+              className={`group relative flex items-center gap-2 pb-3 font-mono text-[11px] uppercase tracking-widest transition-colors ${
+                isActive ? "text-white" : "text-white/40 hover:text-white/80"
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className={`text-[10px] ${isActive ? "text-white/70" : "text-white/30"}`}>
+                {counts[tab.key]}
+              </span>
+              {isActive && <span className="absolute -bottom-px left-0 right-0 h-0.5 bg-gold" />}
+            </Link>
+          );
+        })}
+      </div>
 
-      {/* ─── EXPIRING ─── */}
-      {expiring.length > 0 && (
-        <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />
+      {/* ─── TABLES (filtered by tab) ─── */}
+      {active === "all" && (
+        <>
+          {expired.length > 0 && <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />}
+          {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />}
+          {current.length > 0 && <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />}
+        </>
       )}
-
-      {/* ─── CURRENT ─── */}
-      {current.length > 0 && (
-        <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />
+      {active === "expired" && (
+        expired.length > 0
+          ? <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />
+          : <EmptyTab label="No expired documents" />
+      )}
+      {active === "expiring" && (
+        expiring.length > 0
+          ? <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />
+          : <EmptyTab label="No documents expiring in the next 30 days" />
+      )}
+      {active === "current" && (
+        current.length > 0
+          ? <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />
+          : <EmptyTab label="No current documents" />
       )}
     </div>
+  );
+}
+
+function EmptyTab({ label }: { label: string }) {
+  return (
+    <Card className="bg-[#1c1c1c] border-white/5 rounded-sm py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+      {label}
+    </Card>
   );
 }
 
