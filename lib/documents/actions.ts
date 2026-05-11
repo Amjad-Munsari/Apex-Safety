@@ -11,11 +11,9 @@ export async function uploadClientDocumentAction(formData: FormData) {
   const cookieStore = await cookies()
   const isDemoMode = cookieStore.get("demo_mode")?.value === "1"
 
-  // 1. Verify admin session or allow demo mode
   let userId: string
 
   if (isDemoMode) {
-    // Use a fixed dummy admin ID for demo mode
     userId = "276946f9-0d99-4f55-bba1-8abe1f4f87b7"
   } else {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -32,8 +30,7 @@ export async function uploadClientDocumentAction(formData: FormData) {
     throw new Error("Missing required fields")
   }
 
-  // 2. Upload file to Storage
-  const fileExt = file.name.split('.').pop()
+  const fileExt = file.name.split(".").pop()
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
   const filePath = `${clientId}/${fileName}`
 
@@ -46,7 +43,6 @@ export async function uploadClientDocumentAction(formData: FormData) {
     throw new Error("Failed to upload document")
   }
 
-  // 3. Insert into documents table
   const { data: document, error: dbError } = await supabase
     .from("documents")
     .insert({
@@ -64,12 +60,10 @@ export async function uploadClientDocumentAction(formData: FormData) {
 
   if (dbError) {
     console.error("Database insert error:", dbError)
-    // Attempt to clean up storage if db fails
     await supabase.storage.from("client-documents").remove([filePath])
     throw new Error("Failed to save document metadata")
   }
 
-  // 4. Fetch Client Contact for Notifications
   const { data: clientUsers } = await supabase
     .from("client_users")
     .select("name, email")
@@ -80,7 +74,6 @@ export async function uploadClientDocumentAction(formData: FormData) {
   const contactEmail = contact?.email
   const contactName = contact?.name || "there"
 
-  // 5. Dispatch new-document notification via n8n
   if (contactEmail) {
     const result = await dispatchNotification({
       type: "document_uploaded",
@@ -102,8 +95,9 @@ export async function uploadClientDocumentAction(formData: FormData) {
     console.warn(`[upload] no contact email for client ${clientId}, skipping notification`)
   }
 
-  // 6. Revalidate
   revalidatePath(`/admin/clients/${clientId}`)
+  revalidatePath("/admin/compliance")
+  revalidatePath("/client/compliance")
 
   return { success: true, document }
 }

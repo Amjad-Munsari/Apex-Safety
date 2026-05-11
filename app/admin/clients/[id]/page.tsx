@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
-import { UploadDocumentModal } from "./upload-document-modal"
+import { UploadDocumentModal } from "@/components/admin/upload-document-modal"
 import { Card } from "@/components/ui/card"
 import { Building, Calendar, Clock, MapPin } from "lucide-react"
 import { AdjustHoursDialog } from "@/components/clients/adjust-hours-dialog"
