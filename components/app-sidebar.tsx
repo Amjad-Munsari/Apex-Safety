@@ -121,7 +121,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
             <span className="text-white font-semibold tracking-wide">Matt Robinson</span>
           </div>
-          <span className="text-white/40">matt@888safetyandtraining.com</span>
+          <span className="text-white/40">888FST@proton.me</span>
           <form action="/auth/signout" method="POST">
             <button type="submit" className="text-white/30 hover:text-white/60 transition-colors text-[10px] uppercase tracking-[0.15em]">
               Sign out

@@ -90,7 +90,7 @@ export function MockAssessmentReport({ clientId, clientName, index }: Props) {
                 <div className="font-serif text-[28px] leading-tight">888 Safety<br />&amp; Training.</div>
               </div>
               <div className="text-right font-mono text-[9px] uppercase tracking-[0.2em] text-[#888] leading-relaxed">
-                <div>matt@888safetyandtraining.com</div>
+                <div>888FST@proton.me</div>
                 <div>Wakefield</div>
                 <div className="mt-2 text-[#1a1a1a]">{reference}</div>
               </div>

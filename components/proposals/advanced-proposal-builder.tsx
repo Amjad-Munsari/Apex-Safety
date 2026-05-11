@@ -503,7 +503,7 @@ export function AdvancedProposalBuilder({
                         <div className="prop-paper-meta-name">Matt Hollis</div>
                         <div className="prop-paper-meta-detail">
                           Lead Consultant · 888 Safety Solutions<br />
-                          matt@888safety.co.uk · 0114 555 0188
+                          888FST@proton.me · 0114 555 0188
                         </div>
                       </div>
                     </div>

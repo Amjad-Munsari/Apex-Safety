@@ -253,7 +253,7 @@ export const ProposalDocument = ({
           <Text style={styles.gridLabel}>PREPARED BY</Text>
           <Text style={styles.gridName}>Matt Hollis</Text>
           <Text style={styles.gridDetail}>Lead Consultant · 888 Safety Solutions</Text>
-          <Text style={styles.gridDetail}>matt@888safety.co.uk · 0114 555 0188</Text>
+          <Text style={styles.gridDetail}>888FST@proton.me · 0114 555 0188</Text>
         </View>
       </View>
 
