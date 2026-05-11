@@ -9,8 +9,13 @@ export async function GET(request: Request) {
   const querySecret = searchParams.get("secret")
   
   const cronSecret = process.env.CRON_SECRET
-  
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 })
+    }
+    // dev/preview without a secret: allow unauthenticated curl for manual testing
+  } else if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
