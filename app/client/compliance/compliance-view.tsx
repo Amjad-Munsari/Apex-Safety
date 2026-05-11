@@ -11,7 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
 import { getClientComplianceDocSignedUrl } from "./actions";
 
 export type ComplianceStatus = "CURRENT" | "EXPIRING" | "EXPIRED";
@@ -34,7 +33,6 @@ export interface ComplianceCategory {
 export function ComplianceView({ categories }: { categories: ComplianceCategory[] }) {
   const searchParams = useSearchParams();
   const highlightId = searchParams?.get("doc") ?? null;
-  const [previewDoc, setPreviewDoc] = useState<ComplianceDoc | null>(null);
   const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const highlightedRef = useRef<HTMLDivElement | null>(null);
@@ -48,7 +46,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
   const handleDownload = (doc: ComplianceDoc) => {
     setPendingDocId(doc.id);
     startTransition(async () => {
-      const { url, filename } = await getClientComplianceDocSignedUrl(doc.id);
+      const { url, filename } = await getClientComplianceDocSignedUrl(doc.id, { mode: "download" });
       setPendingDocId(null);
       if (!url) {
         toast.error(`Could not prepare ${doc.title} for download.`);
@@ -61,6 +59,19 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    });
+  };
+
+  const handleView = (doc: ComplianceDoc) => {
+    setPendingDocId(doc.id);
+    startTransition(async () => {
+      const { url } = await getClientComplianceDocSignedUrl(doc.id, { mode: "view" });
+      setPendingDocId(null);
+      if (!url) {
+        toast.error(`Could not open ${doc.title}.`);
+        return;
+      }
+      window.open(url, "_blank", "noopener,noreferrer");
     });
   };
 
@@ -179,7 +190,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                               <Download className="h-3.5 w-3.5" /> Download PDF
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => setPreviewDoc(doc)}
+                              onClick={() => handleView(doc)}
                               className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
                             >
                               <ExternalLink className="h-3.5 w-3.5" /> View Online
@@ -195,14 +206,6 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
           </section>
         ))}
       </div>
-
-      <PdfPreviewDialog
-        open={previewDoc !== null}
-        onOpenChange={(o) => !o && setPreviewDoc(null)}
-        title={previewDoc?.title || ""}
-        subtitle={previewDoc ? `${previewDoc.status} · Issued ${previewDoc.issued}` : undefined}
-        documentId={previewDoc?.id}
-      />
     </>
   );
 }

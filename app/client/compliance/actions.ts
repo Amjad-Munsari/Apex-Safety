@@ -3,7 +3,8 @@
 import { createClient } from "@/lib/supabase/server"
 
 export async function getClientComplianceDocSignedUrl(
-  docId: string
+  docId: string,
+  opts: { mode?: "view" | "download" } = {}
 ): Promise<{ url: string | null; filename: string | null }> {
   const supabase = await createClient()
 
@@ -17,10 +18,13 @@ export async function getClientComplianceDocSignedUrl(
     return { url: null, filename: doc?.filename ?? null }
   }
 
+  const mode = opts.mode ?? "download"
+  const signOpts = mode === "download" ? { download: doc.filename ?? true } : undefined
+
   const { data: signed, error: signErr } = await supabase
     .storage
     .from("client-documents")
-    .createSignedUrl(doc.storage_path, 60 * 5, { download: doc.filename ?? true })
+    .createSignedUrl(doc.storage_path, 60 * 5, signOpts)
 
   if (signErr || !signed?.signedUrl) {
     return { url: null, filename: doc.filename }
