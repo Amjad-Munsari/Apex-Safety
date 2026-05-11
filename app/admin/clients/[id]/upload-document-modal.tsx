@@ -80,11 +80,11 @@ export function UploadDocumentModal({ clientId }: { clientId: string }) {
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
-                <SelectItem value="Fire Risk Assessment">Fire Risk Assessment</SelectItem>
-                <SelectItem value="Site Risk Assessment">Site Risk Assessment</SelectItem>
-                <SelectItem value="Health & Safety Policy">Health & Safety Policy</SelectItem>
-                <SelectItem value="Insurance Certificate">Insurance Certificate</SelectItem>
-                <SelectItem value="Training Certificate">Training Certificate</SelectItem>
+                <SelectItem value="Fire Risk Assessment" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Fire Risk Assessment</SelectItem>
+                <SelectItem value="Site Risk Assessment" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Site Risk Assessment</SelectItem>
+                <SelectItem value="Health & Safety Policy" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Health & Safety Policy</SelectItem>
+                <SelectItem value="Insurance Certificate" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Insurance Certificate</SelectItem>
+                <SelectItem value="Training Certificate" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Training Certificate</SelectItem>
               </SelectContent>
             </Select>
           </div>
