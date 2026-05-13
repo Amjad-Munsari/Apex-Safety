@@ -3,7 +3,6 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { AssessmentButtonDialog } from "@/components/assessments/assessment-button-dialog";
 import { getDashboardStats } from "@/lib/supabase/dashboard";
 
 export default async function AdminLayout({
@@ -53,7 +52,11 @@ export default async function AdminLayout({
                   + New Proposal
                 </Button>
               </Link>
-              <AssessmentButtonDialog />
+              <Link href="/admin/assessments/new">
+                <Button variant="secondary" className="bg-amber-500 hover:bg-amber-400 text-black rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none">
+                  + New Assessment
+                </Button>
+              </Link>
             </div>
           </header>
 
