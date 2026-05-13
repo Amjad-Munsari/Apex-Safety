@@ -125,38 +125,53 @@ export async function deleteAssessment(submissionId: string) {
 }
 
 export async function autosaveAnswers(submissionId: string, answersJson: Record<string, unknown>) {
+  // Auth gate via SSR client so unauthenticated callers can't trigger writes.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     throw new Error("Unauthorized: Authentication required for autosave")
   }
 
-  const { error } = await supabase
+  // Write via adminClient (service-role) so RLS can't silently null out the
+  // update when the admin's JWT lacks `app_metadata.role = 'admin'`. The
+  // `submitted_by` filter keeps the defense-in-depth that only the admin who
+  // started the draft can edit it. `.select("id")` lets us verify the row
+  // actually matched — without it, a stale id or status mismatch would still
+  // silently succeed.
+  const { data: rows, error } = await adminClient
     .from("form_submissions")
     .update({ answers_json: answersJson })
     .eq("id", submissionId)
     .eq("status", "draft")
-    .eq("submitted_by", user.id) // Extra safety check
-    
+    .eq("submitted_by", user.id)
+    .select("id")
+
   if (error) {
     throw new Error(`Failed to autosave: ${error.message}`)
+  }
+  if (!rows || rows.length === 0) {
+    throw new Error(
+      "Autosave matched zero rows — submission may have been submitted, deleted, or belongs to a different user."
+    )
   }
 }
 
 export async function submitAssessment(submissionId: string, finalAnswers: Record<string, unknown>) {
+  // Auth gate via SSR client; the write itself goes through adminClient so RLS
+  // can't silently zero-row the update when the admin JWT lacks the role claim.
+  // See autosaveAnswers above for the same pattern and rationale.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  
+
   if (!user) {
     throw new Error("Unauthorized: Authentication required for submission")
   }
 
-  // Update status to submitted
-  const { data: submission, error } = await supabase
+  const { data: submission, error } = await adminClient
     .from("form_submissions")
-    .update({ 
-      answers_json: finalAnswers, 
+    .update({
+      answers_json: finalAnswers,
       status: "submitted",
       submitted_at: new Date().toISOString()
     })
@@ -164,7 +179,7 @@ export async function submitAssessment(submissionId: string, finalAnswers: Recor
     .eq("submitted_by", user.id) // Ensure user owns the submission
     .select("client_id")
     .single()
-    
+
   if (error || !submission) {
     throw new Error(`Failed to submit: ${error?.message || "Ownership verification failed"}`)
   }
