@@ -1,10 +1,25 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, ArrowLeft } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { Loader2, ArrowLeft, Trash2 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { deleteAssessment } from "@/app/admin/assessments/actions"
 
 interface AssessmentFormHeaderProps {
+  submissionId: string
   clientName: string
   templateName: string
   progress: number
@@ -14,73 +29,207 @@ interface AssessmentFormHeaderProps {
   isSaving: boolean
 }
 
+/**
+ * Sticky header bar for the assessment form-fill page. Styled to match the
+ * proposal wizard surface (--p-bg / --p-surface / --p-gold) so the journey
+ * from "New Assessment" wizard → form-fill feels visually continuous.
+ */
 export function AssessmentFormHeader({
+  submissionId,
   clientName,
   templateName,
   progress,
   onSaveDraft,
   onSubmit,
   isSubmitting,
-  isSaving
+  isSaving,
 }: AssessmentFormHeaderProps) {
+  const router = useRouter()
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  async function handleConfirmDelete() {
+    setIsDeleting(true)
+    try {
+      const { clientId } = await deleteAssessment(submissionId)
+      toast.success("Assessment deleted")
+      router.push(clientId ? `/admin/clients/${clientId}` : "/admin")
+    } catch (err: any) {
+      setIsDeleting(false)
+      toast.error(err?.message || "Failed to delete assessment")
+    }
+  }
+
   return (
-    <div className="sticky top-0 z-30 bg-black/95 backdrop-blur border-b border-white/5 py-4 -mx-8 px-8 mb-8 shadow-sm">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link href="/admin" className="text-slate-500 hover:text-white transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-          <div>
-            <h2 className="text-xl font-serif text-white">{clientName}</h2>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs font-mono text-slate-500 uppercase tracking-widest">{templateName}</span>
-              <span className="text-slate-700">&bull;</span>
-              <span className="text-xs text-amber-500 font-medium">Draft</span>
-              {isSaving && <Loader2 className="h-3 w-3 animate-spin text-slate-500 ml-2" />}
+    <>
+      <div
+        className="sticky top-0 z-30 py-5 -mx-8 px-8 mb-10"
+        style={{
+          background: "var(--p-bg)",
+          borderBottom: "1px solid var(--p-border-subtle)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <Link
+              href="/admin"
+              className="transition-colors"
+              style={{ color: "var(--p-text-muted)" }}
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <div>
+              <h2
+                className="text-xl"
+                style={{ fontFamily: "var(--p-font-serif)", color: "var(--p-text)" }}
+              >
+                {clientName}
+              </h2>
+              <div className="flex items-center gap-3 mt-1.5">
+                <span
+                  className="text-[10px] uppercase font-medium"
+                  style={{
+                    fontFamily: "var(--p-font-mono)",
+                    letterSpacing: "0.18em",
+                    color: "var(--p-text-muted)",
+                  }}
+                >
+                  {templateName}
+                </span>
+                <span style={{ color: "var(--p-border)" }}>·</span>
+                <span
+                  className="text-[10px] uppercase font-bold"
+                  style={{
+                    fontFamily: "var(--p-font-mono)",
+                    letterSpacing: "0.18em",
+                    color: "var(--p-gold)",
+                  }}
+                >
+                  Draft
+                </span>
+                {isSaving && (
+                  <Loader2
+                    className="h-3 w-3 animate-spin ml-2"
+                    style={{ color: "var(--p-text-muted)" }}
+                  />
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-8">
-          {/* Progress Bar */}
-          <div className="flex flex-col items-end gap-1.5 w-32 hidden sm:flex">
-            <div className="text-[10px] font-mono text-slate-400 tracking-wider">
-              {Math.round(progress)}% COMPLETE
-            </div>
-            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+          <div className="flex items-center gap-8">
+            {/* Progress */}
+            <div className="hidden sm:flex flex-col items-end gap-1.5 w-36">
               <div
-                className="h-full bg-amber-500 transition-all duration-500 ease-out"
-                style={{ width: `${progress}%` }}
-              />
+                className="text-[10px] font-medium"
+                style={{
+                  fontFamily: "var(--p-font-mono)",
+                  letterSpacing: "0.18em",
+                  color: "var(--p-text-muted)",
+                }}
+              >
+                {Math.round(progress)}% COMPLETE
+              </div>
+              <div
+                className="h-1 w-full rounded-full overflow-hidden"
+                style={{ background: "var(--p-surface-raised)" }}
+              >
+                <div
+                  className="h-full transition-all duration-500 ease-out"
+                  style={{ width: `${progress}%`, background: "var(--p-gold)" }}
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={onSaveDraft}
-              disabled={isSubmitting}
-              className="border-white/10 bg-transparent text-slate-300 hover:bg-white/5 hover:text-white font-medium px-6"
-            >
-              Save Draft
-            </Button>
-            <Button
-              onClick={onSubmit}
-              disabled={progress < 100 || isSubmitting}
-              className="bg-amber-500 text-black hover:bg-amber-400 font-medium px-6"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting
-                </>
-              ) : (
-                "Submit Assessment"
-              )}
-            </Button>
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setIsDeleteOpen(true)}
+                disabled={isSubmitting || isDeleting}
+                className="rounded-sm px-4 font-medium text-[11px] h-9"
+                style={{
+                  background: "transparent",
+                  border: "1px solid rgba(197, 90, 90, 0.3)",
+                  color: "#c55a5a",
+                  fontFamily: "var(--p-font-mono)",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Delete
+              </Button>
+              <Button
+                variant="outline"
+                onClick={onSaveDraft}
+                disabled={isSubmitting}
+                className="rounded-sm px-5 font-medium text-[11px] h-9"
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--p-border)",
+                  color: "var(--p-text)",
+                  fontFamily: "var(--p-font-mono)",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Save draft
+              </Button>
+              <Button
+                onClick={onSubmit}
+                disabled={progress < 100 || isSubmitting}
+                className="rounded-sm px-5 font-medium text-[11px] h-9 disabled:opacity-40"
+                style={{
+                  background: "var(--p-gold)",
+                  color: "var(--p-bg)",
+                  border: "1px solid var(--p-gold)",
+                  fontFamily: "var(--p-font-mono)",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  fontWeight: 600,
+                }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                    Submitting
+                  </>
+                ) : (
+                  "Submit assessment"
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-base">
+              Delete this assessment?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Permanently removes the assessment for{" "}
+              <span className="text-foreground">{clientName}</span> ({templateName})
+              including any saved answers and generated report PDF.{" "}
+              <strong>This cannot be undone.</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+            >
+              {isDeleting ? "Deleting…" : "Delete assessment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

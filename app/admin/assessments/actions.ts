@@ -66,6 +66,64 @@ export async function startAssessment(clientId: string, templateVersionId: strin
   redirect(`/admin/assessments/${submission.id}`)
 }
 
+/**
+ * Hard-delete a form submission, its parent assignment, and any generated
+ * report PDF in storage. Confirmation lives in the UI (AlertDialog on the
+ * assessment form header).
+ */
+export async function deleteAssessment(submissionId: string) {
+  // Fetch the assignment id and storage path first.
+  const { data: sub } = await adminClient
+    .from("form_submissions")
+    .select("assignment_id, report_storage_path, client_id")
+    .eq("id", submissionId)
+    .maybeSingle()
+
+  if (!sub) {
+    // Nothing to delete — treat as success rather than an error so the UI
+    // can navigate away without showing a scary toast.
+    return { clientId: null as string | null }
+  }
+
+  const { error: subDeleteError } = await adminClient
+    .from("form_submissions")
+    .delete()
+    .eq("id", submissionId)
+
+  if (subDeleteError) {
+    console.error("Error deleting submission:", subDeleteError)
+    throw new Error(subDeleteError.message)
+  }
+
+  if (sub.assignment_id) {
+    const { error: assignDeleteError } = await adminClient
+      .from("form_assignments")
+      .delete()
+      .eq("id", sub.assignment_id)
+    if (assignDeleteError) {
+      // Non-fatal — submission is already gone, assignment is just dangling.
+      console.error("Failed to delete parent form_assignment:", assignDeleteError)
+    }
+  }
+
+  if (sub.report_storage_path) {
+    const { error: rmError } = await adminClient.storage
+      .from("reports")
+      .remove([sub.report_storage_path])
+    if (rmError) {
+      console.error("Failed to remove assessment PDF from storage:", rmError)
+    }
+  }
+
+  revalidatePath("/admin/review-queue")
+  revalidatePath("/admin")
+  if (sub.client_id) {
+    revalidatePath(`/admin/clients/${sub.client_id}`)
+  }
+
+  return { clientId: sub.client_id ?? null }
+}
+
 export async function autosaveAnswers(submissionId: string, answersJson: Record<string, unknown>) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
