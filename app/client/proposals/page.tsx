@@ -1,9 +1,77 @@
-import Link from "next/link"
-import { ChevronRight } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { clientProposals } from "@/lib/mock-client-docs"
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { adminClient } from "@/lib/supabase/admin";
+import { getClientContext } from "@/lib/auth-helpers";
+import { calculateProposalTotal } from "@/lib/supabase/dashboard";
 
-export default function ClientProposalsPage() {
+export const dynamic = "force-dynamic";
+
+const DATE_FMT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
+
+type Status = "Draft" | "Sent" | "Signed" | "Contract Issued";
+
+function shortRef(uuid: string): string {
+  return `PRO-${uuid.slice(0, 6).toUpperCase()}`;
+}
+
+function statusTone(status: Status): { ring: string; dot: string; bg: string; label: string } {
+  switch (status) {
+    case "Signed":
+    case "Contract Issued":
+      return {
+        ring: "border-[#3b8273]/40 text-[#3b8273]",
+        dot: "bg-[#3b8273]",
+        bg: "bg-[#f4f8f6]",
+        label: status === "Signed" ? "Signed" : "Contract Issued",
+      };
+    default:
+      return {
+        ring: "border-[#c0a66d] text-[#c0a66d]",
+        dot: "bg-[#c0a66d]",
+        bg: "bg-[#fcf9f1]",
+        label: "Awaiting Signature",
+      };
+  }
+}
+
+export default async function ClientProposalsPage() {
+  const ctx = await getClientContext();
+  if (!ctx?.client_id) {
+    return (
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
+        No client context found
+      </div>
+    );
+  }
+
+  const { data: rows } = await adminClient
+    .from("proposals")
+    .select("id, status, services_json, total_price, created_at, sent_at, proposal_pdf_path")
+    .eq("client_id", ctx.client_id)
+    .in("status", ["Sent", "Signed", "Contract Issued"])
+    .order("created_at", { ascending: false });
+
+  const proposals = (rows ?? []).map((p) => {
+    const services = Array.isArray(p.services_json) ? p.services_json : [];
+    const total =
+      Number((p as any).total_price) || calculateProposalTotal(p.services_json);
+    const issuedAt = p.sent_at ?? p.created_at;
+    // Pull a working title from the first service if available so each card
+    // reads more concretely than just "Proposal".
+    const firstName =
+      services[0]?.service?.name ?? services[0]?.name ?? "Compliance Services";
+    return {
+      id: p.id as string,
+      reference: shortRef(p.id as string),
+      title: services.length === 1 ? firstName : "Compliance & Training Programme",
+      issuedAt: new Date(issuedAt).toLocaleDateString("en-GB", DATE_FMT),
+      total,
+      serviceCount: services.length,
+      status: (p.status as Status) || "Sent",
+    };
+  });
+
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Hero */}
@@ -17,70 +85,68 @@ export default function ClientProposalsPage() {
           Proposals from Matt.
         </h2>
         <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
-          Review what&apos;s been quoted, accept directly, or decline if it isn&apos;t a fit yet.
+          Review what&apos;s been quoted and download the PDF for your records.
         </p>
       </section>
 
       {/* List */}
       <section className="space-y-4">
-        {clientProposals.map((p) => {
-          const isSigned = p.status === "Signed"
-          return (
-            <Link
-              key={p.id}
-              href={`/client/proposals/${p.id}`}
-              className="block bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-[#d8d3c8] transition-all p-7 group"
-            >
-              <div className="flex items-start justify-between gap-6">
-                {/* Left */}
-                <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
-                    <span>{p.reference}</span>
-                    <span className="opacity-50">·</span>
-                    <span>Received {p.receivedAt}</span>
+        {proposals.length === 0 ? (
+          <div className="bg-white border border-[#e5e1d8] rounded-sm p-12 text-center">
+            <p className="font-serif text-[20px] text-[#1a1a1a] mb-2">No proposals yet.</p>
+            <p className="font-sans text-[13px] text-[#6b6560]">
+              When Matt sends you a proposal, it will appear here.
+            </p>
+          </div>
+        ) : (
+          proposals.map((p) => {
+            const tone = statusTone(p.status);
+            return (
+              <Link
+                key={p.id}
+                href={`/client/proposals/${p.id}`}
+                className="block bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-[#d8d3c8] transition-all p-7 group"
+              >
+                <div className="flex items-start justify-between gap-6">
+                  {/* Left */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
+                      <span>{p.reference}</span>
+                      <span className="opacity-50">·</span>
+                      <span>Sent {p.issuedAt}</span>
+                    </div>
+                    <h3 className="font-serif text-[24px] text-[#1a1a1a] tracking-tight leading-tight group-hover:text-black">
+                      {p.title}
+                    </h3>
+                    <p className="font-sans text-[13px] text-[#6b6560]">
+                      {p.serviceCount} {p.serviceCount === 1 ? "service" : "services"} · £
+                      {Math.round(p.total).toLocaleString()}
+                    </p>
                   </div>
-                  <h3 className="font-serif text-[24px] text-[#1a1a1a] tracking-tight leading-tight group-hover:text-black">
-                    {p.title}
-                  </h3>
-                  <p className="font-sans text-[13px] text-[#6b6560]">
-                    {p.scope.length} services · £{p.total.toLocaleString()} for {p.termMonths} months
-                  </p>
-                </div>
 
-                {/* Right */}
-                <div className="flex flex-col items-end gap-3 shrink-0">
-                  <div
-                    className={cn(
-                      "px-3 py-1.5 border rounded-full font-mono text-[9px] uppercase tracking-[0.2em] font-bold leading-none flex items-center gap-2",
-                      isSigned
-                        ? "border-[#3b8273]/40 text-[#3b8273] bg-[#f4f8f6]"
-                        : "border-[#c0a66d] text-[#c0a66d] bg-[#fcf9f1]",
-                    )}
-                  >
-                    <div className={cn("w-1.5 h-1.5 rounded-full", isSigned ? "bg-[#3b8273]" : "bg-[#c0a66d]")} />
-                    {p.status}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#6b6560] group-hover:text-black transition-colors font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
-                    Open
-                    <ChevronRight className="w-3 h-3" />
+                  {/* Right */}
+                  <div className="flex flex-col items-end gap-3 shrink-0">
+                    <div
+                      className={cn(
+                        "px-3 py-1.5 border rounded-full font-mono text-[9px] uppercase tracking-[0.2em] font-bold leading-none flex items-center gap-2",
+                        tone.ring,
+                        tone.bg
+                      )}
+                    >
+                      <div className={cn("w-1.5 h-1.5 rounded-full", tone.dot)} />
+                      {tone.label}
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[#6b6560] group-hover:text-black transition-colors font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
+                      Open
+                      <ChevronRight className="w-3 h-3" />
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {!isSigned && (
-                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#c0a66d] mt-5 pt-4 border-t border-[#f0ede6]">
-                  Awaiting your signature · Expires {p.expiresAt}
-                </p>
-              )}
-              {isSigned && p.signedAt && (
-                <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#3b8273] mt-5 pt-4 border-t border-[#f0ede6]">
-                  Signed by you on {p.signedAt}
-                </p>
-              )}
-            </Link>
-          )
-        })}
+              </Link>
+            );
+          })
+        )}
       </section>
     </div>
-  )
+  );
 }
