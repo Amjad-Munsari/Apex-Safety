@@ -16,12 +16,17 @@ const openrouter = createOpenAI({
 
 export async function draftProposalScope(services: any[]) {
   if (!process.env.OPENROUTER_API_KEY) {
-    // Fallback when the AI key is not configured. The wording is identifiable
-    // (always opens with "888 Safety proposes to deliver…") so Matt knows to
-    // overwrite it manually. We deliberately do NOT throw in production —
-    // throwing from a server action surfaces a Server Components render error
-    // in Next.js production builds even when the caller has a try/catch.
-    console.warn("OPENROUTER_API_KEY not set — returning canned draft.")
+    // In production the AI draft is non-negotiable per Milestone 2 spec — a
+    // silent canned-text fallback shipped real proposals before the gap was
+    // caught. Fail loudly so a missing/rotated key is visible immediately
+    // (the wizard toasts the error message). In dev/preview keep the canned
+    // fallback so contributors without an OpenRouter key can still iterate.
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "OPENROUTER_API_KEY is not configured. Set it in the Vercel project env vars and redeploy."
+      )
+    }
+    console.warn("OPENROUTER_API_KEY not set — returning canned draft (dev only).")
     const serviceNames = services.map(s => s.name).join(", ")
     return `888 Safety proposes to deliver comprehensive services including: ${serviceNames}. Our approach ensures full compliance with UK fire safety regulations and includes a detailed site assessment, customized reporting, and priority support. We will work closely with your team to minimize disruption while ensuring the highest standards of safety are met.`
   }

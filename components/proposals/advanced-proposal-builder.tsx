@@ -259,10 +259,10 @@ export function AdvancedProposalBuilder({
           )}
           <div className="prop-user">
             <div className="prop-user-info">
-              <span className="prop-user-name">Matt Hollis</span>
+              <span className="prop-user-name">Matt Robinson</span>
               <span className="prop-user-role">Lead Consultant</span>
             </div>
-            <div className="prop-avatar">MH</div>
+            <div className="prop-avatar">MR</div>
           </div>
         </div>
       </header>
@@ -584,7 +584,7 @@ export function AdvancedProposalBuilder({
                       </div>
                       <div>
                         <div className="prop-paper-meta-label">PREPARED BY</div>
-                        <div className="prop-paper-meta-name">Matt Hollis</div>
+                        <div className="prop-paper-meta-name">Matt Robinson</div>
                         <div className="prop-paper-meta-detail">
                           Lead Consultant · 888 Safety Solutions<br />
                           888FST@proton.me · 0114 555 0188
@@ -674,10 +674,10 @@ export function AdvancedProposalBuilder({
                       <div className="prop-paper-sig-block">
                         <div className="prop-paper-section-label">SIGNED FOR 888</div>
                         <div className="prop-paper-sig-space">
-                          <span className="prop-paper-sig-img">Matt Hollis</span>
+                          <span className="prop-paper-sig-img">Matt Robinson</span>
                         </div>
                         <div className="prop-paper-sig-meta">
-                          <span>Matt Hollis, Lead Consultant</span>
+                          <span>Matt Robinson, Lead Consultant</span>
                           <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
                       </div>

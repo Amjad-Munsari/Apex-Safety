@@ -251,7 +251,7 @@ export const ProposalDocument = ({
         </View>
         <View style={styles.gridCol}>
           <Text style={styles.gridLabel}>PREPARED BY</Text>
-          <Text style={styles.gridName}>Matt Hollis</Text>
+          <Text style={styles.gridName}>Matt Robinson</Text>
           <Text style={styles.gridDetail}>Lead Consultant · 888 Safety Solutions</Text>
           <Text style={styles.gridDetail}>888FST@proton.me · 0114 555 0188</Text>
         </View>
@@ -315,9 +315,9 @@ export const ProposalDocument = ({
         <View style={styles.sigBlock}>
           <Text style={styles.sectionLabel}>SIGNED FOR 888</Text>
           <View style={styles.sigSpace}>
-            <Text style={styles.sigImg}>Matt Hollis</Text>
+            <Text style={styles.sigImg}>Matt Robinson</Text>
           </View>
-          <Text style={styles.sigMeta}>Matt Hollis, Lead Consultant / {date}</Text>
+          <Text style={styles.sigMeta}>Matt Robinson, Lead Consultant / {date}</Text>
         </View>
       </View>
 

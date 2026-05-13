@@ -137,10 +137,10 @@ export function AdvancedAssessmentBuilder({
           )}
           <div className="prop-user">
             <div className="prop-user-info">
-              <span className="prop-user-name">Matt Hollis</span>
+              <span className="prop-user-name">Matt Robinson</span>
               <span className="prop-user-role">Lead Consultant</span>
             </div>
-            <div className="prop-avatar">MH</div>
+            <div className="prop-avatar">MR</div>
           </div>
         </div>
       </header>
