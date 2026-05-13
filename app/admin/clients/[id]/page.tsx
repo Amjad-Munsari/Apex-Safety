@@ -47,6 +47,82 @@ export default async function ClientDetailsPage({
       : null,
   }))
 
+  // Hours transactions, oldest first so we can compute a running balance.
+  const { data: hoursRows } = await supabase
+    .from("hours_transactions")
+    .select("id, transaction_type, hours_amount, notes, created_at")
+    .eq("client_id", id)
+    .order("created_at", { ascending: true })
+
+  let running = 0
+  const hoursLogChronological = (hoursRows ?? []).map((row) => {
+    const delta = Number(row.hours_amount) || 0
+    running += delta
+    return {
+      id: row.id,
+      date: row.created_at,
+      description: row.notes?.trim() || row.transaction_type || "Hours transaction",
+      delta,
+      balance: running,
+    }
+  })
+  // Newest first for the UI.
+  const hoursLog = hoursLogChronological.reverse()
+
+  // Assessments are form_submissions for this client. We join template_versions
+  // → form_templates to surface the template name in the UI.
+  const { data: submissionRows } = await supabase
+    .from("form_submissions")
+    .select(`
+      id,
+      status,
+      created_at,
+      submitted_at,
+      template:template_versions(
+        form_template:form_templates(name)
+      )
+    `)
+    .eq("client_id", id)
+    .order("created_at", { ascending: false })
+
+  const assessments = (submissionRows ?? []).map((row: any) => {
+    const templateName: string =
+      row.template?.form_template?.name ??
+      (Array.isArray(row.template) ? row.template[0]?.form_template?.name : null) ??
+      "Assessment"
+
+    // Map DB status → UI status. Anything past `submitted` shows as "Delivered"
+    // (the final PDF is in storage); draft variants show as "Draft"; mid-flight
+    // statuses (submitted, draft_ready_for_review) show as "In review".
+    let uiStatus: "Delivered" | "Draft" | "In review"
+    switch (row.status) {
+      case "completed":
+        uiStatus = "Delivered"
+        break
+      case "submitted":
+      case "draft_ready_for_review":
+        uiStatus = "In review"
+        break
+      default:
+        uiStatus = "Draft"
+    }
+
+    // Completed assessments go to the review page (which serves the PDF).
+    // In-flight ones go back to the form for further edits.
+    const reportHref =
+      uiStatus === "Delivered"
+        ? `/admin/assessments/${row.id}/review`
+        : `/admin/assessments/${row.id}`
+
+    return {
+      id: `ASMT-${row.id.slice(0, 6).toUpperCase()}`,
+      date: row.submitted_at ?? row.created_at,
+      type: templateName,
+      status: uiStatus,
+      reportHref,
+    }
+  })
+
   return (
     <div className="flex flex-col gap-10 pt-12 pb-20 max-w-6xl mx-auto w-full">
       {/* ─── HEADER ─── */}
@@ -104,8 +180,13 @@ export default async function ClientDetailsPage({
         clientId={client.id}
         clientName={client.name}
         hoursBalance={client.hours_balance || 0}
+        contactName={client.contact_name ?? null}
+        contactEmail={client.contact_email ?? null}
+        contactPhone={client.contact_phone ?? null}
         documents={documents ?? []}
         proposals={proposals}
+        assessments={assessments}
+        hoursLog={hoursLog}
       />
     </div>
   )
