@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server"
+import { adminClient } from "@/lib/supabase/admin"
 import { notFound } from "next/navigation"
 import { UploadDocumentModal } from "@/components/admin/upload-document-modal"
 import { Card } from "@/components/ui/card"
@@ -13,9 +13,8 @@ export default async function ClientDetailsPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: client, error: clientError } = await supabase
+  const { data: client, error: clientError } = await adminClient
     .from("clients")
     .select("*")
     .eq("id", id)
@@ -25,30 +24,32 @@ export default async function ClientDetailsPage({
     notFound()
   }
 
-  const { data: documents } = await supabase
+  const { data: documents } = await adminClient
     .from("documents")
     .select("*")
     .eq("client_id", id)
     .order("uploaded_at", { ascending: false })
 
-  const { data: proposalRows } = await supabase
+  const { data: proposalRows } = await adminClient
     .from("proposals")
     .select("*")
     .eq("client_id", id)
     .order("created_at", { ascending: false })
 
+  // pdfUrl removed — ClientTabs links to /admin/proposals/[id] for the detail
+  // view where signed URLs are computed fresh. Computing them here was dead
+  // code and a footgun now that the bucket is private (getPublicUrl returns a
+  // 401-ing URL).
   const proposals = (proposalRows ?? []).map((p) => ({
     id: p.id,
     status: p.status,
     created_at: p.created_at,
     total: (p as any).total_price || calculateProposalTotal(p.services_json),
-    pdfUrl: p.proposal_pdf_path
-      ? (supabase as any).storage.from("proposals").getPublicUrl(p.proposal_pdf_path).data.publicUrl
-      : null,
+    pdfUrl: null as string | null,
   }))
 
   // Hours transactions, oldest first so we can compute a running balance.
-  const { data: hoursRows } = await supabase
+  const { data: hoursRows } = await adminClient
     .from("hours_transactions")
     .select("id, transaction_type, hours_amount, notes, created_at")
     .eq("client_id", id)
@@ -71,7 +72,7 @@ export default async function ClientDetailsPage({
 
   // Assessments are form_submissions for this client. We join template_versions
   // → form_templates to surface the template name in the UI.
-  const { data: submissionRows } = await supabase
+  const { data: submissionRows } = await adminClient
     .from("form_submissions")
     .select(`
       id,
