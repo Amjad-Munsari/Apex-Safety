@@ -2,10 +2,20 @@
 
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, CheckCircle2, FileSignature, Download, Pencil } from "lucide-react"
+import { Send, CheckCircle2, FileSignature, Download, Pencil, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { updateProposalStatus } from "../actions"
+import { updateProposalStatus, deleteProposal } from "../actions"
 
 type ProposalStatus = "Draft" | "Sent" | "Signed" | "Contract Issued"
 
@@ -27,6 +37,8 @@ export function ProposalActions({
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [optimisticStatus, setOptimisticStatus] = useState<ProposalStatus>(status)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   function advance(next: ProposalStatus, message: string) {
     setOptimisticStatus(next)
@@ -63,57 +75,110 @@ export function ProposalActions({
     router.push(`/admin/proposals/new?${params.toString()}`)
   }
 
+  async function handleConfirmDelete() {
+    setIsDeleting(true)
+    try {
+      await deleteProposal(proposalId)
+      toast.success(`Proposal for ${clientName} deleted`)
+      router.push("/admin/proposals")
+    } catch (err: any) {
+      setIsDeleting(false)
+      toast.error(err?.message || "Failed to delete proposal")
+    }
+  }
+
   const canSend = optimisticStatus === "Draft"
   const canSign = optimisticStatus === "Sent"
   const canIssue = optimisticStatus === "Signed"
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <Button
-        variant="outline"
-        onClick={handleDownload}
-        className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
-      >
-        <Download className="w-3.5 h-3.5" /> Download PDF
-      </Button>
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-6 w-full">
+        {/* Left cluster — secondary actions */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={handleDownload}
+            className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
+          >
+            <Download className="w-3.5 h-3.5" /> Download PDF
+          </Button>
 
-      <Button
-        variant="outline"
-        onClick={handleEdit}
-        className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
-      >
-        <Pencil className="w-3.5 h-3.5" /> Edit
-      </Button>
+          <Button
+            variant="outline"
+            onClick={handleEdit}
+            className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
+          >
+            <Pencil className="w-3.5 h-3.5" /> Edit
+          </Button>
 
-      {canSend && (
-        <Button
-          onClick={() => advance("Sent", `Proposal sent to ${clientName} for signature`)}
-          disabled={pending}
-          className="bg-gold hover:bg-gold/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
-        >
-          <Send className="w-3.5 h-3.5" /> Send for signature
-        </Button>
-      )}
+          <Button
+            variant="outline"
+            onClick={() => setIsDeleteOpen(true)}
+            className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete
+          </Button>
+        </div>
 
-      {canSign && (
-        <Button
-          onClick={() => advance("Signed", `Proposal marked as signed`)}
-          disabled={pending}
-          className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
-        >
-          <CheckCircle2 className="w-3.5 h-3.5" /> Mark as signed
-        </Button>
-      )}
+        {/* Right cluster — primary status-advance action */}
+        <div className="flex items-center">
+          {canSend && (
+            <Button
+              onClick={() => advance("Sent", `Proposal sent to ${clientName} for signature`)}
+              disabled={pending}
+              className="bg-gold hover:bg-gold/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
+            >
+              <Send className="w-3.5 h-3.5" /> Send for signature
+            </Button>
+          )}
 
-      {canIssue && (
-        <Button
-          onClick={() => advance("Contract Issued", `Contract issued to ${clientName}`)}
-          disabled={pending}
-          className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
-        >
-          <FileSignature className="w-3.5 h-3.5" /> Issue contract
-        </Button>
-      )}
-    </div>
+          {canSign && (
+            <Button
+              onClick={() => advance("Signed", `Proposal marked as signed`)}
+              disabled={pending}
+              className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" /> Mark as signed
+            </Button>
+          )}
+
+          {canIssue && (
+            <Button
+              onClick={() => advance("Contract Issued", `Contract issued to ${clientName}`)}
+              disabled={pending}
+              className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
+            >
+              <FileSignature className="w-3.5 h-3.5" /> Issue contract
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-serif text-base">
+              Delete this proposal?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Permanently removes the proposal for{" "}
+              <span className="text-foreground">{clientName}</span> and its PDF from storage.{" "}
+              <strong>This cannot be undone.</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+            >
+              {isDeleting ? "Deleting…" : "Delete proposal"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }

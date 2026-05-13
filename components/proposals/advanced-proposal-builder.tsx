@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { draftProposalScope, createProposal } from '@/app/admin/proposals/actions';
-import { Service, groupByCategory, useServices } from '@/lib/data/services';
+import { Service, groupByCategory } from '@/lib/data/services';
 
 export type Client = {
   id: string;
@@ -22,10 +22,21 @@ export interface CategoryGroup {
   services: Service[];
 }
 
-function formatPrice(amount: number): string {
+function formatPrice(amount: number | null): string {
+  if (amount === null) return '—';
   if (amount < 1) return `£${amount}`;
   if (amount % 1 !== 0) return `£${amount.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
   return `£${amount.toLocaleString('en-GB')}`;
+}
+
+/** Parse an override price string. Returns null if blank or not a positive number. */
+function parseOverride(input: string | undefined): number | null {
+  if (input === undefined) return null;
+  const trimmed = input.trim();
+  if (trimmed === '') return null;
+  const n = Number(trimmed);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
 }
 
 function formatTotal(amount: number): string {
@@ -41,31 +52,30 @@ const STEPS = [
 
 export function AdvancedProposalBuilder({
   clients,
+  services: initialServices,
 }: {
   clients: Client[]
+  services: Service[]
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Read live from the shared services store; only show active entries.
-  const allServices = useServices();
-  const services = useMemo(() => allServices.filter(s => s.active), [allServices]);
+  const services = useMemo(
+    () => initialServices.filter(s => s.active),
+    [initialServices]
+  );
   const categories = useMemo(() => groupByCategory(services), [services]);
 
   const [step, setStep] = useState(1);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  
-  const [clientTab, setClientTab] = useState<'existing' | 'new'>('existing');
+
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
-  const [clientForm, setClientForm] = useState({
-    orgName: '',
-    contactName: '',
-    siteAddress: '',
-    contactEmail: '',
-  });
 
   const [quantities, setQuantities] = useState<Record<string, number>>({});
+  // Per-proposal price overrides for services with unit_price === null
+  // (quote-on-request). Stored as raw string so partial input ("3.5") works.
+  const [overridePrices, setOverridePrices] = useState<Record<string, string>>({});
   const [scopeText, setScopeText] = useState("");
 
   // When step changes to 3, trigger AI drafting if scopeText is empty
@@ -85,20 +95,40 @@ export function AdvancedProposalBuilder({
   }, [searchParams, clients]);
 
   /* Computed */
+  /**
+   * Line item shape — `effective_price` is what gets used for math and
+   * persisted to services_json. It is the catalog price for normal services,
+   * or the admin's per-proposal override for quote-on-request services.
+   * `needsOverride` is true when the service is quote-on-request and no valid
+   * override has been entered yet — used to gate the "Generate proposal" button.
+   */
   const lineItems = useMemo(() => {
     return Object.entries(quantities)
       .filter(([, qty]) => qty > 0)
       .map(([id, qty]) => {
         const service = services.find(s => s.id === id)!;
-        return { ...service, quantity: qty, total: service.unit_price * qty };
+        const override = parseOverride(overridePrices[id]);
+        const effective_price =
+          service.unit_price !== null ? service.unit_price : override;
+        const needsOverride =
+          service.unit_price === null && override === null;
+        return {
+          ...service,
+          quantity: qty,
+          effective_price,
+          needsOverride,
+          total: effective_price !== null ? effective_price * qty : 0,
+        };
       });
-  }, [quantities, services]);
+  }, [quantities, services, overridePrices]);
 
+  const hasUnpricedItem = lineItems.some(item => item.needsOverride);
   const subtotal = lineItems.reduce((sum, item) => sum + item.total, 0);
   const vat = subtotal * 0.2;
   const total = subtotal + vat;
-  const clientName = clientForm.orgName || 'Client';
-  const canProceed = clientForm.orgName.trim() !== '';
+  const selectedClient = clients.find(c => c.id === selectedClientId) ?? null;
+  const clientName = selectedClient?.name ?? 'Client';
+  const canProceed = selectedClientId !== null;
 
   /* Handlers */
   const updateQty = (id: string, delta: number) => {
@@ -108,18 +138,8 @@ export function AdvancedProposalBuilder({
     });
   };
 
-  const setField = (field: string, value: string) => {
-    setClientForm(prev => ({ ...prev, [field]: value }));
-  };
-
   const selectClient = (client: Client) => {
     setSelectedClientId(client.id);
-    setClientForm({
-      orgName: client.name,
-      contactName: client.contactName || '',
-      siteAddress: client.address || '',
-      contactEmail: client.contactEmail || '',
-    });
   };
 
   const handleDraftScope = async () => {
@@ -137,30 +157,62 @@ export function AdvancedProposalBuilder({
     }
   };
 
+  const buildServicesJson = () =>
+    lineItems.map(item => ({
+      service: {
+        name: item.name,
+        description: item.description ?? '',
+        unit_price: item.effective_price ?? 0,
+      },
+      quantity: item.quantity,
+    }));
+
   const handleSend = async () => {
     if (!selectedClientId) {
       toast.error("You must select an existing client to generate the PDF properly right now.");
       return;
     }
-    
+
     setIsGenerating(true);
     try {
-      const servicesJson = lineItems.map(item => ({
-        service: { name: item.name, unit_price: item.unit_price },
-        quantity: item.quantity
-      }));
-      
       await createProposal({
         clientId: selectedClientId,
-        servicesJson,
+        servicesJson: buildServicesJson(),
         scopeText,
-        totalAmount: subtotal // Storing subtotal as requested previously, or total if preferred
+        // Pass the pre-VAT subtotal — createProposal computes VAT and total
+        // internally and stores the VAT-inclusive total in total_price.
+        subtotal,
       });
-      
+
       toast.success("Proposal sent & PDF Generated!");
       router.push(`/admin/clients/${selectedClientId}`);
     } catch (err: any) {
       toast.error(err.message || "Failed to create proposal");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!selectedClientId) {
+      toast.error("Pick an existing client before saving a draft.");
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      await createProposal({
+        clientId: selectedClientId,
+        servicesJson: buildServicesJson(),
+        scopeText,
+        subtotal,
+        saveAsDraft: true,
+      });
+      toast.success("Saved as draft", {
+        description: "Find it in the Draft column of the proposals pipeline.",
+      });
+      router.push("/admin/proposals");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save draft");
     } finally {
       setIsGenerating(false);
     }
@@ -192,14 +244,13 @@ export function AdvancedProposalBuilder({
 
         <div className="prop-header-right">
           {step > 1 && (
-            <button 
+            <button
               className="prop-discard"
               onClick={() => {
                 setStep(1);
                 setQuantities({});
+                setOverridePrices({});
                 setSelectedClientId(null);
-                setClientForm({ orgName: '', contactName: '', siteAddress: '', contactEmail: '' });
-                setClientTab('existing');
                 setScopeText("");
               }}
             >
@@ -224,9 +275,11 @@ export function AdvancedProposalBuilder({
             <div className="prop-doc-client">{clientName}</div>
           </div>
           <div className="prop-doc-actions">
-            <button className="prop-btn-secondary" onClick={() => setStep(2)}>Edit services</button>
-            <button className="prop-btn-secondary" onClick={handleDraftScope}>+ Regenerate</button>
-            <button className="prop-btn-primary" onClick={() => setStep(4)}>Send for e-signature →</button>
+            <button className="prop-btn-secondary" onClick={() => setStep(2)} disabled={isGenerating}>Edit services</button>
+            <button className="prop-btn-secondary" onClick={handleSaveAsDraft} disabled={isGenerating}>
+              {isGenerating ? "Saving…" : "Save as draft"}
+            </button>
+            <button className="prop-btn-primary" onClick={() => setStep(4)} disabled={isGenerating}>Send for e-signature →</button>
           </div>
         </div>
       )}
@@ -240,94 +293,51 @@ export function AdvancedProposalBuilder({
             <div className="prop-breadcrumb">PROPOSALS · NEW</div>
             <h1 className="prop-heading">Start a new proposal.</h1>
             <p className="prop-description">
-              Pick an existing client or add a new one. You&apos;ll choose services next, then we&apos;ll draft a
-              branded one-pager ready to send for e-signature.
+              Pick the client this proposal is for. You&apos;ll choose services next, then we&apos;ll
+              draft a branded one-pager ready to send.
             </p>
 
-            <div className="prop-tabs">
-              <button
-                className={`prop-tab ${clientTab === 'existing' ? 'active' : ''}`}
-                onClick={() => setClientTab('existing')}
+            <div className="prop-existing-clients">
+              <div
+                className="prop-label"
+                style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
               >
-                Existing clients
-              </button>
-              <button
-                className={`prop-tab ${clientTab === 'new' ? 'active' : ''}`}
-                onClick={() => {
-                  setClientTab('new');
-                  setSelectedClientId(null);
-                  setClientForm({ orgName: '', contactName: '', siteAddress: '', contactEmail: '' });
-                }}
-              >
-                Add new client
-              </button>
+                <span>SELECT CLIENT</span>
+                <a
+                  href="/admin/clients"
+                  style={{
+                    fontSize: 10,
+                    fontFamily: 'var(--p-font-mono)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.2em',
+                    color: 'var(--p-gold)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  + New client →
+                </a>
+              </div>
+              <div className="prop-client-grid">
+                {clients.map(client => (
+                  <button
+                    key={client.id}
+                    className={`prop-client-card ${selectedClientId === client.id ? 'selected' : ''}`}
+                    onClick={() => selectClient(client)}
+                  >
+                    <div className="prop-client-card-name">{client.name}</div>
+                    <div className="prop-client-card-address">{client.address || "Address not provided"}</div>
+                    <div className="prop-client-card-contact">
+                      {client.contactName || "No contact"} · <span>{client.contactEmail || "No email"}</span>
+                    </div>
+                  </button>
+                ))}
+                {clients.length === 0 && (
+                  <div className="text-white/50 text-sm" style={{ gridColumn: '1 / -1' }}>
+                    No clients yet. <a href="/admin/clients" style={{ color: 'var(--p-gold)' }}>Add one in the client list →</a>
+                  </div>
+                )}
+              </div>
             </div>
-
-            {clientTab === 'new' ? (
-              <div className="prop-form">
-                <div className="prop-form-row">
-                  <div className="prop-form-group">
-                    <label className="prop-label">ORGANISATION NAME</label>
-                    <input
-                      type="text"
-                      className="prop-input"
-                      value={clientForm.orgName}
-                      onChange={e => setField('orgName', e.target.value)}
-                    />
-                  </div>
-                  <div className="prop-form-group">
-                    <label className="prop-label">CONTACT NAME</label>
-                    <input
-                      type="text"
-                      className="prop-input"
-                      value={clientForm.contactName}
-                      onChange={e => setField('contactName', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="prop-form-group">
-                  <label className="prop-label">SITE ADDRESS</label>
-                  <input
-                    type="text"
-                    className="prop-input"
-                    value={clientForm.siteAddress}
-                    onChange={e => setField('siteAddress', e.target.value)}
-                  />
-                </div>
-                <div className="prop-form-group">
-                  <label className="prop-label">CONTACT EMAIL</label>
-                  <input
-                    type="email"
-                    className="prop-input"
-                    placeholder="name@company.co.uk"
-                    value={clientForm.contactEmail}
-                    onChange={e => setField('contactEmail', e.target.value)}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="prop-existing-clients">
-                <div className="prop-label" style={{ marginBottom: '16px' }}>SELECT CLIENT</div>
-                <div className="prop-client-grid">
-                  {clients.map(client => (
-                    <button
-                      key={client.id}
-                      className={`prop-client-card ${selectedClientId === client.id ? 'selected' : ''}`}
-                      onClick={() => selectClient(client)}
-                    >
-                      <div className="prop-client-card-name">{client.name}</div>
-                      <div className="prop-client-card-address">{client.address || "Address not provided"}</div>
-                      <div className="prop-client-card-contact">
-                        {client.contactName || "No contact"} · <span>{client.contactEmail || "No email"}</span>
-                      </div>
-                    </button>
-                  ))}
-                  {clients.length === 0 && (
-                    <div className="text-white/50 text-sm">No clients found in the database.</div>
-                  )}
-                </div>
-              </div>
-            )}
 
             <div className="prop-step-actions">
               <button
@@ -374,8 +384,19 @@ export function AdvancedProposalBuilder({
                         </div>
                         <div className="prop-service-pricing">
                           <div className="prop-service-price-block">
-                            <span className="prop-service-price">{formatPrice(svc.unit_price)}</span>
-                            <span className="prop-service-unit">/ {svc.unit}</span>
+                            {svc.unit_price === null ? (
+                              <span
+                                className="prop-service-price"
+                                style={{ color: 'var(--p-text-muted)' }}
+                              >
+                                —
+                              </span>
+                            ) : (
+                              <>
+                                <span className="prop-service-price">{formatPrice(svc.unit_price)}</span>
+                                <span className="prop-service-unit">/ {svc.unit}</span>
+                              </>
+                            )}
                           </div>
                           <div className="prop-qty-control">
                             <button className="prop-qty-btn" onClick={() => updateQty(svc.id, -1)}>−</button>
@@ -401,15 +422,68 @@ export function AdvancedProposalBuilder({
                 </div>
               ) : (
                 <div className="prop-line-item-list">
-                  {lineItems.map(item => (
-                    <div key={item.id} className="prop-line-item-entry">
-                      <div>
-                        <span className="prop-line-item-name">{item.name}</span>
-                        <span className="prop-line-item-qty"> ×{item.quantity}</span>
+                  {lineItems.map(item => {
+                    // Quote-on-request services keep the price input editable
+                    // for the lifetime of the proposal — Matt can correct a
+                    // typo at any point. The button-level gating
+                    // (`hasUnpricedItem`) handles the "must be set before
+                    // continuing" rule independently.
+                    const isQuoteItem = item.unit_price === null;
+                    return (
+                      <div key={item.id} className="prop-line-item-entry">
+                        <div>
+                          <span className="prop-line-item-name">{item.name}</span>
+                          <span className="prop-line-item-qty"> ×{item.quantity}</span>
+                        </div>
+                        {isQuoteItem ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span
+                              style={{
+                                color: item.needsOverride ? '#c55a5a' : 'var(--p-text-muted)',
+                                fontSize: 9,
+                                fontFamily: 'var(--p-font-mono)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.1em',
+                              }}
+                            >
+                              £
+                            </span>
+                            <input
+                              type="number"
+                              step="1"
+                              min="0"
+                              placeholder="0"
+                              value={overridePrices[item.id] ?? ''}
+                              onChange={e => setOverridePrices(prev => ({ ...prev, [item.id]: e.target.value }))}
+                              style={{
+                                width: 84,
+                                padding: '4px 8px',
+                                fontSize: 12,
+                                fontFamily: 'var(--p-font-mono)',
+                                background: 'transparent',
+                                border: `1px solid ${item.needsOverride ? '#c55a5a' : 'rgba(255,255,255,0.15)'}`,
+                                borderRadius: 3,
+                                color: 'var(--p-text)',
+                                textAlign: 'right',
+                                colorScheme: 'dark',
+                              }}
+                            />
+                            <span style={{ color: 'var(--p-text-muted)', fontSize: 10 }}>/ {item.unit}</span>
+                            {!item.needsOverride && (
+                              <span
+                                className="prop-line-item-total"
+                                style={{ marginLeft: 8, fontSize: 11 }}
+                              >
+                                = {formatTotal(item.total)}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="prop-line-item-total">{formatTotal(item.total)}</span>
+                        )}
                       </div>
-                      <span className="prop-line-item-total">{formatTotal(item.total)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -428,12 +502,22 @@ export function AdvancedProposalBuilder({
                 </div>
               </div>
 
-              <button className="prop-generate-btn" disabled={lineItems.length === 0} onClick={() => setStep(3)}>
+              <button
+                className="prop-generate-btn"
+                disabled={lineItems.length === 0 || hasUnpricedItem}
+                onClick={() => setStep(3)}
+              >
                 + Generate proposal
               </button>
-              <div className="prop-generate-note">
-                AI-drafts intro + terms · Review before sending
-              </div>
+              {hasUnpricedItem ? (
+                <div className="prop-generate-note" style={{ color: '#c55a5a' }}>
+                  Enter a price for the highlighted items before generating.
+                </div>
+              ) : (
+                <div className="prop-generate-note">
+                  AI-drafts intro + terms · Review before sending
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -494,8 +578,8 @@ export function AdvancedProposalBuilder({
                         <div className="prop-paper-meta-label">PREPARED FOR</div>
                         <div className="prop-paper-meta-name">{clientName}</div>
                         <div className="prop-paper-meta-detail">
-                          {clientForm.siteAddress || 'Address TBD'}<br />
-                          Attn: {clientForm.contactName || 'Contact TBD'}
+                          {selectedClient?.address || 'Address TBD'}<br />
+                          Attn: {selectedClient?.contactName || 'Contact TBD'}
                         </div>
                       </div>
                       <div>
@@ -516,8 +600,14 @@ export function AdvancedProposalBuilder({
                         value={scopeText}
                         onChange={(e) => setScopeText(e.target.value)}
                         placeholder="Scope text will appear here once drafted..."
-                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-y min-h-[120px] outline-none placeholder:text-[#a8a39d]"
-                        style={{ fontFamily: 'var(--font-serif)', fontSize: '17px', lineHeight: '1.6', color: '#1a1a1a' }}
+                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-y min-h-[120px] outline-none text-[#1a1a1a] caret-[#1a1a1a] placeholder:text-[#a8a39d]"
+                        style={{
+                          fontFamily: 'var(--font-serif)',
+                          fontSize: '17px',
+                          lineHeight: '1.6',
+                          color: '#1a1a1a',
+                          colorScheme: 'light',
+                        }}
                       />
                     </div>
 
@@ -614,8 +704,8 @@ export function AdvancedProposalBuilder({
             
             <div style={{ background: 'var(--p-surface)', padding: '24px', borderRadius: '8px', border: '1px solid var(--p-border)', marginBottom: '40px' }}>
               <p style={{ fontSize: '13px', color: 'var(--p-text-muted)', marginBottom: '8px' }}>RECIPIENT</p>
-              <p style={{ fontSize: '16px', fontWeight: '500' }}>{clientForm.contactName || 'Client Contact'}</p>
-              <p style={{ fontSize: '14px', color: 'var(--p-text-secondary)' }}>{clientForm.contactEmail || 'Not provided'}</p>
+              <p style={{ fontSize: '16px', fontWeight: '500' }}>{selectedClient?.contactName || 'Client Contact'}</p>
+              <p style={{ fontSize: '14px', color: 'var(--p-text-secondary)' }}>{selectedClient?.contactEmail || 'Not provided'}</p>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

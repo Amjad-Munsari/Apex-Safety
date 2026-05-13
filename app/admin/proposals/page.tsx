@@ -20,6 +20,25 @@ export default async function ProposalsPage() {
 
   const items = proposals || []
 
+  // Pre-sign every PDF URL in one batch so the cards stay synchronous below.
+  const signedUrls = new Map<string, string>()
+  const pathsToSign = items
+    .map(p => p.proposal_pdf_path)
+    .filter((p): p is string => Boolean(p))
+
+  if (pathsToSign.length > 0) {
+    const { data: signed, error: signError } = await adminClient.storage
+      .from("proposals")
+      .createSignedUrls(pathsToSign, 60 * 60)
+    if (signError) {
+      console.error("Failed to sign proposal PDF URLs:", signError)
+    } else if (signed) {
+      for (const entry of signed) {
+        if (entry.path && entry.signedUrl) signedUrls.set(entry.path, entry.signedUrl)
+      }
+    }
+  }
+
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
@@ -63,7 +82,9 @@ export default async function ProposalsPage() {
               <div className="flex flex-col gap-4 min-h-[500px] p-2 rounded-sm bg-white/[0.02] border border-white/[0.05]">
                   {filtered.map((prop) => {
                     const total = (prop as any).total_price || calculateProposalTotal(prop.services_json)
-                    const documentUrl = prop.proposal_pdf_path ? adminClient.storage.from('proposals').getPublicUrl(prop.proposal_pdf_path).data.publicUrl : null
+                    const documentUrl = prop.proposal_pdf_path
+                      ? signedUrls.get(prop.proposal_pdf_path) ?? null
+                      : null
 
                     const detailHref = status === 'Contract Issued' ? `/admin/contracts/yellow-broom` : `/admin/proposals/${prop.id}`
 

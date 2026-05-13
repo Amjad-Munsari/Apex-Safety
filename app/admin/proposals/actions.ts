@@ -16,8 +16,13 @@ const openrouter = createOpenAI({
 
 export async function draftProposalScope(services: any[]) {
   if (!process.env.OPENROUTER_API_KEY) {
-    // Return a mock response if no key is provided yet
-    console.warn("No OPENROUTER_API_KEY found, returning mock draft.")
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "OPENROUTER_API_KEY is required in production. Configure it in the Vercel project environment."
+      )
+    }
+    // Dev-only convenience: surface a canned draft when running locally without a key.
+    console.warn("No OPENROUTER_API_KEY found — returning mock draft (dev only).")
     const serviceNames = services.map(s => s.name).join(", ")
     return `888 Safety proposes to deliver comprehensive services including: ${serviceNames}. Our approach ensures full compliance with UK fire safety regulations and includes a detailed site assessment, customized reporting, and priority support. We will work closely with your team to minimize disruption while ensuring the highest standards of safety are met.`
   }
@@ -45,11 +50,20 @@ export async function draftProposalScope(services: any[]) {
   }
 }
 
+const VAT_RATE = 0.2
+
 export async function createProposal(data: {
   clientId: string
   servicesJson: any
+  /** Sum of (unit_price × quantity) across all line items, BEFORE VAT. */
+  subtotal: number
   scopeText: string
-  totalAmount: number
+  /**
+   * When true, leave the row at status="Draft" after upload (no sent_at).
+   * Used by the "Save as draft" path so the admin can come back later and
+   * promote it via the proposal detail page's "Send for signature" button.
+   */
+  saveAsDraft?: boolean
 }) {
   // Insert the proposal record first to get an ID
   const { data: proposal, error } = await adminClient
@@ -76,7 +90,7 @@ export async function createProposal(data: {
 
     // 2. Generate PDF Buffer
     const { generateProposalPdfBuffer } = await import("@/lib/pdf/generator")
-    
+
     // Map services to match PDF props
     const pdfServices = data.servicesJson.map((s: any) => ({
       name: s.service.name,
@@ -85,8 +99,8 @@ export async function createProposal(data: {
       unit_price: s.service.unit_price,
     }))
 
-    const subtotal = data.totalAmount
-    const vat = subtotal * 0.2
+    const subtotal = data.subtotal
+    const vat = subtotal * VAT_RATE
     const total = subtotal + vat
 
     const pdfBuffer = await generateProposalPdfBuffer({
@@ -103,7 +117,7 @@ export async function createProposal(data: {
 
     // 3. Upload to Supabase Storage
     const fileName = `${data.clientId}/proposal_${proposal.id}.pdf`
-    
+
     const { error: uploadError } = await adminClient
       .storage
       .from("proposals")
@@ -117,32 +131,83 @@ export async function createProposal(data: {
       throw new Error("Failed to upload proposal PDF")
     }
 
-    // 4. Update the DB row with the storage path and total price
+    // 4. Update the DB row with the storage path, VAT-inclusive total, and
+    //    (on the Send path) advance status to "Sent" with a sent_at stamp.
+    //    "Save as draft" callers leave status="Draft" — the row sits in the
+    //    pipeline waiting for the admin to finalise it later.
+    const update: Record<string, unknown> = {
+      proposal_pdf_path: fileName,
+      total_price: total,
+    }
+    if (!data.saveAsDraft) {
+      update.status = "Sent"
+      update.sent_at = new Date().toISOString()
+    }
+
     await adminClient
       .from("proposals")
-      .update({ 
-        proposal_pdf_path: fileName,
-        total_price: data.totalAmount 
-      })
+      .update(update)
       .eq("id", proposal.id)
 
   } catch (pdfError) {
     console.error("Error generating/uploading PDF:", pdfError)
-    // We don't fail the whole creation if PDF fails, but we should log it
-    // In a real app we might mark the proposal status as 'Error' or retry
+    // We don't fail the whole creation if PDF fails, but we should log it.
+    // The row remains status=Draft so the admin can retry from the proposal
+    // detail page.
   }
   
   revalidatePath("/admin/proposals")
   return proposal.id
 }
 
+/**
+ * Hard-delete a proposal row plus its PDF in storage. No soft delete — this
+ * surface is admin-only and we don't want orphaned PDFs accumulating in the
+ * bucket. Confirmation lives in the UI (AlertDialog on the detail page).
+ */
+export async function deleteProposal(proposalId: string) {
+  // Fetch the storage path first so we can delete the PDF too.
+  const { data: row } = await adminClient
+    .from("proposals")
+    .select("proposal_pdf_path")
+    .eq("id", proposalId)
+    .maybeSingle()
+
+  const { error } = await adminClient
+    .from("proposals")
+    .delete()
+    .eq("id", proposalId)
+
+  if (error) {
+    console.error("Error deleting proposal:", error)
+    throw new Error(error.message)
+  }
+
+  if (row?.proposal_pdf_path) {
+    const { error: rmError } = await adminClient.storage
+      .from("proposals")
+      .remove([row.proposal_pdf_path])
+    if (rmError) {
+      // Don't fail the whole delete just because storage cleanup failed —
+      // the row is already gone. Log so we can clean orphans later.
+      console.error("Failed to remove proposal PDF from storage:", rmError)
+    }
+  }
+
+  revalidatePath("/admin/proposals")
+  revalidatePath("/admin")
+}
+
 export async function updateProposalStatus(
   proposalId: string,
   status: "Draft" | "Sent" | "Signed" | "Contract Issued"
 ) {
+  const patch: Record<string, unknown> = { status }
+  if (status === "Sent") patch.sent_at = new Date().toISOString()
+
   const { error } = await adminClient
     .from("proposals")
-    .update({ status })
+    .update(patch)
     .eq("id", proposalId)
 
   if (error) {
@@ -152,4 +217,21 @@ export async function updateProposalStatus(
 
   revalidatePath("/admin/proposals")
   revalidatePath(`/admin/proposals/${proposalId}`)
+}
+
+/**
+ * Stamp `viewed_at` the first time a client opens a proposal.
+ * Idempotent: only writes if `viewed_at` is still NULL.
+ */
+export async function markProposalViewed(proposalId: string) {
+  const { error } = await adminClient
+    .from("proposals")
+    .update({ viewed_at: new Date().toISOString() })
+    .eq("id", proposalId)
+    .is("viewed_at", null)
+
+  if (error) {
+    console.error("Error marking proposal viewed:", error)
+    // Don't throw — viewing telemetry shouldn't break the page render.
+  }
 }

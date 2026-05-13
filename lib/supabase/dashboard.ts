@@ -151,12 +151,28 @@ export async function getWorkflowErrors() {
   return data || []
 }
 
+const VAT_RATE = 0.2
+
+/**
+ * Fallback total for proposals whose `total_price` column is NULL.
+ *
+ * Handles two services_json shapes the codebase has produced over time:
+ *   - Legacy demo seed: `{ name, price }` or `{ name, unit_price }` at top level
+ *   - New builder: `{ service: { name, unit_price }, quantity }`
+ *
+ * Returns the total *including VAT* so it stays consistent with
+ * `proposals.total_price`, which stores the VAT-inclusive headline.
+ */
 export function calculateProposalTotal(servicesJson: any): number {
   if (!servicesJson || !Array.isArray(servicesJson)) return 0
-  return servicesJson.reduce((acc: number, item: any) => {
-    // Check both 'price' and 'unit_price' for robustness
-    const price = Number(item.price || item.unit_price) || 0
-    const qty = Number(item.quantity) || 1
-    return acc + (price * qty)
+  const subtotal = servicesJson.reduce((acc: number, item: any) => {
+    const price =
+      Number(item?.price) ||
+      Number(item?.unit_price) ||
+      Number(item?.service?.unit_price) ||
+      0
+    const qty = Number(item?.quantity) || 1
+    return acc + price * qty
   }, 0)
+  return subtotal * (1 + VAT_RATE)
 }
