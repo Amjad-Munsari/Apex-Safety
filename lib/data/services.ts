@@ -9,12 +9,15 @@
  * runtime state and no Supabase imports.
  */
 
-export type ServiceCategory = "Training courses" | "Services"
+export type ServiceCategory = "Monthly Packages" | "Training courses" | "Services"
 
-// Two categories matching prod: Training courses (priced per delegate) and
-// Services (assessments / consultancy / testing — most quote-on-request).
+// Three categories matching prod:
+//   - Monthly Packages: ongoing retainer tiers (priced per month)
+//   - Training courses: priced per delegate
+//   - Services: assessments / consultancy / testing — most quote-on-request
 // If Matt adds new categories via /admin/services, extend this union.
 export const SERVICE_CATEGORIES: ServiceCategory[] = [
+  "Monthly Packages",
   "Training courses",
   "Services",
 ]

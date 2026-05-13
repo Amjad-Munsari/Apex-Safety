@@ -70,6 +70,11 @@ VALUES
 
 INSERT INTO services (id, name, description, category, unit_price, unit, active)
 VALUES
+  -- ── Monthly Packages (retainer tiers) ───────────────────────────────────
+  ('53000000-0000-4000-8000-000000000001', 'Business Essentials',                             'Monthly retainer. Policy doc template, blank risk assessment, permit-to-work, training video, appointed person letter, business-hours phone consultancy. Optional CMS add-on £100/month.', 'Monthly Packages',  100.00, 'month',  TRUE),
+  ('53000000-0000-4000-8000-000000000002', 'Business Plus',                                   'Monthly retainer. Everything in Business Essentials, plus 2 site visits per year, 4 quarterly remote review meetings, and CMS access for up to 5 users.',                                  'Monthly Packages',  350.00, 'month',  TRUE),
+  ('53000000-0000-4000-8000-000000000003', 'Full Service',                                    'Monthly retainer. Everything in Business Plus, plus 5 hours of work credit per month (usually £475) and defence against negligence cover (up to 2 accident investigations per year).',         'Monthly Packages',  550.00, 'month',  TRUE),
+
   -- ── Training Courses ────────────────────────────────────────────────────
   ('51000000-0000-4000-8000-000000000001', 'First Aid at Work (3 day)',                       'FFA 3D — Ofqual Level 3, 6–12 delegates, 3 days. Classroom. Certificate £10.00 per delegate.', 'Training courses',  310.00, 'person', TRUE),
   ('51000000-0000-4000-8000-000000000002', 'Emergency First Aid at Work',                     'EFAW — Ofqual Level 3, 6–12 delegates, 1 day. Classroom. Certificate £6.50 per delegate.',     'Training courses',  110.00, 'person', TRUE),
