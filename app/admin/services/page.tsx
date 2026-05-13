@@ -1,25 +1,26 @@
-"use client"
-
-import { useMemo } from "react"
 import Link from "next/link"
 import { ArrowLeft, Plus } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ServiceDialog } from "@/components/services/service-dialog"
 import { ServiceActions } from "@/components/services/service-actions"
-import { groupByCategory, useServices } from "@/lib/data/services"
+import { groupByCategory, type Service } from "@/lib/data/services"
+import { fetchServices } from "@/lib/data/services-server"
 
-function formatPrice(amount: number): string {
+export const dynamic = "force-dynamic"
+
+function formatPrice(amount: number | null): string {
+  if (amount === null) return "—"
   if (amount % 1 !== 0) {
     return `£${amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   }
   return `£${amount.toLocaleString("en-GB")}`
 }
 
-export default function ServicesPage() {
-  const services = useServices()
-  const grouped = useMemo(() => groupByCategory(services), [services])
-  const activeCount = useMemo(() => services.filter(s => s.active).length, [services])
+export default async function ServicesPage() {
+  const services = await fetchServices()
+  const grouped = groupByCategory(services)
+  const activeCount = services.filter(s => s.active).length
 
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -106,7 +107,7 @@ function CategoryGroup({
   services,
 }: {
   title: string
-  services: ReturnType<typeof useServices>
+  services: Service[]
 }) {
   return (
     <>

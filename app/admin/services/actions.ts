@@ -2,23 +2,28 @@
 
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
+import type { ServiceCategory } from "@/lib/data/services"
 
-export async function addService(data: {
+type ServicePayload = {
   name: string
-  description?: string
-  category?: string
-  unit_price: number
-}) {
-  const { error } = await adminClient
-    .from("services")
-    .insert([
-      {
-        name: data.name,
-        description: data.description || null,
-        category: data.category || null,
-        unit_price: data.unit_price,
-      },
-    ])
+  description?: string | null
+  category: ServiceCategory
+  unit_price: number | null
+  unit?: string
+  active?: boolean
+}
+
+export async function addService(data: ServicePayload) {
+  const { error } = await adminClient.from("services").insert([
+    {
+      name: data.name,
+      description: data.description ?? null,
+      category: data.category,
+      unit_price: data.unit_price,
+      unit: data.unit?.trim() || "each",
+      active: data.active ?? true,
+    },
+  ])
 
   if (error) {
     console.error("Error adding service:", error)
@@ -29,23 +34,16 @@ export async function addService(data: {
   revalidatePath("/admin/proposals/new")
 }
 
-export async function updateService(
-  id: string,
-  data: {
-    name: string
-    description?: string
-    category?: string
-    unit_price: number
-  }
-) {
+export async function updateService(id: string, data: ServicePayload) {
   const { error } = await adminClient
     .from("services")
     .update({
       name: data.name,
-      description: data.description || null,
-      category: data.category || null,
+      description: data.description ?? null,
+      category: data.category,
       unit_price: data.unit_price,
-      updated_at: new Date().toISOString(),
+      unit: data.unit?.trim() || "each",
+      ...(data.active !== undefined ? { active: data.active } : {}),
     })
     .eq("id", id)
 
@@ -61,7 +59,7 @@ export async function updateService(
 export async function toggleServiceActive(id: string, active: boolean) {
   const { error } = await adminClient
     .from("services")
-    .update({ active, updated_at: new Date().toISOString() })
+    .update({ active })
     .eq("id", id)
 
   if (error) {

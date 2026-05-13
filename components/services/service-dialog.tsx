@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,12 +15,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
-  Service,
-  ServiceCategory,
+  type Service,
+  type ServiceCategory,
   SERVICE_CATEGORIES,
-  addService,
-  updateService,
 } from "@/lib/data/services"
+import { addService, updateService } from "@/app/admin/services/actions"
 import { toast } from "sonner"
 
 interface ServiceDialogProps {
@@ -35,6 +34,7 @@ export function ServiceDialog({ service, children, open, onOpenChange }: Service
   const [category, setCategory] = useState<ServiceCategory>(
     service?.category ?? SERVICE_CATEGORIES[0]
   )
+  const [isPending, startTransition] = useTransition()
 
   const isEditing = !!service
   const controlledOpen = open !== undefined ? open : isOpen
@@ -46,26 +46,34 @@ export function ServiceDialog({ service, children, open, onOpenChange }: Service
     const formData = new FormData(e.currentTarget)
     const name = (formData.get("name") as string).trim()
     const description = (formData.get("description") as string)?.trim() || null
-    const unit_price = parseFloat(formData.get("unit_price") as string)
+    const priceRaw = ((formData.get("unit_price") as string) ?? '').trim()
+    // Blank price = quote-on-request service.
+    const unit_price = priceRaw === '' ? null : parseFloat(priceRaw)
     const unit = ((formData.get("unit") as string) || "each").trim()
 
-    if (!name || Number.isNaN(unit_price)) {
-      toast.error("Name and price are required")
+    if (!name) {
+      toast.error("Name is required")
+      return
+    }
+    if (unit_price !== null && (Number.isNaN(unit_price) || unit_price < 0)) {
+      toast.error("Price must be a positive number, or blank for quote on request")
       return
     }
 
-    try {
-      if (isEditing) {
-        updateService(service.id, { name, description, category, unit_price, unit })
-        toast.success("Service updated")
-      } else {
-        addService({ name, description, category, unit_price, unit, active: true })
-        toast.success("Service added")
+    startTransition(async () => {
+      try {
+        if (isEditing) {
+          await updateService(service.id, { name, description, category, unit_price, unit })
+          toast.success("Service updated")
+        } else {
+          await addService({ name, description, category, unit_price, unit, active: true })
+          toast.success("Service added")
+        }
+        setControlledOpen(false)
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to save service")
       }
-      setControlledOpen(false)
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save service")
-    }
+    })
   }
 
   return (
@@ -126,7 +134,7 @@ export function ServiceDialog({ service, children, open, onOpenChange }: Service
                   id="unit"
                   name="unit"
                   defaultValue={service?.unit ?? "each"}
-                  placeholder="each, course, block, user…"
+                  placeholder="each, course, month, block, user…"
                 />
               </div>
             </div>
@@ -141,9 +149,8 @@ export function ServiceDialog({ service, children, open, onOpenChange }: Service
                 type="number"
                 step="0.01"
                 min="0"
-                defaultValue={service?.unit_price}
-                required
-                placeholder="e.g. 480.00"
+                defaultValue={service?.unit_price ?? undefined}
+                placeholder="Leave blank for quote on request"
               />
             </div>
 
@@ -161,8 +168,16 @@ export function ServiceDialog({ service, children, open, onOpenChange }: Service
             </div>
           </div>
           <DialogFooter>
-            <Button type="submit" className="bg-gold text-foreground hover:bg-gold/90">
-              {isEditing ? "Save changes" : "Add service"}
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-gold text-foreground hover:bg-gold/90"
+            >
+              {isPending
+                ? "Saving…"
+                : isEditing
+                  ? "Save changes"
+                  : "Add service"}
             </Button>
           </DialogFooter>
         </form>

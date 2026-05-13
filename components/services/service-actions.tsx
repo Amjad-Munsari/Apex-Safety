@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { Edit, Trash } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,22 +14,36 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { ServiceDialog } from "./service-dialog"
-import { Service, deleteService, setServiceActive } from "@/lib/data/services"
+import type { Service } from "@/lib/data/services"
+import { deleteService, toggleServiceActive } from "@/app/admin/services/actions"
 import { toast } from "sonner"
 
 export function ServiceActions({ service }: { service: Service }) {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   function onToggleActive() {
-    setServiceActive(service.id, !service.active)
-    toast.success(service.active ? "Service deactivated" : "Service activated")
+    startTransition(async () => {
+      try {
+        await toggleServiceActive(service.id, !service.active)
+        toast.success(service.active ? "Service deactivated" : "Service activated")
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to update service")
+      }
+    })
   }
 
   function onConfirmDelete() {
-    deleteService(service.id)
-    setIsDeleteOpen(false)
-    toast.success(`${service.name} removed`)
+    startTransition(async () => {
+      try {
+        await deleteService(service.id)
+        setIsDeleteOpen(false)
+        toast.success(`${service.name} removed`)
+      } catch (err: any) {
+        toast.error(err?.message || "Failed to delete service")
+      }
+    })
   }
 
   return (
@@ -37,8 +51,9 @@ export function ServiceActions({ service }: { service: Service }) {
       <div className="flex items-center justify-end gap-1.5">
         <button
           onClick={onToggleActive}
+          disabled={isPending}
           title={service.active ? "Deactivate" : "Activate"}
-          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest leading-none transition ${
+          className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-mono uppercase tracking-widest leading-none transition disabled:opacity-50 ${
             service.active
               ? "text-success bg-success/10 hover:bg-success/15"
               : "text-muted-foreground bg-foreground/5 hover:bg-foreground/10"
@@ -81,16 +96,17 @@ export function ServiceActions({ service }: { service: Service }) {
             <AlertDialogTitle className="font-serif text-base">Delete service?</AlertDialogTitle>
             <AlertDialogDescription>
               <span className="text-foreground">{service.name}</span> will be removed from the
-              catalog and the proposal builder. This is a demo store, so it will reset on reload.
+              catalog and the proposal builder.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={onConfirmDelete}
+              disabled={isPending}
               className="bg-destructive/10 text-destructive hover:bg-destructive/20"
             >
-              Delete
+              {isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
