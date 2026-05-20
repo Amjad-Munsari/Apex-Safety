@@ -1,18 +1,23 @@
 import { describe, it, expect } from "vitest";
 import { validateSchema } from "@coltorapps/builder";
 
+// coltorapps requires proper UUIDs as entity IDs — non-UUID strings are rejected
+// with "The entity id '...' is invalid." before type checking even happens.
+const UUID_1 = "51324b32-adc3-4d17-a90e-66b5453935bd";
+const UUID_2 = "d5ae8682-156c-4511-b972-98c6c3b7c41b";
+
 describe("validateSchema", () => {
   it("rejects an unknown entity type", async () => {
     const { formBuilder } = await import("@/lib/form-builder/index");
     const result = await validateSchema(
       {
         entities: {
-          "abc-123": {
+          [UUID_1]: {
             type: "unknownType",
             attributes: {},
           },
         },
-        root: ["abc-123"],
+        root: [UUID_1],
       },
       formBuilder
     );
@@ -24,7 +29,7 @@ describe("validateSchema", () => {
     const result = await validateSchema(
       {
         entities: {
-          "text-1": {
+          [UUID_1]: {
             type: "textField",
             attributes: {
               label: "Name",
@@ -34,7 +39,7 @@ describe("validateSchema", () => {
               prefillSource: "",
             },
           },
-          "section-1": {
+          [UUID_2]: {
             type: "sectionGroup",
             attributes: {
               title: "Header",
@@ -42,7 +47,7 @@ describe("validateSchema", () => {
             },
           },
         },
-        root: ["section-1", "text-1"],
+        root: [UUID_2, UUID_1],
       },
       formBuilder
     );
