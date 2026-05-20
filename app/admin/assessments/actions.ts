@@ -208,6 +208,20 @@ export async function submitAssessment(submissionId: string, finalAnswers: Recor
   return { clientId: submission.client_id }
 }
 
+/**
+ * Stub added in Plan 13-03 Task 1 so interpreter-renderer.tsx can import it.
+ * Task 2 replaces this stub with server-side validateEntitiesValues + DB write.
+ * @see Plan 13-03 Task 2
+ */
+export async function submitAssessmentAction(
+  _submissionId: string,
+  _rawValues: unknown
+): Promise<void> {
+  throw new Error(
+    "submitAssessmentAction not yet implemented — see Plan 13-03 Task 2"
+  )
+}
+
 export async function generateReportDraft(submissionId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
