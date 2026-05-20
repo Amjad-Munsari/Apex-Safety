@@ -651,22 +651,25 @@ The live schema contract differs from the build prompt's draft SQL in the follow
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **sectionGroup child entity rendering in dnd-kit**
    - What we know: coltorapps `setEntityIndex(id, index, { parentId })` moves an entity to a position within a parent's children. The dnd-kit guide only shows flat root reorder.
    - What's unclear: Exact DnD data structure for cross-container (section→root or root→section) drag-and-drop. Does the `over` drop target need to be the sectionGroup entity ID or a synthetic container ID?
    - Recommendation: Wave 0 spike — implement sectionGroup add + basic nesting before building the full UI; confirm the `setEntityIndex` parentId API works as expected.
+   - **RESOLVED:** Plan 13-01 Task 3 spike (`tests/form-builder/section-reparent.spike.test.ts`) proves the `setEntityIndex(id, index, { parentId })` cross-container API before the Plan 13-02 canvas is built.
 
 2. **`formSchema` prop type on the rewired assessment renderer**
    - What we know: `app/admin/assessments/[id]/page.tsx` currently passes `submission.template?.schema_json` (the custom shape) to `AssessmentClient`. After the cutover, the RSC must join to the pinned `template_versions` row.
    - What's unclear: Does the existing `page.tsx` fetch query use `.select('*, template_versions!template_version_id(*)')` or does it join to the template? Need to verify before planning the RSC rewrite.
    - Recommendation: Read `app/admin/assessments/[id]/page.tsx` in the plan phase.
+   - **RESOLVED:** Plan 13-03 Task 3 reads `app/admin/assessments/[id]/page.tsx` in `<read_first>` and rewrites the fetch as an explicit two-step query keyed on `template_version_id`, passing the pinned version's coltorapps `schema_json` to the interpreter renderer.
 
 3. **`useBuilderStore` initial data hydration**
    - What we know: `useBuilderStore(formBuilder, { initialData: { schema: savedSchema } })` initializes the builder store from a persisted coltorapps schema. The `savedSchema` must conform to `{ entities: {}, root: [] }`.
    - What's unclear: Is there a synchronous shape validation on `initialData`? If the DB row has a malformed schema (from a partial save), does the hook throw?
    - Recommendation: Wrap the builder page RSC with an error boundary; confirm behavior with a malformed-schema test.
+   - **RESOLVED:** Plan 13-02 Task 2 `builder-client.tsx` receives `initialData` from the RSC; the server-side `validateSchema` guard on save (Plan 13-02 Task 3) means no malformed schema is ever persisted to hydrate from, and `npx tsc --noEmit` surfaces shape mismatches at compile time.
 
 ---
 

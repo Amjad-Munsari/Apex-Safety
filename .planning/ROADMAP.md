@@ -270,9 +270,14 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
+**Wave 1**
 - [ ] 13-01-PLAN.md — Install coltorapps, define 7 entities + attributes + formBuilder, Vitest test infrastructure, sectionGroup reparenting spike (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 13-02-PLAN.md — Three-panel builder UI (palette/canvas/properties) + save/publish server actions with validateSchema (wave 2)
 - [ ] 13-03-PLAN.md — Coltorapps interpreter renderer + assessment fill rewire + submitAssessmentAction with version pinning (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 13-04-PLAN.md — Drop-and-reseed migration 010, dead-code deletion, supabase db push, human-verify checkpoint (wave 3)
 
 ### Phase 14: Custom Field Types
