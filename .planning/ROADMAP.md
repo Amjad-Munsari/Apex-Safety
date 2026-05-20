@@ -110,7 +110,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 11. Demo Readiness & Polish | 1/1 | Completed | 2026-05-02 |
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
-| 13. Form Builder Foundation | 0/4 | Not started | - |
+| 13. Form Builder Foundation | 1/4 | In Progress|  |
 | 14. Custom Field Types | 0/0 | Not planned | - |
 | 15. Conditional Logic Engine | 0/0 | Not planned | - |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
@@ -271,7 +271,7 @@ Plans:
 
 Plans:
 **Wave 1**
-- [ ] 13-01-PLAN.md — Install coltorapps, define 7 entities + attributes + formBuilder, Vitest test infrastructure, sectionGroup reparenting spike (wave 1)
+- [x] 13-01-PLAN.md — Install coltorapps, define 7 entities + attributes + formBuilder, Vitest test infrastructure, sectionGroup reparenting spike (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 13-02-PLAN.md — Three-panel builder UI (palette/canvas/properties) + save/publish server actions with validateSchema (wave 2)
