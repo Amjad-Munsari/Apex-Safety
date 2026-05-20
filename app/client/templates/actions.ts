@@ -54,7 +54,7 @@ export async function createClientTemplate(name: string, templateType: string) {
   await supabase.from("template_versions").insert({
     template_id: data.id,
     version_number: 1,
-    schema_json: { fields: [] },
+    schema_json: { entities: {}, root: [] },
     created_by: userId,
   });
 
@@ -62,7 +62,58 @@ export async function createClientTemplate(name: string, templateType: string) {
   return data.id;
 }
 
-export async function saveClientDraft(templateId: string, schema: FormSchema, templateName: string) {
+// ── saveClientDraftAction (coltorapps schema, always inserts new version) ───
+
+export async function saveClientDraftAction(
+  templateId: string,
+  rawSchema: unknown,
+  templateName: string
+) {
+  const supabase = await createClient();
+  const ctx = await requireClientContext();
+  await requireOwnedTemplate(templateId, ctx.client_id);
+  const userId = await requireActorUserId("client");
+
+  // Update template name
+  await supabase
+    .from("form_templates")
+    .update({ name: templateName })
+    .eq("id", templateId);
+
+  // Server-side schema validation (T-13-04)
+  const { validateSchema } = await import("@coltorapps/builder");
+  const { formBuilder } = await import("@/lib/form-builder");
+  const result = await validateSchema(rawSchema, formBuilder);
+  if (!result.success) {
+    throw new Error(`Invalid schema: ${result.reason.code}`);
+  }
+
+  // Insert new immutable version row (owner_type = "customer", owner_id = org UUID — T-13-06)
+  const { data: max } = await supabase
+    .from("template_versions")
+    .select("version_number")
+    .eq("template_id", templateId)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  await supabase.from("template_versions").insert({
+    template_id: templateId,
+    version_number: (max?.version_number ?? 0) + 1,
+    schema_json: result.data,
+    created_by: userId,
+  });
+
+  revalidatePath(`/client/templates/${templateId}`);
+}
+
+// ── publishClientTemplateAction ──────────────────────────────────────────────
+
+export async function publishClientTemplateAction(
+  templateId: string,
+  rawSchema: unknown,
+  templateName: string
+) {
   const supabase = await createClient();
   const ctx = await requireClientContext();
   await requireOwnedTemplate(templateId, ctx.client_id);
@@ -73,73 +124,34 @@ export async function saveClientDraft(templateId: string, schema: FormSchema, te
     .update({ name: templateName })
     .eq("id", templateId);
 
-  const { data: latest } = await supabase
+  // Server-side schema validation (T-13-04)
+  const { validateSchema } = await import("@coltorapps/builder");
+  const { formBuilder } = await import("@/lib/form-builder");
+  const result = await validateSchema(rawSchema, formBuilder);
+  if (!result.success) {
+    throw new Error(`Invalid schema: ${result.reason.code}`);
+  }
+
+  const { data: max } = await supabase
     .from("template_versions")
-    .select("id, published_at")
+    .select("version_number")
     .eq("template_id", templateId)
     .order("version_number", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if (latest && !latest.published_at) {
-    await supabase
-      .from("template_versions")
-      .update({ schema_json: schema })
-      .eq("id", latest.id);
-  } else {
-    const { data: maxVersion } = await supabase
-      .from("template_versions")
-      .select("version_number")
-      .eq("template_id", templateId)
-      .order("version_number", { ascending: false })
-      .limit(1)
-      .single();
-
-    await supabase.from("template_versions").insert({
-      template_id: templateId,
-      version_number: (maxVersion?.version_number ?? 0) + 1,
-      schema_json: schema,
-      created_by: userId,
-    });
-  }
-
-  revalidatePath(`/client/templates/${templateId}`);
-}
-
-export async function publishClientTemplate(templateId: string, schema: FormSchema, templateName: string) {
-  const supabase = await createClient();
-  const ctx = await requireClientContext();
-  await requireOwnedTemplate(templateId, ctx.client_id);
-  const userId = await requireActorUserId("client");
+  await supabase.from("template_versions").insert({
+    template_id: templateId,
+    version_number: (max?.version_number ?? 0) + 1,
+    schema_json: result.data,
+    published_at: new Date().toISOString(),
+    created_by: userId,
+  });
 
   await supabase
     .from("form_templates")
-    .update({ name: templateName, is_published: true })
+    .update({ is_published: true })
     .eq("id", templateId);
-
-  const { data: draft } = await supabase
-    .from("template_versions")
-    .select("id, version_number, published_at")
-    .eq("template_id", templateId)
-    .order("version_number", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (draft && !draft.published_at) {
-    await supabase
-      .from("template_versions")
-      .update({ schema_json: schema, published_at: new Date().toISOString() })
-      .eq("id", draft.id);
-  } else {
-    const newVersion = (draft?.version_number ?? 0) + 1;
-    await supabase.from("template_versions").insert({
-      template_id: templateId,
-      version_number: newVersion,
-      schema_json: schema,
-      published_at: new Date().toISOString(),
-      created_by: userId,
-    });
-  }
 
   revalidatePath("/client/templates");
   revalidatePath(`/client/templates/${templateId}`);
