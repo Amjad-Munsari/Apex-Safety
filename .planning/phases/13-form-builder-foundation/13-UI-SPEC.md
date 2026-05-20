@@ -1,10 +1,11 @@
 ---
 phase: 13
 slug: form-builder-foundation
-status: draft
+status: approved
 shadcn_initialized: true
 preset: base-mira / mist
 created: 2026-05-20
+reviewed_at: 2026-05-20
 ---
 
 # Phase 13 — UI Design Contract: Form Builder Foundation
