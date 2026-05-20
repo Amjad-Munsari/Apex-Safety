@@ -1,7 +1,7 @@
 # Roadmap: 888 Safety & Training Platform
 
 **Milestone:** Phase 1 (v1 — signed scope)
-**Granularity:** Fine (11 phases)
+**Granularity:** Fine (18 phases)
 **Coverage:** 102/102 v1 requirements mapped
 **Created:** 2026-04-15
 
@@ -36,6 +36,18 @@ The stage sequence is locked and must not be reordered:
 - [ ] **Phase 9: Proposal + Auto-Contract Pipeline** — Service selection from Packages.docx, OpenAI proposal draft, PDF render, SignWell e-sign, n8n #4 contract gen, dual-sign, storage
 - [ ] **Phase 10: Admin Dashboard Logic** — Dynamic wiring of the existing dashboard cards to live data (compliance summary, expiry panel, review queue).
 - [x] **Phase 11: Ops, Seed Data + Handover** — Seed 5–10 clients, live walkthrough, quick-reference guide PDF, credential migration
+- [ ] **Phase 12: Admin Dashboard UI Fixes** — not yet planned
+
+### Form Builder Module (Deliverable 11 — added 2026-05-20)
+
+Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2 backlog (BUILDER / COND / SCHED clusters) — confirmed in scope via Finley (voice note 4/17) and the 2026-04-17 form-template ownership decision. Build prompt of record: `.planning/research/form-builder-build-prompt.md`. Phases 14–16 can overlap once 13 is done; full module ~4–5 weeks.
+
+- [ ] **Phase 13: Form Builder Foundation** — Coltorapps integration, 7 basic field types, dnd-kit three-panel builder, schema versioning, interpreter/renderer
+- [ ] **Phase 14: Custom Field Types** — Signature, rating, multi-photo, geolocation, repeating sections, computed (PAS 79 risk matrix); per-field photo attach + STT
+- [ ] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
+- [ ] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS
+- [ ] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup
+- [ ] **Phase 18: FRA Seed Template** — Blank FRA (Type 3) built via the builder, conditional sections, risk matrix, action plan, n8n report webhook
 
 ---
 
@@ -98,16 +110,25 @@ The stage sequence is locked and must not be reordered:
 | 11. Demo Readiness & Polish | 1/1 | Completed | 2026-05-02 |
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
+| 13. Form Builder Foundation | 0/0 | Not planned | - |
+| 14. Custom Field Types | 0/0 | Not planned | - |
+| 15. Conditional Logic Engine | 0/0 | Not planned | - |
+| 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
+| 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
+| 18. FRA Seed Template | 0/0 | Not planned | - |
 
 ---
 
-## v2 Requirements (Separate Milestone — Not Part of This Roadmap)
+## v2 Requirements
 
-The following are in the original intake but are NOT in the signed Phase 1 scope. They require a re-quote before any work begins. Do not assign phase numbers.
+**Promoted to phases (2026-05-20):** The form-builder clusters below were promoted from the v2 backlog into Phases 13–18 — confirmed in scope via Finley (voice note 4/17) and the 2026-04-17 form-template ownership decision (see AGENTS.md). A formal re-quote of these requirement codes is still pending; decompose them per phase at `/gsd:plan-phase`.
 
-- **BUILDER-01 to BUILDER-05**: Drag-drop form builder (`@coltorapps/builder` — verify React 19 compat first)
-- **COND-01 to COND-04**: Conditional logic engine with DAG cycle detection
-- **SCHED-01 to SCHED-03**: Form assignment scheduling with n8n cron reminders
+- **BUILDER-01 to BUILDER-05**: Drag-drop form builder (`@coltorapps/builder` — verify React 19 compat first) → Phases 13, 14, 16
+- **COND-01 to COND-04**: Conditional logic engine with DAG cycle detection → Phase 15
+- **SCHED-01 to SCHED-03**: Form assignment scheduling with n8n cron reminders → Phase 17
+
+**Still deferred (separate milestone — not assigned phase numbers):**
+
 - **OFFLINE-01 to OFFLINE-05**: PWA / service worker / IndexedDB offline sync
 
 ---
@@ -231,7 +252,84 @@ The following are in the original intake but are NOT in the signed Phase 1 scope
 Plans:
 - [ ] TBD (run /gsd-plan-phase 12 to break down)
 
+> **Phases 13–18 — Form Builder Module.** Spec of record: `.planning/research/form-builder-build-prompt.md`.
+> Library: `@coltorapps/builder` + `@coltorapps/builder-react` (headless) with `dnd-kit`. Verify React 19 compat first.
+> Multi-tenant from day one: clients get the full builder, identical to admin. Schema versioning is non-negotiable —
+> every save = new immutable version, every submission pinned to the version it was filled against.
+
+### Phase 13: Form Builder Foundation
+**Goal**: Coltorapps is integrated and the 7 basic field types build, save, and render — a form's schema persists to Supabase with immutable versioning, and a built form can be filled and submitted end-to-end.
+**Depends on**: Phase 3 (existing `form_templates` / `template_versions` schema; reconcile with migration 003). The build prompt treats Foundation as having no internal dependency.
+**Requirements**: BUILDER-01..05 (v2 cluster — re-quote pending; decompose at plan-phase)
+**Success Criteria** (what must be TRUE):
+  1. Admin can create a template with all 7 basic entity types (text, number, date, select, textarea, checkbox, sectionGroup) via a dnd-kit three-panel builder.
+  2. Drag-and-drop reordering and section reparenting work in the canvas.
+  3. Saving creates an immutable `template_versions` row; re-saving creates the next version without mutating prior ones.
+  4. A user can fill and submit a built form via the interpreter/renderer; the submission is pinned to its exact `version_id`.
+  5. Historical submissions render against their original schema, never the latest; builder store ↔ schema JSON round-trips cleanly.
+**Plans**: Not yet planned — run `/gsd:plan-phase 13`.
+
+### Phase 14: Custom Field Types
+> **Re-implementation, not net-new (reframed 2026-05-20 after Phase 13 discussion).** Phase 13's big-bang cutover to coltorapps drops the custom field types the pre-coltorapps builder had. Phase 14 rebuilds them as coltorapps entities. Their prior React components live in git history (`components/forms/*-field.tsx` before the Phase 13 cutover) — port the UI, rebuild the entity/attribute wiring. Until this phase lands, signature/rating/photo/geo/repeating fields and the full FRA template are unavailable.
+**Goal**: All 6 specialty field types work in both builder and interpreter on coltorapps, plus per-field photo attachment and speech-to-text — restoring (and extending) what the Phase 13 cutover regressed.
+**Depends on**: Phase 13 (parallel with Phase 15)
+**Requirements**: BUILDER-01..05 (specialty field subset — v2; re-quote pending)
+**Success Criteria** (what must be TRUE):
+  1. Signature, rating, multi-photo, geolocation, repeating-section, and computed field types drag in, configure, save, and render on coltorapps.
+  2. Signatures store as PNG and photos compress to 1.2–1.5 MB into the `form-signatures` / `form-photos` Storage buckets.
+  3. Per-field photo attachment works on any field via the `attachPhotos` attribute.
+  4. Geolocation captures lat/lng on a mobile browser; repeating sections honour min/max bounds; speech-to-text (Web Speech API, en-GB — the current STT implementation per commit d2651a4) works on text/textarea fields.
+  5. The computed field outputs the correct PAS 79 risk level with the standard colour coding.
+**Plans**: Not yet planned — run `/gsd:plan-phase 14`.
+
+### Phase 15: Conditional Logic Engine
+**Goal**: Fields can show, hide, and become required based on other field values, with circular-dependency protection.
+**Depends on**: Phase 13 (parallel with Phase 14)
+**Requirements**: COND-01..04 (v2 cluster — re-quote pending; decompose at plan-phase)
+**Success Criteria** (what must be TRUE):
+  1. Admin can add `visibilityRules` to any field via the builder UI; rules evaluate at fill-time for show/hide/require.
+  2. Hidden fields are excluded from validation and submission data.
+  3. Multiple rules combine correctly with AND/OR logic, including nested (cross-section) conditions.
+  4. Conditional logic persists through the save/load cycle; circular rule chains are detected and rejected at save time.
+  5. N/A works as a distinct select value in conditions ("Some" treated as Yes for show/hide).
+**Plans**: Not yet planned — run `/gsd:plan-phase 15`.
+
+### Phase 16: Multi-Tenancy + Fork-on-Fill
+**Goal**: Both confirmed use cases are live — admin assigns templates to clients, and clients can fork an assigned template or build their own from scratch.
+**Depends on**: Phase 13 (parallel with Phases 14 and 15)
+**Requirements**: BUILDER-01..05 (multi-tenancy / fork subset — v2; re-quote pending)
+**Success Criteria** (what must be TRUE):
+  1. Admin can assign a published template to a client with an optional due date; the client sees it under "Forms Assigned to You".
+  2. A client can fill an assigned form, or fork it first — the fork is client-owned and independent of the master (no cascade).
+  3. A client can build templates from scratch under "My Templates" using the same builder.
+  4. RLS enforces no cross-org template or submission visibility (verified with two client accounts).
+  5. Admin sees all templates and submissions across all clients.
+**Plans**: Not yet planned — run `/gsd:plan-phase 16`.
+
+### Phase 17: Assignment Scheduling + Notifications
+**Goal**: Recurring form assignments auto-generate on schedule and clients receive automated reminders.
+**Depends on**: Phase 16
+**Requirements**: SCHED-01..03 (v2 cluster — re-quote pending; decompose at plan-phase)
+**Success Criteria** (what must be TRUE):
+  1. Recurring assignments auto-generate when the prior occurrence is completed, referencing the latest published version.
+  2. Overdue assignments are flagged in both admin and client dashboards.
+  3. A daily cron processes recurrences and overdue marking.
+  4. Reminder notifications send at 7 days, 1 day, and on overdue, deduped via `last_reminder_sent`.
+**Plans**: Not yet planned — run `/gsd:plan-phase 17`.
+
+### Phase 18: FRA Seed Template
+**Goal**: Matt's actual Fire Risk Assessment form (Blank FRA, Type 3) is built with the form builder and seeded as the first real template.
+**Depends on**: Phases 14 and 15 (custom fields + conditional logic)
+**Requirements**: FRA seed — reuses TMPL-01..06 patterns against the new builder (v2)
+**Success Criteria** (what must be TRUE):
+  1. The Blank FRA is built using the form builder, matching the Yellow Broom FRA structure across all sections.
+  2. Conditional sub-sections work inside the FRA (Yes/No → show/hide).
+  3. Per-field photo attachment and speech-to-text are enabled on all FRA text fields.
+  4. The risk matrix auto-calculates from the two input fields, and the Action Plan uses repeating sections.
+  5. A submission fires the n8n webhook for the AI report pipeline (Module 1 bridge). Site Risk template stays BLOCKED until Matt provides the blank.
+**Plans**: Not yet planned — run `/gsd:plan-phase 18`.
+
 ---
 
 *Roadmap created: 2026-04-15*
-*Last updated: 2026-04-15 (initial creation)*
+*Last updated: 2026-05-20 (added Phases 13–18 — Form Builder Module)*
