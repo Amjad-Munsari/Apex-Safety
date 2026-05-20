@@ -110,7 +110,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 11. Demo Readiness & Polish | 1/1 | Completed | 2026-05-02 |
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
-| 13. Form Builder Foundation | 0/0 | Not planned | - |
+| 13. Form Builder Foundation | 0/4 | Not started | - |
 | 14. Custom Field Types | 0/0 | Not planned | - |
 | 15. Conditional Logic Engine | 0/0 | Not planned | - |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
@@ -260,14 +260,20 @@ Plans:
 ### Phase 13: Form Builder Foundation
 **Goal**: Coltorapps is integrated and the 7 basic field types build, save, and render — a form's schema persists to Supabase with immutable versioning, and a built form can be filled and submitted end-to-end.
 **Depends on**: Phase 3 (existing `form_templates` / `template_versions` schema; reconcile with migration 003). The build prompt treats Foundation as having no internal dependency.
-**Requirements**: BUILDER-01..05 (v2 cluster — re-quote pending; decompose at plan-phase)
+**Requirements**: BUILDER-01, BUILDER-02, BUILDER-03, BUILDER-04, BUILDER-05 (v2 cluster — re-quote pending)
 **Success Criteria** (what must be TRUE):
   1. Admin can create a template with all 7 basic entity types (text, number, date, select, textarea, checkbox, sectionGroup) via a dnd-kit three-panel builder.
   2. Drag-and-drop reordering and section reparenting work in the canvas.
   3. Saving creates an immutable `template_versions` row; re-saving creates the next version without mutating prior ones.
   4. A user can fill and submit a built form via the interpreter/renderer; the submission is pinned to its exact `version_id`.
   5. Historical submissions render against their original schema, never the latest; builder store ↔ schema JSON round-trips cleanly.
-**Plans**: Not yet planned — run `/gsd:plan-phase 13`.
+**Plans**: 4 plans
+
+Plans:
+- [ ] 13-01-PLAN.md — Install coltorapps, define 7 entities + attributes + formBuilder, Vitest test infrastructure, sectionGroup reparenting spike (wave 1)
+- [ ] 13-02-PLAN.md — Three-panel builder UI (palette/canvas/properties) + save/publish server actions with validateSchema (wave 2)
+- [ ] 13-03-PLAN.md — Coltorapps interpreter renderer + assessment fill rewire + submitAssessmentAction with version pinning (wave 2)
+- [ ] 13-04-PLAN.md — Drop-and-reseed migration 010, dead-code deletion, supabase db push, human-verify checkpoint (wave 3)
 
 ### Phase 14: Custom Field Types
 > **Re-implementation, not net-new (reframed 2026-05-20 after Phase 13 discussion).** Phase 13's big-bang cutover to coltorapps drops the custom field types the pre-coltorapps builder had. Phase 14 rebuilds them as coltorapps entities. Their prior React components live in git history (`components/forms/*-field.tsx` before the Phase 13 cutover) — port the UI, rebuild the entity/attribute wiring. Until this phase lands, signature/rating/photo/geo/repeating fields and the full FRA template are unavailable.
