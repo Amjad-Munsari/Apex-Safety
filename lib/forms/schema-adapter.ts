@@ -1,4 +1,3 @@
-import type { FormSchema as BuilderSchema } from "@/lib/types/form-builder";
 import type { FormSchema as RendererSchema, FormField as RendererField } from "@/types/forms";
 
 interface FlatToSectionsOptions {
@@ -8,16 +7,14 @@ interface FlatToSectionsOptions {
 }
 
 /**
- * Wraps a flat builder schema (`{ fields: [...] }`) into the nested renderer
- * schema (`{ title, sections: [{ id, title, fields }] }`) so the existing
- * `form-renderer.tsx` can consume builder output unchanged.
- *
- * This is a deliberate shim — the two schemas remain separate to avoid a
- * cross-cutting refactor. See docs/plans/2026-05-03-client-form-builder.md
- * for the scoping decision.
+ * @deprecated Phase 13 cutover: coltorapps replaced the old flat FormSchema.
+ * This adapter was a shim between the old builder (flat fields[]) and the old
+ * renderer (sectioned schema). Both have been replaced; this file is dead code.
+ * It is preserved only to avoid breaking the schema-adapter.test.ts suite until
+ * a cleanup pass removes these files in a future phase.
  */
 export function flatToSections(
-  flat: BuilderSchema,
+  flat: { fields: unknown[] },
   opts: FlatToSectionsOptions = {}
 ): RendererSchema {
   return {

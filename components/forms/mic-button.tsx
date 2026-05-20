@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { useSTT } from "@/hooks/use-stt"
 import { cn } from "@/lib/utils"
-import type { FormSurface } from "./form-renderer"
+import type { FormSurface } from "./form-surface"
 
 interface MicButtonProps {
   className?: string

@@ -3,7 +3,7 @@
 import React from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { FormSurface } from "./form-renderer"
+import type { FormSurface } from "./form-surface"
 
 interface CheckboxOption {
   label: string

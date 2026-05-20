@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react"
 import { MapPin, RefreshCw, Loader2, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { FormSurface } from "./form-renderer"
+import type { FormSurface } from "./form-surface"
 
 interface GeoValue {
   lat: number
