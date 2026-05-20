@@ -43,18 +43,18 @@ Declared values (multiples of 4 only). Standard 8-point scale applies.
 | md | 16px | Panel internal padding, toolbar horizontal padding (px-4) |
 | lg | 24px | Canvas horizontal padding (px-6), section grouping |
 | xl | 32px | Page-level top/bottom padding, major section breaks |
-| 2xl | 48px | Empty-state vertical centering gap |
+| 2xl | 48px | Empty-state vertical centering gap; minimum touch target height (WCAG 2.5.5) |
 | 3xl | 64px | Not used in builder panels (builder is edge-to-edge fixed) |
 
-**Exceptions:**
+**Layout-dimension exceptions (not content spacing tokens):**
 - Builder wrapper: `fixed inset-0` — full viewport, no page margins.
-- Toolbar height: 56px (h-14). Pinned top, shrinks nothing.
-- Bottom status bar height: 32px (h-8). Pinned to canvas column bottom.
-- Palette column width: 224px (w-56). Fixed, not resizable.
-- Properties panel width: 288px (w-72). Fixed, not resizable.
-- Canvas field card max-width: 672px (max-w-2xl), centred in canvas column.
+- Toolbar height: 56px (h-14). Pinned top, shrinks nothing. This is a fixed chrome dimension, not a content spacing token — exempt from the content spacing scale.
+- Bottom status bar height: 32px (h-8). Pinned to canvas column bottom. Fixed chrome dimension — exempt from the content spacing scale.
+- Palette column width: 224px (w-56). Fixed, not resizable. Layout dimension — not a spacing token.
+- Properties panel width: 288px (w-72). Fixed, not resizable. Layout dimension — not a spacing token.
+- Canvas field card max-width: 672px (max-w-2xl), centred in canvas column. Layout dimension — not a spacing token.
 - Drag overlay: no additional padding — matches field card dimensions.
-- Touch targets for palette field-type buttons: minimum 44px height (WCAG 2.5.5). Source: FORM-02/FORM-03 requirements.
+- Touch targets for palette field-type buttons: minimum 48px height (h-12). Satisfies WCAG 2.5.5 (44px minimum) and aligns with the 2xl spacing token. Source: FORM-02/FORM-03 requirements.
 
 ---
 
@@ -62,14 +62,18 @@ Declared values (multiples of 4 only). Standard 8-point scale applies.
 
 The project uses three fonts. All sizes below apply to the admin (dark) builder surface unless noted.
 
+**Declared size scale (4 sizes maximum):**
+
 | Role | Size | Weight | Line Height | Font | Usage |
 |------|------|--------|-------------|------|-------|
-| Body | 14px (text-sm) | 400 regular | 1.5 | Inter (sans) | Properties panel labels, field help text, palette descriptions |
-| Label / mono | 10px–12px (text-xs) | 400 regular | 1.4 | JetBrains Mono | Toolbar status tags (SAVED, DRAFT, LIVE), field-type labels, bottom bar field count, keyboard shortcuts |
-| Form title | 18px (text-lg) | 400 regular | 1.3 | Newsreader (serif) | Template name inline input in the toolbar |
+| Label / mono | 12px (text-xs) | 400 regular | 1.4 | JetBrains Mono | Toolbar status tags (SAVED, DRAFT, LIVE), field-type labels on palette buttons, template card labels, bottom bar field count, keyboard shortcuts, help text, error messages, properties panel hints, canvas field-type badges, empty-state subtext |
+| Body | 14px (text-sm) | 400 regular | 1.5 | Inter (sans) | Properties panel labels, field help text in renderer, palette descriptions, empty state headings |
+| Form title | 18px (text-lg) | 400 regular | 1.3 | Newsreader (serif) | Template name inline input in the toolbar; section headings in renderer |
 | Page heading | 32px (text-[32px]) | 400 regular | 1.2 | Newsreader (serif) | Templates list page h2 (existing pattern from `page.tsx`) |
 
 Two font weights maximum in the builder: 400 (regular) and 600 (semibold). Semibold is reserved for field labels inside the canvas card and section group titles. All mono strings are uppercase + tracking-wider.
+
+**Note on 10px:** No element in Phase 13 uses 10px. All roles previously referenced at "10px–12px" or "10px" are standardised to 12px (text-xs). This keeps the scale at exactly 4 sizes.
 
 **Renderer (client surface) typography:** inherits the same scale but renders against cream background (`data-surface="client"`). Field labels use Inter 14px/400. Section titles use Newsreader 18px/400.
 
@@ -127,14 +131,14 @@ Accent reserved for:
 └──────────┴─────────────────────────────┴───────────────┘
 ```
 
-**Palette panel:** Scrollable list of 7 field-type buttons. Each button: icon + label, min 44px height, full-width, `variant="ghost"` styling on dark surface. Clicking adds field to bottom of canvas; dragging allows drop at any position.
+**Palette panel:** Scrollable list of 7 field-type buttons. Each button: icon + label, min 48px height (h-12), full-width, `variant="ghost"` styling on dark surface. Clicking adds field to bottom of canvas; dragging allows drop at any position.
 
 **Canvas column:** Vertical sortable list of field cards (max-w-2xl, centred). Each card:
 - Drag handle on left (GripVertical icon, 16px, muted)
 - Field type icon (16px)
 - Field label text (14px/600 semibold)
-- Field type badge (10px mono uppercase, muted)
-- Duplicate + Delete actions on right (appear on hover; 32px icon buttons)
+- Field type badge (12px mono uppercase, muted)
+- Duplicate + Delete actions on right (appear on hover; 32px icon buttons — see Accessibility Contract for required aria-labels)
 - Selected state: border changes from `white/10` to `teal/50` with a left accent bar
 
 **Properties panel:** Scrollable form. Renders attribute fields for the selected entity only. Unselected state shows centred hint text "Select a field to configure" in 12px mono.
@@ -162,7 +166,7 @@ Accent reserved for:
 
 ### Publish Flow
 
-1. User clicks "Publish": browser `confirm()` dialog (existing pattern, no modal component) — text: "Publish v{N}? This version will become immutable and be available to assign to clients."
+1. User clicks "Publish Template": browser `confirm()` dialog (existing pattern, no modal component) — text: "Publish v{N}? This version will become immutable and be available to assign to clients."
 2. On confirm: same pending/saved/error states as save flow
 3. After publish: toolbar shows "LIVE v{N}" teal badge; publish button remains available (to publish future drafts)
 
@@ -176,7 +180,7 @@ Accent reserved for:
 ### Template List Page (`/admin/templates`)
 
 - Grid: 1 column on mobile, 2 columns on md, 3 columns on xl
-- Template card: dark card (`bg-[#1c1c1c]`), rounded-sm, shows name (serif 18px), type (mono 10px), version badge, published/draft status badge
+- Template card: dark card (`bg-[#1c1c1c]`), rounded-sm, shows name (serif 18px), type (12px mono), version badge, published/draft status badge
 - Empty state: centred card, icon, "No templates yet" / "Create your first form template to get started" (see Copywriting)
 
 ### Renderer (Interpreter) — `/admin/templates/[id]/preview` and client fill surface
@@ -193,7 +197,7 @@ Accent reserved for:
 
 | Element | Copy | Notes |
 |---------|------|-------|
-| Primary CTA — builder | "Publish" | Action in toolbar; publishes current version |
+| Primary CTA — builder | "Publish Template" | Action in toolbar; publishes current version |
 | Secondary CTA — builder | "Save draft" | Saves without publishing |
 | Toolbar back link | "Back to Templates" | Uppercase mono, arrow left icon |
 | Primary CTA — renderer | "Submit form" | Submit button at bottom of interpreter |
@@ -229,7 +233,7 @@ Components already installed in shadcn (from `npx shadcn info`). Use these — d
 
 | shadcn Component | Used in Phase 13 |
 |------------------|-----------------|
-| `button` | Toolbar actions (Save, Publish, Preview toggle), palette field-type buttons, field card actions |
+| `button` | Toolbar actions (Save, Publish Template, Preview toggle), palette field-type buttons, field card actions |
 | `input` | Template name inline edit, properties panel text attributes |
 | `textarea` | Properties panel description/help text attributes |
 | `label` | Properties panel attribute labels |
@@ -273,7 +277,9 @@ No third-party registries are used in Phase 13. `@coltorapps/builder` and `@colt
 - Properties panel inputs must be associated with labels via `htmlFor` / `id` pairing.
 - Focus must return to the canvas field card after a field is deleted from the properties panel.
 - Publish confirm dialog (browser native) is inherently accessible — no custom replacement needed in Phase 13.
-- Minimum 44px touch targets: palette field-type buttons, field card delete/duplicate icon buttons.
+- Minimum 48px touch targets (h-12): palette field-type buttons, field card delete/duplicate icon buttons. Satisfies WCAG 2.5.5 (44px minimum).
+- Duplicate icon button on field cards must have `aria-label="Duplicate field"`.
+- Delete icon button on field cards must have `aria-label="Delete field"`.
 
 ---
 
