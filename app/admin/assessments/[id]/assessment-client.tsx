@@ -1,57 +1,47 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useRouter } from "next/navigation"
-import { autosaveAnswers, submitAssessment } from "@/app/admin/assessments/actions"
+import { autosaveAnswers } from "@/app/admin/assessments/actions"
 import { AssessmentFormHeader } from "@/components/assessments/assessment-form-header"
-import { FormRenderer } from "@/components/forms/form-renderer"
+import { InterpreterRenderer } from "@/components/form-interpreter/interpreter-renderer"
 import { AppendixField } from "@/components/assessments/appendix-field"
 import { toast } from "sonner"
-import { FormSchema, normalizeFormSchema } from "@/types/forms"
+import type { FormBuilderSchema } from "@/lib/form-builder"
 
 interface AssessmentClientProps {
-  submission: any
+  submission: {
+    id: string
+    answers_json?: Record<string, unknown> | null
+    status?: string
+    client?: { name?: string } | null
+    [key: string]: unknown
+  }
+  schema: FormBuilderSchema
+  templateName: string
 }
 
-export function AssessmentClient({ submission }: AssessmentClientProps) {
-  const router = useRouter()
-  // Some templates were published with a flat { fields: [...] } shape and no
-  // sections wrapper. normalizeFormSchema() coerces them into the canonical
-  // shape so the renderer and progress calc don't need to special-case it.
-  const schema: FormSchema = normalizeFormSchema(submission.template?.schema_json)
-
-  const [answers, setAnswers] = useState<Record<string, any>>(submission.answers_json || {})
-  const [isSubmitting, setIsSubmitting] = useState(false)
+/**
+ * Assessment fill client component.
+ *
+ * Migration note (Plan 13-03 Task 3):
+ * - Migrated to the coltorapps InterpreterRenderer (pinned version schema).
+ * - The debounced autosave lifecycle is preserved for the appendix fields.
+ * - The interpreter renderer owns its own value state and handles submit via
+ *   submitAssessmentAction internally. The explicit submit is the primary
+ *   persistence point; autosave here covers only appendix (notes, media).
+ * - normalizeFormSchema() call removed — schema arrives in coltorapps shape directly.
+ */
+export function AssessmentClient({ submission, schema, templateName }: AssessmentClientProps) {
+  const [appendixAnswers, setAppendixAnswers] = useState<Record<string, unknown>>({
+    __appendix_notes: (submission.answers_json as Record<string, unknown> | null | undefined)?.__appendix_notes ?? "",
+    __appendix_media: (submission.answers_json as Record<string, unknown> | null | undefined)?.__appendix_media ?? [],
+  })
   const [isSaving, setIsSaving] = useState(false)
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const pendingAnswersRef = useRef<Record<string, any>>(answers)
+  const pendingAnswersRef = useRef<Record<string, unknown>>(appendixAnswers)
 
-  // Calculate progress: simple implementation counting required fields.
-  // We assume all fields are required for this demo.
-  const calculateProgress = useCallback((currentAnswers: Record<string, any>) => {
-    let totalFields = 0
-    let filledFields = 0
-
-    schema.sections.forEach(section => {
-      section.fields.forEach(field => {
-        totalFields++
-        const val = currentAnswers[field.id]
-        if (val !== undefined && val !== null && val !== "" && (!Array.isArray(val) || val.length > 0)) {
-          filledFields++
-        }
-      })
-    })
-
-    // Add 2 fields for appendix (notes, media) if we consider them part of progress.
-    // For now, let's just base it strictly on schema fields.
-    if (totalFields === 0) return 100
-    return Math.min(100, Math.round((filledFields / totalFields) * 100))
-  }, [schema])
-
-  const progress = calculateProgress(answers)
-
-  const triggerAutosave = useCallback(async (latestAnswers: Record<string, any>) => {
+  const triggerAutosave = useCallback(async (latestAnswers: Record<string, unknown>) => {
     try {
       setIsSaving(true)
       await autosaveAnswers(submission.id, latestAnswers)
@@ -65,17 +55,14 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
 
   // Cleanup pending saves on unmount / visibility change
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+    const handleBeforeUnload = () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
-        // Fire synchronously on unload
-        const data = new Blob([JSON.stringify(pendingAnswersRef.current)], { type: 'application/json' })
-        // Use sendBeacon or just ignore since next time draft will be slightly old
       }
     }
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && timeoutRef.current) {
+      if (document.visibilityState === "hidden" && timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         triggerAutosave(pendingAnswersRef.current)
       }
@@ -91,41 +78,20 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
     }
   }, [triggerAutosave])
 
-  const handleFieldChange = (id: string, value: any) => {
-    setAnswers(prev => {
-      const updated = { ...prev, [id]: value }
+  const handleAppendixChange = (key: string, value: unknown) => {
+    setAppendixAnswers((prev) => {
+      const updated = { ...prev, [key]: value }
       pendingAnswersRef.current = updated
 
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
       }
-
       timeoutRef.current = setTimeout(() => {
         triggerAutosave(updated)
       }, 800)
 
       return updated
     })
-  }
-
-  const handleSaveDraft = async () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    await triggerAutosave(answers)
-    toast.success("Draft saved manually")
-  }
-
-  const handleSubmit = async () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current)
-    try {
-      setIsSubmitting(true)
-      const res = await submitAssessment(submission.id, answers)
-      toast.success("Assessment Submitted")
-      router.push(`/admin/clients/${res.clientId}`)
-    } catch (err) {
-      console.error("Submit failed", err)
-      toast.error("Failed to submit assessment")
-      setIsSubmitting(false)
-    }
   }
 
   return (
@@ -135,27 +101,39 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
     >
       <AssessmentFormHeader
         submissionId={submission.id}
-        clientName={submission.client?.name || "Unknown Client"}
-        templateName={submission.template?.form_template?.name || "Unknown Template"}
-        progress={progress}
-        onSaveDraft={handleSaveDraft}
-        onSubmit={handleSubmit}
-        isSubmitting={isSubmitting}
+        clientName={(submission.client as { name?: string } | null | undefined)?.name ?? "Unknown Client"}
+        templateName={templateName}
+        progress={0}
+        onSaveDraft={async () => {
+          await triggerAutosave(pendingAnswersRef.current)
+          toast.success("Draft saved manually")
+        }}
+        onSubmit={async () => {
+          // The InterpreterRenderer owns the form submit action.
+          // This header submit button is a secondary trigger; the primary
+          // "Submit form" button is inside the InterpreterRenderer.
+          toast.info("Use the 'Submit form' button in the form below to submit.")
+        }}
+        isSubmitting={false}
         isSaving={isSaving}
       />
 
-      <FormRenderer
+      {/* InterpreterRenderer owns the fill state and submit action.
+          It validates client-side via validateEntitiesValues, then calls
+          submitAssessmentAction (server-side validated, version-pinned).
+          schema arrives in coltorapps shape from the RSC — no normalizeFormSchema needed. */}
+      <InterpreterRenderer
         schema={schema}
-        data={answers}
-        onChange={handleFieldChange}
+        submissionId={submission.id}
+        surface="dark"
       />
 
       <div className="max-w-3xl mx-auto">
         <AppendixField
-          notesValue={answers.__appendix_notes || ""}
-          mediaValue={answers.__appendix_media || []}
-          onChangeNotes={(val) => handleFieldChange("__appendix_notes", val)}
-          onChangeMedia={(urls) => handleFieldChange("__appendix_media", urls)}
+          notesValue={(appendixAnswers.__appendix_notes as string) ?? ""}
+          mediaValue={(appendixAnswers.__appendix_media as string[]) ?? []}
+          onChangeNotes={(val) => handleAppendixChange("__appendix_notes", val)}
+          onChangeMedia={(urls) => handleAppendixChange("__appendix_media", urls)}
         />
       </div>
     </div>
