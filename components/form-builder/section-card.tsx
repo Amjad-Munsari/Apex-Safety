@@ -84,7 +84,7 @@ export function SectionCard({
   };
 
   const t = surfaceTokens[surface];
-  const title = (entity.attributes.sectionTitle as string) ?? "Untitled Section";
+  const title = (entity.attributes.title as string) ?? "Untitled Section";
 
   // Child drag IDs are scoped with section prefix to avoid ID collisions (RESEARCH.md Pitfall 1)
   const childDragIds = childEntities.map((child) => `section:${entity.id}:${child.id}`);

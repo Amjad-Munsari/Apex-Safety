@@ -244,8 +244,8 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
               <input
                 id={`${selectedId}-section-title`}
                 type="text"
-                value={(attrs.sectionTitle as string) ?? ""}
-                onChange={(e) => setAttr("sectionTitle", e.target.value)}
+                value={(attrs.title as string) ?? ""}
+                onChange={(e) => setAttr("title", e.target.value)}
                 placeholder="Enter section title…"
                 className={cn(
                   "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
@@ -256,8 +256,8 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
             <AttributeRow id={`${selectedId}-section-desc`} labelText="Description" t={t}>
               <textarea
                 id={`${selectedId}-section-desc`}
-                value={(attrs.sectionDescription as string) ?? ""}
-                onChange={(e) => setAttr("sectionDescription", e.target.value)}
+                value={(attrs.description as string) ?? ""}
+                onChange={(e) => setAttr("description", e.target.value)}
                 placeholder="Optional description…"
                 rows={3}
                 className={cn(
