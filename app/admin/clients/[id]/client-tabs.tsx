@@ -23,12 +23,33 @@ interface ProposalRow {
   pdfUrl: string | null
 }
 
+export interface AssessmentRow {
+  id: string
+  date: string
+  type: string
+  status: "Delivered" | "Draft" | "In review"
+  reportHref: string
+}
+
+export interface HoursTxn {
+  id: string
+  date: string
+  description: string
+  delta: number
+  balance: number
+}
+
 export interface ClientTabsProps {
   clientId: string
   clientName: string
   hoursBalance: number
+  contactName: string | null
+  contactEmail: string | null
+  contactPhone: string | null
   documents: DocumentRow[]
   proposals: ProposalRow[]
+  assessments: AssessmentRow[]
+  hoursLog: HoursTxn[]
 }
 
 function ragFromDate(expiry: string | null): RagStatus {
@@ -60,42 +81,6 @@ function RagPill({ status }: { status: RagStatus }) {
   )
 }
 
-// Deterministic mock generator so each client gets stable demo data without a DB column.
-function mockSeedFor(clientId: string): number {
-  let hash = 0
-  for (let i = 0; i < clientId.length; i++) {
-    hash = (hash * 31 + clientId.charCodeAt(i)) & 0xffffffff
-  }
-  return Math.abs(hash)
-}
-
-const BUSINESS_TYPES = [
-  "Care Home",
-  "Hospitality",
-  "Commercial Office",
-  "Education",
-  "Retail",
-  "Healthcare",
-]
-
-const FIRST_NAMES = ["Sarah", "James", "Priya", "Ahmed", "Olivia", "Michael", "Hannah", "David"]
-const LAST_NAMES = ["Whitfield", "Thornton", "Patel", "Ali", "Reynolds", "Bennett", "Clarke", "Hughes"]
-
-function mockContactFor(clientId: string, clientName: string) {
-  const seed = mockSeedFor(clientId)
-  const first = FIRST_NAMES[seed % FIRST_NAMES.length]
-  const last = LAST_NAMES[(seed >> 4) % LAST_NAMES.length]
-  const business = BUSINESS_TYPES[(seed >> 8) % BUSINESS_TYPES.length]
-  const slug = clientName.toLowerCase().replace(/[^a-z]+/g, "") || "client"
-  const phoneLast = 100000 + (seed % 900000)
-  return {
-    contactName: `${first} ${last}`,
-    contactEmail: `${first.toLowerCase()}.${last.toLowerCase()}@${slug}.co.uk`,
-    contactPhone: `+44 20 ${String(phoneLast).slice(0, 4)} ${String(phoneLast).slice(4)}`,
-    businessType: business,
-  }
-}
-
 interface ComplianceItem {
   id: string
   title: string
@@ -104,7 +89,7 @@ interface ComplianceItem {
   status: RagStatus
 }
 
-function buildComplianceFromDocuments(documents: DocumentRow[], clientId: string): Record<string, ComplianceItem[]> {
+function buildComplianceFromDocuments(documents: DocumentRow[]): Record<string, ComplianceItem[]> {
   const groups: Record<string, ComplianceItem[]> = {}
   for (const doc of documents) {
     const cat = (doc.document_category || "Uncategorised").toUpperCase()
@@ -117,134 +102,45 @@ function buildComplianceFromDocuments(documents: DocumentRow[], clientId: string
       status: ragFromDate(doc.expiry_date),
     })
   }
-
-  // Top up with deterministic mocks so every client demos the grouped pattern.
-  if (Object.keys(groups).length === 0) {
-    const seed = mockSeedFor(clientId)
-    const mocks: ComplianceItem[] = [
-      { id: "m-1", title: "Fire Risk Assessment (Type 3)", category: "FIRE SAFETY", expiry: addDays(seed % 60), status: "EXPIRING" },
-      { id: "m-2", title: "Fire Extinguisher Service Certificate", category: "FIRE SAFETY", expiry: addDays(180), status: "CURRENT" },
-      { id: "m-3", title: "Emergency Lighting Test Certificate", category: "FIRE SAFETY", expiry: addDays(120), status: "CURRENT" },
-      { id: "m-4", title: "EICR — Electrical Installation Condition Report", category: "ELECTRICAL", expiry: addDays(-15), status: "EXPIRED" },
-      { id: "m-5", title: "PAT Testing Certificate — 42 items", category: "ELECTRICAL", expiry: addDays(300), status: "CURRENT" },
-      { id: "m-6", title: "Legionella Risk Assessment", category: "WATER HYGIENE", expiry: addDays(45), status: "EXPIRING" },
-      { id: "m-7", title: "First Aid at Work — 3 staff", category: "TRAINING", expiry: addDays(420), status: "CURRENT" },
-    ]
-    for (const m of mocks) {
-      if (!groups[m.category]) groups[m.category] = []
-      groups[m.category].push(m)
-    }
-  }
   return groups
 }
 
-function addDays(days: number): string {
-  const d = new Date()
-  d.setDate(d.getDate() + days)
-  return d.toISOString()
-}
-
-interface AssessmentRow {
-  id: string
-  date: string
-  type: string
-  status: "Delivered" | "Draft" | "In review"
-  reportHref: string
-}
-
-function mockAssessmentsFor(clientId: string): AssessmentRow[] {
-  const seed = mockSeedFor(clientId)
-  const types = ["Fire Risk Assessment (Type 3)", "Quarterly Site Risk Audit", "Annual Safety Review", "Fire Door Inspection"]
-  const statuses: AssessmentRow["status"][] = ["Delivered", "Delivered", "In review", "Draft"]
-  return Array.from({ length: 4 }).map((_, i) => ({
-    id: `ASMT-${(seed % 9000) + 1000 + i}`,
-    date: addDays(-(20 + ((seed >> i) % 200))),
-    type: types[(seed + i) % types.length],
-    status: statuses[i],
-    reportHref: `/admin/assessments/${clientId}-${i}`,
-  }))
-}
-
-interface HoursTxn {
-  id: string
-  date: string
-  description: string
-  delta: number
-  balance: number
-}
-
-function mockHoursLog(clientId: string, currentBalance: number): HoursTxn[] {
-  const seed = mockSeedFor(clientId)
-  const entries: Array<{ description: string; delta: number; daysAgo: number }> = [
-    { description: "Initial retainer purchase", delta: 20, daysAgo: 180 },
-    { description: "FRA — Type 3 site visit", delta: -8, daysAgo: 150 },
-    { description: "Quarterly review", delta: -2, daysAgo: 90 },
-    { description: "Top-up — block of hours", delta: 10, daysAgo: 60 },
-    { description: "Fire door inspection", delta: -3, daysAgo: 30 },
-    { description: "Compliance phone consult", delta: -1, daysAgo: 7 },
-  ]
-  // Reconcile final balance to currentBalance by adjusting the latest top-up
-  let running = 0
-  const log: HoursTxn[] = []
-  entries.forEach((e, i) => {
-    running += e.delta
-    log.push({
-      id: `TXN-${(seed % 9000) + i}`,
-      date: addDays(-e.daysAgo),
-      description: e.description,
-      delta: e.delta,
-      balance: running,
-    })
-  })
-  // If final running != currentBalance, append a reconciliation entry today.
-  if (running !== currentBalance) {
-    const diff = currentBalance - running
-    log.push({
-      id: `TXN-${(seed % 9000) + 99}`,
-      date: new Date().toISOString(),
-      description: diff >= 0 ? "Adjustment — added hours" : "Adjustment — used hours",
-      delta: diff,
-      balance: currentBalance,
-    })
-  }
-  // Newest first
-  return log.reverse()
-}
-
 export function ClientTabs({
-  clientId,
-  clientName,
+  clientName: _clientName,
   hoursBalance,
+  contactName,
+  contactEmail,
+  contactPhone,
   documents,
   proposals,
+  assessments,
+  hoursLog,
 }: ClientTabsProps) {
-  const contact = mockContactFor(clientId, clientName)
-  const compliance = buildComplianceFromDocuments(documents, clientId)
-  const assessments = mockAssessmentsFor(clientId)
-  const hoursLog = mockHoursLog(clientId, hoursBalance)
+  const compliance = buildComplianceFromDocuments(documents)
+  const complianceCategories = Object.keys(compliance)
 
   return (
     <div className="flex flex-col gap-6">
       {/* Contact info row */}
       <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex flex-col gap-2">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#888]">Contact</span>
-            <span className="text-white text-sm">{contact.contactName}</span>
+            <span className="text-white text-sm">{contactName ?? "—"}</span>
           </div>
           <div className="flex flex-col gap-2">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#888]">Email</span>
-            <a href={`mailto:${contact.contactEmail}`} className="text-white text-sm hover:text-gold transition-colors break-all">
-              {contact.contactEmail}
-            </a>
+            {contactEmail ? (
+              <a href={`mailto:${contactEmail}`} className="text-white text-sm hover:text-gold transition-colors break-all">
+                {contactEmail}
+              </a>
+            ) : (
+              <span className="text-white text-sm">—</span>
+            )}
           </div>
           <div className="flex flex-col gap-2">
             <span className="font-mono text-[10px] uppercase tracking-widest text-[#888]">Phone</span>
-            <span className="text-white text-sm">{contact.contactPhone}</span>
-          </div>
-          <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#888]">Business type</span>
-            <span className="text-white text-sm">{contact.businessType}</span>
+            <span className="text-white text-sm">{contactPhone ?? "—"}</span>
           </div>
         </div>
       </Card>
@@ -323,77 +219,93 @@ export function ClientTabs({
 
         {/* COMPLIANCE — grouped */}
         <TabsContent value="compliance" className="pt-6">
-          <div className="flex flex-col gap-10">
-            {Object.entries(compliance).map(([category, items]) => (
-              <section key={category} className="flex flex-col gap-4">
-                <div className="flex items-baseline gap-3 px-1">
-                  <h3 className="font-mono text-[10px] tracking-widest text-white/60 uppercase">{category}</h3>
-                  <span className="font-mono text-[10px] text-white/30 lowercase">{items.length} item{items.length === 1 ? "" : "s"}</span>
-                </div>
-                <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-                  <div className="divide-y divide-white/5">
-                    {items.map((item) => (
-                      <div key={item.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="text-white text-sm font-medium truncate">{item.title}</div>
-                          <div className="font-mono text-[10px] text-white/30 uppercase tracking-widest mt-1">
-                            {item.expiry ? `Expires ${new Date(item.expiry).toLocaleDateString("en-GB")}` : "No expiry"}
-                          </div>
-                        </div>
-                        <RagPill status={item.status} />
-                      </div>
-                    ))}
+          {complianceCategories.length === 0 ? (
+            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-10 text-center flex flex-col items-center justify-center">
+              <ShieldCheck className="w-8 h-8 text-white/20 mb-3" />
+              <p className="text-white/50 text-sm">No compliance documents on file yet.</p>
+              <p className="text-white/30 text-xs mt-1">Upload one from the Documents tab to start the record.</p>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-10">
+              {Object.entries(compliance).map(([category, items]) => (
+                <section key={category} className="flex flex-col gap-4">
+                  <div className="flex items-baseline gap-3 px-1">
+                    <h3 className="font-mono text-[10px] tracking-widest text-white/60 uppercase">{category}</h3>
+                    <span className="font-mono text-[10px] text-white/30 lowercase">{items.length} item{items.length === 1 ? "" : "s"}</span>
                   </div>
-                </Card>
-              </section>
-            ))}
-          </div>
+                  <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+                    <div className="divide-y divide-white/5">
+                      {items.map((item) => (
+                        <div key={item.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-white text-sm font-medium truncate">{item.title}</div>
+                            <div className="font-mono text-[10px] text-white/30 uppercase tracking-widest mt-1">
+                              {item.expiry ? `Expires ${new Date(item.expiry).toLocaleDateString("en-GB")}` : "No expiry"}
+                            </div>
+                          </div>
+                          <RagPill status={item.status} />
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </section>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* ASSESSMENTS */}
         <TabsContent value="assessments" className="pt-6">
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-            <table className="w-full text-left font-sans text-sm">
-              <thead className="bg-[#151515]">
-                <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                  <th className="font-normal px-6 py-3 border-b border-white/5">Reference</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">Date</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">Type</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
-                  <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Report</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {assessments.map((a) => (
-                  <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-white/60">{a.id}</td>
-                    <td className="px-4 py-4 text-white/80">
-                      {new Date(a.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="px-4 py-4 text-white">{a.type}</td>
-                    <td className="px-4 py-4">
-                      <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 font-mono text-[10px] uppercase tracking-widest leading-none
-                        ${a.status === "Delivered" ? "ring-success/40 text-success" :
-                          a.status === "In review" ? "ring-gold/40 text-gold" :
-                          "ring-white/15 text-white/60"}`}>
-                        <span className={`size-1.5 rounded-full ${
-                          a.status === "Delivered" ? "bg-success" :
-                          a.status === "In review" ? "bg-gold" :
-                          "bg-white/40"
-                        }`} />
-                        {a.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link href={a.reportHref} className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
-                        View report
-                      </Link>
-                    </td>
+          {assessments.length === 0 ? (
+            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-10 text-center flex flex-col items-center justify-center">
+              <ClipboardCheck className="w-8 h-8 text-white/20 mb-3" />
+              <p className="text-white/50 text-sm">No assessments yet.</p>
+              <p className="text-white/30 text-xs mt-1">Assessments delivered to this client will appear here.</p>
+            </Card>
+          ) : (
+            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+              <table className="w-full text-left font-sans text-sm">
+                <thead className="bg-[#151515]">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
+                    <th className="font-normal px-6 py-3 border-b border-white/5">Reference</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5">Date</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5">Type</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
+                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Report</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {assessments.map((a) => (
+                    <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-white/60">{a.id}</td>
+                      <td className="px-4 py-4 text-white/80">
+                        {new Date(a.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="px-4 py-4 text-white">{a.type}</td>
+                      <td className="px-4 py-4">
+                        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 font-mono text-[10px] uppercase tracking-widest leading-none
+                          ${a.status === "Delivered" ? "ring-success/40 text-success" :
+                            a.status === "In review" ? "ring-gold/40 text-gold" :
+                            "ring-white/15 text-white/60"}`}>
+                          <span className={`size-1.5 rounded-full ${
+                            a.status === "Delivered" ? "bg-success" :
+                            a.status === "In review" ? "bg-gold" :
+                            "bg-white/40"
+                          }`} />
+                          {a.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Link href={a.reportHref} className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
+                          View report
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
         </TabsContent>
 
         {/* PROPOSALS */}
@@ -451,30 +363,38 @@ export function ClientTabs({
                 <span className="text-white font-serif text-base">{hoursBalance}h</span>
               </div>
             </div>
-            <table className="w-full text-left font-sans text-sm">
-              <thead className="bg-[#151515]">
-                <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                  <th className="font-normal px-6 py-3 border-b border-white/5">Date</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">Description</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Change</th>
-                  <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Balance</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {hoursLog.map((txn) => (
-                  <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4 text-white/80">
-                      {new Date(txn.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                    </td>
-                    <td className="px-4 py-4 text-white">{txn.description}</td>
-                    <td className={`px-4 py-4 font-mono text-xs text-right ${txn.delta >= 0 ? "text-success" : "text-danger"}`}>
-                      {txn.delta >= 0 ? "+" : ""}{txn.delta}h
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-right text-white">{txn.balance}h</td>
+            {hoursLog.length === 0 ? (
+              <div className="p-10 text-center flex flex-col items-center justify-center">
+                <Clock className="w-8 h-8 text-white/20 mb-3" />
+                <p className="text-white/50 text-sm">No hours transactions yet.</p>
+                <p className="text-white/30 text-xs mt-1">Adjustments and purchases will appear here.</p>
+              </div>
+            ) : (
+              <table className="w-full text-left font-sans text-sm">
+                <thead className="bg-[#151515]">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
+                    <th className="font-normal px-6 py-3 border-b border-white/5">Date</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5">Description</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Change</th>
+                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Balance</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {hoursLog.map((txn) => (
+                    <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="px-6 py-4 text-white/80">
+                        {new Date(txn.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="px-4 py-4 text-white">{txn.description}</td>
+                      <td className={`px-4 py-4 font-mono text-xs text-right ${txn.delta >= 0 ? "text-success" : "text-danger"}`}>
+                        {txn.delta >= 0 ? "+" : ""}{txn.delta}h
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs text-right text-white">{txn.balance}h</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </Card>
         </TabsContent>
       </Tabs>

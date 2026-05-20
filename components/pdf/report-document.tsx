@@ -142,7 +142,7 @@ export const ReportDocument = ({
           <Text style={styles.gridLabel}>PREPARED BY</Text>
           <Text style={styles.gridName}>Matt Robinson</Text>
           <Text style={styles.gridDetail}>Lead Consultant · 888 Safety & Training</Text>
-          <Text style={styles.gridDetail}>matt@888safetyandtraining.com · 0114 555 0188</Text>
+          <Text style={styles.gridDetail}>888FST@proton.me · 0114 555 0188</Text>
         </View>
       </View>
 

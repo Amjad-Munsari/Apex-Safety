@@ -4,6 +4,13 @@ import React, { useState } from "react"
 import { FormSchema, FormField, FormSection } from "@/types/forms"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { 
   ChevronLeft, 
   Save, 
@@ -240,18 +247,22 @@ export function EditorClient({ template, initialSchema, userId }: EditorClientPr
 
                <div className="space-y-2">
                  <label className="text-[10px] font-mono uppercase text-[#666] tracking-widest">Input Type</label>
-                 <select 
+                 <Select
                    value={selectedField.type}
-                   onChange={(e) => updateField(selectedField.id, { type: e.target.value as any })}
-                   className="w-full bg-black border border-white/10 rounded-sm p-2 text-xs text-white outline-none focus:border-[#3b8273]"
+                   onValueChange={(value) => updateField(selectedField.id, { type: value as any })}
                  >
-                    <option value="text">Text Input</option>
-                    <option value="textarea">Long Answer</option>
-                    <option value="dropdown">Dropdown Selection</option>
-                    <option value="media">Media (Photos/Audio)</option>
-                    <option value="signature">Signature</option>
-                    <option value="heading">Section Heading</option>
-                 </select>
+                   <SelectTrigger className="w-full bg-black border-white/10 rounded-sm px-2 py-2 text-xs text-white h-auto focus-visible:border-[#3b8273] focus-visible:ring-0">
+                     <SelectValue placeholder="Select input type" />
+                   </SelectTrigger>
+                   <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
+                     <SelectItem value="text" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Text Input</SelectItem>
+                     <SelectItem value="textarea" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Long Answer</SelectItem>
+                     <SelectItem value="dropdown" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Dropdown Selection</SelectItem>
+                     <SelectItem value="media" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Media (Photos/Audio)</SelectItem>
+                     <SelectItem value="signature" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Signature</SelectItem>
+                     <SelectItem value="heading" className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]">Section Heading</SelectItem>
+                   </SelectContent>
+                 </Select>
                </div>
 
                <div className="space-y-2">

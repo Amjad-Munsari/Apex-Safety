@@ -1,22 +1,40 @@
 import { adminClient } from '@/lib/supabase/admin';
 import { AdvancedProposalBuilder } from '@/components/proposals/advanced-proposal-builder';
+import { fetchActiveServices } from '@/lib/data/services-server';
 
 export const metadata = {
   title: 'New Proposal | 888 Safety Solutions',
 };
 
-export default async function NewProposalPage() {
-  // Clients still come from the DB. Services are read client-side from the
-  // shared catalog (lib/data/services) so /admin/services and the proposal
-  // builder are guaranteed to see the same list.
-  const { data: clients, error: clientsError } = await adminClient
-    .from('clients')
-    .select('id, name')
-    .order('name', { ascending: true });
+export const dynamic = 'force-dynamic';
 
-  if (clientsError) {
-    console.error('Error fetching clients:', clientsError);
+export default async function NewProposalPage() {
+  const [clientsResult, services] = await Promise.all([
+    adminClient
+      .from('clients')
+      .select('id, name, site_address, contact_name, contact_email')
+      .is('deleted_at', null)
+      .order('name', { ascending: true }),
+    fetchActiveServices(),
+  ]);
+
+  if (clientsResult.error) {
+    console.error('Error fetching clients:', clientsResult.error);
   }
 
-  return <AdvancedProposalBuilder clients={clients || []} />;
+  // Map snake_case DB columns to the camelCase shape AdvancedProposalBuilder expects.
+  const clients = (clientsResult.data ?? []).map(row => ({
+    id: row.id,
+    name: row.name,
+    address: row.site_address ?? undefined,
+    contactName: row.contact_name ?? undefined,
+    contactEmail: row.contact_email ?? undefined,
+  }));
+
+  return (
+    <AdvancedProposalBuilder
+      clients={clients}
+      services={services}
+    />
+  );
 }

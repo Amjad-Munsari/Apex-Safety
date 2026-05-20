@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { ComplianceDocRowItem, type ComplianceDocRow } from "./compliance-doc-row";
+import { UploadDocumentModal } from "@/components/admin/upload-document-modal";
 
 export const dynamic = "force-dynamic";
 
@@ -28,13 +29,21 @@ export default async function CompliancePage({
     return "all";
   })();
 
-  const [compliance, docsRes] = await Promise.all([
+  const [compliance, docsRes, clientsRes] = await Promise.all([
     getComplianceAggregates(),
     adminClient
       .from("documents")
       .select(`id, filename, expiry_date, document_category, client:clients(id, name)`)
       .order("expiry_date", { ascending: true }),
+    adminClient
+      .from("clients")
+      .select("id, name")
+      .is("deleted_at", null)
+      .eq("active", true)
+      .order("name", { ascending: true }),
   ]);
+
+  const clients = (clientsRes.data ?? []) as { id: string; name: string }[];
 
   const docs = (docsRes.data || []) as unknown as ComplianceDocRow[];
   const now = new Date();
@@ -77,6 +86,7 @@ export default async function CompliancePage({
             All {compliance.total} client documents — {pct}% currently compliant.
           </p>
         </div>
+        <UploadDocumentModal clients={clients} />
       </div>
 
       {/* ─── STAT CARDS ─── */}

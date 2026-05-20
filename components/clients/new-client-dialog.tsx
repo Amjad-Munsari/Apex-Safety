@@ -10,8 +10,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/app/admin/clients/actions"
 
-export function NewClientButton() {
+export function NewClientButton({
+  onCreated,
+}: {
+  /** Optional callback fired with the new client id after a successful insert. */
+  onCreated?: (id: string) => void
+} = {}) {
   const [open, setOpen] = React.useState(false)
   const [submitting, setSubmitting] = React.useState(false)
   const [form, setForm] = React.useState({
@@ -32,13 +38,24 @@ export function NewClientButton() {
     e.preventDefault()
     if (!canSubmit) return
     setSubmitting(true)
-    await new Promise((r) => setTimeout(r, 600))
-    setSubmitting(false)
-    setOpen(false)
-    reset()
-    toast.success("Invite sent", {
-      description: `${form.contactName} at ${form.businessName} will receive a portal invite shortly.`,
-    })
+    try {
+      const { id } = await createClient({
+        name: form.businessName,
+        contactName: form.contactName,
+        contactEmail: form.email,
+        contactPhone: form.phone,
+      })
+      setOpen(false)
+      reset()
+      toast.success("Client added", {
+        description: `${form.businessName} is now in the client list.`,
+      })
+      onCreated?.(id)
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to add client")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (

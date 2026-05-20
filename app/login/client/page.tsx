@@ -61,7 +61,7 @@ export default function LoginPage() {
         <div className="space-y-2">
           <p className="font-mono text-[9px] tracking-widest text-white/20 uppercase font-bold">Your consultant</p>
           <p className="text-white/60 text-[13px] font-sans">Matt Robinson</p>
-          <p className="text-white/30 text-[11px] font-mono">matt@888safetyandtraining.com</p>
+          <p className="text-white/30 text-[11px] font-mono">888FST@proton.me</p>
         </div>
       </div>
 

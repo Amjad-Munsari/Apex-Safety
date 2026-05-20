@@ -12,7 +12,7 @@ export function ClientContractPdf({ contract }: { contract: ClientContract }) {
             </div>
           </div>
           <div className="text-right font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] leading-relaxed">
-            <div>matt@888safetyandtraining.com</div>
+            <div>888FST@proton.me</div>
             <div>0161 552 0918</div>
             <div className="mt-2 text-[#1a1a1a]">{contract.reference}</div>
           </div>

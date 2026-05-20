@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import { sendMockSMS, sendMockEmail } from "@/lib/notifications/mock-dispatch"
+import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
 export async function GET(request: Request) {
   // Simple cron secret protection (Header or Query Param for manual testing)
@@ -9,8 +9,13 @@ export async function GET(request: Request) {
   const querySecret = searchParams.get("secret")
   
   const cronSecret = process.env.CRON_SECRET
-  
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+
+  if (!cronSecret) {
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 })
+    }
+    // dev/preview without a secret: allow unauthenticated curl for manual testing
+  } else if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -86,36 +91,36 @@ export async function GET(request: Request) {
       .limit(1)
 
     const contact = clientUsers?.[0]
-    const contactEmail = contact?.email || "unknown@example.com"
+    const contactEmail = contact?.email
     const contactName = contact?.name || "there"
-    const clientName = (doc.clients as any)?.name || "Client"
 
-    // Dispatch SMS
-    await sendMockSMS(
-      "+447700900000",
-      `888 Safety Alert: Your ${doc.document_category} expires in ${alertWindow} days (${doc.expiry_date}). Please check your compliance portal.`
-    )
+    if (!contactEmail) {
+      console.warn(`[cron/expiry] no contact email for client ${doc.client_id}, skipping doc ${doc.id}`)
+      continue
+    }
 
-    // Dispatch Email
-    await sendMockEmail(
-      contactEmail,
-      `Action Required: ${doc.document_category} expiring in ${alertWindow} days`,
-      `Hi ${contactName},
+    const payload = {
+      type: "expiry_alert" as const,
+      client_email: contactEmail,
+      client_name: contactName,
+      document_name: doc.filename,
+      expiry_date: doc.expiry_date as string,
+      days_until_expiry: alertWindow,
+    }
 
-This is an automated alert from 888 Safety to notify you that a document on your compliance record for ${clientName} is expiring soon.
+    const result = await dispatchNotification(payload)
 
-Document: ${doc.filename}
-Category: ${doc.document_category}
-Expiry Date: ${doc.expiry_date}
-Days Remaining: ${alertWindow}
+    if (!result.ok) {
+      console.error(`[cron/expiry] dispatch failed for doc ${doc.id}: ${result.error}`)
+      await supabase.from("workflow_errors").insert({
+        workflow_name: "expiry_alert",
+        error_message: result.error ?? "unknown dispatch failure",
+        payload: payload,
+      })
+      // Skip notifications_sent insert so the next cron tick retries this doc.
+      continue
+    }
 
-Please review your compliance portal and contact Matt to arrange a renewal.
-
-Regards,
-888 Safety`
-    )
-
-    // Record the notification sent to enforce idempotency
     await supabase
       .from("notifications_sent")
       .insert({
@@ -124,7 +129,7 @@ Regards,
         document_id: doc.id,
         alert_window: alertWindow
       })
-    
+
     notificationsSent.push({ docId: doc.id, window: alertWindow })
   }
 

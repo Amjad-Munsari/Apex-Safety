@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server"
+import { adminClient } from "@/lib/supabase/admin"
 import { notFound } from "next/navigation"
-import { UploadDocumentModal } from "./upload-document-modal"
+import { UploadDocumentModal } from "@/components/admin/upload-document-modal"
 import { Card } from "@/components/ui/card"
 import { Building, Calendar, Clock, MapPin } from "lucide-react"
 import { AdjustHoursDialog } from "@/components/clients/adjust-hours-dialog"
@@ -13,9 +13,8 @@ export default async function ClientDetailsPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: client, error: clientError } = await supabase
+  const { data: client, error: clientError } = await adminClient
     .from("clients")
     .select("*")
     .eq("id", id)
@@ -25,27 +24,105 @@ export default async function ClientDetailsPage({
     notFound()
   }
 
-  const { data: documents } = await supabase
+  const { data: documents } = await adminClient
     .from("documents")
     .select("*")
     .eq("client_id", id)
     .order("uploaded_at", { ascending: false })
 
-  const { data: proposalRows } = await supabase
+  const { data: proposalRows } = await adminClient
     .from("proposals")
     .select("*")
     .eq("client_id", id)
     .order("created_at", { ascending: false })
 
+  // pdfUrl removed — ClientTabs links to /admin/proposals/[id] for the detail
+  // view where signed URLs are computed fresh. Computing them here was dead
+  // code and a footgun now that the bucket is private (getPublicUrl returns a
+  // 401-ing URL).
   const proposals = (proposalRows ?? []).map((p) => ({
     id: p.id,
     status: p.status,
     created_at: p.created_at,
     total: (p as any).total_price || calculateProposalTotal(p.services_json),
-    pdfUrl: p.proposal_pdf_path
-      ? (supabase as any).storage.from("proposals").getPublicUrl(p.proposal_pdf_path).data.publicUrl
-      : null,
+    pdfUrl: null as string | null,
   }))
+
+  // Hours transactions, oldest first so we can compute a running balance.
+  const { data: hoursRows } = await adminClient
+    .from("hours_transactions")
+    .select("id, transaction_type, hours_amount, notes, created_at")
+    .eq("client_id", id)
+    .order("created_at", { ascending: true })
+
+  let running = 0
+  const hoursLogChronological = (hoursRows ?? []).map((row) => {
+    const delta = Number(row.hours_amount) || 0
+    running += delta
+    return {
+      id: row.id,
+      date: row.created_at,
+      description: row.notes?.trim() || row.transaction_type || "Hours transaction",
+      delta,
+      balance: running,
+    }
+  })
+  // Newest first for the UI.
+  const hoursLog = hoursLogChronological.reverse()
+
+  // Assessments are form_submissions for this client. We join template_versions
+  // → form_templates to surface the template name in the UI.
+  const { data: submissionRows } = await adminClient
+    .from("form_submissions")
+    .select(`
+      id,
+      status,
+      created_at,
+      submitted_at,
+      template:template_versions(
+        form_template:form_templates(name)
+      )
+    `)
+    .eq("client_id", id)
+    .order("created_at", { ascending: false })
+
+  const assessments = (submissionRows ?? []).map((row: any) => {
+    const templateName: string =
+      row.template?.form_template?.name ??
+      (Array.isArray(row.template) ? row.template[0]?.form_template?.name : null) ??
+      "Assessment"
+
+    // Map DB status → UI status. Anything past `submitted` shows as "Delivered"
+    // (the final PDF is in storage); draft variants show as "Draft"; mid-flight
+    // statuses (submitted, draft_ready_for_review) show as "In review".
+    let uiStatus: "Delivered" | "Draft" | "In review"
+    switch (row.status) {
+      case "completed":
+        uiStatus = "Delivered"
+        break
+      case "submitted":
+      case "draft_ready_for_review":
+        uiStatus = "In review"
+        break
+      default:
+        uiStatus = "Draft"
+    }
+
+    // Completed assessments go to the review page (which serves the PDF).
+    // In-flight ones go back to the form for further edits.
+    const reportHref =
+      uiStatus === "Delivered"
+        ? `/admin/assessments/${row.id}/review`
+        : `/admin/assessments/${row.id}`
+
+    return {
+      id: `ASMT-${row.id.slice(0, 6).toUpperCase()}`,
+      date: row.submitted_at ?? row.created_at,
+      type: templateName,
+      status: uiStatus,
+      reportHref,
+    }
+  })
 
   return (
     <div className="flex flex-col gap-10 pt-12 pb-20 max-w-6xl mx-auto w-full">
@@ -104,8 +181,13 @@ export default async function ClientDetailsPage({
         clientId={client.id}
         clientName={client.name}
         hoursBalance={client.hours_balance || 0}
+        contactName={client.contact_name ?? null}
+        contactEmail={client.contact_email ?? null}
+        contactPhone={client.contact_phone ?? null}
         documents={documents ?? []}
         proposals={proposals}
+        assessments={assessments}
+        hoursLog={hoursLog}
       />
     </div>
   )

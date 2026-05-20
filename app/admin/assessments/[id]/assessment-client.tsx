@@ -7,7 +7,7 @@ import { AssessmentFormHeader } from "@/components/assessments/assessment-form-h
 import { FormRenderer } from "@/components/forms/form-renderer"
 import { AppendixField } from "@/components/assessments/appendix-field"
 import { toast } from "sonner"
-import { FormSchema } from "@/types/forms"
+import { FormSchema, normalizeFormSchema } from "@/types/forms"
 
 interface AssessmentClientProps {
   submission: any
@@ -15,7 +15,10 @@ interface AssessmentClientProps {
 
 export function AssessmentClient({ submission }: AssessmentClientProps) {
   const router = useRouter()
-  const schema = submission.template.schema_json as FormSchema
+  // Some templates were published with a flat { fields: [...] } shape and no
+  // sections wrapper. normalizeFormSchema() coerces them into the canonical
+  // shape so the renderer and progress calc don't need to special-case it.
+  const schema: FormSchema = normalizeFormSchema(submission.template?.schema_json)
 
   const [answers, setAnswers] = useState<Record<string, any>>(submission.answers_json || {})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -126,8 +129,12 @@ export function AssessmentClient({ submission }: AssessmentClientProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 px-8 pb-24">
+    <div
+      className="min-h-screen px-8 pb-24"
+      style={{ background: "var(--p-bg)", color: "var(--p-text)" }}
+    >
       <AssessmentFormHeader
+        submissionId={submission.id}
         clientName={submission.client?.name || "Unknown Client"}
         templateName={submission.template?.form_template?.name || "Unknown Template"}
         progress={progress}

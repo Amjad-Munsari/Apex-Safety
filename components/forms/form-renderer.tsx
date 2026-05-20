@@ -35,19 +35,21 @@ interface FormRendererProps {
   readonly surface?: FormSurface
 }
 
+// `dark` is the admin form surface. Tokens are tied to the proposal wizard's
+// CSS variables (--p-*) so the assessment form-fill page matches the wizard.
 const surfaceTokens = {
   dark: {
-    title: "text-slate-100",
-    sectionRule: "border-slate-800/50",
-    sectionTitle: "text-slate-200",
-    sectionDesc: "text-slate-500",
-    card: "bg-slate-900 border-slate-800 shadow-lg",
-    cardHeader: "bg-slate-900/50 border-b border-slate-800/30",
-    fieldLabel: "text-slate-500",
-    helpText: "text-slate-500",
-    input: "bg-slate-950 border-slate-800 focus:ring-amber-500/20 focus:border-amber-500",
-    select: "bg-slate-950 border border-slate-800 text-slate-100 focus:border-amber-500",
-    fallback: "border-amber-500/40 bg-amber-500/5 text-amber-400",
+    title: "text-[var(--p-text)]",
+    sectionRule: "border-[var(--p-border-subtle)]",
+    sectionTitle: "text-[var(--p-text)]",
+    sectionDesc: "text-[var(--p-text-muted)]",
+    card: "bg-[var(--p-surface)] border-[var(--p-border)] shadow-lg",
+    cardHeader: "bg-[var(--p-surface-raised)]/40 border-b border-[var(--p-border-subtle)]",
+    fieldLabel: "text-[var(--p-text-muted)]",
+    helpText: "text-[var(--p-text-muted)]",
+    input: "bg-[var(--p-input-bg)] border-[var(--p-border)] text-[var(--p-text)] focus:ring-[var(--p-gold)]/20 focus:border-[var(--p-gold)]",
+    select: "bg-[var(--p-input-bg)] border border-[var(--p-border)] text-[var(--p-text)] focus:border-[var(--p-gold)]",
+    fallback: "border-[var(--p-gold)]/40 bg-[var(--p-gold)]/5 text-[var(--p-gold)]",
   },
   cream: {
     title: "text-[#1a1a1a]",

@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
-import { sendMockSMS, sendMockEmail } from "@/lib/notifications/mock-dispatch"
+import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
 export async function uploadClientDocumentAction(formData: FormData) {
   const supabase = await createClient()
@@ -11,11 +11,9 @@ export async function uploadClientDocumentAction(formData: FormData) {
   const cookieStore = await cookies()
   const isDemoMode = cookieStore.get("demo_mode")?.value === "1"
 
-  // 1. Verify admin session or allow demo mode
   let userId: string
 
   if (isDemoMode) {
-    // Use a fixed dummy admin ID for demo mode
     userId = "276946f9-0d99-4f55-bba1-8abe1f4f87b7"
   } else {
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -32,8 +30,7 @@ export async function uploadClientDocumentAction(formData: FormData) {
     throw new Error("Missing required fields")
   }
 
-  // 2. Upload file to Storage
-  const fileExt = file.name.split('.').pop()
+  const fileExt = file.name.split(".").pop()
   const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
   const filePath = `${clientId}/${fileName}`
 
@@ -46,7 +43,6 @@ export async function uploadClientDocumentAction(formData: FormData) {
     throw new Error("Failed to upload document")
   }
 
-  // 3. Insert into documents table
   const { data: document, error: dbError } = await supabase
     .from("documents")
     .insert({
@@ -55,6 +51,7 @@ export async function uploadClientDocumentAction(formData: FormData) {
       document_category: category,
       storage_path: filePath,
       expiry_date: expiryDate || null,
+      file_size_bytes: file.size,
       uploaded_by: userId,
       active: true,
     })
@@ -63,52 +60,44 @@ export async function uploadClientDocumentAction(formData: FormData) {
 
   if (dbError) {
     console.error("Database insert error:", dbError)
-    // Attempt to clean up storage if db fails
     await supabase.storage.from("client-documents").remove([filePath])
     throw new Error("Failed to save document metadata")
   }
 
-  // 4. Fetch Client Contact for Notifications
   const { data: clientUsers } = await supabase
     .from("client_users")
     .select("name, email")
     .eq("client_id", clientId)
     .limit(1)
 
-  const { data: clientData } = await supabase
-    .from("clients")
-    .select("name")
-    .eq("id", clientId)
-    .single()
-
-  const clientName = clientData?.name || "Client"
   const contact = clientUsers?.[0]
-
-  // 5. Send Mock Notifications
-  const mockPhone = "+447700900000" // Mock phone since we don't store it yet
-  const contactEmail = contact?.email || "unknown@example.com"
+  const contactEmail = contact?.email
   const contactName = contact?.name || "there"
 
-  const smsMessage = `888 Safety: A new document (${category}) has been uploaded to your portal. Login to view: https://portal.888safety.com`
-  await sendMockSMS(mockPhone, smsMessage)
+  if (contactEmail) {
+    const result = await dispatchNotification({
+      type: "document_uploaded",
+      client_email: contactEmail,
+      client_name: contactName,
+      document_name: file.name,
+      document_category: category,
+      expiry_date: expiryDate || null,
+    })
+    if (!result.ok) {
+      console.error(`[upload] notification dispatch failed for client ${clientId}: ${result.error}`)
+      await supabase.from("workflow_errors").insert({
+        workflow_name: "document_uploaded",
+        error_message: result.error ?? "unknown dispatch failure",
+        payload: { client_id: clientId, document_id: document?.id, document_name: file.name },
+      })
+    }
+  } else {
+    console.warn(`[upload] no contact email for client ${clientId}, skipping notification`)
+  }
 
-  const emailSubject = `New Document Uploaded: ${category}`
-  const emailBody = `Hi ${contactName},
-
-A new document has been uploaded to your 888 Safety compliance portal.
-Document: ${file.name}
-Category: ${category}
-${expiryDate ? `Expiry Date: ${expiryDate}` : ""}
-
-Please log in to your portal to view or download it.
-
-Regards,
-888 Safety`
-  
-  await sendMockEmail(contactEmail, emailSubject, emailBody)
-
-  // 6. Revalidate
   revalidatePath(`/admin/clients/${clientId}`)
+  revalidatePath("/admin/compliance")
+  revalidatePath("/client/compliance")
 
   return { success: true, document }
 }

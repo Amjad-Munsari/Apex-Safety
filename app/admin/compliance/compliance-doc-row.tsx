@@ -1,11 +1,11 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
-import { Building2, Download, FileText, Send } from "lucide-react"
+import { Building2, Download, Eye, FileText, Send } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { getComplianceDocSignedUrl } from "./actions"
+import { getComplianceDocSignedUrl, sendManualExpiryReminder } from "./actions"
 
 export interface ComplianceDocRow {
   id: string
@@ -26,6 +26,8 @@ interface Props {
 export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showReminder }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [viewPending, setViewPending] = useState(false)
+  const [reminderPending, setReminderPending] = useState(false)
   const clientId = doc.client?.id
 
   const goToClient = () => {
@@ -35,7 +37,7 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation()
     startTransition(async () => {
-      const { url, filename } = await getComplianceDocSignedUrl(doc.id)
+      const { url, filename } = await getComplianceDocSignedUrl(doc.id, { mode: "download" })
       if (!url) {
         toast.error(`Could not prepare ${doc.filename} for download.`)
         return
@@ -50,11 +52,36 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
     })
   }
 
-  const handleReminder = (e: React.MouseEvent) => {
+  const handleView = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    toast.success(`Reminder sent to ${doc.client?.name ?? "client"}`, {
-      description: `Email + SMS dispatched re: ${doc.filename}.`,
-    })
+    setViewPending(true)
+    try {
+      const { url } = await getComplianceDocSignedUrl(doc.id, { mode: "view" })
+      if (!url) {
+        toast.error(`Could not open ${doc.filename}.`)
+        return
+      }
+      window.open(url, "_blank", "noopener,noreferrer")
+    } finally {
+      setViewPending(false)
+    }
+  }
+
+  const handleReminder = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setReminderPending(true)
+    try {
+      const result = await sendManualExpiryReminder(doc.id)
+      if (result.ok) {
+        toast.success(`Reminder sent to ${doc.client?.name ?? "client"}`, {
+          description: `Email dispatched re: ${doc.filename}.`,
+        })
+      } else {
+        toast.error(`Reminder failed: ${result.error ?? "unknown error"}`)
+      }
+    } finally {
+      setReminderPending(false)
+    }
   }
 
   return (
@@ -91,13 +118,24 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
             <button
               type="button"
               onClick={handleReminder}
-              className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-${color}/30 text-${color} hover:bg-${color}/10 transition-colors font-mono text-[10px] uppercase tracking-widest`}
+              disabled={reminderPending}
+              className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-${color}/30 text-${color} hover:bg-${color}/10 disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest`}
               aria-label="Send reminder"
             >
               <Send className="w-3 h-3" />
-              Send reminder
+              {reminderPending ? "Sending…" : "Send reminder"}
             </button>
           )}
+          <button
+            type="button"
+            onClick={handleView}
+            disabled={viewPending}
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-white/10 text-white/70 hover:text-white hover:bg-white/[0.04] disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest"
+            aria-label="View PDF"
+          >
+            <Eye className="w-3 h-3" />
+            {viewPending ? "…" : "View"}
+          </button>
           <button
             type="button"
             onClick={handleDownload}
