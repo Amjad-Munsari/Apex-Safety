@@ -58,13 +58,17 @@ BEGIN
   -- e_text_in_section is a child of e_section (parentId set, NOT in root).
   v_schema := jsonb_build_object(
     'entities', jsonb_build_object(
-      -- sectionGroup container
+      -- sectionGroup container.
+      -- coltorapps validateSchema enforces parent/child consistency
+      -- (EntityParentMismatch): the parent MUST list its children, not just
+      -- rely on the child's parentId.
       e_section::text, jsonb_build_object(
         'type', 'sectionGroup',
         'attributes', jsonb_build_object(
           'title', 'Basic Section',
           'description', 'A section grouping example'
-        )
+        ),
+        'children', jsonb_build_array(e_text_in_section::text)
       ),
       -- textField nested inside the sectionGroup
       e_text_in_section::text, jsonb_build_object(
