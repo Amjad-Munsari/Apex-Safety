@@ -145,7 +145,7 @@ Accent reserved for:
 
 **sectionGroup entity visual treatment:**
 - Canvas renders as a rounded container card that visually groups child field cards
-- Section title uses Newsreader 16px/400
+- Section title uses Newsreader 18px/400
 - Drop zone inside section is visually distinct (inset dashed border, 2px, `white/10`) when dragging a field over it
 
 ### Drag and Drop
@@ -187,7 +187,7 @@ Accent reserved for:
 
 - Single-column form, max-w-2xl, centred, `py-8 px-4` on mobile, `py-12 px-0` on desktop
 - Each field renders with: label (14px/600), optional help text (12px muted), input component, error message (12px destructive, below input)
-- sectionGroup: renders as a labelled section with Newsreader 16px heading and divider below
+- sectionGroup: renders as a labelled section with Newsreader 18px heading and divider below
 - Submit button: full-width on mobile, auto-width right-aligned on desktop, `variant="default"` (black fill on client surface)
 - Validation errors surface inline below each field; a summary does not appear at top
 
