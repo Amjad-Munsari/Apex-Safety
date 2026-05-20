@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-05-20T16:28:56.123Z",
+  "phase": "13",
+  "phase_name": "form-builder-foundation",
+  "phase_dir": ".planning/phases/13-form-builder-foundation",
+  "plan": 4,
+  "task": 4,
+  "total_tasks": 4,
+  "status": "paused",
+  "completed_tasks": [
+    {"id": "13-01", "name": "Headless coltorapps schema engine + Vitest infra", "status": "done", "commit": "1b9f1e3"},
+    {"id": "13-02", "name": "Three-panel builder UI + save/publish actions", "status": "done", "commit": "c440e29"},
+    {"id": "13-03", "name": "Interpreter renderer + assessment fill cutover", "status": "done", "commit": "e7c6b8a"},
+    {"id": "13-04 Task 1", "name": "Write migration 010 drop-and-reseed", "status": "done", "commit": "07faa7b"},
+    {"id": "13-04 Task 2", "name": "Delete dead pre-coltorapps code, clean templates.ts", "status": "done", "commit": "5a8b28c"},
+    {"id": "13-04 Task 3", "name": "Apply migration 010 to live DB (orchestrator, via Supabase MCP)", "status": "done", "commit": "83c40ee"}
+  ],
+  "remaining_tasks": [
+    {"id": "13-04 Task 4", "name": "Human verification of build->fill->submit loop", "status": "not_started"},
+    {"id": "phase-verification", "name": "code review + regression + schema drift gates, gsd-verifier, mark phase complete", "status": "not_started"}
+  ],
+  "blockers": [],
+  "human_actions_pending": [
+    {"action": "Manually test the Phase 13 form builder end to end (Plan 13-04 Task 4 checkpoint)", "context": "Phase cannot be marked complete until a human confirms build->save->version->publish->fill->submit + version pinning works. Steps are in 13-04-PLAN.md Task 4 <how-to-verify> and in the .continue-here.md.", "blocking": true}
+  ],
+  "decisions": [
+    {"decision": "Back up the 4 form tables to .planning/backups/13-pre-cutover-2026-05-20.json before truncating", "rationale": "User chose 'back up, then cut over'; the 1 live submission was confirmed dev/test data but the destructive truncate is made reversible", "phase": "13"},
+    {"decision": "Orchestrator applied migration 010 via Supabase MCP, not the executor", "rationale": "The gsd-executor runs in an isolated worktree with no .env.local and no linked Supabase project - it cannot authenticate supabase db push. 13-04 executor was scoped to Tasks 1-2 only.", "phase": "13"},
+    {"decision": "Migration 010 seed sectionGroup must carry a children array, not just parentId on the child", "rationale": "coltorapps validateSchema rejects parentId-only with EntityParentMismatch; verified by running the seed schema through validateSchema before applying", "phase": "13"},
+    {"decision": "Bumped vitest testTimeout to 30s", "rationale": "Cold transform cache made the first dynamic import of @coltorapps/builder time out at the 5s default in parallel runs", "phase": "13"}
+  ],
+  "uncommitted_files": [".planning/config.json (trivial: workflow._auto_chain_active flag set false at workflow init)"],
+  "next_action": "Ask the user for the Plan 13-04 Task 4 human-verification result. On 'approved': finalize .planning/phases/13-form-builder-foundation/13-04-SUMMARY.md (mark Tasks 3-4 done), run `gsd-sdk query roadmap.update-plan-progress 13 13-04 complete`, then run the Phase 13 completion gates from execute-phase.md (code_review_gate, regression_gate, schema_drift_gate, verify_phase_goal via gsd-verifier, update_roadmap, offer_next). On issues: gap closure via /gsd-plan-phase 13 --gaps.",
+  "context_notes": "Phase 13 executed via /gsd:execute-phase 13. Waves 1-3 all done: 4 plans, all code merged to main (branch: main, branching_strategy=none). Post-merge build + vitest gates passed after every wave (54 tests green). Migration 010 IS applied to the live DB - old custom-FormSchema data truncated, a 'Basic Types Smoke Test' coltorapps template (7 entity types) seeded as template_versions v1. The ONLY remaining work before phase verification is the human manual test. IMPORTANT: do NOT just re-run `/gsd:execute-phase 13` to resume - 13-04 already has a SUMMARY.md so plan discovery would skip it and the human checkpoint would be mishandled. Resume by reading this handoff and continuing from the verification gates."
+}
