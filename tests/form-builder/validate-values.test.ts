@@ -17,13 +17,14 @@ import { formBuilder } from "@/lib/form-builder";
 // Shared fixture schema — 7 entities covering all basic types
 // ──────────────────────────────────────────────────────────────────────────────
 
-const TEXT_ID = "11111111-1111-1111-1111-111111111111";
-const NUMBER_ID = "22222222-2222-2222-2222-222222222222";
-const DATE_ID = "33333333-3333-3333-3333-333333333333";
-const SELECT_ID = "44444444-4444-4444-4444-444444444444";
-const TEXTAREA_ID = "55555555-5555-5555-5555-555555555555";
-const CHECKBOX_ID = "66666666-6666-6666-6666-666666666666";
-const SECTION_ID = "77777777-7777-7777-7777-777777777777";
+// Real UUIDs — coltorapps requires version 1-5 (third group [1-5]) and variant [89ab]
+const TEXT_ID     = "51324b32-adc3-4d17-a90e-66b5453935bd";
+const NUMBER_ID   = "d5ae8682-156c-4511-b972-98c6c3b7c41b";
+const DATE_ID     = "a1b2c3d4-e5f6-4a7b-8c9d-e0f1a2b3c4d5";
+const SELECT_ID   = "f1e2d3c4-b5a6-4987-8765-432109876543";
+const TEXTAREA_ID = "abcdef01-2345-4678-9abc-def012345678";
+const CHECKBOX_ID = "fedcba98-7654-4321-abcd-ef0123456789";
+const SECTION_ID  = "12345678-90ab-4cde-8f01-234567890abc";
 
 const fixtureSchema = {
   entities: {
@@ -117,7 +118,7 @@ describe("validateEntitiesValues", () => {
     //
     // This test documents the coltorapps behavior and reminds the implementor
     // to add the extra-entity check in submitAssessmentAction.
-    const NONEXISTENT_ID = "99999999-9999-9999-9999-999999999999";
+    const NONEXISTENT_ID = "99999999-9999-4999-9999-999999999999";
     const values: Record<string, unknown> = {
       [TEXT_ID]: "Jane Smith",
       [NONEXISTENT_ID]: "this entity is not in the schema",

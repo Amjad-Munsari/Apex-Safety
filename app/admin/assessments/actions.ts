@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { adminClient } from "@/lib/supabase/admin"
+import { requireActorUserId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { generateObject } from "ai"
@@ -209,17 +210,74 @@ export async function submitAssessment(submissionId: string, finalAnswers: Recor
 }
 
 /**
- * Stub added in Plan 13-03 Task 1 so interpreter-renderer.tsx can import it.
- * Task 2 replaces this stub with server-side validateEntitiesValues + DB write.
- * @see Plan 13-03 Task 2
+ * Submit a form assessment with server-side validation.
+ *
+ * Security contract (T-13-09, T-13-10, T-13-11):
+ * 1. Auth gate: requireActorUserId — unauthenticated callers are rejected.
+ * 2. Pinned version: schema is fetched from template_versions using the
+ *    submission's own template_version_id FK — the client cannot supply a
+ *    different (weaker) version.
+ * 3. Server-side validation: validateEntitiesValues runs against the pinned
+ *    schema. If it fails, no DB write happens.
+ * 4. audit trail: status=submitted + submitted_at written atomically with answers_json.
+ *
+ * @param submissionId - The UUID of the form_submissions row to submit.
+ * @param rawValues - The raw entity values from the client interpreter store.
  */
 export async function submitAssessmentAction(
-  _submissionId: string,
-  _rawValues: unknown
+  submissionId: string,
+  rawValues: unknown
 ): Promise<void> {
-  throw new Error(
-    "submitAssessmentAction not yet implemented — see Plan 13-03 Task 2"
-  )
+  // T-13-11: auth gate before any read/write
+  await requireActorUserId("admin")
+
+  // Step 1: fetch submission row to read the pinned template_version_id
+  const { data: submission, error: subError } = await adminClient
+    .from("form_submissions")
+    .select("template_version_id")
+    .eq("id", submissionId)
+    .single()
+
+  if (subError || !submission) {
+    throw new Error(`Failed to fetch submission: ${subError?.message ?? "not found"}`)
+  }
+
+  // Step 2: fetch the PINNED version schema — never the template's latest version
+  // T-13-10: the server selects the version via the stored FK; the client cannot
+  // supply a different version ID.
+  const { data: version, error: versionError } = await adminClient
+    .from("template_versions")
+    .select("schema_json")
+    .eq("id", submission.template_version_id)
+    .single()
+
+  if (versionError || !version) {
+    throw new Error(`Failed to fetch pinned template version: ${versionError?.message ?? "not found"}`)
+  }
+
+  // Step 3: server-side validation — T-13-09
+  const { validateEntitiesValues } = await import("@coltorapps/builder")
+  const { formBuilder } = await import("@/lib/form-builder")
+
+  const result = await validateEntitiesValues(rawValues, formBuilder, version.schema_json)
+  if (!result.success) {
+    throw new Error("Form validation failed server-side. Please check your answers and try again.")
+  }
+
+  // Step 4: write validated data — T-13-13 (audit trail)
+  const { error: updateError } = await adminClient
+    .from("form_submissions")
+    .update({
+      answers_json: result.data,
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+    })
+    .eq("id", submissionId)
+    .eq("status", "draft")
+
+  if (updateError) {
+    throw new Error(`Failed to submit assessment: ${updateError.message}`)
+  }
 }
 
 export async function generateReportDraft(submissionId: string) {

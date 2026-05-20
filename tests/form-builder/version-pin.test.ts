@@ -14,10 +14,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Fixture data
 // ──────────────────────────────────────────────────────────────────────────────
 
-const SUBMISSION_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
-const VERSION_1_ID  = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
-const VERSION_2_ID  = "cccccccc-cccc-cccc-cccc-cccccccccccc";
-const TEXT_ID       = "dddddddd-dddd-dddd-dddd-dddddddddddd";
+// Real UUIDs — coltorapps requires version 1-5 (third group [1-5]) and variant [89ab]
+const SUBMISSION_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const VERSION_1_ID  = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+const VERSION_2_ID  = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+const TEXT_ID       = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
 
 // Version 1 schema: has required textField
 const version1Schema = {
