@@ -3,7 +3,7 @@
 import React from "react"
 import { Star } from "lucide-react"
 import { cn } from "@/lib/utils"
-import type { FormSurface } from "./form-renderer"
+import type { FormSurface } from "./form-surface"
 
 interface RatingFieldProps {
   value: number | undefined

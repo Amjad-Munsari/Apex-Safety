@@ -1,41 +1,75 @@
-import type { FormSchema, FormField } from "@/lib/types/form-builder";
+import type { FormBuilderSchema } from "@/lib/form-builder";
 
 /**
- * Returns true if `next` differs structurally from `original`. Compares field
- * identity (id + order), key, type, label, required flag, and options list.
- * Used by the `forkOnFill` server action to decide whether a customer's edits
- * to a master template warrant creating a forked template record.
+ * Returns true if `next` differs structurally from `original`.
  *
- * NOT compared: helpText, placeholder, maxPhotos, maxRating — these are
- * presentation-only and editing them shouldn't trigger a fork. Adjust if
- * the Finley contract changes.
+ * For coltorapps schemas ({ entities, root }), structural change means:
+ * - Different number of entities in root (field added or removed)
+ * - Different root order (field reordered)
+ * - Any entity's type changed
+ * - Any entity's label attribute changed
+ * - Any entity's required attribute changed
+ * - selectField options changed
  *
- * Known limitation: nested `fields` on `repeating` field types are NOT
- * recursed into — a change inside a repeating section's children won't
- * trigger a fork. The `repeating` type is currently stubbed in the renderer;
- * revisit this when repeating sections are made real.
+ * Used by the `forkOnFill` server action (Phase 16) to decide whether a
+ * customer's edits to a master template warrant creating a forked record.
+ *
+ * Presentation-only edits (placeholder, helpText) do NOT trigger a fork.
+ *
+ * Contract preserved per AGENTS.md "Form template ownership" decision (2026-04-17).
  */
-export function hasStructuralChanges(original: FormSchema, next: FormSchema): boolean {
-  if (original.fields.length !== next.fields.length) return true;
-  for (let i = 0; i < original.fields.length; i++) {
-    if (fieldDiffers(original.fields[i], next.fields[i])) return true;
+export function hasStructuralChanges(
+  original: FormBuilderSchema,
+  next: FormBuilderSchema
+): boolean {
+  const origRoot = original.root ?? [];
+  const nextRoot = next.root ?? [];
+
+  if (origRoot.length !== nextRoot.length) return true;
+
+  for (let i = 0; i < origRoot.length; i++) {
+    const origId = origRoot[i] as string;
+    const nextId = nextRoot[i] as string;
+
+    // Different entity ID at same position = reorder or replacement
+    if (origId !== nextId) return true;
+
+    const origEntity = (original.entities as Record<string, { type: string; attributes: Record<string, unknown> }>)[origId];
+    const nextEntity = (next.entities as Record<string, { type: string; attributes: Record<string, unknown> }>)[nextId];
+
+    if (!origEntity || !nextEntity) return true;
+
+    // Type change
+    if (origEntity.type !== nextEntity.type) return true;
+
+    // Label change
+    if (origEntity.attributes.label !== nextEntity.attributes.label) return true;
+
+    // Required flag change
+    const origRequired = Boolean(origEntity.attributes.required ?? false);
+    const nextRequired = Boolean(nextEntity.attributes.required ?? false);
+    if (origRequired !== nextRequired) return true;
+
+    // Options change (for selectField)
+    if (origEntity.type === "selectField") {
+      if (!optionsEqual(
+        origEntity.attributes.options as FieldOption[] | undefined,
+        nextEntity.attributes.options as FieldOption[] | undefined
+      )) return true;
+    }
   }
+
   return false;
 }
 
-function fieldDiffers(a: FormField, b: FormField): boolean {
-  if (a.id !== b.id) return true;
-  if (a.key !== b.key) return true;
-  if (a.type !== b.type) return true;
-  if (a.label !== b.label) return true;
-  if (Boolean(a.required) !== Boolean(b.required)) return true;
-  if (!optionsEqual(a.options, b.options)) return true;
-  return false;
+interface FieldOption {
+  label: string;
+  value: string;
 }
 
 function optionsEqual(
-  a: FormField["options"] | undefined,
-  b: FormField["options"] | undefined
+  a: FieldOption[] | undefined,
+  b: FieldOption[] | undefined
 ): boolean {
   if (!a && !b) return true;
   if (!a || !b) return false;

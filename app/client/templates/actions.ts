@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireActorUserId, getClientContext } from "@/lib/auth-helpers";
 import { revalidatePath } from "next/cache";
-import type { FormSchema } from "@/lib/types/form-builder";
+import type { FormBuilderSchema } from "@/lib/form-builder";
 import { hasStructuralChanges } from "@/lib/forms/schema-diff";
 
 async function requireClientContext() {
@@ -189,8 +189,8 @@ export async function deleteClientTemplate(templateId: string) {
  */
 export async function forkOnFill(
   masterTemplateId: string,
-  originalSchema: FormSchema,
-  modifiedSchema: FormSchema
+  originalSchema: FormBuilderSchema,
+  modifiedSchema: FormBuilderSchema
 ): Promise<{ forked: boolean; templateId: string; versionId: string }> {
   const supabase = await createClient();
   const ctx = await requireClientContext();

@@ -5,7 +5,7 @@ import { Plus, X, Loader2, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useMediaProcessor } from "@/hooks/use-media-processor"
 import { cn } from "@/lib/utils"
-import type { FormSurface } from "./form-renderer"
+import type { FormSurface } from "./form-surface"
 
 interface MediaFieldProps {
   value: string[] // List of storage URLs or preview blobs

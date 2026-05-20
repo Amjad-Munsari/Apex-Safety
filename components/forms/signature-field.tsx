@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Eraser, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import type { FormSurface } from "./form-renderer"
+import type { FormSurface } from "./form-surface"
 
 interface SignatureFieldProps {
   value: string | undefined // base64 PNG data URL once captured

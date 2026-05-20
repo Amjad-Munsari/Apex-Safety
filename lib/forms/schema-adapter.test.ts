@@ -1,10 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { flatToSections } from "./schema-adapter";
-import type { FormSchema as BuilderSchema } from "@/lib/types/form-builder";
 
 describe("flatToSections", () => {
   it("wraps a flat builder schema in a single 'default' section", () => {
-    const flat: BuilderSchema = {
+    const flat = {
       fields: [
         { id: "f1", key: "name", type: "text", label: "Name", required: true },
         { id: "f2", key: "notes", type: "textarea", label: "Notes", required: false },
@@ -30,7 +29,7 @@ describe("flatToSections", () => {
   });
 
   it("preserves field options and required flag through the conversion", () => {
-    const flat: BuilderSchema = {
+    const flat = {
       fields: [
         {
           id: "f1",

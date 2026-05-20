@@ -5,7 +5,7 @@ import { Minus, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { MicButton } from "./mic-button"
 import { cn } from "@/lib/utils"
-import type { FormSurface } from "./form-renderer"
+import type { FormSurface } from "./form-surface"
 
 interface NumberFieldProps {
   value: number | string | undefined
