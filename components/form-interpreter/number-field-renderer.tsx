@@ -7,6 +7,8 @@ import type { numberFieldEntity } from "@/lib/form-builder/entities/number-field
 
 type Props = EntityComponentProps<typeof numberFieldEntity> & {
   surface?: "dark" | "cream"
+  /** Phase 15: dynamic required from a fired `require` visibility rule. */
+  dynamicRequired?: boolean
 }
 
 const surfaceTokens = {
@@ -24,7 +26,7 @@ const surfaceTokens = {
   },
 } as const
 
-export function NumberFieldRenderer({ entity, setValue, surface = "cream" }: Props) {
+export function NumberFieldRenderer({ entity, setValue, surface = "cream", dynamicRequired = false }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
   const value = entity.value as number | string | undefined
@@ -34,7 +36,7 @@ export function NumberFieldRenderer({ entity, setValue, surface = "cream" }: Pro
     <div className="flex flex-col gap-1.5">
       <label className={cn("text-sm font-semibold", t.label)}>
         {attrs.label}
-        {attrs.required && <span className={cn("ml-1", t.required)}>*</span>}
+        {(attrs.required || dynamicRequired) && <span className={cn("ml-1", t.required)}>*</span>}
       </label>
       <NumberField
         surface={surface}

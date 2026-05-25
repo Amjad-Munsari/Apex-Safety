@@ -38,6 +38,8 @@ type Props = EntityComponentProps<typeof ratingFieldEntity> & {
   clientId?: string
   /** Optional — only required when attrs.attachPhotos is true */
   submissionId?: string
+  /** Phase 15: dynamic required from a fired `require` visibility rule. */
+  dynamicRequired?: boolean
 }
 
 const surfaceTokens = {
@@ -63,7 +65,7 @@ const surfaceTokens = {
   },
 } as const
 
-export function RatingFieldRenderer({ entity, setValue, surface = "cream", clientId, submissionId }: Props) {
+export function RatingFieldRenderer({ entity, setValue, surface = "cream", clientId, submissionId, dynamicRequired = false }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
   const error = entity.error ? String(entity.error) : undefined
@@ -79,7 +81,7 @@ export function RatingFieldRenderer({ entity, setValue, surface = "cream", clien
     <div className="flex flex-col gap-1.5">
       <label className={cn("text-sm font-semibold", t.label)}>
         {attrs.label}
-        {attrs.required && (
+        {(attrs.required || dynamicRequired) && (
           <span className={cn("ml-1", t.required)}>*</span>
         )}
       </label>

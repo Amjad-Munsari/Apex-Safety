@@ -9,6 +9,8 @@ import { MicButton } from "@/components/forms/mic-button"
 
 type Props = EntityComponentProps<typeof textFieldEntity> & {
   surface?: "dark" | "cream"
+  /** Phase 15: dynamic required from a fired `require` visibility rule. */
+  dynamicRequired?: boolean
 }
 
 const surfaceTokens = {
@@ -28,7 +30,7 @@ const surfaceTokens = {
   },
 } as const
 
-export function TextFieldRenderer({ entity, setValue, surface = "cream" }: Props) {
+export function TextFieldRenderer({ entity, setValue, surface = "cream", dynamicRequired = false }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
   const value = (entity.value ?? "") as string
@@ -49,7 +51,7 @@ export function TextFieldRenderer({ entity, setValue, surface = "cream" }: Props
     <div className="flex flex-col gap-1.5">
       <label className={cn("text-sm font-semibold", t.label)}>
         {attrs.label}
-        {attrs.required && <span className={cn("ml-1", t.required)}>*</span>}
+        {(attrs.required || dynamicRequired) && <span className={cn("ml-1", t.required)}>*</span>}
       </label>
       {/* Relative wrapper so MicButton can be absolutely positioned inside the input */}
       <div className="relative">

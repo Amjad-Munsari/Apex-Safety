@@ -7,6 +7,8 @@ import type { checkboxFieldEntity } from "@/lib/form-builder/entities/checkbox-f
 
 type Props = EntityComponentProps<typeof checkboxFieldEntity> & {
   surface?: "dark" | "cream"
+  /** Phase 15: dynamic required from a fired `require` visibility rule. */
+  dynamicRequired?: boolean
 }
 
 const surfaceTokens = {
@@ -24,7 +26,7 @@ const surfaceTokens = {
   },
 } as const
 
-export function CheckboxFieldRenderer({ entity, setValue, surface = "cream" }: Props) {
+export function CheckboxFieldRenderer({ entity, setValue, surface = "cream", dynamicRequired = false }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
   const value = entity.value as boolean | string[] | undefined
@@ -35,7 +37,7 @@ export function CheckboxFieldRenderer({ entity, setValue, surface = "cream" }: P
     <div className="flex flex-col gap-1.5">
       <label className={cn("text-sm font-semibold", t.label)}>
         {label}
-        {attrs.required && <span className={cn("ml-1", t.required)}>*</span>}
+        {(attrs.required || dynamicRequired) && <span className={cn("ml-1", t.required)}>*</span>}
       </label>
       <CheckboxField
         surface={surface}

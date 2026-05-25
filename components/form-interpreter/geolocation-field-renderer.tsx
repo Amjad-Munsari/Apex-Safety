@@ -60,6 +60,8 @@ type Props = EntityComponentProps<typeof geolocationFieldEntity> & {
   clientId?: string
   /** Optional — only required when attrs.attachPhotos is true */
   submissionId?: string
+  /** Phase 15: dynamic required from a fired `require` visibility rule. */
+  dynamicRequired?: boolean
 }
 
 const surfaceTokens = {
@@ -118,7 +120,7 @@ function shouldShowAccuracyBadge(accuracy: number): boolean {
   return !isMobile || accuracy > 100
 }
 
-export function GeolocationFieldRenderer({ entity, setValue, surface = "cream", clientId, submissionId }: Props) {
+export function GeolocationFieldRenderer({ entity, setValue, surface = "cream", clientId, submissionId, dynamicRequired = false }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
   const error = entity.error ? String(entity.error) : undefined
@@ -191,7 +193,7 @@ export function GeolocationFieldRenderer({ entity, setValue, surface = "cream", 
       {/* Field label */}
       <label className={cn("text-sm font-semibold", t.label)}>
         {attrs.label}
-        {attrs.required && <span className={cn("ml-1", t.required)}>*</span>}
+        {(attrs.required || dynamicRequired) && <span className={cn("ml-1", t.required)}>*</span>}
       </label>
 
       {/* Help text */}
