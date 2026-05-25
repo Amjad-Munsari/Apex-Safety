@@ -5,6 +5,7 @@ import { adminClient } from "@/lib/supabase/admin"
 import { requireActorUserId } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
 import { generateObject } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 import { z } from "zod"
@@ -278,14 +279,31 @@ export async function submitAssessmentAction(
   if (updateError) {
     throw new Error(`Failed to submit assessment: ${updateError.message}`)
   }
+
+  // Auto-generate the AI draft after the response is sent. Runs in the
+  // background on Vercel via Fluid Compute — Matt's submit redirect stays
+  // fast (no AI wait), and the draft is usually ready by the time he opens
+  // /admin/assessments/[id]/review. On failure, the manual "Generate AI
+  // Draft" button on the review page is the retry surface.
+  after(async () => {
+    try {
+      await runReportDraftGeneration(submissionId)
+    } catch (err) {
+      console.error("Auto report-draft generation failed", { submissionId, err })
+    }
+  })
 }
 
-export async function generateReportDraft(submissionId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  
-  if (!user) {
-    throw new Error("Unauthorized: Authentication required to generate draft")
+/**
+ * Core AI-draft generation — no auth check, caller is responsible.
+ * Used by both the manual generateReportDraft Server Action and the
+ * auto-trigger inside submitAssessmentAction's after() callback.
+ */
+async function runReportDraftGeneration(submissionId: string) {
+  if (!process.env.OPENROUTER_API_KEY) {
+    throw new Error(
+      "OPENROUTER_API_KEY is not set. Add it to .env.local (dev) or Vercel project env (prod) before generating report drafts."
+    )
   }
 
   // 1. Fetch form_submissions row
@@ -347,6 +365,22 @@ export async function generateReportDraft(submissionId: string) {
     console.error("generateReportDraft failed:", err)
     throw new Error(`Failed to generate report draft via AI: ${err.message || String(err)}`)
   }
+}
+
+/**
+ * Manual AI-draft generation — the retry path from the /review page when
+ * the auto-trigger inside submitAssessmentAction failed or the draft is
+ * missing for any reason.
+ */
+export async function generateReportDraft(submissionId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required to generate draft")
+  }
+
+  return runReportDraftGeneration(submissionId)
 }
 
 export async function finalizeReport(

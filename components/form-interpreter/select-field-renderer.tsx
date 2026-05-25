@@ -105,7 +105,7 @@ export function SelectFieldRenderer({ entity, setValue, surface = "cream" }: Pro
         {attrs.required && <span className={cn("ml-1", t.required)}>*</span>}
       </label>
       <Select
-        value={value || undefined}
+        value={value}
         onValueChange={(v) => setValue(v)}
       >
         <SelectTrigger className={cn("h-12 rounded-sm", t.trigger)}>

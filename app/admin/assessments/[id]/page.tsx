@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { adminClient } from "@/lib/supabase/admin"
 import { AssessmentClient } from "./assessment-client"
 import type { FormBuilderSchema } from "@/lib/form-builder"
@@ -26,6 +26,12 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
 
   if (!submission) {
     notFound()
+  }
+
+  // Once submitted, the fill UI is no longer the right surface — bounce
+  // back to the client record (the AI review flow has its own /review route).
+  if (submission.status === "submitted") {
+    redirect(submission.client_id ? `/admin/clients/${submission.client_id}` : "/admin")
   }
 
   // Step 2: fetch the PINNED template version by submission.template_version_id.

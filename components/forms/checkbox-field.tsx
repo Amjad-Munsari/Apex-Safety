@@ -83,7 +83,7 @@ export function CheckboxField({
             <label
               key={opt.value}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer transition-colors",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer transition-colors",
                 t.row
               )}
             >
@@ -107,7 +107,7 @@ export function CheckboxField({
   return (
     <label
       className={cn(
-        "flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer transition-colors",
+        "relative flex items-center gap-3 px-3 py-2.5 rounded-sm cursor-pointer transition-colors",
         t.row
       )}
     >

@@ -108,12 +108,13 @@ export default async function ClientDetailsPage({
         uiStatus = "Draft"
     }
 
-    // Completed assessments go to the review page (which serves the PDF).
-    // In-flight ones go back to the form for further edits.
+    // Drafts (incomplete forms) link back to the fill page; anything that's
+    // been submitted goes to /review — that's where the AI draft is generated,
+    // reviewed, and the final PDF is downloaded.
     const reportHref =
-      uiStatus === "Delivered"
-        ? `/admin/assessments/${row.id}/review`
-        : `/admin/assessments/${row.id}`
+      uiStatus === "Draft"
+        ? `/admin/assessments/${row.id}`
+        : `/admin/assessments/${row.id}/review`
 
     return {
       id: `ASMT-${row.id.slice(0, 6).toUpperCase()}`,

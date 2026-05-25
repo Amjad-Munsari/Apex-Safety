@@ -1,9 +1,13 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import { autosaveAnswers } from "@/app/admin/assessments/actions"
 import { AssessmentFormHeader } from "@/components/assessments/assessment-form-header"
-import { InterpreterRenderer } from "@/components/form-interpreter/interpreter-renderer"
+import {
+  InterpreterRenderer,
+  type InterpreterRendererHandle,
+} from "@/components/form-interpreter/interpreter-renderer"
 import { AppendixField } from "@/components/assessments/appendix-field"
 import { toast } from "sonner"
 import type { FormBuilderSchema } from "@/lib/form-builder"
@@ -11,6 +15,7 @@ import type { FormBuilderSchema } from "@/lib/form-builder"
 interface AssessmentClientProps {
   submission: {
     id: string
+    client_id?: string | null
     answers_json?: Record<string, unknown> | null
     status?: string
     client?: { name?: string } | null
@@ -32,14 +37,20 @@ interface AssessmentClientProps {
  * - normalizeFormSchema() call removed — schema arrives in coltorapps shape directly.
  */
 export function AssessmentClient({ submission, schema, templateName }: AssessmentClientProps) {
+  const router = useRouter()
   const [appendixAnswers, setAppendixAnswers] = useState<Record<string, unknown>>({
     __appendix_notes: (submission.answers_json as Record<string, unknown> | null | undefined)?.__appendix_notes ?? "",
     __appendix_media: (submission.answers_json as Record<string, unknown> | null | undefined)?.__appendix_media ?? [],
   })
   const [isSaving, setIsSaving] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  // Completion % is owned by the InterpreterRenderer's value store and lifted
+  // here so the header progress bar reflects what the user has filled.
+  const [progress, setProgress] = useState(0)
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const pendingAnswersRef = useRef<Record<string, unknown>>(appendixAnswers)
+  const interpreterRef = useRef<InterpreterRendererHandle>(null)
 
   const triggerAutosave = useCallback(async (latestAnswers: Record<string, unknown>) => {
     try {
@@ -96,36 +107,50 @@ export function AssessmentClient({ submission, schema, templateName }: Assessmen
 
   return (
     <div
-      className="min-h-screen px-8 pb-24"
+      className="min-h-full px-8 pb-24"
       style={{ background: "var(--p-bg)", color: "var(--p-text)" }}
     >
       <AssessmentFormHeader
         submissionId={submission.id}
         clientName={(submission.client as { name?: string } | null | undefined)?.name ?? "Unknown Client"}
         templateName={templateName}
-        progress={0}
+        progress={progress}
         onSaveDraft={async () => {
           await triggerAutosave(pendingAnswersRef.current)
           toast.success("Draft saved manually")
         }}
         onSubmit={async () => {
-          // The InterpreterRenderer owns the form submit action.
-          // This header submit button is a secondary trigger; the primary
-          // "Submit form" button is inside the InterpreterRenderer.
-          toast.info("Use the 'Submit form' button in the form below to submit.")
+          // Flush any pending appendix autosave before the form submit
+          // races the server action.
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+            timeoutRef.current = null
+            await triggerAutosave(pendingAnswersRef.current)
+          }
+          const ok = await interpreterRef.current?.submit()
+          if (ok) {
+            toast.success("Assessment submitted")
+            router.push(
+              submission.client_id
+                ? `/admin/clients/${submission.client_id}`
+                : "/admin"
+            )
+          }
         }}
-        isSubmitting={false}
+        isSubmitting={isSubmitting}
         isSaving={isSaving}
       />
 
-      {/* InterpreterRenderer owns the fill state and submit action.
-          It validates client-side via validateEntitiesValues, then calls
-          submitAssessmentAction (server-side validated, version-pinned).
+      {/* InterpreterRenderer owns the fill state and validation; the header
+          gold button is the canonical submit CTA and drives it via ref.
           schema arrives in coltorapps shape from the RSC — no normalizeFormSchema needed. */}
       <InterpreterRenderer
+        ref={interpreterRef}
         schema={schema}
         submissionId={submission.id}
         surface="dark"
+        onProgressChange={setProgress}
+        onSubmittingChange={setIsSubmitting}
       />
 
       <div className="max-w-3xl mx-auto">
