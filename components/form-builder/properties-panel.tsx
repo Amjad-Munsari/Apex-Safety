@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { BuilderStore } from "@coltorapps/builder";
 import type { formBuilder } from "@/lib/form-builder";
+import { ConditionalLogicSection } from "./conditional-logic-section";
 
 type Surface = "dark" | "cream";
 
@@ -663,6 +664,16 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                   </select>
                 </AttributeRow>
               </>
+            )}
+
+            {/* Conditional Logic Section — non-container entities only (UI-SPEC §1) */}
+            {!isSectionGroup && !isRepeatingSection && (
+              <ConditionalLogicSection
+                entity={{ id: selectedId, type: entity.type, attributes: attrs }}
+                schema={{ entities }}
+                surface={surface}
+                onChange={(next) => setAttr("visibilityRules", next)}
+              />
             )}
 
             {/* Type footer */}
