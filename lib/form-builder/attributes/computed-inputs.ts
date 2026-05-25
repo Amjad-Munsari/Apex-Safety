@@ -1,23 +1,32 @@
 import { createAttribute } from "@coltorapps/builder";
 
-/** Maps formula input names to entity IDs in the same form. */
-export type ComputedInputsValue = Record<string, string>;
+// D-09: computedInputs object attribute for computedField.
+// Admin maps which entity IDs feed the formula inputs via builder properties.
+// Shape: { likelihood: entityId | "", consequence: entityId | "" }
+// Unknown keys pass through unchanged (forward-compat for future formulas).
+// ALWAYS coerce undefined → default empty shape (Phase 13 RESEARCH Pitfall 4).
+export interface ComputedInputs {
+  likelihood: string;
+  consequence: string;
+  [key: string]: string; // forward-compat: future formula inputs
+}
 
 export const computedInputsAttribute = createAttribute({
   name: "computedInputs",
   validate(value) {
     if (value === undefined || value === null) {
-      return {} as ComputedInputsValue;
+      return { likelihood: "", consequence: "" } as ComputedInputs;
     }
     if (typeof value !== "object" || Array.isArray(value)) {
-      throw new Error("Computed inputs must be an object mapping input names to entity IDs.");
+      throw new Error(
+        'computedInputs must be an object with "likelihood" and "consequence" keys.'
+      );
     }
-    // Each value must be a string (entity ID)
-    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
-      if (typeof val !== "string") {
-        throw new Error(`Computed input "${key}" must be a string entity ID.`);
-      }
-    }
-    return value as ComputedInputsValue;
+    const raw = value as Record<string, unknown>;
+    return {
+      ...raw,
+      likelihood: typeof raw.likelihood === "string" ? raw.likelihood : "",
+      consequence: typeof raw.consequence === "string" ? raw.consequence : "",
+    } as ComputedInputs;
   },
 });
