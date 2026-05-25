@@ -92,6 +92,15 @@ vi.mock("next/headers", () => ({
   cookies: () => Promise.resolve({ get: () => undefined }),
 }));
 
+// `after()` requires a Next.js request scope. In unit tests there is none —
+// run the callback inline so the auto-AI-draft path is exercised but never
+// throws "called outside a request scope".
+vi.mock("next/server", () => ({
+  after: (cb: () => void | Promise<void>) => {
+    void Promise.resolve().then(cb).catch(() => {});
+  },
+}));
+
 // ──────────────────────────────────────────────────────────────────────────────
 // Tests
 // ──────────────────────────────────────────────────────────────────────────────

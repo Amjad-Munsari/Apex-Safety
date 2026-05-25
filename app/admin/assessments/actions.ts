@@ -298,69 +298,6 @@ export async function submitAssessmentAction(
   })
 }
 
-/**
- * Core AI-draft generation — no auth check, caller is responsible.
- * Used by both the manual generateReportDraft Server Action and the
- * auto-trigger inside submitAssessmentAction's after() callback.
- */
-async function runReportDraftGeneration(submissionId: string) {
-  if (!process.env.OPENROUTER_API_KEY) {
-    throw new Error(
-      "OPENROUTER_API_KEY is not set. Add it to .env.local (dev) or Vercel project env (prod) before generating report drafts."
-    )
-  }
-
-  // Step 2: fetch the PINNED version schema — never the template's latest version
-  // T-13-10: the server selects the version via the stored FK; the client cannot
-  // supply a different version ID.
-  const { data: version, error: versionError } = await adminClient
-    .from("template_versions")
-    .select("schema_json")
-    .eq("id", submission.template_version_id)
-    .single()
-
-  if (versionError || !version) {
-    throw new Error(`Failed to fetch pinned template version: ${versionError?.message ?? "not found"}`)
-  }
-
-  // Step 3: server-side validation — T-13-09
-  const { validateEntitiesValues } = await import("@coltorapps/builder")
-  const { formBuilder } = await import("@/lib/form-builder")
-
-  const result = await validateEntitiesValues(rawValues, formBuilder, version.schema_json)
-  if (!result.success) {
-    throw new Error("Form validation failed server-side. Please check your answers and try again.")
-  }
-
-  // Step 4: write validated data — T-13-13 (audit trail)
-  const { error: updateError } = await adminClient
-    .from("form_submissions")
-    .update({
-      answers_json: result.data,
-      status: "submitted",
-      submitted_at: new Date().toISOString(),
-    })
-    .eq("id", submissionId)
-    .eq("status", "draft")
-
-  if (updateError) {
-    throw new Error(`Failed to submit assessment: ${updateError.message}`)
-  }
-
-  // Auto-generate the AI draft after the response is sent. Runs in the
-  // background on Vercel via Fluid Compute — Matt's submit redirect stays
-  // fast (no AI wait), and the draft is usually ready by the time he opens
-  // /admin/assessments/[id]/review. On failure, the manual "Generate AI
-  // Draft" button on the review page is the retry surface.
-  after(async () => {
-    try {
-      await runReportDraftGeneration(submissionId)
-    } catch (err) {
-      console.error("Auto report-draft generation failed", { submissionId, err })
-    }
-  })
-}
-
 // ── expandRepeatingSections ──────────────────────────────────────────────────
 
 /**
