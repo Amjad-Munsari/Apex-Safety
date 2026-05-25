@@ -1144,25 +1144,23 @@ No new packages required. Entire phase is pure-TypeScript + extends existing col
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Per-instance `entitiesValues` shape in `shouldBeProcessed` for repeatingSection children**
    - What we know: coltorapps `shouldBeProcessed(context)` has `context.entitiesValues` flat at root. Phase 14 RepeatingSection renders children inline per instance.
-   - What's unclear: when the hook fires for a child INSIDE a specific instance, does `entitiesValues` include sibling values keyed by child entity ID (the "per-instance view") or only root values?
-   - Recommendation: Wave 1 spike — register a textField inside a repeatingSection with a `shouldBeProcessed` that returns `Boolean(context.entitiesValues[siblingId])`; fill the sibling; verify hook output. Resolution determines whether `evaluateVisibilityForInstance` is the engine API or whether the default `evaluateVisibility` is enough.
+   - What's unclear (was): when the hook fires for a child INSIDE a specific instance, does `entitiesValues` include sibling values keyed by child entity ID (the "per-instance view") or only root values?
+   - **RESOLVED (root-only, NOT per-instance):** Verified by reading `components/form-interpreter/repeating-section-renderer.tsx` lines 22-25 + 328-334 and `node_modules/@coltorapps/builder/dist/index.d.ts` lines 223-247 + 410-413. Repeating-section instance children are NOT registered as coltorapps entities at all (RepeatingSection JSDoc lines 22-25: "Children inside an instance are NOT coltorapps entities — they are template IDs in schema.entities[repeatingSectionId].children. Their values live inside instances[index][childEntityId], NOT in the interpreter store directly."). The only entry written to the interpreter store for the repSection is `{instances: [...]}` keyed by the repSection's own entity ID (line 333: `setValue({ instances: newInstances })`). Therefore `context.entitiesValues` inside ANY `shouldBeProcessed` invocation is always the root-only flat map — `entitiesValues[siblingChildId]` is `undefined` for repeating-section template children; only `entitiesValues[repSectionId].instances[i][siblingChildId]` exists. **Engine implication for evaluateRule resolving `r.sourceEntityId`:** `makeShouldBeProcessed` works as-is for root↔root and ancestor (root) refs. For same-instance sibling refs inside a repeatingSection, the hook cannot resolve from `entitiesValues` alone — but this is moot because instance children aren't coltorapps entities, so `shouldBeProcessed` is NEVER called for them by coltorapps anyway. Per-instance visibility for instance children is owned entirely by `RepeatingSectionRenderer` via Plan 15-04's bridge: the renderer threads a synthetic per-instance answers map into `evaluateVisibilityForInstance` and short-circuits child render based on its output. **Conclusion:** no `shouldBeProcessed` branching needed; `evaluateVisibilityForInstance` (plan 15-02) + renderer bridge (plan 15-04) is the single design.
 
 2. **Orphan-rule strictness at save time (Pitfall 3 + A6)**
    - What we know: a rule's source can be deleted, leaving the rule pointing into space.
-   - What's unclear: block save or warn-only?
-   - Recommendation: warn-only (planner decision). Either way, engine MUST tolerate (return false; never throw).
+   - **RESOLVED:** advisory, NOT save-blocking. `validateRuleGraph` (plan 15-03) emits `scopeErrors` entries with `reason: "orphan-source"` and `severity: "advisory"`; `ok` remains `true`. Engine `evaluateRule` (plan 15-02) returns `false` for unknown source keys — never throws. Builder UI (plan 15-07) renders advisory entries in the inline banner with copy "Source field deleted: [sourceLabel] — Remove this rule or pick a new source."
 
 3. **Wave order for `validate-rule-graph` consumers (admin + customer side)**
    - What we know: both `app/admin/templates/actions.ts` and `app/client/templates/actions.ts` have a saveDraftAction.
-   - What's unclear: do both surfaces need the change in the same wave, or can Phase 15 ship admin-first and customer-side in Phase 16?
-   - Recommendation: ship BOTH in Phase 15. Customer surface already builds templates today (per AGENTS.md "form-template ownership" — Phase 15 spec note "rule editor must be reusable across admin + customer surfaces"). Asymmetric validation = exploit class.
+   - **RESOLVED: yes — validateRuleGraph runs in all 4 actions: admin save, admin publish, client save, client publish. Asymmetric validation = exploit per Pitfall 2.** Plan 15-05 Task 2 wires the guard into `saveDraftAction`, `publishTemplateAction`, `saveClientDraftAction`, and `publishClientTemplateAction`; acceptance criteria counts `grep -c "validateRuleGraph(result.data)"` returning 2 per file (4 total). No surface-asymmetric path exists.
 
 4. **Whether the optional pre-flight client-side `validateRuleGraph` adds value or is just duplication**
-   - Recommendation: ship server-side only in Phase 15. Add client-side instant feedback later if Matt asks for it. Reduces surface.
+   - **RESOLVED:** ship server-side only in Phase 15. Plan 15-05 enforces server-side; plan 15-07 surfaces the structured error to the builder UI via a Sonner toast + inline `CycleErrorBanner`. Client-side preflight is explicitly deferred — reduces surface and avoids drift between two validators.
 
 ---
 

@@ -43,7 +43,8 @@ The stage sequence is locked and must not be reordered:
 Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2 backlog (BUILDER / COND / SCHED clusters) — confirmed in scope via Finley (voice note 4/17) and the 2026-04-17 form-template ownership decision. Build prompt of record: `.planning/research/form-builder-build-prompt.md`. Phases 14–16 can overlap once 13 is done; full module ~4–5 weeks.
 
 - [ ] **Phase 13: Form Builder Foundation** — Coltorapps integration, 7 basic field types, dnd-kit three-panel builder, schema versioning, interpreter/renderer
-- [x] **Phase 14: Custom Field Types** — Signature, rating, multi-photo, geolocation, repeating sections, computed (PAS 79 risk matrix); per-field photo attach + STT (completed 2026-05-25)
+- [x] **Phase 14: Custom Field Types** — Signature, rating, multi-photo, geolocation, repeating sections, computed (PAS 79 risk matrix); per-field photo attach + STT
+ (completed 2026-05-25)
 - [ ] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
 - [ ] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS
 - [ ] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup
@@ -314,14 +315,35 @@ Plans:
 ### Phase 15: Conditional Logic Engine
 **Goal**: Fields can show, hide, and become required based on other field values, with circular-dependency protection.
 **Depends on**: Phase 13 (parallel with Phase 14)
-**Requirements**: COND-01..04 (v2 cluster — re-quote pending; decompose at plan-phase)
+**Requirements**: COND-01, COND-02, COND-03, COND-04, BUILDER-02 (v2 cluster — re-quote pending)
 **Success Criteria** (what must be TRUE):
   1. Admin can add `visibilityRules` to any field via the builder UI; rules evaluate at fill-time for show/hide/require.
   2. Hidden fields are excluded from validation and submission data.
   3. Multiple rules combine correctly with AND/OR logic, including nested (cross-section) conditions.
   4. Conditional logic persists through the save/load cycle; circular rule chains are detected and rejected at save time.
   5. N/A works as a distinct select value in conditions ("Some" treated as Yes for show/hide).
-**Plans**: Not yet planned — run `/gsd:plan-phase 15`.
+**Plans**: 9 plans
+
+Plans:
+
+**Wave 0** *(test infrastructure)*
+- [ ] 15-00-PLAN.md — Stub 12 Wave-0 test files (visibility unit, progress extension, renderer focus invariants) (wave 0)
+
+**Wave 1** *(pure logic core — parallel after Wave 0)*
+- [ ] 15-01-PLAN.md — visibilityRulesAttribute factory + attach to all 13 entities + backcompat (wave 1)
+- [ ] 15-02-PLAN.md — evaluateRule / combineRules / cascade / evaluateVisibility / shouldBeProcessed hook / stripHiddenAnswers + A3 spike (wave 1)
+- [ ] 15-03-PLAN.md — buildDependencyMap + scope walker + validateRuleGraph (3-colour DFS, D-03 scope errors) (wave 1)
+
+**Wave 2** *(runtime integration — parallel after Wave 1)*
+- [ ] 15-04-PLAN.md — Interpreter renderer visibility threading (propsRef preserves Phase 14-06 focus invariant) + computeFormProgress extension (wave 2)
+- [ ] 15-05-PLAN.md — Server-side stripHiddenAnswers in submitAssessmentAction + validateRuleGraph in all 4 save/publish actions (admin + customer) (wave 2)
+
+**Wave 3** *(builder UI — parallel after Wave 1/2)*
+- [ ] 15-06-PLAN.md — ConditionalLogicSection + RuleRow in PropertiesPanel (UI-SPEC §1) (wave 3)
+- [ ] 15-07-PLAN.md — CycleErrorBanner + Save/Publish error catch + Sonner toast + publish-blocked tooltip (wave 3)
+
+**Wave 4** *(smoke template + verification — sequential)*
+- [ ] 15-08-PLAN.md — Migration 012 (PAS 79 + FRA-doors + root-cascade smoke) + [BLOCKING] supabase db push + Playwright e2e + 15-UAT.md + human-verify (wave 4)
 
 ### Phase 16: Multi-Tenancy + Fork-on-Fill
 **Goal**: Both confirmed use cases are live — admin assigns templates to clients, and clients can fork an assigned template or build their own from scratch.
