@@ -111,7 +111,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
-| 14. Custom Field Types | 6/8 | In Progress|  |
+| 14. Custom Field Types | 7/8 | In Progress|  |
 | 15. Conditional Logic Engine | 0/0 | Not planned | - |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
@@ -305,7 +305,7 @@ Plans:
 - [x] 14-05-PLAN.md — GeoMap + GeolocationFieldRenderer + ComputedFieldRenderer + RepeatingSectionRenderer (derived/container renderers) (wave 2)
 
 **Wave 3** *(integration — parallel after Wave 2)*
-- [ ] 14-06-PLAN.md — InterpreterRenderer components map extension + AttachPhotosAffordance + MicButton inline into text/textarea + clientId plumbing (wave 3)
+- [x] 14-06-PLAN.md — InterpreterRenderer components map extension + AttachPhotosAffordance + MicButton inline into text/textarea + clientId plumbing (wave 3)
 - [x] 14-07-PLAN.md — FieldPalette two-section layout (13 buttons) + PropertiesPanel specialty attribute editors + attachPhotos toggle universal (wave 3)
 
 **Wave 4** *(close-out — sequential, user-gated)*
