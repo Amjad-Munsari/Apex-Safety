@@ -113,7 +113,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
-| 15. Conditional Logic Engine | 1/9 | In Progress|  |
+| 15. Conditional Logic Engine | 4/9 | In Progress|  |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
@@ -330,9 +330,9 @@ Plans:
 - [x] 15-00-PLAN.md — Stub 12 Wave-0 test files (visibility unit, progress extension, renderer focus invariants) (wave 0)
 
 **Wave 1** *(pure logic core — parallel after Wave 0)*
-- [ ] 15-01-PLAN.md — visibilityRulesAttribute factory + attach to all 13 entities + backcompat (wave 1)
-- [ ] 15-02-PLAN.md — evaluateRule / combineRules / cascade / evaluateVisibility / shouldBeProcessed hook / stripHiddenAnswers + A3 spike (wave 1)
-- [ ] 15-03-PLAN.md — buildDependencyMap + scope walker + validateRuleGraph (3-colour DFS, D-03 scope errors) (wave 1)
+- [x] 15-01-PLAN.md — visibilityRulesAttribute factory + attach to all 13 entities + backcompat (wave 1)
+- [x] 15-02-PLAN.md — evaluateRule / combineRules / cascade / evaluateVisibility / shouldBeProcessed hook / stripHiddenAnswers + A3 spike (wave 1)
+- [x] 15-03-PLAN.md — buildDependencyMap + scope walker + validateRuleGraph (3-colour DFS, D-03 scope errors) (wave 1)
 
 **Wave 2** *(runtime integration — parallel after Wave 1)*
 - [ ] 15-04-PLAN.md — Interpreter renderer visibility threading (propsRef preserves Phase 14-06 focus invariant) + computeFormProgress extension (wave 2)
