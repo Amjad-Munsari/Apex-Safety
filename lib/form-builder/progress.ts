@@ -10,19 +10,103 @@
  *
  * A field counts as filled when it holds a meaningful value: a non-blank
  * string, a checked checkbox, a non-empty array, or any number (including 0).
+ *
+ * Phase 14 extensions:
+ * - geolocationField: an object with numeric `lat` and `lng` keys is treated as filled.
+ * - repeatingSection: when `attrs.minInstances > 0`, the section counts as a required
+ *   entity. It is considered "filled" when ALL of the following are true:
+ *     1. The value is `{ instances: [...] }` with `instances.length >= minInstances`.
+ *     2. Every required child entity in EVERY instance holds a filled value.
+ *   Children that have no `required: true` attribute are ignored in the per-instance check.
  */
 
 /** Minimal structural shape — FormBuilderSchema satisfies this. */
 type ProgressSchema = {
-  entities: Record<string, { type?: string; attributes?: Record<string, unknown> }>;
+  entities: Record<
+    string,
+    {
+      type?: string;
+      attributes?: Record<string, unknown>;
+      children?: string[];
+    }
+  >;
 };
 
+/**
+ * Returns true when `value` represents a meaningful filled state.
+ *
+ * Phase 14 extension: geolocation objects `{lat: number, lng: number, ...}` are
+ * treated as filled. Other plain objects (non-array, non-null) also return true,
+ * preserving backwards compatibility for any future object-valued entity types.
+ */
 function isFilled(value: unknown): boolean {
   if (value === undefined || value === null) return false;
   if (typeof value === "string") return value.trim().length > 0;
   if (typeof value === "boolean") return value;
   if (Array.isArray(value)) return value.length > 0;
   if (typeof value === "number") return !Number.isNaN(value);
+  if (typeof value === "object") {
+    const v = value as Record<string, unknown>;
+    // geolocationField: recognise {lat, lng} object shape as filled (Phase 14 extension)
+    if (typeof v.lat === "number" && typeof v.lng === "number") return true;
+    // Other plain objects: fall through to true (backwards-compatible default)
+    return true;
+  }
+  return true;
+}
+
+/**
+ * Checks whether a repeatingSection entity is "filled" given its value and schema.
+ *
+ * "Filled" for a repeatingSection means:
+ *   - value.instances.length >= minInstances (quantity gate)
+ *   - Every required child entity is filled in every instance (quality gate)
+ *
+ * The `instances` array is `Array<Record<entityId, value>>`. Required children are those
+ * whose `schema.entities[childId].attributes.required === true`.
+ *
+ * Per-instance child validation against non-shape constraints (e.g., rating bounds) is
+ * deferred to the renderer and submitAssessmentAction (RESEARCH Open Question #1 / T-14-02-03).
+ */
+function isRepeatingSectionFilled(
+  entityId: string,
+  schema: ProgressSchema,
+  values: Record<string, unknown>
+): boolean {
+  const entity = schema.entities[entityId];
+  const minInstances = (entity.attributes?.minInstances as number) ?? 0;
+  const rawValue = values[entityId];
+
+  // No value or wrong shape → not filled
+  if (
+    rawValue === undefined ||
+    rawValue === null ||
+    typeof rawValue !== "object" ||
+    Array.isArray(rawValue)
+  ) {
+    return false;
+  }
+
+  const repValue = rawValue as { instances?: unknown[] };
+  if (!Array.isArray(repValue.instances)) return false;
+
+  // Quantity gate
+  if (repValue.instances.length < minInstances) return false;
+
+  // Quality gate — check required children in each instance
+  const children = entity.children ?? [];
+  const requiredChildren = children.filter(
+    (childId) => schema.entities[childId]?.attributes?.required === true
+  );
+
+  if (requiredChildren.length === 0) return true;
+
+  for (const instance of repValue.instances as Array<Record<string, unknown>>) {
+    for (const childId of requiredChildren) {
+      if (!isFilled(instance[childId])) return false;
+    }
+  }
+
   return true;
 }
 
@@ -30,18 +114,53 @@ function isFilled(value: unknown): boolean {
  * @returns integer 0-100 — the percentage of required fields that hold a
  *   filled value. Returns 100 when the schema has no required fields (a form
  *   with nothing required is submittable, i.e. already complete).
+ *
+ * Phase 14: repeatingSection entities where `minInstances > 0` are included
+ * in the required set. Their fill logic is handled by `isRepeatingSectionFilled`.
+ * computedField entities never carry a `required` attribute and therefore never
+ * appear in the required set — they do not block progress (UI-SPEC §computedField-specific).
  */
 export function computeFormProgress(
   schema: ProgressSchema,
   values: Record<string, unknown>
 ): number {
-  const requiredIds = Object.entries(schema.entities)
-    .filter(([, entity]) => entity.attributes?.required === true)
-    .map(([id]) => id);
+  // Collect IDs of entities that are children of a repeatingSection.
+  // These entities represent "template" fields — their values live inside instances[],
+  // not at the top-level values map. They must NOT be counted as standalone required items.
+  const repeatingSectionChildIds = new Set<string>();
+  for (const entity of Object.values(schema.entities)) {
+    if (entity.type === "repeatingSection" && Array.isArray(entity.children)) {
+      for (const childId of entity.children) {
+        repeatingSectionChildIds.add(childId);
+      }
+    }
+  }
+
+  // Collect required top-level entity IDs.
+  // Two sources:
+  //   (a) entities with attrs.required === true  (standard field types — excluding repeatingSection children)
+  //   (b) repeatingSection entities with minInstances > 0  (Phase 14 extension)
+  const requiredIds = Object.entries(schema.entities).flatMap(([id, entity]) => {
+    // Skip entities that are children of a repeatingSection
+    if (repeatingSectionChildIds.has(id)) return [];
+
+    if (entity.type === "repeatingSection") {
+      const min = (entity.attributes?.minInstances as number) ?? 0;
+      return min > 0 ? [id] : [];
+    }
+    return entity.attributes?.required === true ? [id] : [];
+  });
 
   const total = requiredIds.length;
   if (total === 0) return 100;
 
-  const filled = requiredIds.filter((id) => isFilled(values[id])).length;
+  const filled = requiredIds.filter((id) => {
+    const entity = schema.entities[id];
+    if (entity.type === "repeatingSection") {
+      return isRepeatingSectionFilled(id, schema, values);
+    }
+    return isFilled(values[id]);
+  }).length;
+
   return Math.round((filled / total) * 100);
 }
