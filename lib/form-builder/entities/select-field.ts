@@ -4,6 +4,8 @@ import { requiredAttribute } from "../attributes/required";
 import { optionsAttribute } from "../attributes/options";
 import { allowMultipleAttribute } from "../attributes/allow-multiple";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const selectFieldEntity = createEntity({
   name: "selectField",
@@ -13,6 +15,7 @@ export const selectFieldEntity = createEntity({
     optionsAttribute,
     allowMultipleAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -42,4 +45,5 @@ export const selectFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

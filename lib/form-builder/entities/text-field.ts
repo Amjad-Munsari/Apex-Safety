@@ -6,6 +6,8 @@ import { maxLengthAttribute } from "../attributes/max-length";
 import { helpTextAttribute } from "../attributes/help-text";
 import { prefillSourceAttribute } from "../attributes/prefill-source";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const textFieldEntity = createEntity({
   name: "textField",
@@ -17,6 +19,7 @@ export const textFieldEntity = createEntity({
     helpTextAttribute,
     prefillSourceAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -29,4 +32,5 @@ export const textFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

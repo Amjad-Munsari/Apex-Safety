@@ -30,6 +30,8 @@ import { sectionTitleAttribute } from "../attributes/section-title";
 import { sectionDescriptionAttribute } from "../attributes/section-description";
 import { minInstancesAttribute } from "../attributes/min-instances";
 import { maxInstancesAttribute } from "../attributes/max-instances";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const repeatingSectionEntity = createEntity({
   name: "repeatingSection",
@@ -43,6 +45,7 @@ export const repeatingSectionEntity = createEntity({
     minInstancesAttribute,
     maxInstancesAttribute,
     // NO attachPhotosAttribute — repeatingSection is a container (D-05: "every non-section entity")
+    visibilityRulesAttribute,
   ],
   validate(value) {
     // Safe default: undefined/null → empty instances
@@ -63,4 +66,5 @@ export const repeatingSectionEntity = createEntity({
 
     return v as { instances: Array<Record<string, unknown>> };
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

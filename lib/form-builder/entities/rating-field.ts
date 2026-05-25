@@ -10,6 +10,8 @@ import { requiredAttribute } from "../attributes/required";
 import { helpTextAttribute } from "../attributes/help-text";
 import { maxRatingAttribute } from "../attributes/max-rating";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const ratingFieldEntity = createEntity({
   name: "ratingField",
@@ -19,6 +21,7 @@ export const ratingFieldEntity = createEntity({
     helpTextAttribute,
     maxRatingAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -37,4 +40,5 @@ export const ratingFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });
