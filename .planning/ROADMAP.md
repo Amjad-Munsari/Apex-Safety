@@ -111,7 +111,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
-| 14. Custom Field Types | 0/0 | Not planned | - |
+| 14. Custom Field Types | 0/8 | Planned | - |
 | 15. Conditional Logic Engine | 0/0 | Not planned | - |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
@@ -291,7 +291,25 @@ Plans:
   3. Per-field photo attachment works on any field via the `attachPhotos` attribute.
   4. Geolocation captures lat/lng on a mobile browser; repeating sections honour min/max bounds; speech-to-text (Web Speech API, en-GB — the current STT implementation per commit d2651a4) works on text/textarea fields.
   5. The computed field outputs the correct PAS 79 risk level with the standard colour coding.
-**Plans**: Not yet planned — run `/gsd:plan-phase 14`.
+**Plans**: 8 plans
+
+Plans:
+
+**Wave 1** *(foundation — fully parallel)*
+- [ ] 14-01-PLAN.md — Wave 0 setup (Leaflet install + assets, ROADMAP D-15 fix, 7 shared attributes, PAS 79 utility, storage-path helpers) (wave 1)
+- [ ] 14-02-PLAN.md — 6 new entity definitions + register in formBuilder + extend computeFormProgress for repeatingSection + geolocation (wave 1)
+- [ ] 14-03-PLAN.md — uploadMediaAction (auth + MIME + size + field_media) + expandRepeatingSections + runReportDraftGeneration extension (wave 1)
+
+**Wave 2** *(renderers — parallel after Wave 1)*
+- [ ] 14-04-PLAN.md — SignatureFieldRenderer + RatingFieldRenderer + MultiPhotoFieldRenderer (upload-flow renderers) (wave 2)
+- [ ] 14-05-PLAN.md — GeoMap + GeolocationFieldRenderer + ComputedFieldRenderer + RepeatingSectionRenderer (derived/container renderers) (wave 2)
+
+**Wave 3** *(integration — parallel after Wave 2)*
+- [ ] 14-06-PLAN.md — InterpreterRenderer components map extension + AttachPhotosAffordance + MicButton inline into text/textarea + clientId plumbing (wave 3)
+- [ ] 14-07-PLAN.md — FieldPalette two-section layout (13 buttons) + PropertiesPanel specialty attribute editors + attachPhotos toggle universal (wave 3)
+
+**Wave 4** *(close-out — sequential, user-gated)*
+- [ ] 14-08-PLAN.md — Migration 011 (specialty smoke test template) + [BLOCKING] supabase db push + 14-UAT.md + human-verify walkthrough (wave 4)
 
 ### Phase 15: Conditional Logic Engine
 **Goal**: Fields can show, hide, and become required based on other field values, with circular-dependency protection.
