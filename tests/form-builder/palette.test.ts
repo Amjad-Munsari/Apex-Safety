@@ -108,4 +108,136 @@ describe("Field Palette (BUILDER-01)", () => {
     const schema = store.getSchema();
     expect(Object.keys(schema.entities)).toHaveLength(7);
   });
+
+  // ── Phase 14 specialty type palette cases (BUILDER-01 extension) ─────────
+
+  it("all 6 specialty entity types can be added to the builder store without error", () => {
+    const store = createBuilderStore(formBuilder);
+    const specialtyTypes = [
+      "signatureField",
+      "ratingField",
+      "multiPhotoField",
+      "geolocationField",
+      "computedField",
+      "repeatingSection",
+    ] as const;
+
+    for (const type of specialtyTypes) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => store.addEntity({ type, attributes: {} } as any)).not.toThrow();
+    }
+
+    const schema = store.getSchema();
+    // 6 specialty types added
+    expect(Object.keys(schema.entities)).toHaveLength(6);
+  });
+
+  it("addEntity signatureField succeeds and the entity appears in schema with correct type", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "signatureField", attributes: { label: "Inspector Signature" } } as any);
+    const schema = store.getSchema();
+    expect(schema.entities[entity.id].type).toBe("signatureField");
+  });
+
+  it("addEntity ratingField succeeds and the entity appears in schema with correct type", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "ratingField", attributes: { label: "Risk Level" } } as any);
+    const schema = store.getSchema();
+    expect(schema.entities[entity.id].type).toBe("ratingField");
+  });
+
+  it("addEntity multiPhotoField succeeds and the entity appears in schema with correct type", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "multiPhotoField", attributes: { label: "Site Photos" } } as any);
+    const schema = store.getSchema();
+    expect(schema.entities[entity.id].type).toBe("multiPhotoField");
+  });
+
+  it("addEntity geolocationField succeeds and the entity appears in schema with correct type", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "geolocationField", attributes: { label: "Site Location" } } as any);
+    const schema = store.getSchema();
+    expect(schema.entities[entity.id].type).toBe("geolocationField");
+  });
+
+  it("addEntity computedField succeeds and the entity appears in schema with correct type", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "computedField", attributes: { label: "Risk Score" } } as any);
+    const schema = store.getSchema();
+    expect(schema.entities[entity.id].type).toBe("computedField");
+  });
+
+  it("addEntity repeatingSection succeeds and the entity appears in schema with correct type", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "repeatingSection", attributes: { title: "Fire Doors" } } as any);
+    const schema = store.getSchema();
+    expect(schema.entities[entity.id].type).toBe("repeatingSection");
+  });
+
+  // ── attachPhotos default on 6 existing basic entities (D-05) ─────────────
+  // These cases will be RED until attachPhotosAttribute is added to each entity file.
+
+  it("textField defaults attachPhotos to false when no attribute override is provided", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "textField", attributes: {} } as any);
+    const attrs = store.getSchema().entities[entity.id].attributes as Record<string, unknown>;
+    // attachPhotosAttribute.validate(undefined) returns false — D-05 default
+    expect(attrs.attachPhotos).toBe(false);
+  });
+
+  it("numberField defaults attachPhotos to false when no attribute override is provided", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "numberField", attributes: {} } as any);
+    const attrs = store.getSchema().entities[entity.id].attributes as Record<string, unknown>;
+    expect(attrs.attachPhotos).toBe(false);
+  });
+
+  it("dateField defaults attachPhotos to false when no attribute override is provided", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "dateField", attributes: {} } as any);
+    const attrs = store.getSchema().entities[entity.id].attributes as Record<string, unknown>;
+    expect(attrs.attachPhotos).toBe(false);
+  });
+
+  it("selectField defaults attachPhotos to false when no attribute override is provided", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "selectField", attributes: {} } as any);
+    const attrs = store.getSchema().entities[entity.id].attributes as Record<string, unknown>;
+    expect(attrs.attachPhotos).toBe(false);
+  });
+
+  it("textareaField defaults attachPhotos to false when no attribute override is provided", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "textareaField", attributes: {} } as any);
+    const attrs = store.getSchema().entities[entity.id].attributes as Record<string, unknown>;
+    expect(attrs.attachPhotos).toBe(false);
+  });
+
+  it("checkboxField defaults attachPhotos to false when no attribute override is provided", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "checkboxField", attributes: {} } as any);
+    const attrs = store.getSchema().entities[entity.id].attributes as Record<string, unknown>;
+    expect(attrs.attachPhotos).toBe(false);
+  });
+
+  it("sectionGroup does NOT have attachPhotos attribute (it is a container — D-05)", () => {
+    const store = createBuilderStore(formBuilder);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity = store.addEntity({ type: "sectionGroup", attributes: {} } as any);
+    const attrs = store.getSchema().entities[entity.id].attributes as Record<string, unknown>;
+    // sectionGroup must NOT have attachPhotos — D-05 "every non-section entity"
+    expect(attrs.attachPhotos).toBeUndefined();
+  });
 });
