@@ -3,6 +3,7 @@ import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { minAttribute, maxAttribute } from "../attributes/number-bounds";
 import { unitAttribute } from "../attributes/unit";
+import { attachPhotosAttribute } from "../attributes/attach-photos";
 
 export const numberFieldEntity = createEntity({
   name: "numberField",
@@ -12,6 +13,7 @@ export const numberFieldEntity = createEntity({
     minAttribute,
     maxAttribute,
     unitAttribute,
+    attachPhotosAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;

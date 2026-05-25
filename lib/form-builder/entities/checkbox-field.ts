@@ -2,6 +2,7 @@ import { createEntity } from "@coltorapps/builder";
 import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { defaultCheckedAttribute } from "../attributes/default-checked";
+import { attachPhotosAttribute } from "../attributes/attach-photos";
 
 export const checkboxFieldEntity = createEntity({
   name: "checkboxField",
@@ -9,6 +10,7 @@ export const checkboxFieldEntity = createEntity({
     labelAttribute,
     requiredAttribute,
     defaultCheckedAttribute,
+    attachPhotosAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;

@@ -10,6 +10,12 @@ import {
   Check,
   ChevronDown,
   Layers,
+  PenLine,
+  Star,
+  Camera,
+  MapPin,
+  Calculator,
+  ListOrdered,
 } from "lucide-react";
 
 type EntityType =
@@ -19,7 +25,13 @@ type EntityType =
   | "selectField"
   | "textareaField"
   | "checkboxField"
-  | "sectionGroup";
+  | "sectionGroup"
+  | "signatureField"
+  | "ratingField"
+  | "multiPhotoField"
+  | "geolocationField"
+  | "computedField"
+  | "repeatingSection";
 
 interface FieldDef {
   type: EntityType;
@@ -28,7 +40,7 @@ interface FieldDef {
   description: string;
 }
 
-const FIELDS: FieldDef[] = [
+const BASIC_FIELDS: FieldDef[] = [
   { type: "textField", label: "Short Text", icon: Type, description: "Single-line text input" },
   { type: "numberField", label: "Number", icon: Hash, description: "Numeric input" },
   { type: "dateField", label: "Date", icon: Calendar, description: "Date picker" },
@@ -36,6 +48,15 @@ const FIELDS: FieldDef[] = [
   { type: "textareaField", label: "Long Text", icon: AlignLeft, description: "Multi-line text" },
   { type: "checkboxField", label: "Checkbox", icon: Check, description: "Single tick or checkbox" },
   { type: "sectionGroup", label: "Section", icon: Layers, description: "Group fields in a section" },
+];
+
+const SPECIALTY_FIELDS: FieldDef[] = [
+  { type: "signatureField", label: "Signature", icon: PenLine, description: "Draw and capture a handwritten signature" },
+  { type: "ratingField", label: "Rating", icon: Star, description: "Star-based numeric rating 1–N" },
+  { type: "multiPhotoField", label: "Photos", icon: Camera, description: "Multi-photo capture with compression" },
+  { type: "geolocationField", label: "Location", icon: MapPin, description: "GPS coordinates with map preview" },
+  { type: "computedField", label: "Computed", icon: Calculator, description: "Auto-computed PAS 79 risk score" },
+  { type: "repeatingSection", label: "Repeating Section", icon: ListOrdered, description: "Repeat a group of fields N times" },
 ];
 
 interface Props {
@@ -117,13 +138,31 @@ export function FieldPalette({ onAddEntity, surface = "dark" }: Props) {
   const t = surfaceTokens[surface];
   return (
     <div className="flex flex-col gap-0">
+      {/* Basic Types section */}
       <div className={cn("px-4 py-3 border-b", t.headerBorder)}>
         <span className={cn("font-mono text-[10px] uppercase tracking-widest", t.headerLabel)}>
-          Field Types
+          Basic Types
         </span>
       </div>
       <div className="flex flex-col gap-0 p-2">
-        {FIELDS.map((fieldDef) => (
+        {BASIC_FIELDS.map((fieldDef) => (
+          <DraggablePaletteButton
+            key={fieldDef.type}
+            fieldDef={fieldDef}
+            onAddEntity={onAddEntity}
+            surface={surface}
+          />
+        ))}
+      </div>
+
+      {/* Specialty section */}
+      <div className={cn("px-4 py-3 border-b border-t", t.headerBorder)}>
+        <span className={cn("font-mono text-[10px] uppercase tracking-widest", t.headerLabel)}>
+          Specialty
+        </span>
+      </div>
+      <div className="flex flex-col gap-0 p-2">
+        {SPECIALTY_FIELDS.map((fieldDef) => (
           <DraggablePaletteButton
             key={fieldDef.type}
             fieldDef={fieldDef}

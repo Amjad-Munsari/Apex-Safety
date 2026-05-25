@@ -3,6 +3,7 @@ import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { optionsAttribute } from "../attributes/options";
 import { allowMultipleAttribute } from "../attributes/allow-multiple";
+import { attachPhotosAttribute } from "../attributes/attach-photos";
 
 export const selectFieldEntity = createEntity({
   name: "selectField",
@@ -11,6 +12,7 @@ export const selectFieldEntity = createEntity({
     requiredAttribute,
     optionsAttribute,
     allowMultipleAttribute,
+    attachPhotosAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;

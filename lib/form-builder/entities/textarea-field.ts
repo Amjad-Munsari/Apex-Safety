@@ -3,6 +3,7 @@ import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { placeholderAttribute } from "../attributes/placeholder";
 import { maxLengthAttribute } from "../attributes/max-length";
+import { attachPhotosAttribute } from "../attributes/attach-photos";
 
 export const textareaFieldEntity = createEntity({
   name: "textareaField",
@@ -11,6 +12,7 @@ export const textareaFieldEntity = createEntity({
     requiredAttribute,
     placeholderAttribute,
     maxLengthAttribute,
+    attachPhotosAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
