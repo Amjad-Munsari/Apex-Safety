@@ -43,7 +43,7 @@ The stage sequence is locked and must not be reordered:
 Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2 backlog (BUILDER / COND / SCHED clusters) — confirmed in scope via Finley (voice note 4/17) and the 2026-04-17 form-template ownership decision. Build prompt of record: `.planning/research/form-builder-build-prompt.md`. Phases 14–16 can overlap once 13 is done; full module ~4–5 weeks.
 
 - [ ] **Phase 13: Form Builder Foundation** — Coltorapps integration, 7 basic field types, dnd-kit three-panel builder, schema versioning, interpreter/renderer
-- [ ] **Phase 14: Custom Field Types** — Signature, rating, multi-photo, geolocation, repeating sections, computed (PAS 79 risk matrix); per-field photo attach + STT
+- [x] **Phase 14: Custom Field Types** — Signature, rating, multi-photo, geolocation, repeating sections, computed (PAS 79 risk matrix); per-field photo attach + STT (completed 2026-05-25)
 - [ ] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
 - [ ] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS
 - [ ] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup
@@ -111,7 +111,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
-| 14. Custom Field Types | 7/8 | In Progress|  |
+| 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
 | 15. Conditional Logic Engine | 0/0 | Not planned | - |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
@@ -309,7 +309,7 @@ Plans:
 - [x] 14-07-PLAN.md — FieldPalette two-section layout (13 buttons) + PropertiesPanel specialty attribute editors + attachPhotos toggle universal (wave 3)
 
 **Wave 4** *(close-out — sequential, user-gated)*
-- [ ] 14-08-PLAN.md — Migration 011 (specialty smoke test template) + [BLOCKING] supabase db push + 14-UAT.md + human-verify walkthrough (wave 4)
+- [x] 14-08-PLAN.md — Migration 011 (specialty smoke test template) + [BLOCKING] supabase db push + 14-UAT.md + human-verify walkthrough (wave 4)
 
 ### Phase 15: Conditional Logic Engine
 **Goal**: Fields can show, hide, and become required based on other field values, with circular-dependency protection.
