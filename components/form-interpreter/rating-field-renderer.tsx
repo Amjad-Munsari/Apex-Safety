@@ -18,8 +18,8 @@
  *   Clicking any other star sets that rating.
  *
  * AttachPhotosAffordance cross-plan dependency (D-05):
- *   Plan 14-06 ships the <AttachPhotosAffordance> component. The import and
- *   JSX invocation are left as comments with TODO(14-06) markers.
+ *   Plan 14-06 shipped the <AttachPhotosAffordance> component. The import and
+ *   JSX invocation are now active — rendered conditionally on attrs.attachPhotos.
  *
  * @see D-05 (attachPhotos affordance)
  * @see UI-SPEC §ratingFieldRenderer
@@ -30,10 +30,14 @@ import { cn } from "@/lib/utils"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { ratingFieldEntity } from "@/lib/form-builder/entities/rating-field"
 
-// TODO(14-06): import { AttachPhotosAffordance } from "./attach-photos-affordance"
+import { AttachPhotosAffordance } from "./attach-photos-affordance"
 
 type Props = EntityComponentProps<typeof ratingFieldEntity> & {
   surface?: "dark" | "cream"
+  /** Optional — only required when attrs.attachPhotos is true */
+  clientId?: string
+  /** Optional — only required when attrs.attachPhotos is true */
+  submissionId?: string
 }
 
 const surfaceTokens = {
@@ -59,7 +63,7 @@ const surfaceTokens = {
   },
 } as const
 
-export function RatingFieldRenderer({ entity, setValue, surface = "cream" }: Props) {
+export function RatingFieldRenderer({ entity, setValue, surface = "cream", clientId, submissionId }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
   const error = entity.error ? String(entity.error) : undefined
@@ -132,8 +136,7 @@ export function RatingFieldRenderer({ entity, setValue, surface = "cream" }: Pro
         <p className={cn("text-xs", t.error)}>{error}</p>
       )}
 
-      {/* TODO(14-06): AttachPhotosAffordance lands in Plan 14-06; rendered here when attrs.attachPhotos */}
-      {/* {attrs.attachPhotos && (
+      {attrs.attachPhotos && clientId && submissionId && (
         <AttachPhotosAffordance
           submissionId={submissionId}
           entityId={entity.id}
@@ -141,7 +144,7 @@ export function RatingFieldRenderer({ entity, setValue, surface = "cream" }: Pro
           surface={surface}
           clientId={clientId}
         />
-      )} */}
+      )}
     </div>
   )
 }

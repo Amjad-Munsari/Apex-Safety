@@ -43,6 +43,8 @@ import type { geolocationFieldEntity } from "@/lib/form-builder/entities/geoloca
 // This is the canonical pattern per RESEARCH Pattern 6 + Pitfall 1 + 2.
 const GeoMap = dynamic(() => import("./geolocation-map"), { ssr: false })
 
+import { AttachPhotosAffordance } from "./attach-photos-affordance"
+
 type GeoValue = {
   lat: number
   lng: number
@@ -54,6 +56,10 @@ type CaptureState = "idle" | "acquiring" | "success" | "permission-denied" | "un
 
 type Props = EntityComponentProps<typeof geolocationFieldEntity> & {
   surface?: "dark" | "cream"
+  /** Optional — only required when attrs.attachPhotos is true */
+  clientId?: string
+  /** Optional — only required when attrs.attachPhotos is true */
+  submissionId?: string
 }
 
 const surfaceTokens = {
@@ -112,7 +118,7 @@ function shouldShowAccuracyBadge(accuracy: number): boolean {
   return !isMobile || accuracy > 100
 }
 
-export function GeolocationFieldRenderer({ entity, setValue, surface = "cream" }: Props) {
+export function GeolocationFieldRenderer({ entity, setValue, surface = "cream", clientId, submissionId }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
   const error = entity.error ? String(entity.error) : undefined
@@ -304,17 +310,15 @@ export function GeolocationFieldRenderer({ entity, setValue, surface = "cream" }
       {/* Validation error */}
       {error && <p className={cn("text-xs", t.error)}>{error}</p>}
 
-      {/* TODO (Plan 14-06): AttachPhotosAffordance
-        When attrs.attachPhotos === true, render:
-          <AttachPhotosAffordance
-            submissionId={submissionId}
-            entityId={entity.id}
-            clientId={clientId}
-            surface={surface}
-          />
-        clientId + submissionId are plumbed in from interpreter-renderer.tsx in Plan 14-06.
-        geolocationField gets attachPhotos per D-05 ("every non-section entity").
-      */}
+      {attrs.attachPhotos && clientId && submissionId && (
+        <AttachPhotosAffordance
+          submissionId={submissionId}
+          entityId={entity.id}
+          fieldLabel={attrs.label as string}
+          surface={surface}
+          clientId={clientId}
+        />
+      )}
     </div>
   )
 }

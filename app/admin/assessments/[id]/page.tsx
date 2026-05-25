@@ -52,6 +52,7 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
       submission={submission}
       schema={version.schema_json as FormBuilderSchema}
       templateName={(version.form_template as { name?: string } | null)?.name ?? "Unknown Template"}
+      clientId={submission.client_id ?? ""}
     />
   )
 }

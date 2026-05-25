@@ -66,6 +66,7 @@ export function MicButton({ className, onTranscript, surface = "dark" }: MicButt
         size="icon"
         variant="ghost"
         title={supported ? (isRecording ? "Stop recording" : "Speak to dictate") : "Speech-to-text not supported in this browser"}
+        aria-label={supported ? (isRecording ? "Stop recording" : "Speak to dictate") : "Speech-to-text not supported in this browser"}
         className={cn(
           "h-8 w-8 rounded-full transition-all duration-300",
           isRecording && "bg-amber-500/20 text-amber-500 animate-pulse scale-110",
