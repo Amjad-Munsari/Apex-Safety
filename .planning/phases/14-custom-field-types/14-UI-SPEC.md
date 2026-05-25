@@ -1,10 +1,11 @@
 ---
 phase: 14
 slug: custom-field-types
-status: draft
+status: approved
 shadcn_initialized: true
 preset: base-mira / mist
 created: 2026-05-25
+reviewed_at: 2026-05-25
 ---
 
 # Phase 14 — UI Design Contract: Custom Field Types
