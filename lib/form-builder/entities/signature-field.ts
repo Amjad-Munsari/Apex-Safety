@@ -13,6 +13,8 @@ import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { helpTextAttribute } from "../attributes/help-text";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const signatureFieldEntity = createEntity({
   name: "signatureField",
@@ -21,6 +23,7 @@ export const signatureFieldEntity = createEntity({
     requiredAttribute,
     helpTextAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -34,4 +37,5 @@ export const signatureFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

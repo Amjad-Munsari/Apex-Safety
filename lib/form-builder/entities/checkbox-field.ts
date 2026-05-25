@@ -3,6 +3,8 @@ import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { defaultCheckedAttribute } from "../attributes/default-checked";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const checkboxFieldEntity = createEntity({
   name: "checkboxField",
@@ -11,6 +13,7 @@ export const checkboxFieldEntity = createEntity({
     requiredAttribute,
     defaultCheckedAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -23,4 +26,5 @@ export const checkboxFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

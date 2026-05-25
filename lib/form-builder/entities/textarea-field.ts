@@ -4,6 +4,8 @@ import { requiredAttribute } from "../attributes/required";
 import { placeholderAttribute } from "../attributes/placeholder";
 import { maxLengthAttribute } from "../attributes/max-length";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const textareaFieldEntity = createEntity({
   name: "textareaField",
@@ -13,6 +15,7 @@ export const textareaFieldEntity = createEntity({
     placeholderAttribute,
     maxLengthAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -25,4 +28,5 @@ export const textareaFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

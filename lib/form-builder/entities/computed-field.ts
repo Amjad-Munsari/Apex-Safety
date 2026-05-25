@@ -16,12 +16,17 @@
  *   - formula: string enum ("pas79" | ...) for forward-compatibility (D-08)
  *   - computedInputs: Record<string, string> mapping input names to entity IDs in the same form (D-09)
  *   - attachPhotos: boolean (D-05 — non-section entity)
+ *   - visibilityRules: conditional visibility rules (D-05 Phase 15)
+ *     NOTE: UI filters `require` from the action dropdown when the host entity is computedField
+ *     (no requiredAttribute here — D-02 special case). Engine attaches normally for uniformity.
  */
 import { createEntity } from "@coltorapps/builder";
 import { labelAttribute } from "../attributes/label";
 import { formulaAttribute } from "../attributes/formula";
 import { computedInputsAttribute } from "../attributes/computed-inputs";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const computedFieldEntity = createEntity({
   name: "computedField",
@@ -30,10 +35,12 @@ export const computedFieldEntity = createEntity({
     formulaAttribute,
     computedInputsAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value) {
     // Computed: value is derived in renderer, never user-supplied.
     // Server may store the latest computed result for prompt context, or strip it.
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

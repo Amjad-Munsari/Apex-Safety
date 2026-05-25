@@ -4,6 +4,8 @@ import { requiredAttribute } from "../attributes/required";
 import { minAttribute, maxAttribute } from "../attributes/number-bounds";
 import { unitAttribute } from "../attributes/unit";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const numberFieldEntity = createEntity({
   name: "numberField",
@@ -14,6 +16,7 @@ export const numberFieldEntity = createEntity({
     maxAttribute,
     unitAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -37,4 +40,5 @@ export const numberFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

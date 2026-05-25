@@ -16,6 +16,8 @@ import { requiredAttribute } from "../attributes/required";
 import { helpTextAttribute } from "../attributes/help-text";
 import { maxPhotosAttribute } from "../attributes/max-photos";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const multiPhotoFieldEntity = createEntity({
   name: "multiPhotoField",
@@ -25,6 +27,7 @@ export const multiPhotoFieldEntity = createEntity({
     helpTextAttribute,
     maxPhotosAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -50,4 +53,5 @@ export const multiPhotoFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });

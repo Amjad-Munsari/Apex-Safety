@@ -4,6 +4,8 @@ import { requiredAttribute } from "../attributes/required";
 import { minDateAttribute, maxDateAttribute } from "../attributes/date-bounds";
 import { prefillSourceAttribute } from "../attributes/prefill-source";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
+import { visibilityRulesAttribute } from "../attributes/visibility-rules";
+import { makeShouldBeProcessed } from "../visibility/should-be-processed";
 
 export const dateFieldEntity = createEntity({
   name: "dateField",
@@ -14,6 +16,7 @@ export const dateFieldEntity = createEntity({
     maxDateAttribute,
     prefillSourceAttribute,
     attachPhotosAttribute,
+    visibilityRulesAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
@@ -29,4 +32,5 @@ export const dateFieldEntity = createEntity({
     }
     return value;
   },
+  shouldBeProcessed: makeShouldBeProcessed(),
 });
