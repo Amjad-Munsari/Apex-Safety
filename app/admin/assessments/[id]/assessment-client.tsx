@@ -23,6 +23,13 @@ interface AssessmentClientProps {
   }
   schema: FormBuilderSchema
   templateName: string
+  /**
+   * The client ID associated with this submission — sourced from the RSC's
+   * server-fetched submission.client_id. Forwarded to InterpreterRenderer
+   * for upload-flow renderers (signature, multi-photo) and AttachPhotosAffordance.
+   * T-14-06-01: originates server-side; not user-controlled.
+   */
+  clientId: string
 }
 
 /**
@@ -36,7 +43,7 @@ interface AssessmentClientProps {
  *   persistence point; autosave here covers only appendix (notes, media).
  * - normalizeFormSchema() call removed — schema arrives in coltorapps shape directly.
  */
-export function AssessmentClient({ submission, schema, templateName }: AssessmentClientProps) {
+export function AssessmentClient({ submission, schema, templateName, clientId }: AssessmentClientProps) {
   const router = useRouter()
   const [appendixAnswers, setAppendixAnswers] = useState<Record<string, unknown>>({
     __appendix_notes: (submission.answers_json as Record<string, unknown> | null | undefined)?.__appendix_notes ?? "",
@@ -148,6 +155,7 @@ export function AssessmentClient({ submission, schema, templateName }: Assessmen
         ref={interpreterRef}
         schema={schema}
         submissionId={submission.id}
+        clientId={clientId}
         surface="dark"
         onProgressChange={setProgress}
         onSubmittingChange={setIsSubmitting}
