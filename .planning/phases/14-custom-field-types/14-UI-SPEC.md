@@ -191,7 +191,7 @@ Wraps `RatingField` from `components/forms/rating-field.tsx`. The renderer wrapp
 - Field label (14px/600 semibold)
 - Required asterisk if `attrs.required`
 - Help text (12px muted)
-- Star row: 5–10 stars depending on `attrs.maxRating` (default 5). Star size: 28px (`h-7 w-7`) with `p-1` padding = 36px per star. **Accessibility requirement:** wrap each star button in a `min-w-[44px] min-h-[44px]` container or add `p-[6px]` to achieve 40px minimum touch target (WCAG 2.5.5).
+- Star row: 5–10 stars depending on `attrs.maxRating` (default 5). Star size: 28px (`h-7 w-7`) with `p-1` padding = 36px per star. **Accessibility requirement:** wrap each star button in a `min-w-[44px] min-h-[44px]` container or add `p-2` (8px padding, giving 28px + 16px = 44px total touch target) to achieve WCAG 2.5.5 compliance. The `min-w-[44px] min-h-[44px]` wrapper approach is preferred.
 - Score display: "{current} / {max}" in 14px JetBrains Mono tabular-nums, right of star row.
 - Clicking same-rated star deselects (returns to 0).
 - Error message (12px destructive).
@@ -217,7 +217,7 @@ Wraps `GeolocationField` from `components/forms/geolocation-field.tsx` and adds 
 **Renderer layout (below the field label):**
 1. Capture panel (`rounded-sm border p-4 flex items-start gap-3`) — existing GeolocationField treatment.
 2. Map preview — shown below the capture panel once coordinates are captured. Dynamically imported with `ssr: false`. Height: 200px, full-width, `rounded-sm overflow-hidden`.
-3. Desktop accuracy badge — shown above or overlaid on the map when `position.coords.accuracy > 100m` OR when user agent does not match mobile pattern. Badge: `inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm text-xs font-mono bg-amber-100 text-amber-900 border border-amber-300`. Text: "Desktop capture — verify pin on map". AlertTriangle icon (12px) prepended.
+3. Desktop accuracy badge — shown above or overlaid on the map when `position.coords.accuracy > 100m` OR when user agent does not match mobile pattern. Badge: `inline-flex items-center gap-2 px-2 py-1 rounded-sm text-xs font-mono bg-amber-100 text-amber-900 border border-amber-300`. Text: "Desktop capture — verify pin on map". AlertTriangle icon (12px) prepended.
 4. "Click map to adjust pin" instruction — shown in 12px muted text below map when `onClickPin` is available (i.e., field is editable). Text: "Click the map to move the pin to the correct location."
 
 **Capture panel states:**
