@@ -5,6 +5,7 @@ import { placeholderAttribute } from "../attributes/placeholder";
 import { maxLengthAttribute } from "../attributes/max-length";
 import { helpTextAttribute } from "../attributes/help-text";
 import { prefillSourceAttribute } from "../attributes/prefill-source";
+import { attachPhotosAttribute } from "../attributes/attach-photos";
 
 export const textFieldEntity = createEntity({
   name: "textField",
@@ -15,6 +16,7 @@ export const textFieldEntity = createEntity({
     maxLengthAttribute,
     helpTextAttribute,
     prefillSourceAttribute,
+    attachPhotosAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;

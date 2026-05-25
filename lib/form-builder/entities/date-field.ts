@@ -3,6 +3,7 @@ import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { minDateAttribute, maxDateAttribute } from "../attributes/date-bounds";
 import { prefillSourceAttribute } from "../attributes/prefill-source";
+import { attachPhotosAttribute } from "../attributes/attach-photos";
 
 export const dateFieldEntity = createEntity({
   name: "dateField",
@@ -12,6 +13,7 @@ export const dateFieldEntity = createEntity({
     minDateAttribute,
     maxDateAttribute,
     prefillSourceAttribute,
+    attachPhotosAttribute,
   ],
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
