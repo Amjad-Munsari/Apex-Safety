@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 14
-current_plan: 1
+current_plan: 8
 status: in_progress
-stopped_at: Phase 14 UI-SPEC approved
-last_updated: "2026-05-25T19:09:14.510Z"
+stopped_at: Phase 14 code-complete + DB-ready; awaiting manual UAT (14-UAT.md)
+last_updated: "2026-05-25T21:30:00.000Z"
 progress:
   total_phases: 11
   completed_phases: 4
@@ -24,11 +24,11 @@ progress:
 
 ## Current Position
 
-Phase: 14 (custom-field-types) — EXECUTING
-Plan: 1 of 8
+Phase: 14 (custom-field-types) — CODE-COMPLETE + DB-READY (awaiting manual UAT)
+Plan: 8 of 8 (all plans shipped + merged, migration 011 applied to live DB)
 **Current Phase:** 14
-**Current Plan:** 1
-**Phase Status:** In Progress
+**Current Plan:** 8
+**Phase Status:** In Progress (UAT pending)
 **Milestone Status:** In Progress
 
 ```
@@ -54,7 +54,7 @@ Progress: [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 | 11 | Demo Readiness & Polish | Completed | Verified via UAT |
 | 12 | Admin Dashboard UI Fixes | Completed | |
 | 13 | Form Builder Foundation | In Progress | Built + merged; paused at 13-04 Task 4 human-verify |
-| 14 | Custom Field Types | Not planned | Added 2026-05-20 |
+| 14 | Custom Field Types | In Progress | All 8 plans shipped; migration 011 applied; manual UAT (14-UAT.md) pending |
 | 15 | Conditional Logic Engine | Not planned | Added 2026-05-20 |
 | 16 | Multi-Tenancy + Fork-on-Fill | Not planned | Added 2026-05-20 |
 | 17 | Assignment Scheduling + Notifications | Not planned | Added 2026-05-20 |
@@ -70,15 +70,17 @@ Progress: [▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
 ## Next Action
 
-Phase 13 (Form Builder Foundation) executed — all 4 plans built, merged to `main`, migration 010 applied to the live DB. **Paused at the Plan 13-04 Task 4 human-verification checkpoint.**
+Phase 14 (Custom Field Types) executed — all 8 plans built, merged to `main`, migration 011 applied to live DB (version 20260525212526). 247/247 unit + interpreter tests green.
 
-Next: human runs the build→save→version→publish→fill→submit manual test (steps in `13-04-PLAN.md` Task 4 / `.continue-here.md`). On approval → finalize `13-04-SUMMARY.md`, `roadmap.update-plan-progress 13 13-04 complete`, then Phase 13 completion gates (code review → regression → schema drift → gsd-verifier → `phase.complete 13`).
+**Next: manual UAT walk-through.** Open the dev server, log in as admin, fill the 'Specialty Fields Smoke Test' template, and tick off `.planning/phases/14-custom-field-types/14-UAT.md` sections A–H (signature PNG upload, photo HEIC→JPEG + compression, geolocation desktop-fallback, PAS 79 colour banding, repeating-section 3-door flow + AI report draft expansion, STT mic wiring, attachPhotos affordance).
+
+On approval → run Phase 14 completion gates (code review → regression → schema drift → gsd-verifier → `phase.complete 14`), then start Phase 15 (Conditional Logic Engine) — or first close out Phase 13's lingering 13-04 Task 4 checkpoint.
 
 ## Session Continuity
 
-Last session: 2026-05-25T18:04:12.358Z
-Stopped at: Phase 14 UI-SPEC approved
-Resume file: .planning/phases/14-custom-field-types/14-UI-SPEC.md
+Last session: 2026-05-25T21:30:00.000Z
+Stopped at: Phase 14 code-complete + DB-ready; awaiting manual UAT (14-UAT.md)
+Resume file: .planning/phases/14-custom-field-types/14-UAT.md
 
 ---
 
