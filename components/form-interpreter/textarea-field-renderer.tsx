@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { textareaFieldEntity } from "@/lib/form-builder/entities/textarea-field"
+import { MicButton } from "@/components/forms/mic-button"
 
 type Props = EntityComponentProps<typeof textareaFieldEntity> & {
   surface?: "dark" | "cream"
@@ -38,12 +39,21 @@ export function TextareaFieldRenderer({ entity, setValue, surface = "cream" }: P
         {attrs.label}
         {attrs.required && <span className={cn("ml-1", t.required)}>*</span>}
       </label>
-      <Textarea
-        className={cn("min-h-[140px] rounded-sm", t.input)}
-        placeholder={attrs.placeholder ?? ""}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
+      {/* Relative wrapper so MicButton can be absolutely positioned at bottom-right */}
+      <div className="relative">
+        <Textarea
+          className={cn("min-h-[140px] rounded-sm pr-12 pb-8", t.input)}
+          placeholder={attrs.placeholder ?? ""}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        {/* className override pushes the mic to bottom-right per UI-SPEC §"STT Mic Button" */}
+        <MicButton
+          className="absolute right-2 bottom-2 top-auto translate-y-0"
+          onTranscript={(t) => setValue((value ?? "") + (value ? " " : "") + t)}
+          surface={surface}
+        />
+      </div>
       {/* helpText not available on textareaField entity in Phase 13 */}
       {error && (
         <p className={cn("text-xs", t.error)}>{error}</p>

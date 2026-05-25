@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { textFieldEntity } from "@/lib/form-builder/entities/text-field"
+import { MicButton } from "@/components/forms/mic-button"
 
 type Props = EntityComponentProps<typeof textFieldEntity> & {
   surface?: "dark" | "cream"
@@ -50,13 +51,20 @@ export function TextFieldRenderer({ entity, setValue, surface = "cream" }: Props
         {attrs.label}
         {attrs.required && <span className={cn("ml-1", t.required)}>*</span>}
       </label>
-      <Input
-        type="text"
-        className={cn("h-12 rounded-sm", t.input)}
-        placeholder={attrs.placeholder ?? ""}
-        value={value}
-        onChange={(e) => setValue(e.target.value)}
-      />
+      {/* Relative wrapper so MicButton can be absolutely positioned inside the input */}
+      <div className="relative">
+        <Input
+          type="text"
+          className={cn("h-12 rounded-sm pr-12", t.input)}
+          placeholder={attrs.placeholder ?? ""}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <MicButton
+          onTranscript={(t) => setValue((value ?? "") + (value ? " " : "") + t)}
+          surface={surface}
+        />
+      </div>
       {attrs.helpText && (
         <p className={cn("text-xs", t.helpText)}>{attrs.helpText}</p>
       )}
