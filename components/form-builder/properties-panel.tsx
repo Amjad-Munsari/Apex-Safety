@@ -11,6 +11,12 @@ import {
   Layers,
   Plus,
   X,
+  PenLine,
+  Star,
+  Camera,
+  MapPin,
+  Calculator,
+  ListOrdered,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BuilderStore } from "@coltorapps/builder";
@@ -47,6 +53,7 @@ const surfaceTokens = {
     select: "bg-[#111] border-white/10 text-white focus:border-white/30",
     selectPanelText: "text-white/20",
     typeFooter: "border-white/5 text-white/20",
+    formulaMono: "text-[#3b8273]",
   },
   cream: {
     headerBorder: "border-[#e5e1d8]",
@@ -66,6 +73,7 @@ const surfaceTokens = {
     select: "bg-white border-[#e5e1d8] text-[#1a1a1a] focus:border-[#1a1a1a]/40",
     selectPanelText: "text-[#8a857f]",
     typeFooter: "border-[#e5e1d8] text-[#8a857f]",
+    formulaMono: "text-[#3b8273]",
   },
 } as const;
 
@@ -80,6 +88,13 @@ const entityTypeMeta: Record<
   textareaField: { label: "Long Text", icon: AlignLeft },
   checkboxField: { label: "Checkbox", icon: Check },
   sectionGroup: { label: "Section", icon: Layers },
+  // Phase 14 specialty entities
+  signatureField: { label: "Signature", icon: PenLine },
+  ratingField: { label: "Rating", icon: Star },
+  multiPhotoField: { label: "Photos", icon: Camera },
+  geolocationField: { label: "Location", icon: MapPin },
+  computedField: { label: "Computed", icon: Calculator },
+  repeatingSection: { label: "Repeating Section", icon: ListOrdered },
 };
 
 interface SelectOption {
@@ -217,14 +232,35 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
   }
 
   const isSectionGroup = entity.type === "sectionGroup";
+  const isRepeatingSection = entity.type === "repeatingSection";
   const isTextField = entity.type === "textField";
   const isTextarea = entity.type === "textareaField";
   const isNumber = entity.type === "numberField";
   const isDate = entity.type === "dateField";
   const isSelect = entity.type === "selectField";
   const isCheckbox = entity.type === "checkboxField";
+  const isRating = entity.type === "ratingField";
+  const isMultiPhoto = entity.type === "multiPhotoField";
+  const isComputed = entity.type === "computedField";
+
+  // D-05: attachPhotos applies to every non-section entity type
+  const hasAttachPhotos = !isSectionGroup && !isRepeatingSection;
+
+  // computedField does NOT have a requiredAttribute (per Plan 14-02 decision)
+  const hasRequired = !isComputed && !isSectionGroup && !isRepeatingSection;
 
   const options = (attrs.options as SelectOption[]) ?? [];
+
+  // For computedField entity-ID dropdowns: filter out current entity, sections, computed
+  const candidateEntities = Object.entries(entities).filter(
+    ([id, e]) =>
+      id !== selectedId &&
+      e.type !== "sectionGroup" &&
+      e.type !== "repeatingSection" &&
+      e.type !== "computedField"
+  );
+
+  const computedInputs = (attrs.computedInputs as { likelihood?: string; consequence?: string }) ?? {};
 
   return (
     <div className="flex flex-col gap-0">
@@ -237,7 +273,7 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
       </div>
 
       <div className="flex flex-col gap-5 p-4">
-        {/* Section-specific attributes */}
+        {/* sectionGroup-specific attributes */}
         {isSectionGroup ? (
           <>
             <AttributeRow id={`${selectedId}-section-title`} labelText="Section Title" t={t}>
@@ -267,7 +303,89 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
               />
             </AttributeRow>
           </>
+        ) : isRepeatingSection ? (
+          /* repeatingSection-specific attributes */
+          <>
+            <AttributeRow id={`${selectedId}-rs-title`} labelText="Section Title" t={t}>
+              <input
+                id={`${selectedId}-rs-title`}
+                type="text"
+                value={(attrs.title as string) ?? ""}
+                onChange={(e) => setAttr("title", e.target.value)}
+                placeholder="Enter section title…"
+                className={cn(
+                  "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                  t.input
+                )}
+              />
+            </AttributeRow>
+            <AttributeRow id={`${selectedId}-rs-desc`} labelText="Description" t={t}>
+              <input
+                id={`${selectedId}-rs-desc`}
+                type="text"
+                value={(attrs.description as string) ?? ""}
+                onChange={(e) => setAttr("description", e.target.value)}
+                placeholder="Optional description…"
+                className={cn(
+                  "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                  t.input
+                )}
+              />
+            </AttributeRow>
+            <AttributeRow
+              id={`${selectedId}-min-instances`}
+              labelText="Min Instances"
+              hint="Minimum filled instances required to submit (0 = optional)"
+              t={t}
+            >
+              <input
+                id={`${selectedId}-min-instances`}
+                type="number"
+                min={0}
+                max={50}
+                value={(attrs.minInstances as number) ?? 0}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val)) setAttr("minInstances", val);
+                }}
+                className={cn(
+                  "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                  t.input
+                )}
+              />
+            </AttributeRow>
+            <AttributeRow
+              id={`${selectedId}-max-instances`}
+              labelText="Max Instances"
+              hint="Leave blank for no upper limit"
+              t={t}
+            >
+              <input
+                id={`${selectedId}-max-instances`}
+                type="number"
+                min={1}
+                max={50}
+                value={(attrs.maxInstances as number | undefined) ?? ""}
+                placeholder="no upper limit"
+                onChange={(e) => {
+                  const val = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
+                  setAttr("maxInstances", val);
+                }}
+                className={cn(
+                  "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                  t.input
+                )}
+              />
+            </AttributeRow>
+            {/* Type footer */}
+            <div className={cn("pt-2 border-t", t.typeFooter)}>
+              <span className="font-mono text-[10px] uppercase tracking-wider">
+                Type: {entity.type}
+              </span>
+            </div>
+          </>
         ) : (
+          /* All non-container entity types */
           <>
             {/* Label */}
             <AttributeRow id={`${selectedId}-label`} labelText="Label" t={t}>
@@ -314,30 +432,61 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
               />
             </AttributeRow>
 
-            {/* Required toggle */}
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-0.5">
-                <span className={cn("font-mono text-[10px] uppercase tracking-widest", t.label)}>
-                  Required
-                </span>
-                <span className={cn("text-[10px]", t.helpHint)}>Must be filled to submit</span>
-              </div>
-              <button
-                onClick={() => setAttr("required", !((attrs.required as boolean) ?? false))}
-                className={cn(
-                  "relative w-10 h-5 rounded-full transition-colors",
-                  (attrs.required as boolean) ? t.toggleOn : t.toggleOff
-                )}
-              >
-                <span
+            {/* Required toggle — not shown for computedField (no requiredAttribute) */}
+            {hasRequired && (
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <span className={cn("font-mono text-[10px] uppercase tracking-widest", t.label)}>
+                    Required
+                  </span>
+                  <span className={cn("text-[10px]", t.helpHint)}>Must be filled to submit</span>
+                </div>
+                <button
+                  onClick={() => setAttr("required", !((attrs.required as boolean) ?? false))}
                   className={cn(
-                    "absolute top-0.5 w-4 h-4 rounded-full transition-transform",
-                    t.toggleKnob,
-                    (attrs.required as boolean) ? "translate-x-5" : "translate-x-0.5"
+                    "relative w-10 h-5 rounded-full transition-colors",
+                    (attrs.required as boolean) ? t.toggleOn : t.toggleOff
                   )}
-                />
-              </button>
-            </div>
+                >
+                  <span
+                    className={cn(
+                      "absolute top-0.5 w-4 h-4 rounded-full transition-transform",
+                      t.toggleKnob,
+                      (attrs.required as boolean) ? "translate-x-5" : "translate-x-0.5"
+                    )}
+                  />
+                </button>
+              </div>
+            )}
+
+            {/* Attach Photos toggle — D-05: all non-section entity types */}
+            {hasAttachPhotos && (
+              <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-0.5">
+                  <span className={cn("font-mono text-[10px] uppercase tracking-widest", t.label)}>
+                    Attach Photos
+                  </span>
+                  <span className={cn("text-[10px]", t.helpHint)}>
+                    Allow photos to be attached to this field when filling
+                  </span>
+                </div>
+                <button
+                  onClick={() => setAttr("attachPhotos", !((attrs.attachPhotos as boolean) ?? false))}
+                  className={cn(
+                    "relative w-10 h-5 rounded-full transition-colors",
+                    (attrs.attachPhotos as boolean) ? t.toggleOn : t.toggleOff
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute top-0.5 w-4 h-4 rounded-full transition-transform",
+                      t.toggleKnob,
+                      (attrs.attachPhotos as boolean) ? "translate-x-5" : "translate-x-0.5"
+                    )}
+                  />
+                </button>
+              </div>
+            )}
 
             {/* Options editor for selectField */}
             {isSelect && (
@@ -395,6 +544,125 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                   <option value="currentOrg">Current Organisation</option>
                 </select>
               </AttributeRow>
+            )}
+
+            {/* ratingField: maxRating number input */}
+            {isRating && (
+              <AttributeRow
+                id={`${selectedId}-max-rating`}
+                labelText="Max Rating"
+                hint="Number of stars shown (2–10)"
+                t={t}
+              >
+                <input
+                  id={`${selectedId}-max-rating`}
+                  type="number"
+                  min={2}
+                  max={10}
+                  value={(attrs.maxRating as number) ?? 5}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) setAttr("maxRating", val);
+                  }}
+                  className={cn(
+                    "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                    t.input
+                  )}
+                />
+              </AttributeRow>
+            )}
+
+            {/* multiPhotoField: maxPhotos number input */}
+            {isMultiPhoto && (
+              <AttributeRow
+                id={`${selectedId}-max-photos`}
+                labelText="Max Photos"
+                hint="Maximum number of photos allowed"
+                t={t}
+              >
+                <input
+                  id={`${selectedId}-max-photos`}
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={(attrs.maxPhotos as number) ?? 5}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) setAttr("maxPhotos", val);
+                  }}
+                  className={cn(
+                    "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                    t.input
+                  )}
+                />
+              </AttributeRow>
+            )}
+
+            {/* computedField: formula display + entity-ID dropdowns */}
+            {isComputed && (
+              <>
+                <AttributeRow id={`${selectedId}-formula`} labelText="Formula" hint="The risk computation formula." t={t}>
+                  <div className={cn("px-3 py-2 rounded-[3px] font-mono text-sm", t.formulaMono)}>
+                    PAS 79
+                  </div>
+                </AttributeRow>
+                <AttributeRow
+                  id={`${selectedId}-likelihood`}
+                  labelText="Likelihood Source"
+                  hint="Select the field that provides this value (must be a number 1–5)."
+                  t={t}
+                >
+                  <select
+                    id={`${selectedId}-likelihood`}
+                    value={computedInputs.likelihood ?? ""}
+                    onChange={(e) =>
+                      setAttr("computedInputs", {
+                        ...computedInputs,
+                        likelihood: e.target.value,
+                      })
+                    }
+                    className={cn(
+                      "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors w-full",
+                      t.select
+                    )}
+                  >
+                    <option value="">— select field —</option>
+                    {candidateEntities.map(([id, e]) => (
+                      <option key={id} value={id}>
+                        {(e.attributes.label as string) ?? id}
+                      </option>
+                    ))}
+                  </select>
+                </AttributeRow>
+                <AttributeRow
+                  id={`${selectedId}-consequence`}
+                  labelText="Consequence Source"
+                  hint="Select the field that provides this value (must be a number 1–5)."
+                  t={t}
+                >
+                  <select
+                    id={`${selectedId}-consequence`}
+                    value={computedInputs.consequence ?? ""}
+                    onChange={(e) =>
+                      setAttr("computedInputs", {
+                        ...computedInputs,
+                        consequence: e.target.value,
+                      })
+                    }
+                    className={cn(
+                      "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors w-full",
+                      t.select
+                    )}
+                  >
+                    <option value="">— select field —</option>
+                    {candidateEntities.map(([id, e]) => (
+                      <option key={id} value={id}>
+                        {(e.attributes.label as string) ?? id}
+                      </option>
+                    ))}
+                  </select>
+                </AttributeRow>
+              </>
             )}
 
             {/* Type footer */}

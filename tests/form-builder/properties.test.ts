@@ -166,12 +166,12 @@ describe("Properties Panel (BUILDER-02)", () => {
   it("ratingField maxRating: validate(1) throws (below minimum 2)", async () => {
     // coltorapps builder store wraps attribute errors; test via direct validate() per Phase 13 pattern
     const { maxRatingAttribute } = await import("@/lib/form-builder/attributes/max-rating");
-    expect(() => maxRatingAttribute.validate(1)).toThrow();
+    expect(() => maxRatingAttribute.validate(1 as unknown as number)).toThrow();
   });
 
   it("ratingField maxRating: validate(11) throws (above maximum 10)", async () => {
     const { maxRatingAttribute } = await import("@/lib/form-builder/attributes/max-rating");
-    expect(() => maxRatingAttribute.validate(11)).toThrow();
+    expect(() => maxRatingAttribute.validate(11 as unknown as number)).toThrow();
   });
 
   it("ratingField maxRating: setEntityAttribute maxRating=10 stores 10 (maximum allowed)", () => {
@@ -194,12 +194,12 @@ describe("Properties Panel (BUILDER-02)", () => {
 
   it("multiPhotoField maxPhotos: validate(21) throws (above maximum 20)", async () => {
     const { maxPhotosAttribute } = await import("@/lib/form-builder/attributes/max-photos");
-    expect(() => maxPhotosAttribute.validate(21)).toThrow();
+    expect(() => maxPhotosAttribute.validate(21 as unknown as number)).toThrow();
   });
 
   it("multiPhotoField maxPhotos: validate(0) throws (below minimum 1)", async () => {
     const { maxPhotosAttribute } = await import("@/lib/form-builder/attributes/max-photos");
-    expect(() => maxPhotosAttribute.validate(0)).toThrow();
+    expect(() => maxPhotosAttribute.validate(0 as unknown as number)).toThrow();
   });
 
   // ── Phase 14: computedField computedInputs + formula ────────────────────
@@ -248,12 +248,12 @@ describe("Properties Panel (BUILDER-02)", () => {
 
   it("repeatingSection minInstances: validate(-1) throws (must be non-negative)", async () => {
     const { minInstancesAttribute } = await import("@/lib/form-builder/attributes/min-instances");
-    expect(() => minInstancesAttribute.validate(-1)).toThrow();
+    expect(() => minInstancesAttribute.validate(-1 as unknown as number)).toThrow();
   });
 
   it("repeatingSection maxInstances: validate(0) throws (must be positive when set)", async () => {
     const { maxInstancesAttribute } = await import("@/lib/form-builder/attributes/max-instances");
-    expect(() => maxInstancesAttribute.validate(0)).toThrow();
+    expect(() => maxInstancesAttribute.validate(0 as unknown as number)).toThrow();
   });
 
   it("repeatingSection title: setEntityAttribute title='Fire Doors' stores correctly", () => {
