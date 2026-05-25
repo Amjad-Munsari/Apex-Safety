@@ -111,7 +111,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
-| 14. Custom Field Types | 0/8 | Planned | - |
+| 14. Custom Field Types | 3/8 | In Progress|  |
 | 15. Conditional Logic Engine | 0/0 | Not planned | - |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
@@ -296,9 +296,9 @@ Plans:
 Plans:
 
 **Wave 1** *(foundation — fully parallel)*
-- [ ] 14-01-PLAN.md — Wave 0 setup (Leaflet install + assets, ROADMAP D-15 fix, 7 shared attributes, PAS 79 utility, storage-path helpers) (wave 1)
-- [ ] 14-02-PLAN.md — 6 new entity definitions + register in formBuilder + extend computeFormProgress for repeatingSection + geolocation (wave 1)
-- [ ] 14-03-PLAN.md — uploadMediaAction (auth + MIME + size + field_media) + expandRepeatingSections + runReportDraftGeneration extension (wave 1)
+- [x] 14-01-PLAN.md — Wave 0 setup (Leaflet install + assets, ROADMAP D-15 fix, 7 shared attributes, PAS 79 utility, storage-path helpers) (wave 1)
+- [x] 14-02-PLAN.md — 6 new entity definitions + register in formBuilder + extend computeFormProgress for repeatingSection + geolocation (wave 1)
+- [x] 14-03-PLAN.md — uploadMediaAction (auth + MIME + size + field_media) + expandRepeatingSections + runReportDraftGeneration extension (wave 1)
 
 **Wave 2** *(renderers — parallel after Wave 1)*
 - [ ] 14-04-PLAN.md — SignatureFieldRenderer + RatingFieldRenderer + MultiPhotoFieldRenderer (upload-flow renderers) (wave 2)
