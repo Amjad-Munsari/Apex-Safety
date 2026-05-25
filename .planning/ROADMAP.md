@@ -287,7 +287,7 @@ Plans:
 **Requirements**: BUILDER-01..05 (specialty field subset — v2; re-quote pending)
 **Success Criteria** (what must be TRUE):
   1. Signature, rating, multi-photo, geolocation, repeating-section, and computed field types drag in, configure, save, and render on coltorapps.
-  2. Signatures store as PNG and photos compress to 1.2–1.5 MB into the `form-signatures` / `form-photos` Storage buckets.
+  2. Signatures store as PNG and photos compress to 1.2–1.5 MB into the `form-media` Storage bucket.
   3. Per-field photo attachment works on any field via the `attachPhotos` attribute.
   4. Geolocation captures lat/lng on a mobile browser; repeating sections honour min/max bounds; speech-to-text (Web Speech API, en-GB — the current STT implementation per commit d2651a4) works on text/textarea fields.
   5. The computed field outputs the correct PAS 79 risk level with the standard colour coding.
