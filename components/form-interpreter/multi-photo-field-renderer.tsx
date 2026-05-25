@@ -33,8 +33,8 @@
  *   All pending previewUrls are revoked on unmount and on successful upload.
  *
  * AttachPhotosAffordance cross-plan dependency (D-05):
- *   Plan 14-06 ships the <AttachPhotosAffordance> component. The import and JSX
- *   are left as comments with TODO(14-06) markers.
+ *   Plan 14-06 shipped the <AttachPhotosAffordance> component. The import and JSX
+ *   are now active — rendered conditionally on attrs.attachPhotos.
  *
  * @see D-17 (photo storage path contract)
  * @see D-05 (attachPhotos affordance)
@@ -52,7 +52,7 @@ import type { multiPhotoFieldEntity } from "@/lib/form-builder/entities/multi-ph
 import { useMediaProcessor } from "@/hooks/use-media-processor"
 import { uploadMediaAction } from "@/app/admin/assessments/actions"
 
-// TODO(14-06): import { AttachPhotosAffordance } from "./attach-photos-affordance"
+import { AttachPhotosAffordance } from "./attach-photos-affordance"
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -391,8 +391,10 @@ export function MultiPhotoFieldRenderer({
         <p className={cn("text-xs", t.error)}>{error}</p>
       )}
 
-      {/* TODO(14-06): AttachPhotosAffordance lands in Plan 14-06; rendered here when attrs.attachPhotos */}
-      {/* {attrs.attachPhotos && (
+      {/* Note: multiPhotoField is already a photo grid; attachPhotos here is meta —
+          extra context photos beyond the main grid. Intentional per FORM-05:
+          the per-field affordance applies even to photo fields (D-05). */}
+      {attrs.attachPhotos && (
         <AttachPhotosAffordance
           submissionId={submissionId}
           entityId={entity.id}
@@ -400,7 +402,7 @@ export function MultiPhotoFieldRenderer({
           surface={surface}
           clientId={clientId}
         />
-      )} */}
+      )}
     </div>
   )
 }

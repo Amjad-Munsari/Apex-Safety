@@ -20,9 +20,8 @@
  *   fetcher when the client-surface fill flow lands. (D-T-14-04-05)
  *
  * AttachPhotosAffordance cross-plan dependency (D-05):
- *   Plan 14-06 ships the <AttachPhotosAffordance> component. The import line and
- *   JSX invocation are intentionally left as comments with TODO(14-06) markers so
- *   this file compiles cleanly in Wave 2 before Plan 14-06 lands.
+ *   Plan 14-06 shipped the <AttachPhotosAffordance> component. The import and
+ *   JSX invocation are now active — rendered conditionally on attrs.attachPhotos.
  *
  * @see D-16 (signature storage path)
  * @see D-05 (attachPhotos affordance)
@@ -39,7 +38,7 @@ import type { signatureFieldEntity } from "@/lib/form-builder/entities/signature
 import { SignatureField } from "@/components/forms/signature-field"
 import { uploadMediaAction } from "@/app/admin/assessments/actions"
 
-// TODO(14-06): import { AttachPhotosAffordance } from "./attach-photos-affordance"
+import { AttachPhotosAffordance } from "./attach-photos-affordance"
 
 type Props = EntityComponentProps<typeof signatureFieldEntity> & {
   surface?: "dark" | "cream"
@@ -192,8 +191,7 @@ export function SignatureFieldRenderer({
         <p className={cn("text-xs", t.error)}>{error}</p>
       )}
 
-      {/* TODO(14-06): AttachPhotosAffordance lands in Plan 14-06; rendered here when attrs.attachPhotos */}
-      {/* {attrs.attachPhotos && (
+      {attrs.attachPhotos && (
         <AttachPhotosAffordance
           submissionId={submissionId}
           entityId={entity.id}
@@ -201,7 +199,7 @@ export function SignatureFieldRenderer({
           surface={surface}
           clientId={clientId}
         />
-      )} */}
+      )}
     </div>
   )
 }
