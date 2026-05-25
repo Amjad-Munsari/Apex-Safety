@@ -269,11 +269,21 @@ export async function submitAssessmentAction(
     throw new Error("Form validation failed server-side. Please check your answers and try again.")
   }
 
-  // Step 4: write validated data — T-13-13 (audit trail)
+  // Step 3.5: Phase 15 — server-side visibility evaluation + hidden-subtree scrub (D-01, COND-01).
+  // Order is load-bearing: validate FIRST (coerced types feed operator semantics correctly),
+  // THEN evaluate visibility against the validated values, THEN strip hidden entities.
+  // runReportDraftGeneration in the after() callback reads answers_json post-write — it
+  // automatically benefits from the scrub without any change to the AI path (CONTEXT §deferred).
+  const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility")
+  const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers")
+  const visibility = evaluateVisibility(version.schema_json as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)
+  const scrubbedAnswers = stripHiddenAnswers(version.schema_json as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility)
+
+  // Step 4: write validated data — T-13-13 (audit trail); uses SCRUBBED answers (D-01)
   const { error: updateError } = await adminClient
     .from("form_submissions")
     .update({
-      answers_json: result.data,
+      answers_json: scrubbedAnswers,
       status: "submitted",
       submitted_at: new Date().toISOString(),
     })
