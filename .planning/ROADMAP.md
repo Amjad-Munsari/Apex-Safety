@@ -114,7 +114,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
 | 15. Conditional Logic Engine | 8/9 | In Progress|  |
-| 16. Multi-Tenancy + Fork-on-Fill | 4/7 | In Progress|  |
+| 16. Multi-Tenancy + Fork-on-Fill | 6/7 | In Progress|  |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
 
@@ -370,8 +370,8 @@ Plans:
 - [x] 16-04-PLAN.md — /client/assignments tabs + landing page + interpreter fill + status transitions (wave 2)
 
 **Wave 3** *(fork + self-fill — parallel after Wave 2)*
-- [ ] 16-05-PLAN.md — forkAssignedTemplate + CustomiseFirstButton + delete forkOnFill dead code (wave 3)
-- [ ] 16-06-PLAN.md — /client/templates simplification + /client/templates/[id]/fill + submitCustomerTemplateFillAction (wave 3)
+- [x] 16-05-PLAN.md — forkAssignedTemplate + CustomiseFirstButton + delete forkOnFill dead code (wave 3)
+- [x] 16-06-PLAN.md — /client/templates simplification + /client/templates/[id]/fill + submitCustomerTemplateFillAction (wave 3)
 
 **Wave 4** *(BLOCKING: db push + verification — sequential)*
 - [ ] 16-07-PLAN.md — [BLOCKING] supabase db push + types regen + full sweep + 16-UAT.md + ROADMAP update (wave 4)
