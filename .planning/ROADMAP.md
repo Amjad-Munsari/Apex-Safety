@@ -113,7 +113,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
-| 15. Conditional Logic Engine | 4/9 | In Progress|  |
+| 15. Conditional Logic Engine | 7/9 | In Progress|  |
 | 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
@@ -335,11 +335,11 @@ Plans:
 - [x] 15-03-PLAN.md — buildDependencyMap + scope walker + validateRuleGraph (3-colour DFS, D-03 scope errors) (wave 1)
 
 **Wave 2** *(runtime integration — parallel after Wave 1)*
-- [ ] 15-04-PLAN.md — Interpreter renderer visibility threading (propsRef preserves Phase 14-06 focus invariant) + computeFormProgress extension (wave 2)
-- [ ] 15-05-PLAN.md — Server-side stripHiddenAnswers in submitAssessmentAction + validateRuleGraph in all 4 save/publish actions (admin + customer) (wave 2)
+- [x] 15-04-PLAN.md — Interpreter renderer visibility threading (propsRef preserves Phase 14-06 focus invariant) + computeFormProgress extension (wave 2)
+- [x] 15-05-PLAN.md — Server-side stripHiddenAnswers in submitAssessmentAction + validateRuleGraph in all 4 save/publish actions (admin + customer) (wave 2)
 
 **Wave 3** *(builder UI — parallel after Wave 1/2)*
-- [ ] 15-06-PLAN.md — ConditionalLogicSection + RuleRow in PropertiesPanel (UI-SPEC §1) (wave 3)
+- [x] 15-06-PLAN.md — ConditionalLogicSection + RuleRow in PropertiesPanel (UI-SPEC §1) (wave 3)
 - [ ] 15-07-PLAN.md — CycleErrorBanner + Save/Publish error catch + Sonner toast + publish-blocked tooltip (wave 3)
 
 **Wave 4** *(smoke template + verification — sequential)*
