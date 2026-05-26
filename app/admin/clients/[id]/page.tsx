@@ -76,6 +76,7 @@ export default async function ClientDetailsPage({
     .select("id, status, due_date, instructions, created_at, template:form_templates(id, name)")
     .eq("client_id", id)
     .is("deleted_at", null)
+    .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
 
   // Published templates — for the "Assign template" modal in the Assigned Forms tab.
