@@ -46,7 +46,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 - [x] **Phase 14: Custom Field Types** — Signature, rating, multi-photo, geolocation, repeating sections, computed (PAS 79 risk matrix); per-field photo attach + STT
  (completed 2026-05-25)
 - [ ] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
-- [ ] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS
+- [x] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS (completed 2026-05-26)
 - [ ] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup
 - [ ] **Phase 18: FRA Seed Template** — Blank FRA (Type 3) built via the builder, conditional sections, risk matrix, action plan, n8n report webhook
 
@@ -114,7 +114,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
 | 15. Conditional Logic Engine | 8/9 | In Progress|  |
-| 16. Multi-Tenancy + Fork-on-Fill | 6/7 | In Progress|  |
+| 16. Multi-Tenancy + Fork-on-Fill | 7/7 | Complete   | 2026-05-26 |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
 
