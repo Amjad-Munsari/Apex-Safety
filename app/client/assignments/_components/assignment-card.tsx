@@ -1,6 +1,9 @@
 interface Assignment {
   id: string;
-  template: { name: string } | null;
+  // Supabase join returns array or object depending on cardinality inference.
+  // We normalise to a name string in getTemplateName() below.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  template: any;
   due_date: string | null;
   status: string;
   instructions: string | null;
@@ -9,6 +12,19 @@ interface Assignment {
 interface AssignmentCardProps {
   assignment: Assignment;
   variant: "active" | "completed";
+}
+
+/**
+ * Extract template name from the supabase join result, which may be typed as
+ * an array (many-side) or object (one-side) depending on the PostgREST inference.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getTemplateName(template: any): string {
+  if (!template) return "Untitled form";
+  if (Array.isArray(template)) {
+    return template[0]?.name ?? "Untitled form";
+  }
+  return template.name ?? "Untitled form";
 }
 
 function formatDate(dateStr: string | null): string {
@@ -57,7 +73,7 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
     <article className="bg-white border border-[#e5e1d8] rounded-sm p-5 flex flex-col gap-4 hover:border-[#1a1a1a]/30 transition-colors cursor-pointer">
       {/* Row 1: Template name */}
       <h4 className="font-serif text-[18px] text-[#1a1a1a] leading-tight">
-        {assignment.template?.name ?? "Untitled form"}
+        {getTemplateName(assignment.template)}
       </h4>
 
       {/* Row 2: Mono metadata + status pill */}
