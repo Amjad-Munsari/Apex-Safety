@@ -114,7 +114,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
 | 15. Conditional Logic Engine | 8/9 | In Progress|  |
-| 16. Multi-Tenancy + Fork-on-Fill | 7/7 | Complete   | 2026-05-26 |
+| 16. Multi-Tenancy + Fork-on-Fill | 8/8 | Complete   | 2026-05-26 |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
 
@@ -377,7 +377,7 @@ Plans:
 - [x] 16-07-PLAN.md — Migrations 013/014 applied to live DB; types regenerated; Vitest green for Phase 16 deliverables; 16-UAT.md written. **Known gap §D:** `FormRenderer` import in two fill-client files needs replacement with `InterpreterRenderer` before customer UAT (P1, blocks `npm run build`).
 
 **Wave 5** *(gap closure — sequential)*
-- [ ] 16-08-PLAN.md — [GAP CLOSURE §D] Rewrite fill clients onto InterpreterRenderer; add createDraft + submitByIdAction pair per surface; delete INSERT actions; unblock `npm run build`.
+- [x] 16-08-PLAN.md — [GAP CLOSURE §D] Rewrite fill clients onto InterpreterRenderer; add createDraft + submitByIdAction pair per surface; delete INSERT actions; unblock `npm run build`.
 
 ### Phase 17: Assignment Scheduling + Notifications
 **Goal**: Recurring form assignments auto-generate on schedule and clients receive automated reminders.
