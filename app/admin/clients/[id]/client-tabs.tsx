@@ -6,6 +6,8 @@ import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardL
 import Link from "next/link"
 import { AssignTemplateModal } from "@/components/admin/assign-template-modal"
 import { RevokeAssignmentButton } from "@/app/admin/assignments/revoke-assignment-button"
+import { daysOverdue } from "@/lib/assignments/is-overdue"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 type RagStatus = "CURRENT" | "EXPIRING" | "EXPIRED"
 
@@ -482,7 +484,7 @@ export function ClientTabs({
                       <div className="text-base font-medium text-white font-serif truncate">
                         {assignment.template?.name ?? "—"}
                       </div>
-                      {/* Metadata row: due date + status pill */}
+                      {/* Metadata row: due date + status pill + overdue indicator */}
                       <div className="flex items-center gap-3 mt-1">
                         <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
                           DUE · {formatDueDate(assignment.due_date)}
@@ -492,6 +494,25 @@ export function ClientTabs({
                         >
                           {assignmentStatusLabel(assignment.status)}
                         </span>
+                        {(() => {
+                          const d = daysOverdue(assignment.due_date);
+                          if (d < 1 || assignment.status === "completed") return null;
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger
+                                  className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#a14a2a] bg-[#a14a2a]/10"
+                                  aria-label={`Overdue — was due ${d} day${d === 1 ? "" : "s"} ago`}
+                                >
+                                  OVERDUE
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  Was due {d} day{d === 1 ? "" : "s"} ago
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })()}
                       </div>
                       {/* Instructions (if present) */}
                       {assignment.instructions && (
