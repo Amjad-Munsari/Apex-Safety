@@ -4,6 +4,7 @@ import { Info } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { FillAsIsButton } from "./fill-as-is-button";
+import { CustomiseFirstButton } from "./customise-first-button";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -143,15 +144,8 @@ export default async function AssignmentLandingPage({ params }: Props) {
         {/* Fill as-is — primary black fill */}
         <FillAsIsButton assignmentId={id} />
 
-        {/* Customise first — outline button (Plan 05 wires CustomiseFirstButton here) */}
-        {/* Plan 05 wires CustomiseFirstButton here */}
-        <button
-          disabled
-          className="flex-1 rounded-sm border border-[#1a1a1a] bg-transparent text-[#1a1a1a] h-11 px-5 font-mono text-[9px] uppercase tracking-[0.25em] cursor-not-allowed opacity-50"
-          title="Customise first — coming soon (Plan 05)"
-        >
-          Customise first
-        </button>
+        {/* Customise first — fork the pinned template into a customer-owned copy */}
+        <CustomiseFirstButton assignmentId={id} />
       </div>
     </div>
   );
