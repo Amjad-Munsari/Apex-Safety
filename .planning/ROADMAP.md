@@ -374,7 +374,7 @@ Plans:
 - [x] 16-06-PLAN.md — /client/templates simplification + /client/templates/[id]/fill + submitCustomerTemplateFillAction (wave 3)
 
 **Wave 4** *(BLOCKING: db push + verification — sequential)*
-- [ ] 16-07-PLAN.md — [BLOCKING] supabase db push + types regen + full sweep + 16-UAT.md + ROADMAP update (wave 4)
+- [x] 16-07-PLAN.md — Migrations 013/014 applied to live DB; types regenerated; Vitest green for Phase 16 deliverables; 16-UAT.md written. **Known gap §D:** `FormRenderer` import in two fill-client files needs replacement with `InterpreterRenderer` before customer UAT (P1, blocks `npm run build`).
 
 ### Phase 17: Assignment Scheduling + Notifications
 **Goal**: Recurring form assignments auto-generate on schedule and clients receive automated reminders.
@@ -403,3 +403,4 @@ Plans:
 
 *Roadmap created: 2026-04-15*
 *Last updated: 2026-05-20 (added Phases 13–18 — Form Builder Module)*
+*Phase 16 executed 2026-05-26: 7 plans across 5 waves; migrations 013/014 live; 1 known fill-page build gap (UAT.md §D).*
