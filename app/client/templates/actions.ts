@@ -3,8 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireActorUserId, getClientContext } from "@/lib/auth-helpers";
 import { revalidatePath } from "next/cache";
-import type { FormBuilderSchema } from "@/lib/form-builder";
-import { hasStructuralChanges } from "@/lib/forms/schema-diff";
+import { redirect } from "next/navigation";
 
 async function requireClientContext() {
   const ctx = await getClientContext();
@@ -190,94 +189,57 @@ export async function deleteClientTemplate(templateId: string) {
 }
 
 /**
- * Fork a master template for the current customer when they've changed its
- * structure during fill.
+ * Submit a customer-built template fill (D-16).
  *
- * NOT YET WIRED INTO ANY UI — the client-side form-fill page is a separate
- * task. When that page is built, it should call this on save:
+ * Inserts a form_submissions row with assignment_id=NULL (no assignment for
+ * customer-built templates). client_id comes ONLY from server context (T-16-04
+ * mitigation — never a client-supplied parameter).
  *
- *   const result = await forkOnFill(masterTemplateId, originalSchema, currentSchema);
- *   const versionIdToSubmitAgainst = result.versionId;
- *   // then write form_submissions row with template_version_id = versionIdToSubmitAgainst
- *
- * Returns `{ forked: true, templateId, versionId }` if structure changed and a
- * fork was created. Returns `{ forked: false, templateId, versionId }` (the
- * master's published version) if no structural change — caller should submit
- * against the master version directly.
- *
- * Structural change detection uses `hasStructuralChanges` (lib/forms/schema-diff.ts):
- * field id/order, key, type, label, required, options. Presentation-only edits
- * (helpText, placeholder, maxPhotos, maxRating) do NOT trigger a fork.
- *
- * Contract preserved per AGENTS.md "Form template ownership" decision (2026-04-17).
+ * Security:
+ *   - requireClientContext() → throws if not authenticated as client user
+ *   - requireOwnedTemplate() → throws on cross-org template id
+ *   - Uses RLS-aware createClient (T-16-06: never lib/supabase/admin)
+ *   - client_id: ctx.client_id (server context), NEVER a function parameter
  */
-export async function forkOnFill(
-  masterTemplateId: string,
-  originalSchema: FormBuilderSchema,
-  modifiedSchema: FormBuilderSchema
-): Promise<{ forked: boolean; templateId: string; versionId: string }> {
-  const supabase = await createClient();
+export async function submitCustomerTemplateFillAction(
+  templateId: string,
+  answers: Record<string, unknown>
+): Promise<void> {
   const ctx = await requireClientContext();
-  const userId = await requireActorUserId("client");
+  const supabase = await createClient();
 
-  // Customers can only fork admin-owned (Matt's) published masters — never
-  // another customer's template. RLS scopes the read to admin-owned anyway,
-  // but be loud about violations so the future fill-UI surfaces a real error.
-  const { data: masterCheck, error: masterCheckErr } = await supabase
-    .from("form_templates")
-    .select("owner_type, is_published")
-    .eq("id", masterTemplateId)
-    .single();
-  if (masterCheckErr || !masterCheck) throw new Error("Master template not found");
-  if (masterCheck.owner_type !== "admin") throw new Error("Forbidden: can only fork admin-owned masters");
-  if (!masterCheck.is_published) throw new Error("Cannot fork an unpublished master");
+  await requireOwnedTemplate(templateId, ctx.client_id);
 
-  if (!hasStructuralChanges(originalSchema, modifiedSchema)) {
-    const { data: masterVersion, error } = await supabase
-      .from("template_versions")
-      .select("id")
-      .eq("template_id", masterTemplateId)
-      .not("published_at", "is", null)
-      .order("version_number", { ascending: false })
-      .limit(1)
-      .single();
-    if (error || !masterVersion) throw new Error("Master template has no published version to bind to");
-    return { forked: false, templateId: masterTemplateId, versionId: masterVersion.id };
+  // Fetch the latest published version for this template (D-16)
+  const { data: latestVersion } = await supabase
+    .from("template_versions")
+    .select("id")
+    .eq("template_id", templateId)
+    .not("published_at", "is", null)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!latestVersion) {
+    throw new Error("Template has no published version");
   }
 
-  const { data: master, error: masterErr } = await supabase
-    .from("form_templates")
-    .select("name, template_type")
-    .eq("id", masterTemplateId)
-    .single();
-  if (masterErr || !master) throw new Error("Master template not found");
+  // INSERT form_submissions with assignment_id=NULL (D-16 contract, enabled by migration 014).
+  // client_id: ctx.client_id — taken from server context, NEVER from function parameter (T-16-04).
+  const { error } = await supabase.from("form_submissions").insert({
+    template_version_id: latestVersion.id,
+    client_id: ctx.client_id,
+    assignment_id: null,
+    status: "submitted",
+    answers_json: answers,
+  });
 
-  const { data: forkRow, error: forkErr } = await supabase
-    .from("form_templates")
-    .insert({
-      name: master.name,
-      template_type: master.template_type,
-      owner_id: ctx.client_id,
-      owner_type: "customer",
-      parent_template_id: masterTemplateId,
-      is_published: true,
-    })
-    .select("id")
-    .single();
-  if (forkErr || !forkRow) throw new Error(forkErr?.message ?? "Fork insert failed");
+  if (error) throw new Error(error.message);
 
-  const { data: versionRow, error: versionErr } = await supabase
-    .from("template_versions")
-    .insert({
-      template_id: forkRow.id,
-      version_number: 1,
-      schema_json: modifiedSchema,
-      published_at: new Date().toISOString(),
-      created_by: userId,
-    })
-    .select("id")
-    .single();
-  if (versionErr || !versionRow) throw new Error(versionErr?.message ?? "Fork version insert failed");
+  revalidatePath("/client/templates");
+  revalidatePath(`/client/templates/${templateId}`);
 
-  return { forked: true, templateId: forkRow.id, versionId: versionRow.id };
+  // redirect() MUST be the last statement — it throws NEXT_REDIRECT which the
+  // framework catches. Wrapping in try/catch would swallow it (RESEARCH Pitfall 1).
+  redirect("/client/templates");
 }

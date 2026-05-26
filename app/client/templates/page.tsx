@@ -7,20 +7,10 @@ export const dynamic = "force-dynamic";
 
 export default async function ClientTemplatesPage() {
   const supabase = await createClient();
-  // ctx may be null in demo mode if client_users is empty — render the
-  // Available section anyway and skip the My Templates query. Real-prod
-  // unauthenticated traffic is already redirected to /login by proxy.ts.
+  // ctx may be null in demo mode if client_users is empty — skip the My
+  // Templates query in that case. Real-prod unauthenticated traffic is already
+  // redirected to /login by proxy.ts.
   const ctx = await getClientContext();
-
-  // TODO(phaseB): scope this through form_assignments so customers see only
-  // templates Matt has actually assigned to them, not every admin master.
-  // Available: admin-owned, published. RLS already scopes this in migration 004.
-  const { data: assigned } = await supabase
-    .from("form_templates")
-    .select("id, name, template_type, created_at")
-    .eq("owner_type", "admin")
-    .eq("is_published", true)
-    .order("created_at", { ascending: false });
 
   const { data: mine } = ctx
     ? await supabase
@@ -40,74 +30,32 @@ export default async function ClientTemplatesPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
-            06 · Templates
+            06 · My Templates
           </span>
         </div>
         <div className="flex items-end justify-between gap-6 flex-wrap">
-          <h2 className="font-serif text-[32px] text-[#1a1a1a] font-medium tracking-tight leading-[1.05]">
-            Form templates.
+          <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium tracking-tight leading-[1.05]">
+            My Templates
           </h2>
           <NewClientTemplateButton />
         </div>
       </section>
 
-      {/* Assigned */}
+      {/* My Templates */}
       <section className="space-y-4">
         <div className="flex items-center justify-between border-b border-[#e5e1d8] pb-2">
           <h3 className="font-mono text-[10px] tracking-[0.25em] uppercase font-bold text-[#1a1a1a]">
-            01 — Available Templates
-          </h3>
-          <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-[#8a857f]">
-            {assigned?.length ?? 0} available
-          </span>
-        </div>
-        {!assigned || assigned.length === 0 ? (
-          <p className="text-[#8a857f] text-sm font-mono uppercase tracking-wider py-6">
-            No templates available yet.
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {assigned.map((t) => (
-              <div key={t.id} className="bg-white border border-[#e5e1d8] rounded-sm p-5 flex flex-col gap-4">
-                <div className="flex flex-col gap-1">
-                  <h4 className="font-serif text-[18px] text-[#1a1a1a] leading-tight">{t.name}</h4>
-                  <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">{t.template_type}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-auto">
-                  {/*
-                    "Fill" button is a placeholder for now — the client-side
-                    form-fill route is a separate task. When wired, it should
-                    open a fill UI that calls forkOnFill on save when structure
-                    has changed. See app/client/templates/actions.ts:forkOnFill.
-                  */}
-                  <button
-                    disabled
-                    title="Form fill UI coming soon"
-                    className="rounded-sm border border-[#e5e1d8] bg-transparent text-[#8a857f] h-9 px-5 font-bold text-[9px] uppercase tracking-[0.25em] cursor-not-allowed"
-                  >
-                    Fill (coming soon)
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Mine */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between border-b border-[#e5e1d8] pb-2">
-          <h3 className="font-mono text-[10px] tracking-[0.25em] uppercase font-bold text-[#1a1a1a]">
-            02 — My Templates
+            My Templates
           </h3>
           <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-[#8a857f]">
             {mine?.length ?? 0} created
           </span>
         </div>
         {!mine || mine.length === 0 ? (
-          <p className="text-[#8a857f] text-sm font-mono uppercase tracking-wider py-6">
-            No templates yet — start one from the button above.
-          </p>
+          <div className="py-6">
+            <h3 className="font-serif text-xl">No templates yet</h3>
+            <p className="text-sm text-[#6b6560] mt-2">Create your own forms or customise an assigned form when it arrives.</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {mine.map((t) => {

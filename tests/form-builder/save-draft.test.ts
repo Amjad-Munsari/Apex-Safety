@@ -63,7 +63,6 @@ vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("next/server", () => ({ after: vi.fn() }));
 vi.mock("ai", () => ({ generateObject: vi.fn() }));
 vi.mock("@ai-sdk/openai", () => ({ createOpenAI: vi.fn() }));
-vi.mock("@/lib/forms/schema-diff", () => ({ hasStructuralChanges: vi.fn(() => false) }));
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
