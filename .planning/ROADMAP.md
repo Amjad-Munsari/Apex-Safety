@@ -115,7 +115,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
 | 15. Conditional Logic Engine | 8/9 | In Progress|  |
 | 16. Multi-Tenancy + Fork-on-Fill | 8/8 | Complete   | 2026-05-26 |
-| 17. Assignment Scheduling + Notifications | 2/6 | In Progress|  |
+| 17. Assignment Scheduling + Notifications | 4/6 | In Progress|  |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
 
 ---
