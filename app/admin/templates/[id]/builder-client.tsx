@@ -29,6 +29,8 @@ interface Props {
   saveDraftAction: (templateId: string, rawSchema: unknown, templateName: string) => Promise<void>;
   publishTemplateAction: (templateId: string, rawSchema: unknown, templateName: string) => Promise<void>;
   backHref?: string;
+  /** Optional extra button(s) rendered in the toolbar beside Save / Publish (e.g. Assign to clients). */
+  assignButton?: React.ReactNode;
 }
 
 const surfaceTokens = {
@@ -91,6 +93,7 @@ export function TemplateBuilderClient({
   saveDraftAction,
   publishTemplateAction,
   backHref,
+  assignButton,
 }: Props) {
   const t = surfaceTokens[surface];
   const resolvedBackHref = backHref ?? (surface === "cream" ? "/client/templates" : "/admin/templates");
@@ -312,6 +315,8 @@ export function TemplateBuilderClient({
             <Save className="w-3.5 h-3.5" />
             {saveStatus === "saving" ? "Saving…" : "Save draft"}
           </Button>
+
+          {assignButton}
 
           <TooltipProvider>
             <Tooltip>
