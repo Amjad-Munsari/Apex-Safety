@@ -1,18 +1,26 @@
-// Phase 16 Plan 06 — customer self-fill submission tests (D-16, T-16-04)
+// Phase 16 Plan 08 — customer self-fill submission tests (gap closure §D)
 //
-// D-16: customer-built template fill inserts form_submissions with
-//       assignment_id: null (no assignment row for customer-built templates).
+// D-16: customer-built template fill creates a form_submissions draft
+//       (assignment_id: null, status: 'draft') before mounting the fill client,
+//       then UPDATEs to status='submitted' on final submit.
 //       client_id is taken from server context (getClientContext), never
 //       from client-supplied input.
 //
-// Phase 16 Plan 16-06 implements these assertions (replacing the Plan 01 scaffold).
+// Plan 16-08 update: createCustomerTemplateDraftSubmission (INSERT draft) and
+// submitCustomerTemplateFillByIdAction (UPDATE path) replace the old INSERT-on-submit
+// action (submitCustomerTemplateFillAction).
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Spy references ────────────────────────────────────────────────────────────
 
-// Tracks the payload passed to form_submissions INSERT
+// Tracks the payload passed to form_submissions INSERT (createCustomerTemplateDraftSubmission)
 const insertSpy = vi.fn();
+
+// Tracks the UPDATE call (submitCustomerTemplateFillByIdAction)
+const updateSubmissionSpy = vi.fn();
+const eqSubmissionIdSpy = vi.fn();
+const eqSubmissionClientSpy = vi.fn();
 
 // Tracks the maybySingle result for template_versions (latest published version)
 const versionMaybeSingleSpy = vi.fn();
@@ -40,7 +48,7 @@ function makeFromMock(table: string) {
   }
 
   if (table === "template_versions") {
-    // submitCustomerTemplateFillAction:
+    // createCustomerTemplateDraftSubmission:
     //   .select("id").eq("template_id", ...).not("published_at", "is", null)
     //   .order(...).limit(1).maybeSingle()
     versionMaybeSingleSpy.mockResolvedValue({ data: { id: "ver-1" }, error: null });
@@ -53,8 +61,20 @@ function makeFromMock(table: string) {
   }
 
   if (table === "form_submissions") {
-    insertSpy.mockResolvedValue({ error: null });
-    return { insert: insertSpy };
+    // INSERT (createCustomerTemplateDraftSubmission)
+    const singleAfterInsert = vi.fn().mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
+    const selectAfterInsert = vi.fn().mockReturnValue({ single: singleAfterInsert });
+    insertSpy.mockReturnValue({ select: selectAfterInsert });
+
+    // UPDATE (submitCustomerTemplateFillByIdAction)
+    eqSubmissionClientSpy.mockResolvedValue({ error: null });
+    eqSubmissionIdSpy.mockReturnValue({ eq: eqSubmissionClientSpy });
+    updateSubmissionSpy.mockReturnValue({ eq: eqSubmissionIdSpy });
+
+    return {
+      insert: insertSpy,
+      update: updateSubmissionSpy,
+    };
   }
 
   return {};
@@ -86,9 +106,12 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
 }));
 
-// ── Import the action under test ──────────────────────────────────────────────
+// ── Import the actions under test ──────────────────────────────────────────────
 
-import { submitCustomerTemplateFillAction } from "@/app/client/templates/actions";
+import {
+  createCustomerTemplateDraftSubmission,
+  submitCustomerTemplateFillByIdAction,
+} from "@/app/client/templates/actions";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -105,7 +128,7 @@ function rewireFromMock() {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-describe("customer self-fill submission — Phase 16 D-16", () => {
+describe("customer self-fill submission — Phase 16 D-16 (Plan 16-08 UPDATE architecture)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Re-establish defaults after clearAllMocks
@@ -119,7 +142,14 @@ describe("customer self-fill submission — Phase 16 D-16", () => {
       error: null,
     });
     versionMaybeSingleSpy.mockResolvedValue({ data: { id: "ver-1" }, error: null });
-    insertSpy.mockResolvedValue({ error: null });
+
+    const singleAfterInsert = vi.fn().mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
+    const selectAfterInsert = vi.fn().mockReturnValue({ single: singleAfterInsert });
+    insertSpy.mockReturnValue({ select: selectAfterInsert });
+
+    eqSubmissionClientSpy.mockResolvedValue({ error: null });
+    eqSubmissionIdSpy.mockReturnValue({ eq: eqSubmissionClientSpy });
+    updateSubmissionSpy.mockReturnValue({ eq: eqSubmissionIdSpy });
 
     // Re-wire redirect mock after clearAllMocks
     (redirect as ReturnType<typeof vi.fn>).mockImplementation(() => {
@@ -129,12 +159,69 @@ describe("customer self-fill submission — Phase 16 D-16", () => {
     });
   });
 
-  // ── Test (a): assignment_id: null ────────────────────────────────────────────
-  it("customer-built fill INSERTs form_submissions with assignment_id: null", async () => {
+  // ── Test (a): createCustomerTemplateDraftSubmission — assignment_id: null ────
+  it("createCustomerTemplateDraftSubmission INSERTs form_submissions with assignment_id: null (D-16)", async () => {
     rewireFromMock();
 
+    const result = await createCustomerTemplateDraftSubmission("tmpl-1");
+
+    // Returns the draft id and version id
+    expect(result).toHaveProperty("id");
+    expect(result).toHaveProperty("versionId");
+
+    // Assert the INSERT into form_submissions has assignment_id: null (D-16)
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ assignment_id: null })
+    );
+  });
+
+  // ── Test (b): client_id from server context ──────────────────────────────────
+  it("createCustomerTemplateDraftSubmission: client_id is taken from server context, not function parameter (T-16-04)", async () => {
+    // No client_id parameter in createCustomerTemplateDraftSubmission signature — T-16-04 mitigation
+    rewireFromMock();
+
+    await createCustomerTemplateDraftSubmission("tmpl-1");
+
+    // Assert the INSERT payload contains client_id: "client-org-001" from the mocked
+    // getClientContext() response. The function signature has no client_id parameter —
+    // this verifies T-16-04: client_id always comes from server context.
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ client_id: "client-org-001" })
+    );
+  });
+
+  // ── Test (c): reads latest published version ──────────────────────────────────
+  it("createCustomerTemplateDraftSubmission: reads the latest published version using .not('published_at', 'is', null)", async () => {
+    rewireFromMock();
+
+    await createCustomerTemplateDraftSubmission("tmpl-1");
+
+    // The .not("published_at", "is", null) chain resolves through versionMaybeSingleSpy
+    expect(versionMaybeSingleSpy).toHaveBeenCalled();
+    // The INSERT used the version id returned by maybySingle
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ template_version_id: "ver-1" })
+    );
+  });
+
+  // ── Test (d): throws when no published version ──────────────────────────────
+  it("createCustomerTemplateDraftSubmission throws 'Template has no published version' when no published version exists", async () => {
+    rewireFromMock();
+    // Override: template_versions maybySingle returns null (no published version)
+    versionMaybeSingleSpy.mockResolvedValueOnce({ data: null, error: null });
+
+    await expect(
+      createCustomerTemplateDraftSubmission("tmpl-1")
+    ).rejects.toThrow("Template has no published version");
+  });
+
+  // ── Test (e): submitCustomerTemplateFillByIdAction UPDATE shape ─────────────
+  it("submitCustomerTemplateFillByIdAction: UPDATEs draft to status='submitted' with client_id defense-in-depth (T-16-04, T-16-09)", async () => {
+    rewireFromMock();
+    const answers = { q1: "answer" };
+
     try {
-      await submitCustomerTemplateFillAction("tmpl-1", { q1: "answer" });
+      await submitCustomerTemplateFillByIdAction("sub-draft-1", answers);
     } catch (err: unknown) {
       // NEXT_REDIRECT is the normal success path — let redirect errors through
       const e = err as { digest?: string; message?: string };
@@ -146,69 +233,18 @@ describe("customer self-fill submission — Phase 16 D-16", () => {
       }
     }
 
-    // Assert the INSERT into form_submissions has assignment_id: null (D-16)
-    expect(insertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ assignment_id: null })
+    // Assert the UPDATE payload
+    expect(updateSubmissionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        answers_json: answers,
+        status: "submitted",
+      })
     );
-  });
 
-  // ── Test (b): client_id from server context ───────────────────────────────────
-  it("client_id is taken from server context, not function parameter", async () => {
-    // no client_id parameter in submitCustomerTemplateFillAction signature — T-16-04 mitigation
-    rewireFromMock();
+    // Assert client_id defense-in-depth filter (T-16-04, T-16-09)
+    expect(eqSubmissionClientSpy).toHaveBeenCalledWith("client_id", "client-org-001");
 
-    try {
-      await submitCustomerTemplateFillAction("tmpl-1", { q1: "answer" });
-    } catch (err: unknown) {
-      const e = err as { digest?: string; message?: string };
-      if (
-        !e?.digest?.startsWith("NEXT_REDIRECT") &&
-        !e?.message?.includes("NEXT_REDIRECT")
-      ) {
-        throw err;
-      }
-    }
-
-    // Assert the INSERT payload contains client_id: "client-org-001" from the mocked
-    // getClientContext() response. The function signature has no client_id parameter —
-    // this verifies T-16-04: client_id always comes from server context.
-    expect(insertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ client_id: "client-org-001" })
-    );
-  });
-
-  // ── Test (c): reads latest published version ─────────────────────────────────
-  it("reads the latest published version using .not('published_at', 'is', null)", async () => {
-    rewireFromMock();
-
-    try {
-      await submitCustomerTemplateFillAction("tmpl-1", { q1: "answer" });
-    } catch (err: unknown) {
-      const e = err as { digest?: string; message?: string };
-      if (
-        !e?.digest?.startsWith("NEXT_REDIRECT") &&
-        !e?.message?.includes("NEXT_REDIRECT")
-      ) {
-        throw err;
-      }
-    }
-
-    // The .not("published_at", "is", null) chain resolves through versionMaybeSingleSpy
-    expect(versionMaybeSingleSpy).toHaveBeenCalled();
-    // The INSERT used the version id returned by maybySingle
-    expect(insertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ template_version_id: "ver-1" })
-    );
-  });
-
-  // ── Test (d): throws when no published version ───────────────────────────────
-  it("throws 'Template has no published version' when no published version exists", async () => {
-    rewireFromMock();
-    // Override: template_versions maybySingle returns null (no published version)
-    versionMaybeSingleSpy.mockResolvedValueOnce({ data: null, error: null });
-
-    await expect(
-      submitCustomerTemplateFillAction("tmpl-1", { q1: "answer" })
-    ).rejects.toThrow("Template has no published version");
+    // Assert redirect to templates list
+    expect(redirect).toHaveBeenCalledWith("/client/templates");
   });
 });

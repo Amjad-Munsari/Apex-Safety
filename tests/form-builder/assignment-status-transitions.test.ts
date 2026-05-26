@@ -1,20 +1,28 @@
-// Phase 16 Plan 04 — assignment status-transition + submitAssignedFillAction tests
+// Phase 16 Plan 08 — assignment status-transition + submit action tests (gap closure §D)
 //
 // D-08/D-10/D-11 / T-16-05: Verifies the optimistic .eq("status", previous)
-// guard prevents backwards transitions, and that submitAssignedFillAction
-// writes the correct INSERT shape and triggers the completed transition.
+// guard prevents backwards transitions.
+//
+// Plan 16-08 update: submitAssignedFillByIdAction (UPDATE path) replaces
+// submitAssignedFillAction (INSERT path). createAssignmentDraftSubmission
+// handles the pending → in_progress transition and INSERT of the draft row.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Spy references (declared outside vi.mock so they are accessible in tests) ─
 
-// form_assignments spy chain
+// form_assignments spy chain (for transitionAssignmentStatus + requireOwnedAssignment)
 const updateSpy = vi.fn();
 const eqIdSpy = vi.fn();
 const eqStatusSpy = vi.fn();
 
-// form_submissions insert spy
+// form_submissions spy chain — supports both INSERT (draft-create) and UPDATE (submit)
 const insertSpy = vi.fn();
+const updateSubmissionSpy = vi.fn();
+const eqSubmissionIdSpy = vi.fn();
+const eqSubmissionClientSpy = vi.fn();
+const selectAfterUpdateSpy = vi.fn();
+const singleAfterUpdateSpy = vi.fn();
 
 // Single-row reads for requireOwnedAssignment
 const maybeSingleSpy = vi.fn();
@@ -22,7 +30,7 @@ const maybeSingleSpy = vi.fn();
 // ── Supabase mock factory ────────────────────────────────────────────────────
 
 function makeAssignmentsChain() {
-  // Supports: .update().eq("id", ...).eq("status", ...)
+  // Supports: .update().eq("id", ...).eq("status", ...) for transitionAssignmentStatus
   eqStatusSpy.mockResolvedValue({ error: null });
   eqIdSpy.mockReturnValue({ eq: eqStatusSpy });
   updateSpy.mockReturnValue({ eq: eqIdSpy });
@@ -51,8 +59,25 @@ function makeAssignmentsChain() {
 }
 
 function makeSubmissionsChain() {
-  insertSpy.mockResolvedValue({ error: null });
-  return { insert: insertSpy };
+  // INSERT chain (createAssignmentDraftSubmission)
+  const singleAfterInsert = vi.fn().mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
+  const selectAfterInsert = vi.fn().mockReturnValue({ single: singleAfterInsert });
+  insertSpy.mockReturnValue({ select: selectAfterInsert });
+
+  // UPDATE chain (submitAssignedFillByIdAction)
+  singleAfterUpdateSpy.mockResolvedValue({
+    data: { assignment_id: "asg-1" },
+    error: null,
+  });
+  selectAfterUpdateSpy.mockReturnValue({ single: singleAfterUpdateSpy });
+  eqSubmissionClientSpy.mockReturnValue({ select: selectAfterUpdateSpy });
+  eqSubmissionIdSpy.mockReturnValue({ eq: eqSubmissionClientSpy });
+  updateSubmissionSpy.mockReturnValue({ eq: eqSubmissionIdSpy });
+
+  return {
+    insert: insertSpy,
+    update: updateSubmissionSpy,
+  };
 }
 
 vi.mock("@/lib/supabase/server", () => {
@@ -90,7 +115,8 @@ vi.mock("next/navigation", () => ({
 
 import {
   transitionAssignmentStatus,
-  submitAssignedFillAction,
+  createAssignmentDraftSubmission,
+  submitAssignedFillByIdAction,
 } from "@/app/client/assignments/actions";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
@@ -112,7 +138,21 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
     eqStatusSpy.mockResolvedValue({ error: null });
     eqIdSpy.mockReturnValue({ eq: eqStatusSpy });
     updateSpy.mockReturnValue({ eq: eqIdSpy });
-    insertSpy.mockResolvedValue({ error: null });
+
+    // Re-wire submissions spies after clear
+    const singleAfterInsert = vi.fn().mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
+    const selectAfterInsert = vi.fn().mockReturnValue({ single: singleAfterInsert });
+    insertSpy.mockReturnValue({ select: selectAfterInsert });
+
+    singleAfterUpdateSpy.mockResolvedValue({
+      data: { assignment_id: "asg-1" },
+      error: null,
+    });
+    selectAfterUpdateSpy.mockReturnValue({ single: singleAfterUpdateSpy });
+    eqSubmissionClientSpy.mockReturnValue({ select: selectAfterUpdateSpy });
+    eqSubmissionIdSpy.mockReturnValue({ eq: eqSubmissionClientSpy });
+    updateSubmissionSpy.mockReturnValue({ eq: eqSubmissionIdSpy });
+
     maybeSingleSpy.mockResolvedValue({
       data: {
         id: "asg-1",
@@ -170,12 +210,35 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
     consoleSpy.mockRestore();
   });
 
-  // ── Test 4: submitAssignedFillAction INSERT shape (B1 coverage) ──────────
-  it("submitAssignedFillAction: correct INSERT shape + status transition + redirect (T-16-04)", async () => {
+  // ── Test 4: createAssignmentDraftSubmission — pending→in_progress + INSERT draft ──
+  it("createAssignmentDraftSubmission: INSERTs draft submission + transitions pending→in_progress (T-16-04)", async () => {
+    const result = await createAssignmentDraftSubmission("asg-1");
+
+    // Assert the draft was created
+    expect(result).toHaveProperty("id");
+
+    // Assert INSERT payload to form_submissions
+    expect(insertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assignment_id: "asg-1",
+        client_id: "client-org-001",         // T-16-04: from server ctx, never client payload
+        template_version_id: "ver-1",
+        status: "draft",
+        answers_json: {},
+      })
+    );
+
+    // Assert assignment was transitioned pending → in_progress
+    expect(updateSpy).toHaveBeenCalledWith({ status: "in_progress" });
+    expect(eqStatusSpy).toHaveBeenCalledWith("status", "pending");
+  });
+
+  // ── Test 5: submitAssignedFillByIdAction UPDATE shape (B1 coverage) ──────
+  it("submitAssignedFillByIdAction: correct UPDATE shape + assignment status → completed + redirect (T-16-04)", async () => {
     const answers = { q1: "answer", q2: 42 };
 
     try {
-      await submitAssignedFillAction("asg-1", answers);
+      await submitAssignedFillByIdAction("sub-draft-1", answers);
     } catch (err: unknown) {
       // Expected: NEXT_REDIRECT thrown by redirect() — this is normal success path
       const e = err as { digest?: string; message?: string };
@@ -184,18 +247,19 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
       }
     }
 
-    // Assert INSERT payload to form_submissions
-    expect(insertSpy).toHaveBeenCalledWith({
-      assignment_id: "asg-1",
-      client_id: "client-org-001",         // T-16-04: from server ctx, never client payload
-      template_version_id: "ver-1",
-      status: "submitted",
-      answers_json: answers,
-    });
+    // Assert UPDATE payload to form_submissions
+    expect(updateSubmissionSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        answers_json: answers,
+        status: "submitted",
+      })
+    );
 
-    // Assert status was transitioned to "completed" AFTER insert
+    // Assert client_id defense-in-depth filter (T-16-04, T-16-09)
+    expect(eqSubmissionClientSpy).toHaveBeenCalledWith("client_id", "client-org-001");
+
+    // Assert status was transitioned to "completed" AFTER update
     expect(updateSpy).toHaveBeenCalledWith({ status: "completed" });
-    expect(eqIdSpy).toHaveBeenCalledWith("id", "asg-1");
     expect(eqStatusSpy).toHaveBeenCalledWith("status", "in_progress");
 
     // Assert redirect to assignment landing page
