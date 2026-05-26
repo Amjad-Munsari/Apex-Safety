@@ -5,6 +5,7 @@ status: draft
 shadcn_initialized: true
 preset: base-mira / baseColor:mist
 created: 2026-05-26
+revised: 2026-05-26
 ---
 
 # Phase 16 — UI Design Contract
@@ -54,7 +55,7 @@ Exceptions:
 
 ## Typography
 
-Phase 16 uses the **same type scale already established** in all admin and client pages. No new sizes are introduced.
+Phase 16 uses the **same type scale already established** in all admin and client pages. No new sizes are introduced on the admin surface. The client surface unifies its page-heading size at 28px (replacing the prior 32px) so that the assignment landing page template-name display heading uses the same size as the page heading — keeping the client surface at exactly 4 distinct sizes.
 
 ### Admin surface (`data-surface="admin"`)
 
@@ -71,12 +72,14 @@ Weights used: **400 (regular)** and **500 (medium)**. No 600 semibold is used on
 
 | Role | Size | Weight | Font | Line Height | Source |
 |------|------|--------|------|-------------|--------|
-| Page heading | 32px | 500 (medium) | Newsreader (`font-serif`) | 1.05 | client/templates/page.tsx — `text-[32px]` |
+| Page / display heading | 28px | 500 (medium) | Newsreader (`font-serif`) | 1.1 | Unified heading size for all client routes in Phase 16; replaces the prior 32px `text-[32px]` pattern |
 | Card title | 18px | 500 (medium) | Newsreader (`font-serif`) | tight | client-template-card.tsx — `text-[18px]` |
 | Body / description | 14px | 400 (regular) | Inter (`font-sans`) | 1.5 | default prose |
 | Mono tag | 9–10px | 400 | JetBrains Mono (`font-mono`) | 1.0 | tracking-[0.2em]–[0.4em] uppercase |
 
 Weights used: **400 (regular)** and **500 (medium)**.
+
+**Migration note for existing client pages:** `app/client/templates/page.tsx` currently uses `text-[32px]`. Phase 16 implementation must update it to `text-[28px]` for consistency. This is the only affected existing file — all new Phase 16 client routes must use `text-[28px]` for page-level headings from the start.
 
 ---
 
@@ -97,7 +100,7 @@ Weights used: **400 (regular)** and **500 (medium)**.
 - "Assign to clients" primary CTA button (the action that initiates an assignment)
 - Counter pill on client row showing active assignment count
 - Status pill for `in_progress` assignments ("In progress" label)
-- "Assign" confirm button in `<AssignTemplateModal>` footer
+- "Assign template" confirm button in `<AssignTemplateModal>` footer
 - Due-date overdue indicator (text-gold when 0–3 days remaining)
 
 **NOT gold on admin:** table row text, card headings, breadcrumb nav, status labels for `pending` or `completed`.
@@ -182,7 +185,7 @@ All components below are already installed. The executor must NOT install new sh
 - **Surface:** `data-surface="client"`, cream background.
 - **Page header pattern:** matches `/client/templates/page.tsx` exactly — mono route index + serif h2 + body subhead.
   - Mono index: `05 · Assigned Forms` (teal `#3b8273`)
-  - Serif h2: `Forms assigned to you.` — 32px Newsreader, text-[#1a1a1a]
+  - Serif h2: `Forms assigned to you.` — **28px Newsreader**, text-[#1a1a1a]
 - **Tabs:** shadcn `<Tabs defaultValue="active">` with two `<TabsTrigger>` values `active` | `completed`. Default: Active.
 - **Assignment card (Active tab):** White bg, `border border-[#e5e1d8]`, `rounded-sm`, `p-5`. Three rows:
   1. Template name — 18px Newsreader, text-[#1a1a1a]
@@ -202,7 +205,7 @@ All components below are already installed. The executor must NOT install new sh
 - **Layout:** Single centred column, max-w-xl, `py-12 px-6`.
 - **Top section:**
   - Mono back link: `← Back to Assigned Forms` — 12px JetBrains Mono, uppercase, text-[#8a857f].
-  - Template name: 28px Newsreader, text-[#1a1a1a], `leading-[1.1]`.
+  - Template name: **28px Newsreader**, text-[#1a1a1a], `leading-[1.1]`. (Uses the same 28px display heading size as all other client page headings — no additional size introduced.)
   - Due date (if set): mono 10px, `DUE · {date}`. Colour: destructive red if overdue, muted otherwise.
   - Instructions block (if set): `bg-[#f5f3ee]` cream card, `rounded-sm`, `p-4`, 14px Inter, `text-[#1a1a1a]`, with a hairline left border `border-l-2 border-[#c0a66d]` (earth amber). Prefixed with a `<Info className="w-4 h-4 text-[#c0a66d]" />` icon and a "From your assessor" label in mono 9px.
 - **CTA row:** Two buttons, side-by-side on desktop, stacked on mobile.
@@ -225,6 +228,7 @@ All components below are already installed. The executor must NOT install new sh
 
 - **Remove:** The "Available Templates" / "01 — Available Templates" section and its mono divider. The `TODO(phaseB)` at line 17 is resolved.
 - **Retain:** Page header, `<NewClientTemplateButton>`, and the "My Templates" section with `<ClientTemplateCard>` grid.
+- **Page heading:** **28px Newsreader** — update from the current `text-[32px]` to `text-[28px]` to align with the unified client heading scale.
 - **"My Templates" section label update:** Change from "02 — My Templates" to "My Templates" (no numbering, since there's only one section now).
 - **"New template" button:** Already exists via `<NewClientTemplateButton>`. No visual change.
 - **Forked template card indicator:** Retain the `· FORKED` suffix in earth amber (`text-[#c0a66d]`) on the mono metadata line — this is already implemented in `client-template-card.tsx`.
@@ -242,9 +246,10 @@ All components below are already installed. The executor must NOT install new sh
 | Assign CTA (admin templates page) | Admin | `Assign to clients` | CONTEXT.md D-01 |
 | Assign CTA (admin client detail tab) | Admin | `Assign template` | CONTEXT.md D-01 |
 | Modal title | Admin | `Assign template` | Default |
-| Modal submit button | Admin | `Assign` (with spinner while pending) | Default |
+| Modal submit button | Admin | `Assign template` (with spinner while pending) | Non-blocking fix: verb + noun, consistent with tab button label |
 | Modal success toast | Admin | `Assigned to {N} client` / `Assigned to {N} clients` | RESEARCH.md Pattern 3 |
-| Modal error toast | Admin | `Assignment failed` | RESEARCH.md Pattern 3 |
+| Modal error toast — no clients selected (client-side validation) | Admin | `Select at least one client to assign` | Issue 1 fix: validation path, user knows exactly what to do |
+| Modal error toast — server / network error | Admin | `Assignment failed — please try again or contact support` | Issue 1 fix: server-error path with recovery action |
 | Fork CTA button | Client | `Customise first` | CONTEXT.md D-07 |
 | Fill CTA button | Client | `Fill as-is` | CONTEXT.md D-07 |
 | Fork confirmation title | Client | `Create your own copy?` | CONTEXT.md Specific Ideas |
@@ -297,7 +302,7 @@ All components below are already installed. The executor must NOT install new sh
 - "Select all" affordance: not required in v1 (max ~8 clients at current scale).
 - Due date input: native `<input type="date">` with `style={{ colorScheme: "dark" }}` on admin surface (matches `upload-document-modal.tsx:166-173` pattern exactly). Default: today + 7 days (ISO string).
 - Instructions textarea: `<Textarea placeholder="Optional instructions for the client…" rows={3} />`.
-- Empty template select warning: inline `text-[#e55a3a] text-xs` below the template `<Select>` if user clicks Assign without selecting. No full modal validation — just highlight the empty field.
+- Empty client selection: inline `text-[#e55a3a] text-xs` below the checkbox list if user clicks "Assign template" without selecting any client. Toast copy: `"Select at least one client to assign"`. No full modal validation — just highlight the empty field and show the toast.
 
 ### "Customise first" button — loading
 
@@ -354,3 +359,11 @@ No third-party registry blocks are declared for this phase. Registry safety vett
 | `components/admin/upload-document-modal.tsx` | Modal pattern, date input pattern |
 | `REQUIREMENTS.md` | BUILDER-01..05 success criteria (interpreted for interaction states) |
 | User input this session | 0 — all fields answered by upstream artifacts |
+
+## Revision Log
+
+| Date | Change | Reason |
+|------|--------|--------|
+| 2026-05-26 | Initial draft | gsd-ui-researcher phase run |
+| 2026-05-26 | Issue 1 fix: split modal error toast into two per-scenario messages; rename modal submit to "Assign template" | gsd-ui-checker Dimension 1 BLOCK — "Assignment failed" had no solution path |
+| 2026-05-26 | Issue 2 fix: drop 32px from client surface; use 28px as unified page/display heading across Routes D, E, G; update migration note for app/client/templates/page.tsx | gsd-ui-checker Dimension 4 BLOCK — 5 sizes on client surface exceeded 4-size maximum |
