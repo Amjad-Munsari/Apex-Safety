@@ -96,6 +96,6 @@ These were broken before Phase 16 began (Phase 14/15 build summaries noted them)
 
 Sections §A, §B, §C are the production UAT walkthroughs. §D is the close-out blocker.
 
-- §A — Customise first → fork: **needs UAT once §D is fixed** (fork itself works; the fill page that the redirect lands users on is broken until §D fix).
+- §A — Customise first → fork: **ready to UAT now** (§D resolved by Plan 16-08 on 2026-05-27 — fill page renders against the real `InterpreterRenderer`).
 - §B — Counter pill: **ready to UAT now** (no fill-page dependency).
 - §C — Templates simplification: **ready to UAT now** (no fill-page dependency).
