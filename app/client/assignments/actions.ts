@@ -5,6 +5,7 @@ import { getClientContext, requireActorUserId } from "@/lib/auth-helpers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { generateNextOccurrence } from "@/lib/scheduler/generate-next-occurrence";
 
 // ── Internal auth helpers ────────────────────────────────────────────────────
 
@@ -179,6 +180,36 @@ export async function submitAssignedFillByIdAction(
 
   if (updated.assignment_id) {
     await transitionAssignmentStatus(supabase, updated.assignment_id, "completed");
+
+    // Inline recurrence trigger (RESEARCH §Pattern 2). Cron PASS B is the safety net —
+    // this path makes recurrence feel instant. Idempotency: recurrence_generated_at column.
+    const { data: completedRow } = await supabase
+      .from("form_assignments")
+      .select(
+        "id, client_id, template_id, assigned_by, instructions, due_date, recurrence_rule, recurrence_generated_at"
+      )
+      .eq("id", updated.assignment_id)
+      .single();
+
+    if (
+      completedRow &&
+      completedRow.recurrence_rule !== null &&
+      completedRow.recurrence_generated_at === null
+    ) {
+      const res = await generateNextOccurrence(supabase, completedRow);
+      if (res.ok) {
+        await supabase
+          .from("form_assignments")
+          .update({ recurrence_generated_at: new Date().toISOString() })
+          .eq("id", updated.assignment_id);
+      } else {
+        console.error("inline recurrence failed", {
+          assignmentId: updated.assignment_id,
+          reason: res.reason,
+        });
+      }
+    }
+
     revalidatePath("/client/assignments");
     revalidatePath(`/client/assignments/${updated.assignment_id}`);
     redirect(`/client/assignments/${updated.assignment_id}`);

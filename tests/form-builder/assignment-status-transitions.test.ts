@@ -36,6 +36,7 @@ function makeAssignmentsChain() {
   updateSpy.mockReturnValue({ eq: eqIdSpy });
 
   // Supports: .select().eq("id", ...).maybeSingle() for requireOwnedAssignment
+  // AND: .select(...).eq("id", ...).single() for inline recurrence trigger read (Plan 17-04)
   maybeSingleSpy.mockResolvedValue({
     data: {
       id: "asg-1",
@@ -49,7 +50,26 @@ function makeAssignmentsChain() {
     error: null,
   });
 
-  const eqForSelectSpy = vi.fn().mockReturnValue({ maybeSingle: maybeSingleSpy });
+  // Single spy for the inline trigger SELECT.
+  // recurrence_rule: null means the generator is skipped → no extra mocking required.
+  const singleForAssignmentSpy = vi.fn().mockResolvedValue({
+    data: {
+      id: "asg-1",
+      client_id: "client-org-001",
+      template_id: "tmpl-1",
+      assigned_by: null,
+      instructions: null,
+      due_date: "2026-06-01",
+      recurrence_rule: null,
+      recurrence_generated_at: null,
+    },
+    error: null,
+  });
+
+  const eqForSelectSpy = vi.fn().mockReturnValue({
+    maybeSingle: maybeSingleSpy,
+    single: singleForAssignmentSpy,
+  });
   const selectSpy = vi.fn().mockReturnValue({ eq: eqForSelectSpy });
 
   return {
@@ -100,6 +120,11 @@ vi.mock("@/lib/auth-helpers", () => ({
     role: "client",
   }),
   requireActorUserId: vi.fn().mockResolvedValue("user-001"),
+}));
+
+// Mock the recurrence generator so the inline trigger doesn't execute real DB calls
+vi.mock("@/lib/scheduler/generate-next-occurrence", () => ({
+  generateNextOccurrence: vi.fn().mockResolvedValue({ ok: true, newAssignmentId: "new-asg-1" }),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
