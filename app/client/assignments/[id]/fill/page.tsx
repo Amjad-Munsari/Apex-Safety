@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
+import { createAssignmentDraftSubmission } from "@/app/client/assignments/actions";
 import { FillAssignmentClient } from "./fill-assignment-client";
 
 const UUID_RE =
@@ -60,12 +61,17 @@ export default async function FillAssignmentPage({ params }: Props) {
     notFound();
   }
 
+  // Step 3: Pre-create the draft submission row so specialty renderers
+  // (signature, multi-photo, geolocation) have a real submissionId at mount time.
+  // createAssignmentDraftSubmission also transitions the assignment pending → in_progress.
+  const draft = await createAssignmentDraftSubmission(id);
+
   return (
     <FillAssignmentClient
       schemaJson={version.schema_json}
       assignmentId={id}
       clientId={ctx?.client_id ?? assignment.client_id}
-      templateVersionId={assignment.template_version_id}
+      submissionId={draft.id}
     />
   );
 }

@@ -189,22 +189,20 @@ export async function deleteClientTemplate(templateId: string) {
 }
 
 /**
- * Submit a customer-built template fill (D-16).
+ * Creates a draft form_submissions row for a customer template self-fill (D-16).
  *
- * Inserts a form_submissions row with assignment_id=NULL (no assignment for
- * customer-built templates). client_id comes ONLY from server context (T-16-04
- * mitigation — never a client-supplied parameter).
+ * Called from the RSC (fill/page.tsx) before mounting FillCustomerTemplateClient.
+ * The draft row gives Phase 14 specialty renderers a real submissionId for
+ * their upload paths at mount time.
  *
- * Security:
- *   - requireClientContext() → throws if not authenticated as client user
- *   - requireOwnedTemplate() → throws on cross-org template id
- *   - Uses RLS-aware createClient (T-16-06: never lib/supabase/admin)
- *   - client_id: ctx.client_id (server context), NEVER a function parameter
+ * Security invariants (T-16-04, T-16-09):
+ *   - client_id is NEVER accepted from the caller — always from requireClientContext()
+ *   - requireOwnedTemplate() verifies owner_type='customer' AND owner_id=ctx.client_id
+ *   - assignment_id: null (D-16 contract — customer-built templates have no assignment row)
  */
-export async function submitCustomerTemplateFillAction(
-  templateId: string,
-  answers: Record<string, unknown>
-): Promise<void> {
+export async function createCustomerTemplateDraftSubmission(
+  templateId: string
+): Promise<{ id: string; versionId: string }> {
   const ctx = await requireClientContext();
   const supabase = await createClient();
 
@@ -224,20 +222,67 @@ export async function submitCustomerTemplateFillAction(
     throw new Error("Template has no published version");
   }
 
-  // INSERT form_submissions with assignment_id=NULL (D-16 contract, enabled by migration 014).
+  // INSERT draft form_submissions with assignment_id=NULL (D-16 contract).
   // client_id: ctx.client_id — taken from server context, NEVER from function parameter (T-16-04).
-  const { error } = await supabase.from("form_submissions").insert({
-    template_version_id: latestVersion.id,
-    client_id: ctx.client_id,
-    assignment_id: null,
-    status: "submitted",
-    answers_json: answers,
-  });
+  const { data: draft, error } = await supabase
+    .from("form_submissions")
+    .insert({
+      template_version_id: latestVersion.id,
+      client_id: ctx.client_id,
+      assignment_id: null,
+      status: "draft",
+      answers_json: {},
+    })
+    .select("id")
+    .single();
 
-  if (error) throw new Error(error.message);
+  if (error || !draft) {
+    throw new Error(error?.message ?? "Failed to create draft submission");
+  }
+
+  return { id: draft.id, versionId: latestVersion.id };
+}
+
+/**
+ * Server action: submit the pre-created draft for a customer template fill (D-16).
+ *
+ * Pre-create-then-UPDATE pattern (replaces the INSERT path of submitCustomerTemplateFillAction).
+ * The RSC creates a draft submission before mounting FillCustomerTemplateClient;
+ * this action UPDATEs that draft to status='submitted' on final submit.
+ *
+ * Security invariants (T-16-04, T-16-09):
+ *   - client_id comes ONLY from server-side requireClientContext() — never from params
+ *   - .eq("client_id", ctx.client_id) is a defense-in-depth filter alongside RLS
+ *
+ * Submit sequence:
+ *   1. Auth context + supabase
+ *   2. UPDATE form_submissions SET answers_json, status='submitted', submitted_at
+ *      WHERE id=submissionId AND client_id=ctx.client_id (defense-in-depth)
+ *   3. revalidatePath /client/templates
+ *   4. redirect /client/templates (LAST, outside try/catch)
+ */
+export async function submitCustomerTemplateFillByIdAction(
+  submissionId: string,
+  answers: Record<string, unknown>
+): Promise<void> {
+  const ctx = await requireClientContext();
+  const supabase = await createClient();
+
+  const { error: updateError } = await supabase
+    .from("form_submissions")
+    .update({
+      answers_json: answers,
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+    })
+    .eq("id", submissionId)
+    .eq("client_id", ctx.client_id);
+
+  if (updateError) {
+    throw new Error(updateError.message ?? "Failed to submit form");
+  }
 
   revalidatePath("/client/templates");
-  revalidatePath(`/client/templates/${templateId}`);
 
   // redirect() MUST be the last statement — it throws NEXT_REDIRECT which the
   // framework catches. Wrapping in try/catch would swallow it (RESEARCH Pitfall 1).

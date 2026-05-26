@@ -52,6 +52,16 @@ interface InterpreterRendererProps {
   onProgressChange?: (pct: number) => void
   /** Called whenever the submission in-flight state changes. */
   onSubmittingChange?: (isSubmitting: boolean) => void
+  /**
+   * Override the default submit action. When supplied, InterpreterRenderer
+   * calls onSubmit(values) instead of submitAssessmentAction(submissionId, values).
+   * Phase 16 fill flows use this to swap in the assigned-fill and
+   * customer-template-fill submit actions.
+   *
+   * Note: submissionId is still required (Phase 14 specialty renderers
+   * consume it for upload paths) — this prop only diverts the FINAL submit.
+   */
+  onSubmit?: (values: Record<string, unknown>) => Promise<void>
 }
 
 const surfaceTokens = {
@@ -63,7 +73,7 @@ export const InterpreterRenderer = forwardRef<
   InterpreterRendererHandle,
   InterpreterRendererProps
 >(function InterpreterRenderer(
-  { schema, submissionId, clientId, surface = "cream", onProgressChange, onSubmittingChange },
+  { schema, submissionId, clientId, surface = "cream", onProgressChange, onSubmittingChange, onSubmit },
   ref,
 ) {
   const t = surfaceTokens[surface]
@@ -198,7 +208,11 @@ export const InterpreterRenderer = forwardRef<
     try {
       setIsSubmitting(true)
       onSubmittingChange?.(true)
-      await submitAssessmentAction(submissionId, values)
+      if (onSubmit) {
+        await onSubmit(values)
+      } else {
+        await submitAssessmentAction(submissionId, values)
+      }
       return true
     } catch (err) {
       const message = err instanceof Error ? err.message : "Submission failed."
