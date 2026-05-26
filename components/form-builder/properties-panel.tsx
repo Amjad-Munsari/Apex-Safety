@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import type { BuilderStore } from "@coltorapps/builder";
 import type { formBuilder } from "@/lib/form-builder";
 import { ConditionalLogicSection } from "./conditional-logic-section";
+import type { CycleState } from "./conditional-logic-section";
 
 type Surface = "dark" | "cream";
 
@@ -33,6 +34,8 @@ interface Props {
     { type: string; attributes: Record<string, unknown>; children?: string[]; parentId?: string }
   >;
   surface?: Surface;
+  /** Optional cycle/scope error state piped from the save/publish error handler (Phase 15) */
+  cycleState?: CycleState;
 }
 
 const surfaceTokens = {
@@ -212,7 +215,7 @@ function OptionsEditor({
   );
 }
 
-export function PropertiesPanel({ builderStore, selectedId, entities, surface = "dark" }: Props) {
+export function PropertiesPanel({ builderStore, selectedId, entities, surface = "dark", cycleState }: Props) {
   const t = surfaceTokens[surface];
 
   if (!selectedId || !entities[selectedId]) {
@@ -673,6 +676,7 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                 schema={{ entities }}
                 surface={surface}
                 onChange={(next) => setAttr("visibilityRules", next)}
+                cycleState={cycleState}
               />
             )}
 

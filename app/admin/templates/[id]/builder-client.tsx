@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useBuilderStore, useBuilderStoreData } from "@coltorapps/builder-react";
 import { formBuilder } from "@/lib/form-builder";
 import { FieldPalette } from "@/components/form-builder/field-palette";
@@ -8,10 +8,13 @@ import { BuilderCanvas } from "@/components/form-builder/builder-canvas";
 import { PropertiesPanel } from "@/components/form-builder/properties-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { ArrowLeft, Save, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { toast } from "sonner";
 import type { FormBuilderSchema } from "@/lib/form-builder";
+import type { CycleState } from "@/components/form-builder/conditional-logic-section";
 
 interface Props {
   templateId: string;
@@ -98,10 +101,33 @@ export function TemplateBuilderClient({
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [isPending, startTransition] = useTransition();
 
+  // Phase 15 — cycle error state from RuleGraphInvalid server error
+  const [cycleState, setCycleState] = useState<CycleState | null>(null);
+  const [publishBlocked, setPublishBlocked] = useState(false);
+
   // Hydrate builder store from persisted schema (already coltorapps { entities, root } shape)
   const builderStore = useBuilderStore(formBuilder, {
     initialData: initialSchema ? { schema: initialSchema } : undefined,
   });
+
+  // Phase 15 — clear cycleState when admin edits a visibilityRules attribute
+  // Uses builderStore.subscribe with the EntityAttributeUpdated event (coltorapps API).
+  // The listener receives (data, events[]) — filter for attributeName === "visibilityRules".
+  useEffect(() => {
+    const unsub = builderStore.subscribe((_data, events) => {
+      for (const e of events) {
+        if (
+          e.name === "EntityAttributeUpdated" &&
+          (e.payload as { attributeName: string }).attributeName === "visibilityRules"
+        ) {
+          setCycleState(null);
+          setPublishBlocked(false);
+          return;
+        }
+      }
+    });
+    return unsub;
+  }, [builderStore]);
 
   // Subscribe to schema changes to track unsaved state
   const storeData = useBuilderStoreData(builderStore, () => true);
@@ -138,13 +164,38 @@ export function TemplateBuilderClient({
         setSavedState(true);
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
-      } catch {
+      } catch (err) {
+        // Phase 15 — attempt to parse RuleGraphInvalid structured error
+        try {
+          const parsed = JSON.parse((err as Error).message);
+          if (parsed?.kind === "RuleGraphInvalid") {
+            const newCycleState: CycleState = {
+              cycles: (parsed.cycles ?? []).map((c: { entityIds: string[]; labels: string[] }) => ({
+                entityIds: c.entityIds,
+                labels: c.labels,
+              })),
+              scopeErrors: parsed.scopeErrors ?? [],
+            };
+            setCycleState(newCycleState);
+            const cycleDescriptions = newCycleState.cycles
+              .map((c) => c.labels.slice(0, 3).join(" → ") + (c.labels.length > 3 ? " …" : ""))
+              .join("; ");
+            toast.error("Circular rule detected", {
+              description: cycleDescriptions || (parsed.scopeErrors?.[0]?.reason ?? ""),
+            });
+            setSaveStatus("error");
+            return;
+          }
+        } catch {
+          // Not a JSON error — fall through to generic handler
+        }
         setSaveStatus("error");
       }
     });
   }
 
   function handlePublish() {
+    if (publishBlocked) return; // Guard: blocked by cycle error
     if (
       !confirm(
         `Publish v${versionNumber}? This version will become immutable and be available to assign to clients.`
@@ -159,7 +210,32 @@ export function TemplateBuilderClient({
         setSavedState(true);
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus("idle"), 2000);
-      } catch {
+      } catch (err) {
+        // Phase 15 — attempt to parse RuleGraphInvalid structured error
+        try {
+          const parsed = JSON.parse((err as Error).message);
+          if (parsed?.kind === "RuleGraphInvalid") {
+            const newCycleState: CycleState = {
+              cycles: (parsed.cycles ?? []).map((c: { entityIds: string[]; labels: string[] }) => ({
+                entityIds: c.entityIds,
+                labels: c.labels,
+              })),
+              scopeErrors: parsed.scopeErrors ?? [],
+            };
+            setCycleState(newCycleState);
+            setPublishBlocked(true);
+            const cycleDescriptions = newCycleState.cycles
+              .map((c) => c.labels.slice(0, 3).join(" → ") + (c.labels.length > 3 ? " …" : ""))
+              .join("; ");
+            toast.error("Circular rule detected", {
+              description: cycleDescriptions || (parsed.scopeErrors?.[0]?.reason ?? ""),
+            });
+            setSaveStatus("error");
+            return;
+          }
+        } catch {
+          // Not a JSON error — fall through to generic handler
+        }
         setSaveStatus("error");
       }
     });
@@ -237,15 +313,26 @@ export function TemplateBuilderClient({
             {saveStatus === "saving" ? "Saving…" : "Save draft"}
           </Button>
 
-          <Button
-            size="sm"
-            onClick={handlePublish}
-            disabled={isPending}
-            className={cn("rounded-sm h-8 gap-2 font-mono text-xs px-4", t.publishBtn)}
-          >
-            <Upload className="w-3.5 h-3.5" />
-            Publish Template
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  size="sm"
+                  onClick={handlePublish}
+                  disabled={isPending || publishBlocked}
+                  className={cn("rounded-sm h-8 gap-2 font-mono text-xs px-4", t.publishBtn)}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Publish Template
+                </Button>
+              </TooltipTrigger>
+              {publishBlocked && (
+                <TooltipContent>
+                  Fix circular rules before publishing
+                </TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -299,6 +386,7 @@ export function TemplateBuilderClient({
             selectedId={selectedId}
             entities={entities}
             surface={surface}
+            cycleState={cycleState ?? undefined}
           />
         </div>
       </div>
