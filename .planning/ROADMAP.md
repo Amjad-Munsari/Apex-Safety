@@ -114,7 +114,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
 | 15. Conditional Logic Engine | 8/9 | In Progress|  |
-| 16. Multi-Tenancy + Fork-on-Fill | 0/0 | Not planned | - |
+| 16. Multi-Tenancy + Fork-on-Fill | 0/7 | Planned    | - |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
 
@@ -355,7 +355,26 @@ Plans:
   3. A client can build templates from scratch under "My Templates" using the same builder.
   4. RLS enforces no cross-org template or submission visibility (verified with two client accounts).
   5. Admin sees all templates and submissions across all clients.
-**Plans**: Not yet planned — run `/gsd:plan-phase 16`.
+**Plans**: 7 plans
+
+Plans:
+
+**Wave 0** *(schema + test infrastructure)*
+- [ ] 16-01-PLAN.md — Migrations 013 + 014, vitest.config extension, RLS helpers, RLS spec, form-builder Wave-0 scaffolds (wave 0)
+
+**Wave 1** *(admin server-action surface + shared modal)*
+- [ ] 16-02-PLAN.md — createAssignments + AssignTemplateModal + mount on /admin/templates/[id] (wave 1)
+
+**Wave 2** *(admin viewing surfaces + client lifecycle scaffolding — parallel after Wave 1)*
+- [ ] 16-03-PLAN.md — /admin/assignments queue + /admin/clients/[id] Assigned Forms tab + active-assignment counter pill (wave 2)
+- [ ] 16-04-PLAN.md — /client/assignments tabs + landing page + interpreter fill + status transitions (wave 2)
+
+**Wave 3** *(fork + self-fill — parallel after Wave 2)*
+- [ ] 16-05-PLAN.md — forkAssignedTemplate + CustomiseFirstButton + delete forkOnFill dead code (wave 3)
+- [ ] 16-06-PLAN.md — /client/templates simplification + /client/templates/[id]/fill + submitCustomerTemplateFillAction (wave 3)
+
+**Wave 4** *(BLOCKING: db push + verification — sequential)*
+- [ ] 16-07-PLAN.md — [BLOCKING] supabase db push + types regen + full sweep + 16-UAT.md + ROADMAP update (wave 4)
 
 ### Phase 17: Assignment Scheduling + Notifications
 **Goal**: Recurring form assignments auto-generate on schedule and clients receive automated reminders.
