@@ -66,7 +66,7 @@
 
 ---
 
-## §D — KNOWN GAP: fill-page build error (P1, must fix before customer-facing UAT)
+## §D — CLOSED 2026-05-27 by Plan 16-08: fill-page build error (P1, resolved)
 
 **Status:** Build-blocking. Vitest is green (362/362 passing for Phase 16 deliverables); production `npm run build` adds 2 new "Module not found" errors on top of the pre-Phase-16 baseline.
 
