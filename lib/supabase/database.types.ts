@@ -171,6 +171,9 @@ export type Database = {
           due_date: string | null
           id: string
           instructions: string | null
+          last_reminder_sent: string | null
+          recurrence_generated_at: string | null
+          recurrence_rule: Json | null
           status: string
           template_id: string
           template_version_id: string
@@ -182,6 +185,9 @@ export type Database = {
           due_date?: string | null
           id?: string
           instructions?: string | null
+          last_reminder_sent?: string | null
+          recurrence_generated_at?: string | null
+          recurrence_rule?: Json | null
           status?: string
           template_id: string
           template_version_id: string
@@ -193,6 +199,9 @@ export type Database = {
           due_date?: string | null
           id?: string
           instructions?: string | null
+          last_reminder_sent?: string | null
+          recurrence_generated_at?: string | null
+          recurrence_rule?: Json | null
           status?: string
           template_id?: string
           template_version_id?: string

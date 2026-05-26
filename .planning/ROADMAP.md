@@ -47,7 +47,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
  (completed 2026-05-25)
 - [ ] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
 - [x] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS (completed 2026-05-26)
-- [ ] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup
+- [x] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup (completed 2026-05-27)
 - [ ] **Phase 18: FRA Seed Template** — Blank FRA (Type 3) built via the builder, conditional sections, risk matrix, action plan, n8n report webhook
 
 ---
@@ -388,7 +388,25 @@ Plans:
   2. Overdue assignments are flagged in both admin and client dashboards.
   3. A daily cron processes recurrences and overdue marking.
   4. Reminder notifications send at 7 days, 1 day, and on overdue, deduped via `last_reminder_sent`.
-**Plans**: Not yet planned — run `/gsd:plan-phase 17`.
+**Plans**: 6 plans
+
+Plans:
+
+**Wave 0** *(schema + shared lib + n8n union + test scaffolds)*
+- [x] 17-01-PLAN.md — Migration 015 (3 columns + CHECK), lib/assignments/is-overdue.ts extraction, n8n union extension, test scaffolds (wave 0)
+
+**Wave 1** *(pure scheduler functions)*
+- [x] 17-02-PLAN.md — generateNextOccurrence + sendAssignmentReminder + filled specs (wave 1)
+
+**Wave 2** *(UI mounts + cron handler — parallel)*
+- [x] 17-03-PLAN.md — OverduePill component + mounts on assignment-card + admin tab + Tooltip + ORDER BY swap (wave 2)
+- [x] 17-04-PLAN.md — Cron handler + vercel.json + inline recurrence trigger in submitAssignedFillByIdAction (wave 2)
+
+**Wave 3** *(cron regression spec — sequential)*
+- [x] 17-05-PLAN.md — cron-reminder-decision.spec.ts filled with 7 regression assertions (wave 3)
+
+**Wave 4** *(BLOCKING: db push + types regen + WCAG + UAT — sequential)*
+- [x] 17-06-PLAN.md — Migration 015 applied to live DB; types regenerated; WCAG verified (cream PASS, dark FAIL accepted as design-system baseline); 17-UAT.md authored (wave 4)
 
 ### Phase 18: FRA Seed Template
 **Goal**: Matt's actual Fire Risk Assessment form (Blank FRA, Type 3) is built with the form builder and seeded as the first real template.
@@ -407,3 +425,5 @@ Plans:
 *Roadmap created: 2026-04-15*
 *Last updated: 2026-05-20 (added Phases 13–18 — Form Builder Module)*
 *Phase 16 executed 2026-05-26: 7 plans across 5 waves; migrations 013/014 live; 1 known fill-page build gap (UAT.md §D).*
+*Phase 16 §D closed 2026-05-27 by Plan 16-08 (FormRenderer → InterpreterRenderer rewrite).*
+*Phase 17 executed 2026-05-27: 6 plans across 5 waves; migration 015 live; WCAG noted as design-system follow-up (UAT.md §E.1).*
