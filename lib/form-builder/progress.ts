@@ -20,6 +20,8 @@
  *   Children that have no `required: true` attribute are ignored in the per-instance check.
  */
 
+import type { VisibilityState } from "./visibility/types";
+
 /** Minimal structural shape — FormBuilderSchema satisfies this. */
 type ProgressSchema = {
   entities: Record<
@@ -119,10 +121,19 @@ function isRepeatingSectionFilled(
  * in the required set. Their fill logic is handled by `isRepeatingSectionFilled`.
  * computedField entities never carry a `required` attribute and therefore never
  * appear in the required set — they do not block progress (UI-SPEC §computedField-specific).
+ *
+ * Phase 15 extension: optional `visibility` parameter.
+ * When provided:
+ *   - If `visibility[id].visible === false`, the entity is EXCLUDED from both
+ *     numerator AND denominator (D-07 hidden trumps required).
+ *   - `visibility[id].required` (which folds static + dynamic require rules) is
+ *     used instead of `entity.attributes?.required === true` for the required check.
+ * When `visibility === undefined`, behaviour is byte-identical to Phase 14 (backward-compat).
  */
 export function computeFormProgress(
   schema: ProgressSchema,
-  values: Record<string, unknown>
+  values: Record<string, unknown>,
+  visibility?: Record<string, VisibilityState>
 ): number {
   // Collect IDs of entities that are children of a repeatingSection.
   // These entities represent "template" fields — their values live inside instances[],
@@ -140,13 +151,28 @@ export function computeFormProgress(
   // Two sources:
   //   (a) entities with attrs.required === true  (standard field types — excluding repeatingSection children)
   //   (b) repeatingSection entities with minInstances > 0  (Phase 14 extension)
+  // Phase 15: when visibility is provided, use visibility[id].required (folds static + dynamic).
   const requiredIds = Object.entries(schema.entities).flatMap(([id, entity]) => {
     // Skip entities that are children of a repeatingSection
     if (repeatingSectionChildIds.has(id)) return [];
 
+    // Phase 15: if visibility is provided and this entity is hidden, exclude entirely (D-07).
+    if (visibility && visibility[id]?.visible === false) return [];
+
     if (entity.type === "repeatingSection") {
       const min = (entity.attributes?.minInstances as number) ?? 0;
+      // When visibility is provided, repeatingSection is required if visibility says so
+      // OR if minInstances > 0 (same as Phase 14 default).
+      if (visibility) {
+        return (visibility[id]?.required === true || min > 0) ? [id] : [];
+      }
       return min > 0 ? [id] : [];
+    }
+
+    // Non-repeatingSection entity
+    if (visibility) {
+      // Use the visibility-computed required (folds static + fired require rules, D-07)
+      return visibility[id]?.required === true ? [id] : [];
     }
     return entity.attributes?.required === true ? [id] : [];
   });

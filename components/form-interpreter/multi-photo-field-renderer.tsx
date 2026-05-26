@@ -102,6 +102,8 @@ type Props = EntityComponentProps<typeof multiPhotoFieldEntity> & {
   surface?: "dark" | "cream"
   clientId: string
   submissionId: string
+  /** Phase 15: dynamic required from a fired `require` visibility rule. */
+  dynamicRequired?: boolean
 }
 
 // ── Renderer ─────────────────────────────────────────────────────────────────
@@ -112,6 +114,7 @@ export function MultiPhotoFieldRenderer({
   surface = "cream",
   clientId,
   submissionId,
+  dynamicRequired = false,
 }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
@@ -265,7 +268,7 @@ export function MultiPhotoFieldRenderer({
     <div className="flex flex-col gap-1.5">
       <label className={cn("text-sm font-semibold", t.label)}>
         {attrs.label}
-        {attrs.required && (
+        {(attrs.required || dynamicRequired) && (
           <span className={cn("ml-1", t.required)}>*</span>
         )}
       </label>

@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formBuilder, type FormBuilderSchema } from "@/lib/form-builder"
 import { computeFormProgress } from "@/lib/form-builder/progress"
+import { evaluateVisibility } from "@/lib/form-builder/visibility/evaluate-visibility"
 // submitAssessmentAction is implemented in Plan 13-03 Task 2
 import { submitAssessmentAction } from "@/app/admin/assessments/actions"
 import { TextFieldRenderer } from "./text-field-renderer"
@@ -74,9 +75,10 @@ export const InterpreterRenderer = forwardRef<
         void interpreterStore.validateEntityValue(payload.entityId)
         // Recompute completion % on every value change so the header
         // progress bar stays in sync with what the user has filled.
-        onProgressChange?.(
-          computeFormProgress(schema, interpreterStore.getEntitiesValues())
-        )
+        // Phase 15: pass visibility map so hidden fields drop from the denominator (D-07).
+        const values = interpreterStore.getEntitiesValues()
+        const visibility = evaluateVisibility(schema, values)
+        onProgressChange?.(computeFormProgress(schema, values, visibility))
       },
     },
   })
@@ -102,9 +104,24 @@ export const InterpreterRenderer = forwardRef<
    * @see RESEARCH Pitfall 6 (focus-loss on every keystroke)
    * @see Phase 13 13-04 UAT (the original focus-loss discovery + fix)
    */
-  const propsRef = useRef({ clientId, submissionId, schema, interpreterStore })
+  const propsRef = useRef({
+    clientId,
+    submissionId,
+    schema,
+    interpreterStore,
+    // Phase 15: visibility map threaded via ref so useMemo deps stay [surface] (Pitfall 5 / Phase 14-06 invariant).
+    // evaluateVisibility is pure and cheap — runs once per render on the current store snapshot.
+    visibility: evaluateVisibility(schema, interpreterStore.getEntitiesValues()),
+  })
   useEffect(() => {
-    propsRef.current = { clientId, submissionId, schema, interpreterStore }
+    const values = interpreterStore.getEntitiesValues()
+    propsRef.current = {
+      clientId,
+      submissionId,
+      schema,
+      interpreterStore,
+      visibility: evaluateVisibility(schema, values),
+    }
   })
 
   // Per-entity renderer components — wrap each with the surface prop.
@@ -118,18 +135,22 @@ export const InterpreterRenderer = forwardRef<
   // time — so the wrappers always see fresh values without deps widening.
   const components = useMemo(() => ({
     // ── Phase 13 base renderers ────────────────────────────────────────────
+    // Phase 15: dynamicRequired is a PRIMITIVE boolean read from propsRef.current.visibility
+    // at call time — NOT at useMemo creation time. This satisfies Pitfall 5 (passing an
+    // object reference would widen the effective dep scope and cause focus loss).
     textField: ({ entity, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof TextFieldRenderer>[0]) =>
-      <TextFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
+      <TextFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} dynamicRequired={propsRef.current.visibility[entity.id]?.required ?? false} />,
     numberField: ({ entity, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof NumberFieldRenderer>[0]) =>
-      <NumberFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
+      <NumberFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} dynamicRequired={propsRef.current.visibility[entity.id]?.required ?? false} />,
     dateField: ({ entity, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof DateFieldRenderer>[0]) =>
-      <DateFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
+      <DateFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} dynamicRequired={propsRef.current.visibility[entity.id]?.required ?? false} />,
     selectField: ({ entity, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof SelectFieldRenderer>[0]) =>
-      <SelectFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
+      <SelectFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} dynamicRequired={propsRef.current.visibility[entity.id]?.required ?? false} />,
     textareaField: ({ entity, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof TextareaFieldRenderer>[0]) =>
-      <TextareaFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
+      <TextareaFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} dynamicRequired={propsRef.current.visibility[entity.id]?.required ?? false} />,
     checkboxField: ({ entity, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof CheckboxFieldRenderer>[0]) =>
-      <CheckboxFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
+      <CheckboxFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} dynamicRequired={propsRef.current.visibility[entity.id]?.required ?? false} />,
+    // sectionGroup: NO dynamicRequired — container; cascade handled by shouldBeProcessed
     sectionGroup: ({ entity, children, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof SectionGroupRenderer>[0]) =>
       <SectionGroupRenderer entity={entity} children={children} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
 
@@ -140,14 +161,14 @@ export const InterpreterRenderer = forwardRef<
     // contract) rather than Parameters<typeof Renderer>[0] (which includes extra props
     // like clientId that are supplied by the wrapper, not by coltorapps).
     signatureField: (p: EntityComponentProps<typeof signatureFieldEntity>) =>
-      <SignatureFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} />,
+      <SignatureFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
     ratingField: (p: EntityComponentProps<typeof ratingFieldEntity>) =>
-      <RatingFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} />,
+      <RatingFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
     multiPhotoField: (p: EntityComponentProps<typeof multiPhotoFieldEntity>) =>
-      <MultiPhotoFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} />,
+      <MultiPhotoFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
     geolocationField: (p: EntityComponentProps<typeof geolocationFieldEntity>) =>
-      <GeolocationFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} />,
-    // computedField requires interpreterStore for useInterpreterEntitiesValues (RESEARCH Pitfall 5)
+      <GeolocationFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
+    // computedField: NO dynamicRequired (computedField has no requiredAttribute — UI-SPEC §computedField-specific)
     computedField: (p: EntityComponentProps<typeof computedFieldEntity>) =>
       <ComputedFieldRenderer {...p} surface={surface} interpreterStore={propsRef.current.interpreterStore} />,
     // repeatingSection requires schema to look up child entity types for inline rendering

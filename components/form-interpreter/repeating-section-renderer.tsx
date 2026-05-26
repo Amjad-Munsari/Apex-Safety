@@ -51,6 +51,7 @@ import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { repeatingSectionEntity } from "@/lib/form-builder/entities/repeating-section"
 import type { FormBuilderSchema } from "@/lib/form-builder"
 import { ChevronDown, ChevronUp, Plus, X } from "lucide-react"
+import { evaluateVisibilityForInstance } from "@/lib/form-builder/visibility/evaluate-visibility"
 
 type InstanceValues = Record<string, unknown>
 
@@ -124,6 +125,7 @@ function ChildInput({
   onChange,
   surface,
   t,
+  dynamicRequired = false,
 }: {
   childId: string
   entityDef: FormBuilderSchema["entities"][string]
@@ -131,11 +133,14 @@ function ChildInput({
   onChange: (v: unknown) => void
   surface: "dark" | "cream"
   t: (typeof surfaceTokens)["dark"] | (typeof surfaceTokens)["cream"]
+  /** Phase 15: dynamic required from evaluateVisibilityForInstance for this child in this instance. */
+  dynamicRequired?: boolean
 }) {
   const type = entityDef.type
   const attrs = (entityDef.attributes ?? {}) as Record<string, unknown>
   const label = (attrs.label as string | undefined) ?? childId
-  const required = (attrs.required as boolean | undefined) ?? false
+  // Phase 15: required shows asterisk if static attr OR dynamicRequired rule fires
+  const required = ((attrs.required as boolean | undefined) ?? false) || dynamicRequired
   const placeholder = (attrs.placeholder as string | undefined) ?? ""
   const helpText = (attrs.helpText as string | undefined) ?? ""
 
@@ -261,6 +266,10 @@ export function RepeatingSectionRenderer({
 }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
+  // Current snapshot of all interpreter store values — needed for evaluateVisibilityForInstance.
+  // We use entity.value to access the current instances (already stored there by coltorapps).
+  // The full answer map is reconstructed below for the visibility evaluator.
+  const allValues: Record<string, unknown> = { [entity.id]: entity.value }
 
   const sectionTitle = (attrs.title as string | undefined) ?? ""
   const sectionDescription = (attrs.description as string | undefined) ?? ""
@@ -432,21 +441,36 @@ export function RepeatingSectionRenderer({
                 {!isCollapsed && childIds.length > 0 && (
                   <div className={cn("px-3 pb-3 flex flex-col gap-4 border-t", t.divider)}>
                     <div className="pt-3 flex flex-col gap-4">
-                      {childIds.map((childId) => {
-                        const childEntity = schema.entities[childId]
-                        if (!childEntity) return null
-                        return (
-                          <ChildInput
-                            key={childId}
-                            childId={childId}
-                            entityDef={childEntity}
-                            value={instance[childId]}
-                            onChange={(v) => updateInstance(idx, childId, v)}
-                            surface={surface}
-                            t={t}
-                          />
+                      {(() => {
+                        // Phase 15: compute per-instance visibility once per render.
+                        // evaluateVisibilityForInstance builds a synthetic answers map
+                        // routing instance-local values + root values (ancestor scope D-03).
+                        const instanceVis = evaluateVisibilityForInstance(
+                          schema,
+                          allValues,
+                          entity.id,
+                          idx
                         )
-                      })}
+                        return childIds.map((childId) => {
+                          const childEntity = schema.entities[childId]
+                          if (!childEntity) return null
+                          // Gate rendering: if the child is explicitly hidden by a rule, unmount it.
+                          // This mirrors how shouldBeProcessed works at the root entity level.
+                          if (instanceVis[childId]?.visible === false) return null
+                          return (
+                            <ChildInput
+                              key={childId}
+                              childId={childId}
+                              entityDef={childEntity}
+                              value={instance[childId]}
+                              onChange={(v) => updateInstance(idx, childId, v)}
+                              surface={surface}
+                              t={t}
+                              dynamicRequired={instanceVis[childId]?.required ?? false}
+                            />
+                          )
+                        })
+                      })()}
                     </div>
                   </div>
                 )}
