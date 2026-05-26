@@ -1,7 +1,7 @@
 // Shared OverduePill component — Phase 17 Plan 03
 //
 // Purely presentational. No hooks, no state, no effects — intentionally
-// server-compatible (no client directive). Tooltip wrapping is the
+// server-compatible (no client directive). Hover-tip wrapping is the
 // caller's responsibility (admin only, per UI-SPEC BLOCKING #4).
 //
 // The daysOverdue value is passed in by the caller (which is responsible for
