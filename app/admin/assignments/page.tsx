@@ -241,12 +241,12 @@ export default async function AssignmentsQueuePage({
               </tr>
             ) : (
               rows.map((row) => {
-                const templateData = row.template as
-                  | { id: string; name: string }
-                  | null;
-                const clientData = row.client as
-                  | { id: string; name: string }
-                  | null;
+                // PostgREST returns joined rows as an array or object depending on cardinality.
+                // Cast via `any` to handle both shapes safely.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const templateData = (row.template as any) as { id: string; name: string } | null;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const clientData = (row.client as any) as { id: string; name: string } | null;
                 return (
                   <tr
                     key={row.id}

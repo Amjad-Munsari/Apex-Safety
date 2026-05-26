@@ -205,7 +205,8 @@ export default async function ClientDetailsPage({
         proposals={proposals}
         assessments={assessments}
         hoursLog={hoursLog}
-        assignments={assignmentRows ?? []}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        assignments={(assignmentRows ?? []) as any[]}
         publishedTemplates={publishedTemplates ?? []}
       />
     </div>
