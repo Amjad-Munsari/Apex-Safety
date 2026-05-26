@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { NewClientButton } from "@/components/clients/new-client-dialog";
+import { ActivePill } from "./_components/active-pill";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,19 @@ export default async function ClientsPage() {
       )
     `)
     .order("name", { ascending: true });
+
+  // Aggregate active assignment count per client (single query, no N+1).
+  // Active = pending or in_progress, not soft-deleted (T-16-08).
+  const { data: activeRows } = await adminClient
+    .from("form_assignments")
+    .select("client_id")
+    .in("status", ["pending", "in_progress"])
+    .is("deleted_at", null);
+
+  const activeCountByClient = new Map<string, number>();
+  for (const r of activeRows ?? []) {
+    activeCountByClient.set(r.client_id, (activeCountByClient.get(r.client_id) ?? 0) + 1);
+  }
 
   const now = new Date();
 
@@ -94,7 +108,10 @@ export default async function ClientsPage() {
                     <div className="flex items-start gap-4 relative z-10 pointer-events-none">
                       <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br />{client.id.slice(0, 4).toUpperCase()}</span>
                       <div>
-                        <div className="font-medium text-white mb-0.5">{client.name}</div>
+                        <div className="font-medium text-white mb-0.5 flex items-center">
+                          {client.name}
+                          <ActivePill count={activeCountByClient.get(client.id) ?? 0} />
+                        </div>
                         <div className="text-xs text-white/40">Client Record</div>
                       </div>
                     </div>

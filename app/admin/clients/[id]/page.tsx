@@ -70,6 +70,22 @@ export default async function ClientDetailsPage({
   // Newest first for the UI.
   const hoursLog = hoursLogChronological.reverse()
 
+  // Assignments for this client — filtered by deleted_at IS NULL (T-16-08).
+  const { data: assignmentRows } = await adminClient
+    .from("form_assignments")
+    .select("id, status, due_date, instructions, created_at, template:form_templates(id, name)")
+    .eq("client_id", id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+
+  // Published templates — for the "Assign template" modal in the Assigned Forms tab.
+  const { data: publishedTemplates } = await adminClient
+    .from("form_templates")
+    .select("id, name")
+    .eq("is_published", true)
+    .is("deleted_at", null)
+    .order("name")
+
   // Assessments are form_submissions for this client. We join template_versions
   // → form_templates to surface the template name in the UI.
   const { data: submissionRows } = await adminClient
@@ -189,6 +205,9 @@ export default async function ClientDetailsPage({
         proposals={proposals}
         assessments={assessments}
         hoursLog={hoursLog}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        assignments={(assignmentRows ?? []) as any[]}
+        publishedTemplates={publishedTemplates ?? []}
       />
     </div>
   )

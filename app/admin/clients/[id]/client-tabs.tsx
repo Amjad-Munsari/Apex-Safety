@@ -2,8 +2,10 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck } from "lucide-react"
+import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardList } from "lucide-react"
 import Link from "next/link"
+import { AssignTemplateModal } from "@/components/admin/assign-template-modal"
+import { RevokeAssignmentButton } from "@/app/admin/assignments/revoke-assignment-button"
 
 type RagStatus = "CURRENT" | "EXPIRING" | "EXPIRED"
 
@@ -39,6 +41,15 @@ export interface HoursTxn {
   balance: number
 }
 
+export interface AssignmentRow {
+  id: string
+  status: string
+  due_date: string | null
+  instructions: string | null
+  created_at: string
+  template: { id: string; name: string } | null
+}
+
 export interface ClientTabsProps {
   clientId: string
   clientName: string
@@ -50,6 +61,10 @@ export interface ClientTabsProps {
   proposals: ProposalRow[]
   assessments: AssessmentRow[]
   hoursLog: HoursTxn[]
+  /** Assignments for this client — filtered by deleted_at IS NULL. */
+  assignments?: AssignmentRow[]
+  /** Published templates — for the Assign template modal. */
+  publishedTemplates?: Array<{ id: string; name: string }>
 }
 
 function ragFromDate(expiry: string | null): RagStatus {
@@ -106,6 +121,7 @@ function buildComplianceFromDocuments(documents: DocumentRow[]): Record<string, 
 }
 
 export function ClientTabs({
+  clientId,
   clientName: _clientName,
   hoursBalance,
   contactName,
@@ -115,9 +131,37 @@ export function ClientTabs({
   proposals,
   assessments,
   hoursLog,
+  assignments = [],
+  publishedTemplates = [],
 }: ClientTabsProps) {
   const compliance = buildComplianceFromDocuments(documents)
   const complianceCategories = Object.keys(compliance)
+
+  // Active count = assignments that are not completed
+  const activeAssignmentCount = assignments.filter(
+    (a) => a.status !== "completed"
+  ).length
+
+  function formatDueDate(dateStr: string | null): string {
+    if (!dateStr) return "no due date"
+    return new Date(dateStr).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    })
+  }
+
+  function assignmentStatusClass(status: string): string {
+    if (status === "in_progress") return "text-[#c0a66d] bg-[#c0a66d]/10"
+    if (status === "completed") return "text-[#3b8273] bg-[#3b8273]/10"
+    return "text-[#666] bg-[#555]/10"
+  }
+
+  function assignmentStatusLabel(status: string): string {
+    if (status === "in_progress") return "In progress"
+    if (status === "completed") return "Completed"
+    return "Pending"
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -161,6 +205,9 @@ export function ClientTabs({
           </TabsTrigger>
           <TabsTrigger value="hours" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
             <Clock className="w-3.5 h-3.5" /> Hours log
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
+            <ClipboardList className="w-3.5 h-3.5" /> Assigned Forms{activeAssignmentCount > 0 ? ` (${activeAssignmentCount})` : ""}
           </TabsTrigger>
         </TabsList>
 
@@ -394,6 +441,72 @@ export function ClientTabs({
                   ))}
                 </tbody>
               </table>
+            )}
+          </Card>
+        </TabsContent>
+        {/* ASSIGNED FORMS */}
+        <TabsContent value="assignments" className="pt-6">
+          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+            {/* Tab header: title + Assign template button */}
+            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <ClipboardList className="w-4 h-4 text-white/40" />
+                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Assigned forms</h3>
+                {assignments.length > 0 && (
+                  <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">
+                    {assignments.length} form{assignments.length === 1 ? "" : "s"}
+                  </span>
+                )}
+              </div>
+              <AssignTemplateModal
+                preselectClientId={clientId}
+                clients={[]}
+                templates={publishedTemplates}
+                triggerLabel="Assign template"
+              />
+            </div>
+
+            {/* Empty state */}
+            {assignments.length === 0 ? (
+              <div className="p-10 text-center flex flex-col items-center justify-center">
+                <ClipboardList className="w-8 h-8 text-white/20 mb-3" />
+                <p className="text-white/50 text-sm font-serif text-lg">No forms assigned to this client yet.</p>
+                <p className="text-white/30 text-xs mt-1">Use &ldquo;Assign template&rdquo; above to assign a published template.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {assignments.map((assignment) => (
+                  <div key={assignment.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      {/* Template name */}
+                      <div className="text-base font-medium text-white font-serif truncate">
+                        {assignment.template?.name ?? "—"}
+                      </div>
+                      {/* Metadata row: due date + status pill */}
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                          DUE · {formatDueDate(assignment.due_date)}
+                        </span>
+                        <span
+                          className={`inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] leading-none ${assignmentStatusClass(assignment.status)}`}
+                        >
+                          {assignmentStatusLabel(assignment.status)}
+                        </span>
+                      </div>
+                      {/* Instructions (if present) */}
+                      {assignment.instructions && (
+                        <p className="text-sm text-white/60 line-clamp-2 mt-1">
+                          {assignment.instructions}
+                        </p>
+                      )}
+                    </div>
+                    {/* Revoke action */}
+                    {assignment.status !== "completed" && (
+                      <RevokeAssignmentButton assignmentId={assignment.id} />
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </Card>
         </TabsContent>
