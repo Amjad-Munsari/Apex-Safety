@@ -114,7 +114,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 13. Form Builder Foundation | 3/4 | In Progress|  |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
 | 15. Conditional Logic Engine | 8/9 | In Progress|  |
-| 16. Multi-Tenancy + Fork-on-Fill | 1/7 | In Progress|  |
+| 16. Multi-Tenancy + Fork-on-Fill | 2/7 | In Progress|  |
 | 17. Assignment Scheduling + Notifications | 0/0 | Not planned | - |
 | 18. FRA Seed Template | 0/0 | Not planned | - |
 
@@ -363,7 +363,7 @@ Plans:
 - [x] 16-01-PLAN.md — Migrations 013 + 014, vitest.config extension, RLS helpers, RLS spec, form-builder Wave-0 scaffolds (wave 0)
 
 **Wave 1** *(admin server-action surface + shared modal)*
-- [ ] 16-02-PLAN.md — createAssignments + AssignTemplateModal + mount on /admin/templates/[id] (wave 1)
+- [x] 16-02-PLAN.md — createAssignments + AssignTemplateModal + mount on /admin/templates/[id] (wave 1)
 
 **Wave 2** *(admin viewing surfaces + client lifecycle scaffolding — parallel after Wave 1)*
 - [ ] 16-03-PLAN.md — /admin/assignments queue + /admin/clients/[id] Assigned Forms tab + active-assignment counter pill (wave 2)
