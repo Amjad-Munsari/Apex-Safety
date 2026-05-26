@@ -1,3 +1,6 @@
+import { isOverdue, daysOverdue } from "@/lib/assignments/is-overdue";
+import { OverduePill } from "@/app/_components/overdue-pill";
+
 interface Assignment {
   id: string;
   // Supabase join returns array or object depending on cardinality inference.
@@ -34,11 +37,6 @@ function formatDate(dateStr: string | null): string {
     month: "short",
     year: "numeric",
   });
-}
-
-function isOverdue(dateStr: string | null): boolean {
-  if (!dateStr) return false;
-  return new Date(dateStr) < new Date(new Date().toDateString());
 }
 
 function StatusPill({ status }: { status: string }) {
@@ -86,6 +84,12 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
           DUE · {dueDateText}
         </span>
         <StatusPill status={assignment.status} />
+        {variant === "active" && (
+          <OverduePill
+            daysOverdue={daysOverdue(assignment.due_date)}
+            status={assignment.status}
+          />
+        )}
       </div>
 
       {/* Row 3: Instructions clamp (active tab only) */}
