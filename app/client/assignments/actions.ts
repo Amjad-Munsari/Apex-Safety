@@ -83,64 +83,109 @@ export async function transitionAssignmentStatus(
 }
 
 /**
- * Server action invoked by FillAsIsButton.
+ * Creates a draft form_submissions row for an assignment fill.
  *
- * Flips assignment status from pending → in_progress, then redirects to the
- * fill route. Redirect is the last statement, outside try/catch, so NEXT_REDIRECT
- * propagates correctly to the Next.js runtime.
+ * Called from the RSC (fill/page.tsx) before mounting FillAssignmentClient.
+ * The draft row gives Phase 14 specialty renderers (signature, multi-photo,
+ * geolocation) a real submissionId for their upload paths at mount time.
+ *
+ * Security invariants (T-16-04, T-16-08):
+ *   - client_id is NEVER accepted from the caller — always from requireClientContext()
+ *   - requireOwnedAssignment verifies org ownership and deleted_at before any DB write
  */
-export async function startAssignmentFill(assignmentId: string) {
-  const ctx = await requireClientContext();
-  const supabase = await createClient();
-  await requireOwnedAssignment(assignmentId, ctx.client_id);
-  await transitionAssignmentStatus(supabase, assignmentId, "in_progress");
-  revalidatePath("/client/assignments");
-  redirect(`/client/assignments/${assignmentId}/fill`);
-}
-
-/**
- * Server action: submit the completed form and transition status to "completed".
- *
- * Security invariants (T-16-04):
- *   - client_id comes ONLY from server-side requireClientContext(); it is never
- *     accepted from the client payload.
- *   - requireOwnedAssignment verifies org ownership before any DB write.
- *
- * Submission sequence:
- *   1. Validate ctx + supabase
- *   2. Ownership check
- *   3. INSERT form_submissions (pinned to template_version_id from assignment row)
- *   4. transitionAssignmentStatus → completed (after insert; non-throwing per Pattern 4)
- *   5. revalidatePaths
- *   6. redirect (LAST, outside try/catch)
- */
-export async function submitAssignedFillAction(
-  assignmentId: string,
-  answers: Record<string, unknown>
-): Promise<void> {
+export async function createAssignmentDraftSubmission(
+  assignmentId: string
+): Promise<{ id: string }> {
   const ctx = await requireClientContext();
   const supabase = await createClient();
   const assignment = await requireOwnedAssignment(assignmentId, ctx.client_id);
 
-  const { error: insertError } = await supabase
+  await transitionAssignmentStatus(supabase, assignmentId, "in_progress");
+
+  const { data: draft, error } = await supabase
     .from("form_submissions")
     .insert({
       assignment_id: assignmentId,
       client_id: ctx.client_id,
       template_version_id: assignment.template_version_id,
-      status: "submitted",
-      answers_json: answers,
-    });
+      status: "draft",
+      answers_json: {},
+    })
+    .select("id")
+    .single();
 
-  if (insertError) {
-    throw new Error(insertError.message ?? "Failed to submit form");
+  if (error || !draft) {
+    throw new Error(error?.message ?? "Failed to create draft submission");
   }
 
-  await transitionAssignmentStatus(supabase, assignmentId, "completed");
+  return { id: draft.id };
+}
 
+/**
+ * Server action invoked by FillAsIsButton.
+ *
+ * Pre-creates a draft submission, flips assignment status from pending →
+ * in_progress, then redirects to the fill route.
+ * Redirect is the last statement, outside try/catch, so NEXT_REDIRECT
+ * propagates correctly to the Next.js runtime.
+ */
+export async function startAssignmentFill(assignmentId: string) {
+  await createAssignmentDraftSubmission(assignmentId);
   revalidatePath("/client/assignments");
-  revalidatePath(`/client/assignments/${assignmentId}`);
-  redirect(`/client/assignments/${assignmentId}`);
+  redirect(`/client/assignments/${assignmentId}/fill`);
+}
+
+/**
+ * Server action: submit the pre-created draft and transition assignment to "completed".
+ *
+ * Pre-create-then-UPDATE pattern (replaces the INSERT path of submitAssignedFillAction).
+ * The RSC creates a draft submission before mounting FillAssignmentClient;
+ * this action UPDATEs that draft to status='submitted' on final submit.
+ *
+ * Security invariants (T-16-04, T-16-09):
+ *   - client_id comes ONLY from server-side requireClientContext() — never from params
+ *   - .eq("client_id", ctx.client_id) is a defense-in-depth filter alongside RLS
+ *
+ * Submit sequence:
+ *   1. Auth context + supabase
+ *   2. UPDATE form_submissions SET answers_json, status='submitted', submitted_at
+ *      WHERE id=submissionId AND client_id=ctx.client_id (defense-in-depth)
+ *   3. Read assignment_id from updated row → transitionAssignmentStatus → completed
+ *   4. revalidatePaths
+ *   5. redirect (LAST, outside try/catch)
+ */
+export async function submitAssignedFillByIdAction(
+  submissionId: string,
+  answers: Record<string, unknown>
+): Promise<void> {
+  const ctx = await requireClientContext();
+  const supabase = await createClient();
+
+  const { data: updated, error: updateError } = await supabase
+    .from("form_submissions")
+    .update({
+      answers_json: answers,
+      status: "submitted",
+      submitted_at: new Date().toISOString(),
+    })
+    .eq("id", submissionId)
+    .eq("client_id", ctx.client_id)
+    .select("assignment_id")
+    .single();
+
+  if (updateError || !updated) {
+    throw new Error(updateError?.message ?? "Failed to submit form");
+  }
+
+  if (updated.assignment_id) {
+    await transitionAssignmentStatus(supabase, updated.assignment_id, "completed");
+    revalidatePath("/client/assignments");
+    revalidatePath(`/client/assignments/${updated.assignment_id}`);
+    redirect(`/client/assignments/${updated.assignment_id}`);
+  } else {
+    revalidatePath("/client/assignments");
+    redirect("/client/assignments");
+  }
 }
 
 /**

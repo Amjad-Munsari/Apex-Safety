@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
+import { createCustomerTemplateDraftSubmission } from "@/app/client/templates/actions";
 import { FillCustomerTemplateClient } from "./fill-customer-template-client";
 import Link from "next/link";
 import type { FormBuilderSchema } from "@/lib/form-builder";
@@ -62,6 +63,10 @@ export default async function FillCustomerTemplatePage({ params }: Props) {
     notFound();
   }
 
+  // Step 3: Pre-create the draft submission row so specialty renderers
+  // (signature, multi-photo, geolocation) have a real submissionId at mount time.
+  const draft = await createCustomerTemplateDraftSubmission(id);
+
   return (
     <div className="min-h-screen" data-surface="client">
       {/* Back link */}
@@ -81,6 +86,8 @@ export default async function FillCustomerTemplatePage({ params }: Props) {
         templateId={id}
         templateName={template.name}
         schemaJson={version.schema_json as FormBuilderSchema}
+        submissionId={draft.id}
+        clientId={ctx.client_id}
       />
     </div>
   );
