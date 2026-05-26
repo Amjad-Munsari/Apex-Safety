@@ -4,8 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { requireActorUserId, getClientContext } from "@/lib/auth-helpers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { FormBuilderSchema } from "@/lib/form-builder";
-import { hasStructuralChanges } from "@/lib/forms/schema-diff";
 
 async function requireClientContext() {
   const ctx = await getClientContext();
@@ -188,99 +186,6 @@ export async function deleteClientTemplate(templateId: string) {
   await requireOwnedTemplate(templateId, ctx.client_id);
   await supabase.from("form_templates").delete().eq("id", templateId);
   revalidatePath("/client/templates");
-}
-
-/**
- * Fork a master template for the current customer when they've changed its
- * structure during fill.
- *
- * NOT YET WIRED INTO ANY UI — the client-side form-fill page is a separate
- * task. When that page is built, it should call this on save:
- *
- *   const result = await forkOnFill(masterTemplateId, originalSchema, currentSchema);
- *   const versionIdToSubmitAgainst = result.versionId;
- *   // then write form_submissions row with template_version_id = versionIdToSubmitAgainst
- *
- * Returns `{ forked: true, templateId, versionId }` if structure changed and a
- * fork was created. Returns `{ forked: false, templateId, versionId }` (the
- * master's published version) if no structural change — caller should submit
- * against the master version directly.
- *
- * Structural change detection uses `hasStructuralChanges` (lib/forms/schema-diff.ts):
- * field id/order, key, type, label, required, options. Presentation-only edits
- * (helpText, placeholder, maxPhotos, maxRating) do NOT trigger a fork.
- *
- * Contract preserved per AGENTS.md "Form template ownership" decision (2026-04-17).
- */
-export async function forkOnFill(
-  masterTemplateId: string,
-  originalSchema: FormBuilderSchema,
-  modifiedSchema: FormBuilderSchema
-): Promise<{ forked: boolean; templateId: string; versionId: string }> {
-  const supabase = await createClient();
-  const ctx = await requireClientContext();
-  const userId = await requireActorUserId("client");
-
-  // Customers can only fork admin-owned (Matt's) published masters — never
-  // another customer's template. RLS scopes the read to admin-owned anyway,
-  // but be loud about violations so the future fill-UI surfaces a real error.
-  const { data: masterCheck, error: masterCheckErr } = await supabase
-    .from("form_templates")
-    .select("owner_type, is_published")
-    .eq("id", masterTemplateId)
-    .single();
-  if (masterCheckErr || !masterCheck) throw new Error("Master template not found");
-  if (masterCheck.owner_type !== "admin") throw new Error("Forbidden: can only fork admin-owned masters");
-  if (!masterCheck.is_published) throw new Error("Cannot fork an unpublished master");
-
-  if (!hasStructuralChanges(originalSchema, modifiedSchema)) {
-    const { data: masterVersion, error } = await supabase
-      .from("template_versions")
-      .select("id")
-      .eq("template_id", masterTemplateId)
-      .not("published_at", "is", null)
-      .order("version_number", { ascending: false })
-      .limit(1)
-      .single();
-    if (error || !masterVersion) throw new Error("Master template has no published version to bind to");
-    return { forked: false, templateId: masterTemplateId, versionId: masterVersion.id };
-  }
-
-  const { data: master, error: masterErr } = await supabase
-    .from("form_templates")
-    .select("name, template_type")
-    .eq("id", masterTemplateId)
-    .single();
-  if (masterErr || !master) throw new Error("Master template not found");
-
-  const { data: forkRow, error: forkErr } = await supabase
-    .from("form_templates")
-    .insert({
-      name: master.name,
-      template_type: master.template_type,
-      owner_id: ctx.client_id,
-      owner_type: "customer",
-      parent_template_id: masterTemplateId,
-      is_published: true,
-    })
-    .select("id")
-    .single();
-  if (forkErr || !forkRow) throw new Error(forkErr?.message ?? "Fork insert failed");
-
-  const { data: versionRow, error: versionErr } = await supabase
-    .from("template_versions")
-    .insert({
-      template_id: forkRow.id,
-      version_number: 1,
-      schema_json: modifiedSchema,
-      published_at: new Date().toISOString(),
-      created_by: userId,
-    })
-    .select("id")
-    .single();
-  if (versionErr || !versionRow) throw new Error(versionErr?.message ?? "Fork version insert failed");
-
-  return { forked: true, templateId: forkRow.id, versionId: versionRow.id };
 }
 
 /**
