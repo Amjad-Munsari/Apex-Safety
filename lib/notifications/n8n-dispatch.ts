@@ -17,6 +17,16 @@ export type NotificationPayload =
       document_category: string
       expiry_date: string | null
     }
+  | {
+      type: "assignment_reminder"
+      cadence: "7d" | "1d" | "overdue"
+      client_email: string
+      client_name: string
+      template_name: string
+      due_date: string           // ISO date yyyy-mm-dd
+      assignment_url: string     // absolute URL to /client/assignments/[id]
+      instructions: string | null
+    }
 
 export interface DispatchResult {
   ok: boolean
