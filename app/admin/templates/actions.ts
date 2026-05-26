@@ -60,6 +60,17 @@ export async function saveDraftAction(
     throw new Error(`Invalid schema: ${result.reason.code}`);
   }
 
+  // Phase 15 — reject cyclic rule graphs (D-08, Pitfall 2)
+  const { validateRuleGraph } = await import("@/lib/form-builder/visibility/validate-rule-graph");
+  const graphResult = validateRuleGraph(result.data as Parameters<typeof validateRuleGraph>[0]);
+  if (!graphResult.ok) {
+    throw new Error(JSON.stringify({
+      kind: "RuleGraphInvalid",
+      cycles: graphResult.cycles.map(c => ({ entityIds: c.path, labels: c.labels })),
+      scopeErrors: graphResult.scopeErrors,
+    }));
+  }
+
   // 3. Insert a new immutable version row (NEVER .update() existing rows — Pitfall 5)
   const { data: max } = await supabase
     .from("template_versions")
@@ -102,6 +113,17 @@ export async function publishTemplateAction(
   const result = await validateSchema(rawSchema, formBuilder);
   if (!result.success) {
     throw new Error(`Invalid schema: ${result.reason.code}`);
+  }
+
+  // Phase 15 — reject cyclic rule graphs (D-08, Pitfall 2)
+  const { validateRuleGraph } = await import("@/lib/form-builder/visibility/validate-rule-graph");
+  const graphResult = validateRuleGraph(result.data as Parameters<typeof validateRuleGraph>[0]);
+  if (!graphResult.ok) {
+    throw new Error(JSON.stringify({
+      kind: "RuleGraphInvalid",
+      cycles: graphResult.cycles.map(c => ({ entityIds: c.path, labels: c.labels })),
+      scopeErrors: graphResult.scopeErrors,
+    }));
   }
 
   // Insert new immutable published version row

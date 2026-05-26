@@ -88,6 +88,18 @@ export async function saveClientDraftAction(
     throw new Error(`Invalid schema: ${result.reason.code}`);
   }
 
+  // Phase 15 — reject cyclic rule graphs (D-08, Pitfall 2)
+  // Customer surfaces receive the IDENTICAL guard as admin — asymmetry = exploit class (COND-03)
+  const { validateRuleGraph } = await import("@/lib/form-builder/visibility/validate-rule-graph");
+  const graphResult = validateRuleGraph(result.data as Parameters<typeof validateRuleGraph>[0]);
+  if (!graphResult.ok) {
+    throw new Error(JSON.stringify({
+      kind: "RuleGraphInvalid",
+      cycles: graphResult.cycles.map(c => ({ entityIds: c.path, labels: c.labels })),
+      scopeErrors: graphResult.scopeErrors,
+    }));
+  }
+
   // Insert new immutable version row (owner_type = "customer", owner_id = org UUID — T-13-06)
   const { data: max } = await supabase
     .from("template_versions")
@@ -130,6 +142,18 @@ export async function publishClientTemplateAction(
   const result = await validateSchema(rawSchema, formBuilder);
   if (!result.success) {
     throw new Error(`Invalid schema: ${result.reason.code}`);
+  }
+
+  // Phase 15 — reject cyclic rule graphs (D-08, Pitfall 2)
+  // Customer surfaces receive the IDENTICAL guard as admin — asymmetry = exploit class (COND-03)
+  const { validateRuleGraph } = await import("@/lib/form-builder/visibility/validate-rule-graph");
+  const graphResult = validateRuleGraph(result.data as Parameters<typeof validateRuleGraph>[0]);
+  if (!graphResult.ok) {
+    throw new Error(JSON.stringify({
+      kind: "RuleGraphInvalid",
+      cycles: graphResult.cycles.map(c => ({ entityIds: c.path, labels: c.labels })),
+      scopeErrors: graphResult.scopeErrors,
+    }));
   }
 
   const { data: max } = await supabase
