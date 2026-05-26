@@ -16,6 +16,7 @@ import { useState } from "react";
 import { GitFork, ChevronRight, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RuleRow } from "./rule-row";
+import { CycleErrorBanner } from "./cycle-error-banner";
 import type { VisibilityRules, VisibilityRule } from "@/lib/form-builder/attributes/visibility-rules";
 
 // ---------------------------------------------------------------------------
@@ -77,6 +78,22 @@ type BuilderEntity = {
 };
 
 // ---------------------------------------------------------------------------
+// CycleState type (parsed from RuleGraphInvalid server error)
+// ---------------------------------------------------------------------------
+
+export interface CycleState {
+  cycles: Array<{ entityIds: string[]; labels: string[] }>;
+  scopeErrors: Array<{
+    consumerId: string;
+    sourceId: string;
+    consumerLabel?: string;
+    sourceLabel?: string;
+    reason: "cross-instance" | "root-references-inside-repeating" | "orphan-source";
+    severity?: "advisory";
+  }>;
+}
+
+// ---------------------------------------------------------------------------
 // ConditionalLogicSection props
 // ---------------------------------------------------------------------------
 
@@ -85,6 +102,8 @@ export interface ConditionalLogicSectionProps {
   schema: BuilderSchema;
   surface?: Surface;
   onChange: (next: VisibilityRules) => void;
+  /** Optional cycle/scope error state piped from the save/publish error handler */
+  cycleState?: CycleState;
   /** @internal test-only: force expanded state on initial render */
   defaultExpanded?: boolean;
 }
@@ -98,6 +117,7 @@ export function ConditionalLogicSection({
   schema,
   surface = "dark",
   onChange,
+  cycleState,
   defaultExpanded = false,
 }: ConditionalLogicSectionProps) {
   const t = surfaceTokens[surface];
@@ -193,6 +213,16 @@ export function ConditionalLogicSection({
               onDelete={() => handleDeleteRule(index)}
             />
           ))}
+
+          {/* CycleErrorBanner — renders above Add condition button when cycleState present */}
+          {cycleState && (
+            <CycleErrorBanner
+              cycles={cycleState.cycles}
+              scopeErrors={cycleState.scopeErrors}
+              selectedEntityId={entity.id}
+              surface={surface}
+            />
+          )}
 
           {/* Add condition button */}
           <button
