@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireActorUserId, getClientContext } from "@/lib/auth-helpers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { FormBuilderSchema } from "@/lib/form-builder";
 import { hasStructuralChanges } from "@/lib/forms/schema-diff";
 
@@ -280,4 +281,60 @@ export async function forkOnFill(
   if (versionErr || !versionRow) throw new Error(versionErr?.message ?? "Fork version insert failed");
 
   return { forked: true, templateId: forkRow.id, versionId: versionRow.id };
+}
+
+/**
+ * Submit a customer-built template fill (D-16).
+ *
+ * Inserts a form_submissions row with assignment_id=NULL (no assignment for
+ * customer-built templates). client_id comes ONLY from server context (T-16-04
+ * mitigation — never a client-supplied parameter).
+ *
+ * Security:
+ *   - requireClientContext() → throws if not authenticated as client user
+ *   - requireOwnedTemplate() → throws on cross-org template id
+ *   - Uses RLS-aware createClient (T-16-06: never lib/supabase/admin)
+ *   - client_id: ctx.client_id (server context), NEVER a function parameter
+ */
+export async function submitCustomerTemplateFillAction(
+  templateId: string,
+  answers: Record<string, unknown>
+): Promise<void> {
+  const ctx = await requireClientContext();
+  const supabase = await createClient();
+
+  await requireOwnedTemplate(templateId, ctx.client_id);
+
+  // Fetch the latest published version for this template (D-16)
+  const { data: latestVersion } = await supabase
+    .from("template_versions")
+    .select("id")
+    .eq("template_id", templateId)
+    .not("published_at", "is", null)
+    .order("version_number", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!latestVersion) {
+    throw new Error("Template has no published version");
+  }
+
+  // INSERT form_submissions with assignment_id=NULL (D-16 contract, enabled by migration 014).
+  // client_id: ctx.client_id — taken from server context, NEVER from function parameter (T-16-04).
+  const { error } = await supabase.from("form_submissions").insert({
+    template_version_id: latestVersion.id,
+    client_id: ctx.client_id,
+    assignment_id: null,
+    status: "submitted",
+    answers_json: answers,
+  });
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/client/templates");
+  revalidatePath(`/client/templates/${templateId}`);
+
+  // redirect() MUST be the last statement — it throws NEXT_REDIRECT which the
+  // framework catches. Wrapping in try/catch would swallow it (RESEARCH Pitfall 1).
+  redirect("/client/templates");
 }
