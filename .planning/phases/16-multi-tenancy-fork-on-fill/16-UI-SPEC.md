@@ -190,7 +190,7 @@ All components below are already installed. The executor must NOT install new sh
 - **Assignment card (Active tab):** White bg, `border border-[#e5e1d8]`, `rounded-sm`, `p-5`. Three rows:
   1. Template name — 18px Newsreader, text-[#1a1a1a]
   2. Mono metadata row: `DUE · {date}` · status pill (using same colour coding as admin)
-  3. Instructions block (if `instructions IS NOT NULL`): 12px Inter, text-[#6b6560], italicised, max 2 lines clamped (`line-clamp-2`). Prefixed with `—` em dash.
+  3. Instructions block (if `instructions IS NOT NULL`): **14px Inter** (`text-sm`), text-[#6b6560], italicised, max 2 lines clamped (`line-clamp-2`). Prefixed with `—` em dash.
 - **Assignment card (Completed tab):** Same card structure. Adds a `View submission` text-link (`/client/assignments/[id]/submission`). Status pill shows "Completed" in teal.
 - **Empty state — Active tab:**
   - Heading: "No forms assigned yet"
@@ -204,7 +204,7 @@ All components below are already installed. The executor must NOT install new sh
 
 - **Layout:** Single centred column, max-w-xl, `py-12 px-6`.
 - **Top section:**
-  - Mono back link: `← Back to Assigned Forms` — 12px JetBrains Mono, uppercase, text-[#8a857f].
+  - Mono back link: `← Back to Assigned Forms` — **10px JetBrains Mono** (`font-mono text-[10px]`), uppercase, text-[#8a857f]. (Matches the declared mono tag size of 9–10px — no new size introduced.)
   - Template name: **28px Newsreader**, text-[#1a1a1a], `leading-[1.1]`. (Uses the same 28px display heading size as all other client page headings — no additional size introduced.)
   - Due date (if set): mono 10px, `DUE · {date}`. Colour: destructive red if overdue, muted otherwise.
   - Instructions block (if set): `bg-[#f5f3ee]` cream card, `rounded-sm`, `p-4`, 14px Inter, `text-[#1a1a1a]`, with a hairline left border `border-l-2 border-[#c0a66d]` (earth amber). Prefixed with a `<Info className="w-4 h-4 text-[#c0a66d]" />` icon and a "From your assessor" label in mono 9px.
@@ -273,7 +273,7 @@ All components below are already installed. The executor must NOT install new sh
 | Revoke confirmation title | Admin | `Revoke this assignment?` | Default |
 | Revoke confirmation body | Admin | `The client will no longer see this form in their Assigned Forms list.` | CONTEXT.md D-03 / soft-delete semantics |
 | Revoke confirmation action | Admin | `Revoke assignment` | Default — specific verb + noun |
-| Edit assignment (due date / instructions) | Admin | `Edit` (inline) | Default — matches existing edit affordances |
+| Edit assignment (due date / instructions) | Admin | `Edit assignment` (inline) | Verb + noun consistency — nice-to-have applied |
 | View submission link (Completed tab) | Client | `View submission` | Default |
 | "FORKED" mono tag | Client | `FORKED` | Existing — `client-template-card.tsx` |
 | Admin counter pill tooltip (on hover) | Admin | `{N} active assignment{s}` | Default |
@@ -367,3 +367,4 @@ No third-party registry blocks are declared for this phase. Registry safety vett
 | 2026-05-26 | Initial draft | gsd-ui-researcher phase run |
 | 2026-05-26 | Issue 1 fix: split modal error toast into two per-scenario messages; rename modal submit to "Assign template" | gsd-ui-checker Dimension 1 BLOCK — "Assignment failed" had no solution path |
 | 2026-05-26 | Issue 2 fix: drop 32px from client surface; use 28px as unified page/display heading across Routes D, E, G; update migration note for app/client/templates/page.tsx | gsd-ui-checker Dimension 4 BLOCK — 5 sizes on client surface exceeded 4-size maximum |
+| 2026-05-26 | Issue 3 fix: Route D instructions block changed from 12px to 14px Inter (text-sm); Route E back link changed from 12px to 10px JetBrains Mono — both now map to declared client surface sizes; optional "Edit" → "Edit assignment" applied in copywriting table | gsd-ui-checker Dimension 4 BLOCK — 12px introduced a 5th effective size on client surface |
