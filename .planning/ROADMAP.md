@@ -376,6 +376,9 @@ Plans:
 **Wave 4** *(BLOCKING: db push + verification — sequential)*
 - [x] 16-07-PLAN.md — Migrations 013/014 applied to live DB; types regenerated; Vitest green for Phase 16 deliverables; 16-UAT.md written. **Known gap §D:** `FormRenderer` import in two fill-client files needs replacement with `InterpreterRenderer` before customer UAT (P1, blocks `npm run build`).
 
+**Wave 5** *(gap closure — sequential)*
+- [ ] 16-08-PLAN.md — [GAP CLOSURE §D] Rewrite fill clients onto InterpreterRenderer; add createDraft + submitByIdAction pair per surface; delete INSERT actions; unblock `npm run build`.
+
 ### Phase 17: Assignment Scheduling + Notifications
 **Goal**: Recurring form assignments auto-generate on schedule and clients receive automated reminders.
 **Depends on**: Phase 16
