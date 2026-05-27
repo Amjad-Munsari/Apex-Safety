@@ -48,7 +48,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 - [ ] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
 - [x] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS (completed 2026-05-26)
 - [x] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup (completed 2026-05-27)
-- [ ] **Phase 18: FRA Seed Template** — Blank FRA (Type 3) built via the builder, conditional sections, risk matrix, action plan, n8n report webhook
+- [x] **Phase 18: FRA Seed Template** — Blank FRA (Type 3) built via the builder, conditional sections, risk matrix, action plan, n8n report webhook (completed 2026-05-27)
 
 ---
 
@@ -425,7 +425,18 @@ Plans:
   3. Per-field photo attachment and speech-to-text are enabled on all FRA text fields.
   4. The risk matrix auto-calculates from the two input fields, and the Action Plan uses repeating sections.
   5. A submission fires the n8n webhook for the AI report pipeline (Module 1 bridge). Site Risk template stays BLOCKED until Matt provides the blank.
-**Plans**: Not yet planned — run `/gsd:plan-phase 18`.
+**Plans**: 3 plans
+
+Plans:
+
+**Wave 0** *(seed migration + static-analysis spec)*
+- [x] 18-01-PLAN.md — Migration 016 (full FRA Type 3 admin master seed: 6 sections, 3 conditional sub-sections, PAS 79 computedField, Action Plan repeatingSection, signature, geolocation, multi-photo) + ≥10-assertion Vitest spec (wave 0)
+
+**Wave 1** *(n8n webhook port)*
+- [x] 18-02-PLAN.md — Port legacy n8n webhook into `submitAssessmentAction` via `after(...)`; 4-assertion regression spec (wave 1)
+
+**Wave 2** *(BLOCKING: db push + types + cleanup + UAT — sequential)*
+- [x] 18-03-PLAN.md — Migration 016 applied to live DB; legacy `lib/forms/fra-template.ts` deleted after grep-check (P4); 18-UAT.md authored; ROADMAP updated (wave 2)
 
 ---
 
@@ -434,3 +445,4 @@ Plans:
 *Phase 16 executed 2026-05-26: 7 plans across 5 waves; migrations 013/014 live; 1 known fill-page build gap (UAT.md §D).*
 *Phase 16 §D closed 2026-05-27 by Plan 16-08 (FormRenderer → InterpreterRenderer rewrite).*
 *Phase 17 executed 2026-05-27: 6 plans across 5 waves; migration 015 live; WCAG noted as design-system follow-up (UAT.md §E.1).*
+*Phase 18 executed 2026-05-27: 3 plans across 3 waves; migration 016 live (FRA Type 3 seed, 6 sections / 40 entities); legacy fra-template.ts deleted.*
