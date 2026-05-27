@@ -306,6 +306,36 @@ export async function submitAssessmentAction(
       console.error("Auto report-draft generation failed", { submissionId, err })
     }
   })
+
+  // Phase 18 SC#5 — fire the assessment-submission n8n webhook for the
+  // Module 1 downstream (Matt's existing n8n workflows that fan out to
+  // Proton Mail / customer notifications / Drive backups). Mirrored from
+  // the legacy submitAssessment (actions.ts:194-212). Distinct from the
+  // AI-draft pipeline in the after() callback above — both are
+  // post-response background tasks; neither blocks Matt's submit redirect.
+  // Inline (not extracted to lib/notifications/n8n-dispatch.ts) per
+  // RESEARCH §Q5: that helper's typed union targets a DIFFERENT n8n URL
+  // (N8N_WEBHOOK_URL → Proton Mail routing); the assessment webhook
+  // targets N8N_ASSESSMENT_WEBHOOK_URL which is a separate workflow.
+  after(async () => {
+    const webhookUrl = process.env.N8N_ASSESSMENT_WEBHOOK_URL
+    if (!webhookUrl) return
+    try {
+      await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submissionId }),
+        signal: AbortSignal.timeout(3000),
+      })
+    } catch (err) {
+      console.error("Phase 18 SC#5 n8n webhook trigger failed", { submissionId, err })
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "assessment-submission-webhook",
+        error_message: String(err),
+        payload: { submissionId },
+      })
+    }
+  })
 }
 
 // ── expandRepeatingSections ──────────────────────────────────────────────────
