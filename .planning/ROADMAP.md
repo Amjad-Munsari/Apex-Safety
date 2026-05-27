@@ -411,7 +411,14 @@ Plans:
 ### Phase 18: FRA Seed Template
 **Goal**: Matt's actual Fire Risk Assessment form (Blank FRA, Type 3) is built with the form builder and seeded as the first real template.
 **Depends on**: Phases 14 and 15 (custom fields + conditional logic)
-**Requirements**: FRA seed — reuses TMPL-01..06 patterns against the new builder (v2)
+**Requirements**: TMPL-FRA-01..05 (Phase 18 SC-mapped, defined below) — reuses TMPL-01..06 underlying patterns
+
+**Requirement IDs (TMPL-FRA-01..05, SC-mapped):**
+- **TMPL-FRA-01** — Blank FRA Type 3 is built using the form builder, matching the Yellow Broom structure (SC#1).
+- **TMPL-FRA-02** — Conditional sub-sections render Yes/No → show/hide via Phase 15 visibility-rules (SC#2).
+- **TMPL-FRA-03** — Per-field photo + STT enabled on all FRA text/textarea fields (SC#3).
+- **TMPL-FRA-04** — PAS 79 risk matrix auto-calculates via Phase 14 `computedField` + Action Plan via `repeatingSection` (SC#4).
+- **TMPL-FRA-05** — Admin submission fires the n8n webhook for the AI report pipeline (Module 1 bridge); customer submission does NOT (architectural invariant; SC#5).
 **Success Criteria** (what must be TRUE):
   1. The Blank FRA is built using the form builder, matching the Yellow Broom FRA structure across all sections.
   2. Conditional sub-sections work inside the FRA (Yes/No → show/hide).
