@@ -116,7 +116,7 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 15. Conditional Logic Engine | 8/9 | In Progress|  |
 | 16. Multi-Tenancy + Fork-on-Fill | 8/8 | Complete   | 2026-05-26 |
 | 17. Assignment Scheduling + Notifications | 6/6 | Complete   | 2026-05-26 |
-| 18. FRA Seed Template | 2/3 | In Progress|  |
+| 18. FRA Seed Template | 3/3 | Complete   | 2026-05-27 |
 
 ---
 
