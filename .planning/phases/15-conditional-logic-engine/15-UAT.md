@@ -159,7 +159,7 @@ Before starting any section, confirm all of these:
 
 - [ ] Confirm that changing "Door condition" in instance 2 to "Poor" did NOT affect whether "Repair urgency" in instance 1 was required (they are independent per D-03)
 
-**C — RESULT:** [ ] PASS  [ ] FAIL  Notes: ___
+**C — RESULT:** [x] PASS  [ ] FAIL  Notes: Verified 2026-05-27 after fixes: (1) repeating-section renderer thread `interpreterStore` so per-instance visibility cascade sees ancestor-scope sources; (2) pruneSchemaForValidation stops coltorapps recursing into repeatingSection children; (3) validateInstanceRequired enforces per-instance required client + server.
 
 ---
 
@@ -218,36 +218,54 @@ Before starting any section, confirm all of these:
 
 *Tests the computedField-as-rule-source flow (D-02): when PAS 79 evaluates to "Intolerable", the Mitigation textField becomes visible.*
 
-**E1 — Low risk: Mitigation NOT visible**
+**E1 — Low risk: Mitigation NOT visible** ✅ PASS (2026-05-28, post `a207d9f`)
 
-- [ ] Open the smoke template fill page
-- [ ] Set "Site type" to "Commercial" (or any value — Mitigation is root-level, always accessible)
-- [ ] Set "Likelihood (1-5)" = 1, "Consequence (1-5)" = 1
-- [ ] Verify "PAS 79 risk level" badge shows "Trivial" (score = 1)
-- [ ] Verify the "Mitigation" textField is NOT visible (it has a `show` rule that requires Intolerable)
+- [x] Open the smoke template fill page
+- [x] Set "Site type" to "Commercial" (or any value — Mitigation is root-level, always accessible)
+- [x] Set "Likelihood (1-5)" = 1, "Consequence (1-5)" = 1
+- [x] Verify "PAS 79 risk level" badge shows "Trivial" (score = 1)
+- [x] Verify the "Mitigation" textField is NOT visible (it has a `show` rule that requires Intolerable)
 
-**E2 — Intolerable risk: Mitigation appears**
+**E2 — Intolerable risk: Mitigation appears** ✅ PASS (2026-05-28, after follow-up fix to `NumberField`)
 
-- [ ] Set "Likelihood (1-5)" = 5, "Consequence (1-5)" = 5
-- [ ] Verify "PAS 79 risk level" badge shows "Intolerable" (score = 25)
-- [ ] Verify the "Mitigation" textField APPEARS immediately (reactive — no page reload)
-- [ ] Verify the "Mitigation" field shows the placeholder text from the migration
+- [x] Set "Likelihood (1-5)" = 5, "Consequence (1-5)" = 5
+- [x] Verify "PAS 79 risk level" badge shows "Intolerable" (score = 25)
+- [x] Verify the "Mitigation" textField APPEARS immediately (reactive — no page reload)
+- [x] Verify the "Mitigation" field shows the placeholder text from the migration
 
-**E3 — Fill and submit with Mitigation visible**
+**Initial failure:** Mitigation did NOT appear when Likelihood / Consequence were entered via keyboard typing (only worked via the +/− stepper buttons).
 
-- [ ] Fill the "Mitigation" field with a real value, e.g. "Install additional suppression system"
-- [ ] Complete any other required fields and submit
-- [ ] Verify success confirmation
+**Root cause:** `components/forms/number-field.tsx` allowed unconstrained typing into bounded number inputs. Typing "5" into a field already showing "1" appended → "15" → out of [1, 5] range → validate threw an error but the store still held 15 → `computePAS79RiskLevel` rejected it at the `likelihood > 5` guard → `result` was null → "Fill in likelihood and consequence" pending state → Mitigation's visibility rule could never fire.
 
-**E4 — Mitigation value persists to answers_json**
+**Fix:** Narrow-bounded numberFields (range ≤ 10, e.g. 1–5) are now `readOnly` with no Mic affordance — value changes go through the +/− buttons (which clamp). Wider ranges (e.g. fire-warden count 0–999) keep typing + Mic. See `components/forms/number-field.tsx`.
 
-- [ ] After submitting, query `form_submissions.answers_json`:
-  ```sql
-  SELECT answers_json FROM form_submissions 
-  WHERE id = '<submission-id>' LIMIT 1;
-  ```
+**E3 — Fill and submit with Mitigation visible** ✅ PASS (2026-05-28, after architectural fix)
+
+- [x] Fill the "Mitigation" field with a real value, e.g. "Install additional suppression system"
+- [x] Complete any other required fields and submit
+- [x] Verify success confirmation
+
+**Initial failure:** typing the first character into Mitigation threw `Entity not processable.` from coltorapps' `setEntityValue` precondition (`at(n, d)`). Mitigation was rendering (so `InterpreterEntity` thought it was processable) but was simultaneously in `unprocessableEntitiesIds` on the live store — a desync between the component's `useSyncExternalStore` snapshot and the store's actual state.
+
+**Root cause:** `ComputedFieldRenderer` wrote the computed PAS 79 level into the interpreter store via `setValue` so that coltorapps' `shouldBeProcessed` (which reads raw `entitiesValues`) would see the computed value when evaluating Mitigation's `show when PAS 79 = Intolerable` rule. This bridge was inherently racy — any subsequent tree-process triggered with PAS 79 transiently undefined would flip Mitigation back to unprocessable without emitting an `EntityUnprocessable` event (Wt only emits transition events, not idempotent ones), leaving the React component snapshot stale.
+
+**Fix:** Eliminated the setValue bridge. `shouldBeProcessed` now augments `entitiesValues` with computed values inline via `augmentAnswersWithComputedValues(schema, context.entitiesValues)`. The schema is registered with a module-level slot from `InterpreterRenderer` on mount. `ComputedFieldRenderer` is now a pure display component. See commit (TBD).
+
+**E4 — Mitigation value persists to answers_json** ⏸ NOT YET VERIFIED (session ended 2026-05-28 post `957221b`)
+
+- [ ] After submitting, query `form_submissions.answers_json`
 - [ ] Verify the Mitigation entity's ID appears as a key with a non-empty value
 - [ ] Confirm the value matches what was filled in E3
+
+**Status at session end:**
+
+First E4 attempt revealed a server-side regression — Mitigation was missing from `answers_json` even though the user typed text into it. Root cause: coltorapps' `validateEntitiesValues` (standalone, not the store method) calls `shouldBeProcessed` on every entity via its `Rt` walker; when `shouldBeProcessed` returns false, the entity's value is **deleted from the result data** before the cascade strip runs. With the architectural fix (commit `957221b`), `shouldBeProcessed` augments inline via a module-level schema slot — set by `InterpreterRenderer.useEffect` on the client, but the server action never set it, so server-side rule evaluation against the computedField source perma-failed.
+
+**Fix (in `957221b`):** `submitAssessmentAction` now calls `setCurrentFormSchema(schema)` before `validateEntitiesValues` and clears it in a `finally`. Race risk under concurrent server actions documented as TODO; acceptable for current admin traffic.
+
+**Reference submission** (pre-fix, broken state) — `27967b25-2d30-4c04-b511-300960e9d016`. Re-run E3 + E4 after `957221b` to confirm Mitigation now persists.
+
+**Resume point:** Hard-refresh, do a fresh fill with Mitigation text, submit, query `form_submissions.answers_json` for the new submission and confirm the Mitigation entity ID (`ce13e4af-a019-4b30-8099-9e43e49c96d5`) appears with the typed text.
 
 **E5 — Back to low risk: Mitigation hides again**
 
