@@ -33,6 +33,11 @@
  * Plans 15-01 and 15-02 MUST NOT include this path in their files_modified.
  */
 
+import {
+  getCurrentFormSchema,
+  augmentAnswersWithComputedValues,
+} from "./compute-computed-values";
+
 // ── Inline evaluation helpers (Wave-0 self-contained) ────────────────────────
 // These mirror the contracts in evaluate-rule.ts and combine-rules.ts (Wave 1).
 // When Wave 1 ships, the test files import those modules; this file keeps its
@@ -158,6 +163,17 @@ type InternalVisibilityRules = {
  * value change. It evaluates ONLY the show/hide rules on the entity being
  * asked about. Require rules are a renderer-level concern handled via
  * evaluateVisibility (plan 15-02).
+ *
+ * Computed-source rules (D-02): rules whose sourceEntityId is a computedField
+ * (e.g. "show Mitigation when PAS 79 = Intolerable") need the computed value
+ * derived from the inputs, not the raw entitiesValues slot (which is undefined
+ * because computedFields are read-only display widgets). We bridge by reading
+ * the schema from the module-level registry that InterpreterRenderer fills
+ * (see lib/form-builder/visibility/compute-computed-values.ts) and augmenting
+ * entitiesValues with each computedField's derived value before rule eval.
+ *
+ * Without this, coltorapps' render gate would always evaluate computed-source
+ * rules against undefined, hiding the dependent field forever.
  */
 export function makeShouldBeProcessed() {
   return function shouldBeProcessed(context: ShouldBeProcessedContext): boolean {
@@ -181,11 +197,18 @@ export function makeShouldBeProcessed() {
     // Only require rules → entity is visible
     if (showHideRules.length === 0) return true;
 
+    // Augment with computed values so rules sourced from a computedField see
+    // the live derived value rather than the perma-undefined raw slot.
+    const schema = getCurrentFormSchema();
+    const valuesForRules = schema
+      ? augmentAnswersWithComputedValues(schema, context.entitiesValues)
+      : context.entitiesValues;
+
     // Evaluate each show/hide rule — NEVER throws (Pitfall 3: orphan source → false)
     const results: ShowHideRuleResult[] = showHideRules.map((r) => ({
       fired: evaluateRuleInline(
         r.operator,
-        context.entitiesValues[r.sourceEntityId],
+        valuesForRules[r.sourceEntityId],
         r.value
       ),
       action: r.action,

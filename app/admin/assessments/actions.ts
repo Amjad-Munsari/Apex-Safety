@@ -265,6 +265,7 @@ export async function submitAssessmentAction(
   const { validateEntitiesValues } = await import("@coltorapps/builder")
   const { formBuilder } = await import("@/lib/form-builder")
   const { pruneSchemaForValidation } = await import("@/lib/form-builder/prune-schema-for-validation")
+  const { setCurrentFormSchema } = await import("@/lib/form-builder/visibility/compute-computed-values")
 
   // coltorapps walks entity.children recursively and validates each at the root level,
   // but repeatingSection child values live nested inside instances[] — so any static
@@ -272,7 +273,24 @@ export async function submitAssessmentAction(
   // the walk at repeatingSection; the section's own validator still enforces the
   // { instances } shape and min/max counts.
   const prunedSchema = pruneSchemaForValidation(version.schema_json as Parameters<typeof pruneSchemaForValidation>[0])
-  const result = await validateEntitiesValues(rawValues, formBuilder, prunedSchema as Parameters<typeof validateEntitiesValues>[2])
+
+  // Register the schema in the module-level slot so makeShouldBeProcessed's
+  // augmentation path can derive computedField values (D-02) during the
+  // coltorapps eligibility walk. Without this, the walker would see every
+  // computedField-sourced rule evaluate against `undefined` and silently
+  // delete the dependent entity's value from the validated `result.data` —
+  // which is then iterated by stripHiddenAnswers, so the value would never
+  // reach `answers_json`. The corresponding cleanup is in the finally below.
+  // TODO: under concurrent server actions this slot is racy; the low-traffic
+  // admin context makes that acceptable for now. A future hardening could
+  // use AsyncLocalStorage or thread the schema through the walker directly.
+  setCurrentFormSchema(version.schema_json as Parameters<typeof setCurrentFormSchema>[0])
+  let result: Awaited<ReturnType<typeof validateEntitiesValues>>
+  try {
+    result = await validateEntitiesValues(rawValues, formBuilder, prunedSchema as Parameters<typeof validateEntitiesValues>[2])
+  } finally {
+    setCurrentFormSchema(null)
+  }
   if (!result.success) {
     throw new Error("Form validation failed server-side. Please check your answers and try again.")
   }
@@ -296,6 +314,8 @@ export async function submitAssessmentAction(
   // THEN evaluate visibility against the validated values, THEN strip hidden entities.
   // runReportDraftGeneration in the after() callback reads answers_json post-write — it
   // automatically benefits from the scrub without any change to the AI path (CONTEXT §deferred).
+  // evaluateVisibility receives the schema explicitly so it does NOT depend on the
+  // module-level slot (cleared above).
   const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility")
   const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers")
   const visibility = evaluateVisibility(version.schema_json as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)

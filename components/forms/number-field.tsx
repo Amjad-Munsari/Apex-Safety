@@ -54,6 +54,18 @@ export function NumberField({
     onChange(clamp(base + delta))
   }
 
+  // Narrow-bounded fields (e.g. PAS 79 likelihood/consequence 1–5) — typing is
+  // disabled and the mic affordance is hidden because the value space is so
+  // small that the −/+ buttons are the only sensible input. Wider ranges
+  // (e.g. fire-warden count 0–999) and unbounded fields keep typing + mic.
+  // The bug this guards against: typing into a field already showing a value
+  // appends ("1" + "5" → "15") and lands an out-of-range value in the store
+  // that downstream computed fields reject, leaving the form in a broken
+  // intermediate state. The 10-unit threshold is the practical line between
+  // a rating-style picker and a free-entry quantity.
+  const isNarrowBounded =
+    typeof min === "number" && typeof max === "number" && max - min <= 10
+
   return (
     <div className="flex items-stretch gap-2">
       <button
@@ -72,32 +84,57 @@ export function NumberField({
         <Input
           type="number"
           inputMode="decimal"
-          className={cn("pr-12 h-12 rounded-sm text-center", t.input)}
+          className={cn(
+            "h-12 rounded-sm text-center",
+            isNarrowBounded ? "" : "pr-12",
+            t.input
+          )}
           placeholder={placeholder}
           value={safeNumeric ?? ""}
           min={min}
           max={max}
           step={step}
-          onChange={(e) => {
-            const raw = e.target.value
-            if (raw === "") {
-              onChange("")
-              return
-            }
-            const n = Number(raw)
-            onChange(Number.isNaN(n) ? raw : n)
-          }}
+          readOnly={isNarrowBounded}
+          onFocus={(e) => e.target.select()}
+          onChange={
+            isNarrowBounded
+              ? undefined
+              : (e) => {
+                  const raw = e.target.value
+                  if (raw === "") {
+                    onChange("")
+                    return
+                  }
+                  const n = Number(raw)
+                  onChange(Number.isNaN(n) ? raw : n)
+                }
+          }
+          onBlur={
+            isNarrowBounded
+              ? undefined
+              : (e) => {
+                  // Defensive clamp for wide-bounded fields — paste / multi-digit
+                  // edits that exceed bounds normalise when focus leaves.
+                  if (e.target.value === "") return
+                  const n = Number(e.target.value)
+                  if (Number.isNaN(n)) return
+                  const clamped = clamp(n)
+                  if (clamped !== n) onChange(clamped)
+                }
+          }
         />
-        <MicButton
-          surface={surface}
-          onTranscript={(text) => {
-            // Pull the first numeric token out of the transcript ("seventy" stays as text;
-            // "70 units" becomes 70). Falls back to the raw transcript if no number is found.
-            const match = text.match(/-?\d+(?:\.\d+)?/)
-            if (match) onChange(clamp(Number(match[0])))
-            else onChange(text)
-          }}
-        />
+        {!isNarrowBounded && (
+          <MicButton
+            surface={surface}
+            onTranscript={(text) => {
+              // Pull the first numeric token out of the transcript ("seventy" stays as text;
+              // "70 units" becomes 70). Falls back to the raw transcript if no number is found.
+              const match = text.match(/-?\d+(?:\.\d+)?/)
+              if (match) onChange(clamp(Number(match[0])))
+              else onChange(text)
+            }}
+          />
+        )}
       </div>
 
       <button

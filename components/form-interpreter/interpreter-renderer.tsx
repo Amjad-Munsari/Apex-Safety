@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import { formBuilder, type FormBuilderSchema } from "@/lib/form-builder"
 import { computeFormProgress } from "@/lib/form-builder/progress"
 import { evaluateVisibility } from "@/lib/form-builder/visibility/evaluate-visibility"
+import { setCurrentFormSchema } from "@/lib/form-builder/visibility/compute-computed-values"
 import { pruneSchemaForValidation } from "@/lib/form-builder/prune-schema-for-validation"
 import { validateInstanceRequired } from "@/lib/form-builder/validate-instance-required"
 // submitAssessmentAction is implemented in Plan 13-03 Task 2
@@ -84,14 +85,7 @@ export const InterpreterRenderer = forwardRef<
   const interpreterStore = useInterpreterStore(formBuilder, schema, {
     events: {
       onEntityValueUpdated(payload) {
-        // Skip validateEntityValue for computedField — coltorapps treats it as "not
-        // eligible for validation" and throws. computedField is read-only (validator
-        // is a passthrough) so there's nothing to validate anyway. Without this skip,
-        // ComputedFieldRenderer's setValue write trips the throw.
-        const entityType = schema.entities[payload.entityId]?.type
-        if (entityType !== "computedField") {
-          void interpreterStore.validateEntityValue(payload.entityId)
-        }
+        void interpreterStore.validateEntityValue(payload.entityId)
         // Recompute completion % on every value change so the header
         // progress bar stays in sync with what the user has filled.
         // Phase 15: pass visibility map so hidden fields drop from the denominator (D-07).
@@ -101,6 +95,17 @@ export const InterpreterRenderer = forwardRef<
       },
     },
   })
+
+  // Register the schema with the module-level slot used by
+  // `shouldBeProcessed` so its computed-source rule evaluation can derive
+  // computedField values inline (no longer needs a setValue bridge from
+  // ComputedFieldRenderer — which raced coltorapps' at() precheck and threw
+  // "Entity not processable" when the user typed into a conditionally-shown
+  // field whose visibility depended on a computed value).
+  useEffect(() => {
+    setCurrentFormSchema(schema)
+    return () => setCurrentFormSchema(null)
+  }, [schema])
 
   /**
    * propsRef — stable ref that mirrors props which change on each render but

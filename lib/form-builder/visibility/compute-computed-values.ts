@@ -14,6 +14,32 @@
 import type { ProgressSchema } from "./types"
 import { computePAS79RiskLevel } from "../risk/pas79"
 
+// ── Module-level current-form schema registry ─────────────────────────────────
+//
+// shouldBeProcessed (called by coltorapps on every value change) receives only
+// the entity being evaluated and the current entitiesValues map — it has no
+// reference to the form's schema. But to evaluate visibility rules whose source
+// is a computedField, the function needs to derive the computed value from its
+// inputs, and that requires the schema (to look up the computedField's
+// computedInputs attribute).
+//
+// We bridge this with a module-level slot that InterpreterRenderer fills on
+// mount and clears on unmount. This is safe under the invariant that only one
+// InterpreterRenderer is ever mounted at a time in this app (assessment fill,
+// customer fill, and assignment fill are all single-form pages). If a future
+// multi-form scenario emerges (e.g. side-by-side preview), this becomes a
+// stack — single slot will fail loudly via shouldBeProcessed reading the wrong
+// schema, which is preferable to silent miscalculation.
+let _currentSchema: ProgressSchema | null = null
+
+export function setCurrentFormSchema(schema: ProgressSchema | null) {
+  _currentSchema = schema
+}
+
+export function getCurrentFormSchema(): ProgressSchema | null {
+  return _currentSchema
+}
+
 export function augmentAnswersWithComputedValues(
   schema: ProgressSchema,
   answers: Record<string, unknown>
