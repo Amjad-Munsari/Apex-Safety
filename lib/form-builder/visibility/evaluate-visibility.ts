@@ -18,6 +18,7 @@ import type { ProgressSchema, VisibilityState } from "./types";
 import { evaluateRule } from "./evaluate-rule";
 import { combineShowHide } from "./combine-rules";
 import { cascadeVisibility } from "./cascade-visibility";
+import { augmentAnswersWithComputedValues } from "./compute-computed-values";
 
 /**
  * Return the entity type of a given sourceEntityId from schema.entities.
@@ -44,6 +45,11 @@ export function evaluateVisibility(
 ): Record<string, VisibilityState> {
   const out: Record<string, VisibilityState> = {};
 
+  // Step 0: augment answers with computedField values so rules sourced from a
+  // computedField (D-02) evaluate against the live computed level rather than
+  // the always-undefined store slot for the read-only computedField.
+  const answersWithComputed = augmentAnswersWithComputedValues(schema, answers);
+
   // Step 1: per-entity own-rule evaluation
   for (const [id, entity] of Object.entries(schema.entities)) {
     const rulesAttr = entity.attributes?.visibilityRules as
@@ -63,7 +69,7 @@ export function evaluateVisibility(
       const results = showHideRules.map((r) => ({
         fired: evaluateRule(
           r.operator,
-          answers[r.sourceEntityId],
+          answersWithComputed[r.sourceEntityId],
           r.value,
           sourceTypeOf(schema, r.sourceEntityId)
         ),
@@ -77,7 +83,7 @@ export function evaluateVisibility(
     const dynamicRequired = requireRules.some((r) =>
       evaluateRule(
         r.operator,
-        answers[r.sourceEntityId],
+        answersWithComputed[r.sourceEntityId],
         r.value,
         sourceTypeOf(schema, r.sourceEntityId)
       )

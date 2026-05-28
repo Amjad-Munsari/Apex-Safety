@@ -58,7 +58,12 @@ vi.mock("@/lib/supabase/admin", () => ({
             capturedUpdate = payload;
             return {
               eq: () => ({
-                eq: () => Promise.resolve({ error: null }),
+                eq: () => ({
+                  eq: () => ({
+                    select: () =>
+                      Promise.resolve({ data: [{ id: "sub-id" }], error: null }),
+                  }),
+                }),
               }),
             };
           },

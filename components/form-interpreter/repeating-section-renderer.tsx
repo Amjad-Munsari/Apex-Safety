@@ -45,11 +45,12 @@
  */
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { repeatingSectionEntity } from "@/lib/form-builder/entities/repeating-section"
-import type { FormBuilderSchema } from "@/lib/form-builder"
+import type { FormBuilderSchema, formBuilder } from "@/lib/form-builder"
+import type { InterpreterStore } from "@coltorapps/builder"
 import { ChevronDown, ChevronUp, Plus, X } from "lucide-react"
 import { evaluateVisibilityForInstance } from "@/lib/form-builder/visibility/evaluate-visibility"
 
@@ -64,6 +65,13 @@ type Props = EntityComponentProps<typeof repeatingSectionEntity> & {
    * from InterpreterRenderer props and threads it here).
    */
   schema: FormBuilderSchema
+  /**
+   * Interpreter store — required so per-instance visibility evaluation has
+   * access to ROOT entity values (e.g. ancestor-scope D-03 rules like the
+   * parent sectionGroup's `Site type === Commercial` show rule). Without
+   * the root values, cascade force-hides this section and its children.
+   */
+  interpreterStore: InterpreterStore<typeof formBuilder>
 }
 
 const surfaceTokens = {
@@ -263,13 +271,19 @@ export function RepeatingSectionRenderer({
   setValue,
   surface = "cream",
   schema,
+  interpreterStore,
 }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
-  // Current snapshot of all interpreter store values — needed for evaluateVisibilityForInstance.
-  // We use entity.value to access the current instances (already stored there by coltorapps).
-  // The full answer map is reconstructed below for the visibility evaluator.
-  const allValues: Record<string, unknown> = { [entity.id]: entity.value }
+  // Snapshot of ALL root entity values — required by evaluateVisibilityForInstance
+  // so cascade can see ancestor-scope sources (e.g. the parent sectionGroup's
+  // `Site type === Commercial` show rule). Pulling only `entity.value` here would
+  // leave every root answer undefined and force-hide this section's children.
+  // Overlay entity.value last so this renderer always sees the freshest local instances.
+  const allValues: Record<string, unknown> = {
+    ...interpreterStore.getEntitiesValues(),
+    [entity.id]: entity.value,
+  }
 
   const sectionTitle = (attrs.title as string | undefined) ?? ""
   const sectionDescription = (attrs.description as string | undefined) ?? ""
@@ -290,6 +304,20 @@ export function RepeatingSectionRenderer({
     const stored = entity.value as { instances?: InstanceValues[] } | undefined
     return stored?.instances ?? []
   })
+
+  // Resume-from-draft sync: when the store hydrates after mount (e.g. a saved
+  // draft is loaded asynchronously, or assignment-fill flows seed values
+  // post-mount) the local `instances` would otherwise stay at its initial
+  // empty array. Sync down only when local state is empty — guard against
+  // overwriting in-progress edits.
+  const storedInstances =
+    (entity.value as { instances?: InstanceValues[] } | undefined)?.instances
+  useEffect(() => {
+    if (instances.length === 0 && storedInstances && storedInstances.length > 0) {
+      setInstances(storedInstances)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedInstances])
 
   // Track collapsed instance card indices.
   const [collapsedIndices, setCollapsedIndices] = useState<Set<number>>(new Set())

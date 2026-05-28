@@ -34,6 +34,7 @@
  */
 "use client"
 
+import { useEffect, useRef } from "react"
 import { useInterpreterEntitiesValues } from "@coltorapps/builder-react"
 import type { InterpreterStore } from "@coltorapps/builder"
 import { cn } from "@/lib/utils"
@@ -71,7 +72,7 @@ const surfaceTokens = {
   },
 } as const
 
-export function ComputedFieldRenderer({ entity, interpreterStore, surface = "cream" }: Props) {
+export function ComputedFieldRenderer({ entity, interpreterStore, setValue, surface = "cream" }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
 
@@ -122,6 +123,23 @@ export function ComputedFieldRenderer({ entity, interpreterStore, surface = "cre
     likelihoodNum !== undefined && !isNaN(likelihoodNum) ? likelihoodNum : undefined,
     consequenceNum !== undefined && !isNaN(consequenceNum) ? consequenceNum : undefined
   )
+
+  // Persist the computed level back to the interpreter store so coltorapps' own
+  // shouldBeProcessed hook (which evaluates rules against entitiesValues directly)
+  // sees the live value for rules sourced from this computedField
+  // (D-02: e.g. "show Mitigation when PAS 79 === Intolerable").
+  //
+  // setValue identity is unstable across renders, so we read it via a ref and
+  // gate on [computedLevel] — the effect only fires when the derived value
+  // actually changes. interpreter-renderer.tsx's onEntityValueUpdated callback
+  // skips validateEntityValue for computedField entities (coltorapps' validator
+  // throws "not eligible for validation" on a render-time write).
+  const computedLevel = result?.level ?? undefined
+  const setValueRef = useRef(setValue)
+  setValueRef.current = setValue
+  useEffect(() => {
+    setValueRef.current(computedLevel)
+  }, [computedLevel])
 
   return (
     <div className="flex flex-col gap-1.5">

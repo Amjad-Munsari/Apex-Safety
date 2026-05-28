@@ -8,6 +8,8 @@ import { cn } from "@/lib/utils"
 import { formBuilder, type FormBuilderSchema } from "@/lib/form-builder"
 import { computeFormProgress } from "@/lib/form-builder/progress"
 import { evaluateVisibility } from "@/lib/form-builder/visibility/evaluate-visibility"
+import { pruneSchemaForValidation } from "@/lib/form-builder/prune-schema-for-validation"
+import { validateInstanceRequired } from "@/lib/form-builder/validate-instance-required"
 // submitAssessmentAction is implemented in Plan 13-03 Task 2
 import { submitAssessmentAction } from "@/app/admin/assessments/actions"
 import { TextFieldRenderer } from "./text-field-renderer"
@@ -82,7 +84,14 @@ export const InterpreterRenderer = forwardRef<
   const interpreterStore = useInterpreterStore(formBuilder, schema, {
     events: {
       onEntityValueUpdated(payload) {
-        void interpreterStore.validateEntityValue(payload.entityId)
+        // Skip validateEntityValue for computedField — coltorapps treats it as "not
+        // eligible for validation" and throws. computedField is read-only (validator
+        // is a passthrough) so there's nothing to validate anyway. Without this skip,
+        // ComputedFieldRenderer's setValue write trips the throw.
+        const entityType = schema.entities[payload.entityId]?.type
+        if (entityType !== "computedField") {
+          void interpreterStore.validateEntityValue(payload.entityId)
+        }
         // Recompute completion % on every value change so the header
         // progress bar stays in sync with what the user has filled.
         // Phase 15: pass visibility map so hidden fields drop from the denominator (D-07).
@@ -182,8 +191,9 @@ export const InterpreterRenderer = forwardRef<
     computedField: (p: EntityComponentProps<typeof computedFieldEntity>) =>
       <ComputedFieldRenderer {...p} surface={surface} interpreterStore={propsRef.current.interpreterStore} />,
     // repeatingSection requires schema to look up child entity types for inline rendering
+    // and interpreterStore so per-instance visibility cascade can see ancestor-scope sources.
     repeatingSection: (p: EntityComponentProps<typeof repeatingSectionEntity>) =>
-      <RepeatingSectionRenderer {...p} surface={surface} schema={propsRef.current.schema} />,
+      <RepeatingSectionRenderer {...p} surface={surface} schema={propsRef.current.schema} interpreterStore={propsRef.current.interpreterStore} />,
   // deps stay [surface] — see propsRef JSDoc above for why this is correct.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [surface])
@@ -199,9 +209,21 @@ export const InterpreterRenderer = forwardRef<
     for (const entityId of Object.keys(values)) {
       void interpreterStore.validateEntityValue(entityId)
     }
-    const result = await validateEntitiesValues(values, formBuilder, schema)
+    const result = await validateEntitiesValues(values, formBuilder, pruneSchemaForValidation(schema))
     if (!result.success) {
       toast.error("Please fill in all required fields before submitting.")
+      return false
+    }
+
+    // Per-instance required enforcement — coltorapps does not walk instances[]
+    // and the pruned schema deliberately stops the walk at repeatingSection.
+    const instanceFailures = validateInstanceRequired(schema, values as Record<string, unknown>)
+    if (instanceFailures.length > 0) {
+      const first = instanceFailures[0]
+      toast.error(
+        `Fill "${first.childLabel}" in ${first.repSectionLabel} #${first.instanceIndex + 1}` +
+          (instanceFailures.length > 1 ? ` (+${instanceFailures.length - 1} more)` : "")
+      )
       return false
     }
 

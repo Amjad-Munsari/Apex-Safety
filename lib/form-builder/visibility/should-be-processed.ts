@@ -66,11 +66,12 @@ function evaluateRuleInline(
 ): boolean {
   switch (operator as VisibilityRuleOperator) {
     case "equals":
-      // eslint-disable-next-line eqeqeq
-      return sourceValue == ruleValue;
+      // Strict equality — matches evaluate-rule.ts:63 so the render-gate path
+      // (shouldBeProcessed) and the dynamicRequired/progress/scrub path
+      // (evaluateVisibility) agree for numeric-source rules.
+      return sourceValue === ruleValue;
     case "notEquals":
-      // eslint-disable-next-line eqeqeq
-      return sourceValue != ruleValue;
+      return sourceValue !== ruleValue;
     case "contains":
       if (typeof sourceValue !== "string" || typeof ruleValue !== "string") return false;
       return sourceValue.includes(ruleValue);

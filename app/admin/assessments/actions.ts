@@ -13,6 +13,7 @@ import {
   buildSignatureStoragePath,
   buildPhotoStoragePath,
 } from "@/lib/form-builder/storage/upload-paths"
+import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections"
 
 export async function startAssessment(clientId: string, templateVersionId: string) {
   const supabase = await createClient()
@@ -234,7 +235,7 @@ export async function submitAssessmentAction(
   rawValues: unknown
 ): Promise<void> {
   // T-13-11: auth gate before any read/write
-  await requireActorUserId("admin")
+  const userId = await requireActorUserId("admin")
 
   // Step 1: fetch submission row to read the pinned template_version_id
   const { data: submission, error: subError } = await adminClient
@@ -263,10 +264,31 @@ export async function submitAssessmentAction(
   // Step 3: server-side validation — T-13-09
   const { validateEntitiesValues } = await import("@coltorapps/builder")
   const { formBuilder } = await import("@/lib/form-builder")
+  const { pruneSchemaForValidation } = await import("@/lib/form-builder/prune-schema-for-validation")
 
-  const result = await validateEntitiesValues(rawValues, formBuilder, version.schema_json)
+  // coltorapps walks entity.children recursively and validates each at the root level,
+  // but repeatingSection child values live nested inside instances[] — so any static
+  // `required: true` on a template child would always fail at the root. Prune to stop
+  // the walk at repeatingSection; the section's own validator still enforces the
+  // { instances } shape and min/max counts.
+  const prunedSchema = pruneSchemaForValidation(version.schema_json as Parameters<typeof pruneSchemaForValidation>[0])
+  const result = await validateEntitiesValues(rawValues, formBuilder, prunedSchema as Parameters<typeof validateEntitiesValues>[2])
   if (!result.success) {
     throw new Error("Form validation failed server-side. Please check your answers and try again.")
+  }
+
+  // Per-instance required enforcement — mirrors the client guard in interpreter-renderer.tsx.
+  const { validateInstanceRequired } = await import("@/lib/form-builder/validate-instance-required")
+  const instanceFailures = validateInstanceRequired(
+    version.schema_json as Parameters<typeof validateInstanceRequired>[0],
+    result.data as Record<string, unknown>
+  )
+  if (instanceFailures.length > 0) {
+    const first = instanceFailures[0]
+    throw new Error(
+      `Missing required field "${first.childLabel}" in ${first.repSectionLabel} #${first.instanceIndex + 1}` +
+        (instanceFailures.length > 1 ? ` (and ${instanceFailures.length - 1} more)` : "")
+    )
   }
 
   // Step 3.5: Phase 15 — server-side visibility evaluation + hidden-subtree scrub (D-01, COND-01).
@@ -279,8 +301,14 @@ export async function submitAssessmentAction(
   const visibility = evaluateVisibility(version.schema_json as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)
   const scrubbedAnswers = stripHiddenAnswers(version.schema_json as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility)
 
-  // Step 4: write validated data — T-13-13 (audit trail); uses SCRUBBED answers (D-01)
-  const { error: updateError } = await adminClient
+  // Step 4: write validated data — T-13-13 (audit trail); uses SCRUBBED answers (D-01).
+  // submitted_by ownership filter matches the legacy submitAssessment + autosaveAnswers
+  // pattern — defence-in-depth that only the admin who started the draft can submit it.
+  // userId may be null in demo mode (see lib/auth-helpers.ts requireActorUserId), in
+  // which case the original draft was also written with submitted_by=null and the
+  // ownership check is skipped to keep the demo flow working. .select("id") guards
+  // against silent no-ops when the row was already submitted or doesn't match.
+  let updateQuery = adminClient
     .from("form_submissions")
     .update({
       answers_json: scrubbedAnswers,
@@ -289,9 +317,18 @@ export async function submitAssessmentAction(
     })
     .eq("id", submissionId)
     .eq("status", "draft")
+  if (userId !== null) {
+    updateQuery = updateQuery.eq("submitted_by", userId)
+  }
+  const { data: updatedRows, error: updateError } = await updateQuery.select("id")
 
   if (updateError) {
     throw new Error(`Failed to submit assessment: ${updateError.message}`)
+  }
+  if (!updatedRows || updatedRows.length === 0) {
+    throw new Error(
+      "Submit matched zero rows — submission may have been submitted, deleted, or belongs to a different user."
+    )
   }
 
   // Auto-generate the AI draft after the response is sent. Runs in the
@@ -336,68 +373,6 @@ export async function submitAssessmentAction(
       })
     }
   })
-}
-
-// ── expandRepeatingSections ──────────────────────────────────────────────────
-
-/**
- * Expand repeatingSection answers into labelled flat objects for the AI prompt.
- *
- * Current answers_json stores repeatingSection values as:
- *   { "[repId]": { instances: [ { "[childId1]": value, "[childId2]": value }, ... ] } }
- *
- * This function transforms those into arrays of labelled objects:
- *   { "[repId]": [ { instanceIndex: 1, "Location": "door 1", "Condition": "good" }, ... ] }
- *
- * So the AI prompt sees one labelled object per door / hazard / item instead of
- * an opaque nested "instances" array (RESEARCH Pattern 10).
- *
- * CONTEXT §specifics: FRA-doors test scenario expects N instances → N hazards
- * in the generated draft.
- *
- * Threat T-14-03-06: iterates schema.entities[id].children (the PINNED,
- * server-fetched list) — keys not in that list are NEVER included in the
- * labelled output. User-supplied extra child keys are silently discarded.
- *
- * Pure function — no side effects, does not mutate the input.
- */
-export function expandRepeatingSections(
-  schema: { entities: Record<string, { type: string; children?: string[]; attributes?: Record<string, unknown> }> },
-  answers: Record<string, unknown>
-): Record<string, unknown> {
-  const expanded: Record<string, unknown> = { ...answers }
-
-  for (const [entityId, entity] of Object.entries(schema.entities)) {
-    if (entity.type !== "repeatingSection") continue
-
-    const repeatingValue = answers[entityId] as
-      | { instances?: unknown[] }
-      | undefined
-
-    // If no answer exists for this repeatingSection, preserve original value
-    // (don't inject []). Per behavior contract: "if a repeatingSection entity
-    // exists in schema but has no answer value, leave the key as-is."
-    if (!repeatingValue?.instances) continue
-
-    const childIds: string[] = (entity.children as string[]) ?? []
-
-    expanded[entityId] = repeatingValue.instances.map((inst, idx) => {
-      const instance = inst as Record<string, unknown>
-      const labelled: Record<string, unknown> = { instanceIndex: idx + 1 }
-
-      for (const childId of childIds) {
-        const childEntity = schema.entities[childId]
-        // T-14-03-06: only keys declared in schema.children are included
-        const childLabel =
-          (childEntity?.attributes?.label as string | undefined) ?? childId
-        labelled[childLabel] = instance[childId]
-      }
-
-      return labelled
-    })
-  }
-
-  return expanded
 }
 
 // ── runReportDraftGeneration ─────────────────────────────────────────────────

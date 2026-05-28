@@ -130,10 +130,15 @@ describe("Submission Version Pinning", () => {
       },
     });
 
-    // Mock update: returns success
+    // Mock update: returns success — chain is .eq(id).eq(status).eq(submitted_by).select(id)
     mockUpdate.mockReturnValue({
       eq: () => ({
-        eq: () => Promise.resolve({ data: null, error: null }),
+        eq: () => ({
+          eq: () => ({
+            select: () =>
+              Promise.resolve({ data: [{ id: SUBMISSION_ID }], error: null }),
+          }),
+        }),
       }),
     });
   });

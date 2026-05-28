@@ -1,5 +1,5 @@
 /**
- * Tests for expandRepeatingSections (app/admin/assessments/actions.ts)
+ * Tests for expandRepeatingSections (lib/form-builder/expand-repeating-sections.ts)
  *
  * Pure-function tests — no Supabase, no mocking needed.
  *
@@ -47,7 +47,7 @@ vi.mock("@/lib/supabase/admin", () => ({
   },
 }));
 
-import { expandRepeatingSections } from "@/app/admin/assessments/actions";
+import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections";
 
 // Use real RFC-4122-style UUIDs for entity IDs
 const REP_ID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
