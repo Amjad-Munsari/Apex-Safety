@@ -73,8 +73,8 @@ Lives entirely in n8n per ADR 2026-04-15.
 - [ ] **REPORT-02**: GPT-4 is invoked with JSON-schema structured output — the model cannot populate fields without evidence in the submission
 - [ ] **REPORT-03**: YELLOW BROOM FRA is included as few-shot reference for the FRA template variant
 - [ ] **REPORT-04**: Site Risk variant has a comparable few-shot reference ⚠️ *blocked on completed site-risk example*
-- [ ] **REPORT-05**: Branded PDF is rendered matching 888's header/footer derived from YELLOW BROOM (logo + brand colours) ⚠️ *blocked on brand assets*
-- [ ] **REPORT-06**: PDF is stored in `reports` Storage bucket under the client's path prefix
+- [x] **REPORT-05**: Branded PDF is rendered matching 888's header/footer derived from YELLOW BROOM (logo + brand colours) ⚠️ *blocked on brand assets*
+- [x] **REPORT-06**: PDF is stored in `reports` Storage bucket under the client's path prefix
 - [ ] **REPORT-07**: `form_submissions.report_url` and `form_submissions.status = 'draft_ready_for_review'` are updated atomically on completion
 - [ ] **REPORT-08**: Admin review UI shows the generated draft alongside the raw STT transcript verbatim so Matt can compare what he said vs what the AI wrote
 - [ ] **REPORT-09**: Matt can approve, request regenerate, or edit the PDF before delivery
@@ -255,8 +255,8 @@ Phase 2 form builder and extensions. In the original intake, not in the signed 1
 | REPORT-02 | Phase 5: AI Report Pipeline | Pending |
 | REPORT-03 | Phase 5: AI Report Pipeline | Pending |
 | REPORT-04 | Phase 5: AI Report Pipeline | Pending |
-| REPORT-05 | Phase 5: AI Report Pipeline | Pending |
-| REPORT-06 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-05 | Phase 5: AI Report Pipeline | Complete |
+| REPORT-06 | Phase 5: AI Report Pipeline | Complete |
 | REPORT-07 | Phase 5: AI Report Pipeline | Pending |
 | REPORT-08 | Phase 5: AI Report Pipeline | Pending |
 | REPORT-09 | Phase 5: AI Report Pipeline | Pending |
