@@ -320,7 +320,11 @@ export function TemplateBuilderClient({
 
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger>
+              {/* base-ui renders <button> by default; passing render=<span> avoids
+                  the nested-button hydration error AND keeps the tooltip hoverable
+                  when the inner Button is disabled (disabled buttons swallow pointer
+                  events; spans don't). */}
+              <TooltipTrigger render={<span tabIndex={0} />}>
                 <Button
                   size="sm"
                   onClick={handlePublish}
