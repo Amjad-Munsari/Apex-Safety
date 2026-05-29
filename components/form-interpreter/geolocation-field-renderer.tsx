@@ -25,10 +25,6 @@
  *
  * Security note (T-14-05-01): navigator.geolocation errors are logged only by
  * their numeric code (GeolocationPositionError.code), never by the full coords.
- *
- * TODO (Plan 14-06): Wire AttachPhotosAffordance when attrs.attachPhotos === true.
- * This renderer does not import it yet — Plan 14-06 adds the affordance import
- * and wires clientId + submissionId from interpreter-renderer.tsx.
  */
 "use client"
 

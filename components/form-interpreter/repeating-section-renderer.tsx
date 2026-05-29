@@ -40,8 +40,6 @@
  *   Replicating that plumbing inside instances doubles complexity for marginal
  *   value — FRA fire-doors scenario only needs text + select + checkbox children.
  *   Shown inline as a destructive text message.
- *
- * TODO (Plan 14-06): wire schema prop via the components map wrapper.
  */
 "use client"
 

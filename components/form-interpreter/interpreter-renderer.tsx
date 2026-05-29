@@ -199,9 +199,10 @@ export const InterpreterRenderer = forwardRef<
       <MultiPhotoFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
     geolocationField: (p: EntityComponentProps<typeof geolocationFieldEntity>) =>
       <GeolocationFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
-    // computedField: NO dynamicRequired (computedField has no requiredAttribute — UI-SPEC §computedField-specific)
+    // computedField: NO dynamicRequired (computedField has no requiredAttribute — UI-SPEC §computedField-specific).
+    // clientId + submissionId for AttachPhotosAffordance (D-05) — wired 2026-05-29.
     computedField: (p: EntityComponentProps<typeof computedFieldEntity>) =>
-      <ComputedFieldRenderer {...p} surface={surface} interpreterStore={propsRef.current.interpreterStore} />,
+      <ComputedFieldRenderer {...p} surface={surface} interpreterStore={propsRef.current.interpreterStore} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} />,
     // repeatingSection requires schema to look up child entity types for inline rendering
     // and interpreterStore so per-instance visibility cascade can see ancestor-scope sources.
     repeatingSection: (p: EntityComponentProps<typeof repeatingSectionEntity>) =>

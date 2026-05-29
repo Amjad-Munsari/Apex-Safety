@@ -28,9 +28,10 @@
  * inputs (attrs.inputs misconfigured to point at non-numeric entity) — renderer
  * safely falls back to "pending" pill. No crash, no incorrect badge.
  *
- * TODO (Plan 14-06): Wire AttachPhotosAffordance when attrs.attachPhotos === true.
- * Per D-05, geolocationField (non-section) gets attachPhotos. computedField also
- * has attachPhotosAttribute. Plan 14-06 plumbs clientId + submissionId.
+ * AttachPhotosAffordance (D-05): wired identically to GeolocationFieldRenderer
+ * — when `attrs.attachPhotos === true` AND `clientId` + `submissionId` are
+ * supplied by the components map wrapper. Code audit 2026-05-29 closed the
+ * Plan 14-06 carry-forward.
  */
 "use client"
 
@@ -41,6 +42,7 @@ import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { computedFieldEntity } from "@/lib/form-builder/entities/computed-field"
 import type { formBuilder } from "@/lib/form-builder"
 import { computePAS79RiskLevel } from "@/lib/form-builder/risk/pas79"
+import { AttachPhotosAffordance } from "./attach-photos-affordance"
 
 type Props = EntityComponentProps<typeof computedFieldEntity> & {
   surface?: "dark" | "cream"
@@ -56,6 +58,10 @@ type Props = EntityComponentProps<typeof computedFieldEntity> & {
    * is the only Phase 14 renderer that subscribes to other entity values.
    */
   interpreterStore: InterpreterStore<typeof formBuilder>
+  /** Wired by components map for AttachPhotosAffordance (D-05). Optional —
+   *  affordance is skipped if either is missing. */
+  clientId?: string
+  submissionId?: string
 }
 
 const surfaceTokens = {
@@ -71,7 +77,7 @@ const surfaceTokens = {
   },
 } as const
 
-export function ComputedFieldRenderer({ entity, interpreterStore, surface = "cream" }: Props) {
+export function ComputedFieldRenderer({ entity, interpreterStore, surface = "cream", clientId, submissionId }: Props) {
   const t = surfaceTokens[surface]
   const attrs = entity.attributes
 
@@ -161,10 +167,16 @@ export function ComputedFieldRenderer({ entity, interpreterStore, surface = "cre
         </div>
       )}
 
-      {/* NOTE: computedField is read-only — no setValue, no error display, no user input.
-          No AttachPhotosAffordance here either — computedField gets attachPhotos (D-05)
-          but Plan 14-06 handles wiring clientId + submissionId from interpreter-renderer.tsx.
-          TODO (Plan 14-06): add AttachPhotosAffordance when attrs.attachPhotos === true. */}
+      {/* NOTE: computedField is read-only — no setValue, no error display, no user input. */}
+      {attrs.attachPhotos && clientId && submissionId && (
+        <AttachPhotosAffordance
+          submissionId={submissionId}
+          entityId={entity.id}
+          fieldLabel={attrs.label as string}
+          surface={surface}
+          clientId={clientId}
+        />
+      )}
     </div>
   )
 }
