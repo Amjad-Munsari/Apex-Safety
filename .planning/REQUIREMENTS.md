@@ -80,7 +80,7 @@ Lives entirely in n8n per ADR 2026-04-15.
 - [ ] **REPORT-09**: Matt can approve, request regenerate, or edit the PDF before delivery
 - [ ] **REPORT-10**: Approved PDFs flip `status = 'delivered'` and trigger n8n workflow #2 (email)
 - [ ] **REPORT-11**: No PDF is auto-delivered to a client without Matt's explicit approval in MVP
-- [ ] **REPORT-12**: n8n error workflow is wired to catch workflow #1 failures and write to `workflow_errors` table visible in admin dashboard
+- [x] **REPORT-12**: n8n error workflow is wired to catch workflow #1 failures and write to `workflow_errors` table visible in admin dashboard
 
 ### Client Compliance Portal (PORTAL)
 
@@ -262,7 +262,7 @@ Phase 2 form builder and extensions. In the original intake, not in the signed 1
 | REPORT-09 | Phase 5: AI Report Pipeline | Pending |
 | REPORT-10 | Phase 5: AI Report Pipeline | Pending |
 | REPORT-11 | Phase 5: AI Report Pipeline | Pending |
-| REPORT-12 | Phase 5: AI Report Pipeline | Pending |
+| REPORT-12 | Phase 5: AI Report Pipeline | Complete |
 | PORTAL-01 | Phase 6: Client Compliance Portal | Pending |
 | PORTAL-02 | Phase 6: Client Compliance Portal | Pending |
 | PORTAL-03 | Phase 6: Client Compliance Portal | Pending |

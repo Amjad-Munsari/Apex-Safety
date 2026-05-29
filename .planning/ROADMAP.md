@@ -94,8 +94,8 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 
 **Gap-closure plans (added 2026-05-29 from 07-VERIFICATION.md):**
 - [x] 07-08-PLAN.md — REPORT-05/06: Reinstall @react-pdf/renderer; npm run build clean
-- [ ] 07-09-PLAN.md — REPORT-08: Migration 017 adds field_media.transcript column
-- [ ] 07-10-PLAN.md — REPORT-12 / D-11(c): Row-level workflow_errors list + D-09 status taxonomy
+- [x] 07-09-PLAN.md — REPORT-08: Migration 017 adds field_media.transcript column
+- [x] 07-10-PLAN.md — REPORT-12 / D-11(c): Row-level workflow_errors list + D-09 status taxonomy
 
 ---
 
