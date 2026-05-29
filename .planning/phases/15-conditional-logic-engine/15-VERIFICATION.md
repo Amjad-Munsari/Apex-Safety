@@ -1,22 +1,27 @@
 ---
 phase: 15-conditional-logic-engine
 verified: 2026-05-26T03:40:00Z
-status: human_needed
+human_resolved: 2026-05-29
+status: verified
 score: 5/5 must-haves verified
 overrides_applied: 0
-human_verification:
+human_verification_resolved:
   - test: "Cycle detection blocks Publish and shows inline CycleErrorBanner"
-    expected: "Admin adds a circular rule (A -> B -> A) in the builder, clicks Save, expects toast + inline error banner listing both entity labels; Publish button is disabled until cycle removed"
-    why_human: "UI behaviour and error-highlight feel cannot be verified programmatically without a running browser"
+    result: PASS
+    resolved: 2026-05-29
+    evidence: "15-UAT.md Section F1–F4 — observed live; banner text `Circular rule: Mitigation → Site type` rendered, Publish disabled with `Fix circular rules before publishing` tooltip, banner cleared on rule deletion"
   - test: "End-to-end FRA smoke — PAS 79 Mitigation show/hide (D-02)"
-    expected: "Open 'Phase 15 Conditional Smoke Test' template fill page; set Likelihood=5 + Consequence=5 (PAS79=Intolerable) -> Mitigation field appears; set Likelihood=1 -> Mitigation disappears"
-    why_human: "Cross-cutting fill flow requiring live browser + real Supabase data"
+    result: PASS
+    resolved: 2026-05-29
+    evidence: "15-UAT.md Section E E1–E5 — verified bidirectionally; submission `f0625f07-98b0-4d6f-a726-57777fafdb39` contains Mitigation entity ID with typed value"
   - test: "End-to-end FRA smoke — Door condition require (D-03)"
-    expected: "Open fill page, expand Fire doors register, add instance, set Door condition=Poor -> Repair urgency becomes required; set Door condition=Good -> required clears"
-    why_human: "Per-instance repeatingSection renderer behaviour requires live browser"
+    result: PASS
+    resolved: 2026-05-27
+    evidence: "15-UAT.md Section C C1–C6 — verified 2026-05-27 after fixes (already PASS before this session; item was stale in human_verification list)"
   - test: "Submission scrub verified in answers_json (D-01)"
-    expected: "Fill smoke template with Site type=Residential (hides Fire doors section), submit -> query form_submissions.answers_json -> no sectionGroup or repeatingSection keys present"
-    why_human: "Requires live DB write and post-submit inspection"
+    result: PASS
+    resolved: 2026-05-29
+    evidence: "Submission `f0625f07-98b0-4d6f-a726-57777fafdb39` — Site type=Residential → sectionGroup, repeatingSection (`0d02e4ef-...`), Door condition (`0e0a4730-...`), Repair urgency (`235c503b-...`) all absent from answers_json; verified via supabase-888 MCP"
 ---
 
 # Phase 15: Conditional Logic Engine — Verification Report
