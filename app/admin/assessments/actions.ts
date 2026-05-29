@@ -14,6 +14,8 @@ import {
   buildPhotoStoragePath,
 } from "@/lib/form-builder/storage/upload-paths"
 import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections"
+import { YELLOW_BROOM_EXEMPLAR } from "@/lib/ai/exemplars/yellow-broom-fra"
+import { buildReportPrompt } from "@/lib/ai/prompt-builder"
 
 export async function startAssessment(clientId: string, templateVersionId: string) {
   const supabase = await createClient()
@@ -468,7 +470,11 @@ async function runReportDraftGeneration(submissionId: string) {
     const { object } = await generateObject({
       model: openai('openai/gpt-4o-mini'),
       schema: reportSchema,
-      prompt: `Act as a Fire Risk Assessor. Draft a professional report based on the following raw assessment answers:\n\n${JSON.stringify(expandedAnswers, null, 2)}\n\nDo NOT invent any hazards that are not explicitly stated in the input data. Summarize appropriately.`,
+      prompt: buildReportPrompt({
+        exemplar: YELLOW_BROOM_EXEMPLAR,
+        exemplarLabel: "YELLOW BROOM 2023 FRA, anonymised",
+        expandedAnswers,
+      }),
     })
 
     // Step 7: Update draft_report_json and status
