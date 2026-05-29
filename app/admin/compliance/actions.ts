@@ -8,6 +8,15 @@ export async function getComplianceDocSignedUrl(
   docId: string,
   opts: { mode?: "view" | "download" } = {}
 ): Promise<{ url: string | null; filename: string | null }> {
+  // Auth gate — without this, any caller who could invoke the Server Action
+  // could mint a 5-min signed URL for any document by guessing docId.
+  // Code audit 2026-05-29.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { url: null, filename: null }
+  }
+
   const { data: doc, error: docErr } = await adminClient
     .from("documents")
     .select("storage_path, filename")
@@ -36,7 +45,13 @@ export async function getComplianceDocSignedUrl(
 export async function sendManualExpiryReminder(
   docId: string
 ): Promise<{ ok: boolean; error?: string }> {
+  // Auth gate — without this, an unauthenticated caller could trigger n8n
+  // dispatches for arbitrary docs. Code audit 2026-05-29.
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    return { ok: false, error: "Unauthorized" }
+  }
 
   const { data: doc, error: docErr } = await adminClient
     .from("documents")
@@ -79,7 +94,10 @@ export async function sendManualExpiryReminder(
   const result = await dispatchNotification(payload)
 
   if (!result.ok) {
-    await supabase.from("workflow_errors").insert({
+    // Use adminClient (service role) — workflow_errors is an audit log, not a
+    // user mutation. With user JWT the RLS policy (app_metadata.role='admin')
+    // can silently kill the insert when the role claim is absent.
+    await adminClient.from("workflow_errors").insert({
       workflow_name: "expiry_alert_manual",
       error_message: result.error ?? "unknown dispatch failure",
       payload: payload,
@@ -87,7 +105,8 @@ export async function sendManualExpiryReminder(
     return { ok: false, error: result.error ?? "Dispatch failed" }
   }
 
-  await supabase.from("notifications_sent").insert({
+  // Same rationale — admin audit insert, use service role.
+  await adminClient.from("notifications_sent").insert({
     client_id: doc.client_id,
     notification_type: "expiry_warning_manual",
     document_id: doc.id,
