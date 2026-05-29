@@ -157,6 +157,30 @@ describe("visibility-renderer — entity hide/show integration", () => {
     expect(rendererSource).toContain("evaluateVisibility")
   })
 
+  it("onEntityValueUpdated guards validateEntityValue against coltorapps cascade-clear events (E4 regression)", async () => {
+    // Coltorapps fires EntityValueUpdated for every entity transitioning to unprocessable
+    // when a container hide rule flips — sectionGroup, repeatingSection, computedField, and
+    // cascaded descendants all emit one each with value=undefined. validateEntityValue's
+    // eligibility precondition rejects non-input + just-hidden entities and THROWS.
+    //
+    // Without the guard, toggling a section's visibility from the builder/fill side throws
+    // "Entity not eligible for validation" into the React error boundary. This was discovered
+    // walking E4 of 15-UAT.md — the cascade-clear event for the "Fire doors register section"
+    // sectionGroup (hidden when Site type != Commercial) hit validateEntityValue and crashed.
+    //
+    // Locking: the onEntityValueUpdated body must wrap validateEntityValue in try/catch.
+    const { readFileSync } = await import("fs")
+    const { resolve } = await import("path")
+    const rendererSource = readFileSync(
+      resolve("components/form-interpreter/interpreter-renderer.tsx"),
+      "utf-8"
+    )
+
+    expect(rendererSource).toMatch(
+      /try\s*\{\s*void\s+interpreterStore\.validateEntityValue\(payload\.entityId\)\s*\}\s*catch\s*\{\s*\}/
+    )
+  })
+
   it("dynamicRequired (require rule fired) sets required=true in visibility map; visible=false overrides to required=false (D-07)", async () => {
     const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility")
 

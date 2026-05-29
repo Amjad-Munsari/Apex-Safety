@@ -251,21 +251,56 @@ Before starting any section, confirm all of these:
 
 **Fix:** Eliminated the setValue bridge. `shouldBeProcessed` now augments `entitiesValues` with computed values inline via `augmentAnswersWithComputedValues(schema, context.entitiesValues)`. The schema is registered with a module-level slot from `InterpreterRenderer` on mount. `ComputedFieldRenderer` is now a pure display component. See commit (TBD).
 
-**E4 — Mitigation value persists to answers_json** ⏸ NOT YET VERIFIED (session ended 2026-05-28 post `957221b`)
+**E4 — Mitigation value persists to answers_json** ⏸ NOT YET VERIFIED (1st attempt FAILED 2026-05-29 — new regression found, fixed; **re-run required**)
 
 - [ ] After submitting, query `form_submissions.answers_json`
 - [ ] Verify the Mitigation entity's ID appears as a key with a non-empty value
 - [ ] Confirm the value matches what was filled in E3
 
-**Status at session end:**
+**Status at session end (2026-05-28, prior session):**
 
 First E4 attempt revealed a server-side regression — Mitigation was missing from `answers_json` even though the user typed text into it. Root cause: coltorapps' `validateEntitiesValues` (standalone, not the store method) calls `shouldBeProcessed` on every entity via its `Rt` walker; when `shouldBeProcessed` returns false, the entity's value is **deleted from the result data** before the cascade strip runs. With the architectural fix (commit `957221b`), `shouldBeProcessed` augments inline via a module-level schema slot — set by `InterpreterRenderer.useEffect` on the client, but the server action never set it, so server-side rule evaluation against the computedField source perma-failed.
 
 **Fix (in `957221b`):** `submitAssessmentAction` now calls `setCurrentFormSchema(schema)` before `validateEntitiesValues` and clears it in a `finally`. Race risk under concurrent server actions documented as TODO; acceptable for current admin traffic.
 
-**Reference submission** (pre-fix, broken state) — `27967b25-2d30-4c04-b511-300960e9d016`. Re-run E3 + E4 after `957221b` to confirm Mitigation now persists.
+**Reference submission** (pre-fix, broken state) — `27967b25-2d30-4c04-b511-300960e9d016`.
 
-**Resume point:** Hard-refresh, do a fresh fill with Mitigation text, submit, query `form_submissions.answers_json` for the new submission and confirm the Mitigation entity ID (`ce13e4af-a019-4b30-8099-9e43e49c96d5`) appears with the typed text.
+**2nd attempt result (2026-05-29) — FAILED with new regression:**
+
+Setting **Site type** in the Select threw a runtime error before E4 could reach the submit step:
+
+```
+Runtime Error: Entity not eligible for validation.
+  at validateEntityValue (coltorapps@dist/index.mjs)
+  at onEntityValueUpdated (components/form-interpreter/interpreter-renderer.tsx:88)
+```
+
+**Root cause:** coltorapps emits an `EntityValueUpdated` event for every entity transitioning to unprocessable during a visibility cascade — i.e. when Site type changes to "Residential", the sectionGroup `Fire doors register section` (rule: `show when Site type = Commercial`) becomes hidden, and coltorapps fires `EntityValueUpdated` with `value:undefined` for the sectionGroup *and every cascaded descendant* (repeatingSection, Door condition, Repair urgency). Confirmed in coltorapps build at offset 27989:
+
+```js
+if (!shouldBeProcessed(...))
+  events.push({name: 'EntityUnprocessable', payload:{entityId:t.id}}),
+  events.push({name: 'EntityValueUpdated', payload:{entityId:t.id, value:undefined}}),
+  Vt(t.id, schema).forEach(o => {
+    events.push({name: 'EntityUnprocessable', payload:{entityId:o}}),
+    events.push({name: 'EntityValueUpdated', payload:{entityId:o, value:undefined}})
+  })
+```
+
+Our `events.onEntityValueUpdated` callback at `interpreter-renderer.tsx:87-95` called `validateEntityValue(payload.entityId)` on every event. Containers (`sectionGroup`, `repeatingSection`, `computedField`) have no `inputAttribute` and fail coltorapps' eligibility precondition (`$(d,t,e).includes(n)` at dist index.mjs:2050) — throw bubbles to the React error overlay.
+
+**Why E1–E3 didn't surface it:** Those exercise root numberFields (Likelihood, Consequence) which don't toggle any container's visibility. The fault is reachable only when a `show/hide` rule on a *container* flips — which Site type does.
+
+**Why pre-`957221b` masked it:** The `ComputedFieldRenderer.setValue` bridge threw "Entity not processable" earlier in the typing flow, so the user never got to the Site type cascade.
+
+**Fix (this session, 2026-05-29):** Wrap the `validateEntityValue` call in `interpreter-renderer.tsx:88` in try/catch with a comment explaining the cascade-clear path. Submit-time validation in `app/admin/assessments/actions.ts` is the authority for real validation errors; the per-keystroke validate is only used to surface inline errors on touched fields, so swallowing eligibility-precondition throws is correct.
+
+Locked by a structural regression test in `tests/form-interpreter/visibility-renderer.test.tsx` ("onEntityValueUpdated guards validateEntityValue against coltorapps cascade-clear events (E4 regression)").
+
+**Resume point (3rd attempt):** Hard-refresh after restart, repeat E4 steps from the top. Confirm:
+1. No "Entity not eligible for validation" overlay when changing Site type / Likelihood / Consequence
+2. Mitigation field appears at Likelihood=5, Consequence=5
+3. Submit + query `answers_json` shows the Mitigation entity ID (`ce13e4af-a019-4b30-8099-9e43e49c96d5`) with the typed text
 
 **E5 — Back to low risk: Mitigation hides again**
 
