@@ -34,9 +34,9 @@ The stage sequence is locked and must not be reordered:
 - [ ] **Phase 7: AI Report Pipeline** — n8n workflow #1 (GPT-4 structured output, YELLOW BROOM few-shot), PDF to Storage, review gate UI (side-by-side STT + draft), approve/regenerate/edit, n8n error workflow
 - [ ] **Phase 8: Hours Balance + PayPal Checkout** — Portal hours display, PayPal Orders v2 checkout, idempotent webhook, atomic credit write, receipt email, configurable pricing
 - [ ] **Phase 9: Proposal + Auto-Contract Pipeline** — Service selection from Packages.docx, OpenAI proposal draft, PDF render, SignWell e-sign, n8n #4 contract gen, dual-sign, storage
-- [ ] **Phase 10: Admin Dashboard Logic** — Dynamic wiring of the existing dashboard cards to live data (compliance summary, expiry panel, review queue).
+- [x] **Phase 10: Admin Dashboard Logic** — Dynamic wiring of the existing dashboard cards to live data (compliance summary, expiry panel, review queue). Completed 2026-05-01, UAT pass (10-UAT.md, 3/3).
 - [x] **Phase 11: Ops, Seed Data + Handover** — Seed 5–10 clients, live walkthrough, quick-reference guide PDF, credential migration
-- [ ] **Phase 12: Admin Dashboard UI Fixes** — not yet planned
+- [x] **Phase 12: Admin Dashboard UI Fixes** — Shipped out-of-flow (no plan/summary artifacts); commit `f2c7cce feat(admin): phase 12 - admin dashboard ui fixes and live data integration`.
 
 ### Form Builder Module (Deliverable 11 — added 2026-05-20)
 
@@ -250,13 +250,14 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 
 ### Phase 12: Admin Dashboard UI Fixes
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Polish + live-data integration on top of Phase 10 dashboard wiring.
+**Requirements**: N/A (out-of-flow shipment)
 **Depends on:** Phase 11
-**Plans:** 0 plans
+**Plans:** 0 plans (shipped without the GSD plan flow)
+**Status:** Completed — see commit `f2c7cce`.
 
 Plans:
-- [ ] TBD (run /gsd-plan-phase 12 to break down)
+- [x] Shipped via commit `f2c7cce feat(admin): phase 12 - admin dashboard ui fixes and live data integration`
 
 > **Phases 13–18 — Form Builder Module.** Spec of record: `.planning/research/form-builder-build-prompt.md`.
 > Library: `@coltorapps/builder` + `@coltorapps/builder-react` (headless) with `dnd-kit`. Verify React 19 compat first.
