@@ -31,15 +31,13 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     .eq("submission_id", id)
     .eq("media_type", "audio")
 
-  // Plan 06 (Wave 2) widens ReviewClient's prop interface to accept schemaJson + audioMedia.
-  // Transient cast keeps Plan 05 type-clean until Plan 06 lands.
+  // Plan 06 widens ReviewClient's prop interface to accept schemaJson + audioMedia,
+  // closing Plan 05's transient cast.
   return (
     <ReviewClient
-      {...({
-        submission,
-        schemaJson: version?.schema_json ?? null,
-        audioMedia: audioMedia ?? [],
-      } as any)}
+      submission={submission}
+      schemaJson={(version?.schema_json as Record<string, unknown> | undefined) ?? null}
+      audioMedia={audioMedia ?? []}
     />
   )
 }

@@ -29,13 +29,133 @@ const SEVERITY_COLORS: Record<Severity, string> = {
   Critical: "#7c3aed",
 }
 
-export function ReviewClient({ submission }: { submission: any }) {
+interface AudioMediaRow {
+  field_id: string
+  storage_path: string
+  transcript: string | null
+}
+
+interface RawAnswerRow {
+  id: string
+  label: string
+  value: string
+}
+
+// Coltorapps-style schema shape (matches expandRepeatingSections in lib/form-builder).
+interface SchemaJsonShape {
+  entities?: Record<
+    string,
+    {
+      type: string
+      children?: string[]
+      attributes?: Record<string, unknown>
+    }
+  >
+}
+
+// Heuristics for what we treat as a "leaf input field" worth showing as a
+// raw-answer row. We deliberately exclude pure layout/grouping containers; any
+// entity that has an answer in `answers_json` is shown regardless of type
+// (defensive against future field types) via the value-existence check below.
+const NON_INPUT_ENTITY_TYPES = new Set([
+  "section",
+  "group",
+  "repeatingSection",
+  "page",
+  "row",
+  "column",
+  "divider",
+  "heading",
+  "paragraph",
+])
+
+function asString(value: unknown): string {
+  if (value === null || value === undefined) return ""
+  if (typeof value === "string") return value
+  if (typeof value === "number" || typeof value === "boolean") return String(value)
+  // Objects / arrays (e.g. repeatingSection { instances: [...] }) — JSON-encode
+  // so Matt sees the raw structure without crashing the row renderer.
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return "[unrenderable value]"
+  }
+}
+
+function buildRawAnswerRows(
+  schemaJson: SchemaJsonShape | null,
+  answers: Record<string, unknown> | null | undefined,
+  audioMedia: AudioMediaRow[],
+): RawAnswerRow[] {
+  if (!schemaJson?.entities) return []
+  const answersMap = (answers ?? {}) as Record<string, unknown>
+  const audioByField = new Map<string, AudioMediaRow>()
+  for (const row of audioMedia) {
+    audioByField.set(row.field_id, row)
+  }
+
+  const rows: RawAnswerRow[] = []
+  for (const [entityId, entity] of Object.entries(schemaJson.entities)) {
+    if (entity && NON_INPUT_ENTITY_TYPES.has(entity.type)) continue
+
+    const label =
+      (entity?.attributes?.label as string | undefined)?.trim() || entityId
+
+    // 1. Typed answer from answers_json wins.
+    const typedAnswer = answersMap[entityId]
+    let value = asString(typedAnswer).trim()
+
+    // 2. Fall back to STT transcript from field_media if no typed answer.
+    if (!value) {
+      const audio = audioByField.get(entityId)
+      if (audio) {
+        value = audio.transcript?.trim() || "(audio attached, no transcript yet)"
+      }
+    }
+
+    // 3. Show "—" (project empty-state convention, never fake-data) when
+    //    neither source resolves AND the field is in the schema. We still
+    //    include it so Matt sees the field was offered but not answered.
+    if (!value) value = "—"
+
+    rows.push({ id: entityId, label, value })
+  }
+
+  return rows
+}
+
+export function ReviewClient({
+  submission,
+  schemaJson,
+  audioMedia,
+}: {
+  submission: any
+  schemaJson: SchemaJsonShape | null
+  audioMedia: AudioMediaRow[]
+}) {
   const router = useRouter()
   const [generating, setGenerating] = useState(false)
   const [approving, setApproving] = useState(false)
 
   // Track editable draft in state so the Approve action reads current values
   const [draft, setDraft] = useState<Draft | null>(submission.draft_report_json ?? null)
+
+  // ── Raw Answers & STT rows (D-04) ─────────────────────────────────────────
+  const rawRows = buildRawAnswerRows(
+    schemaJson,
+    submission.answers_json as Record<string, unknown> | null | undefined,
+    audioMedia,
+  )
+
+  // One-time auto-expand heuristic per D-04: open when a draft exists but the
+  // report has NOT been approved yet (no report_storage_path) — i.e. the draft
+  // was freshly generated and Matt is seeing it for the first time. When the
+  // draft has been approved (report_storage_path set) we collapse so re-visits
+  // are quiet. When there is no draft at all, also open so Matt can see source
+  // data immediately while deciding whether to generate.
+  const justGenerated =
+    Boolean(submission.draft_report_json) && !submission.report_storage_path
+  const panelDefaultOpen = !draft || justGenerated
 
   // ── Generate AI Draft ─────────────────────────────────────────────────────
   const handleGenerate = async () => {
@@ -98,6 +218,33 @@ export function ReviewClient({ submission }: { submission: any }) {
         <h1 className="font-serif text-3xl text-white">Review Report Draft</h1>
         <p className="text-white/40 text-sm">Edit the AI-generated content below before generating the final PDF.</p>
       </div>
+
+      {/* Raw Answers & STT panel (D-04) — collapsible source-of-truth view, ABOVE the editable draft */}
+      <details
+        {...(panelDefaultOpen ? { open: true } : {})}
+        className="group border border-white/10 rounded-md bg-white/[0.02]"
+      >
+        <summary className="font-mono uppercase tracking-[0.2em] text-[10px] text-white/40 cursor-pointer hover:text-white/60 px-4 py-3 list-none flex items-center justify-between">
+          <span>Raw Answers &amp; STT</span>
+          <span className="text-white/30 group-open:rotate-90 transition-transform">›</span>
+        </summary>
+        <div className="px-4 pb-4 pt-1 border-t border-white/5">
+          {rawRows.length === 0 ? (
+            <p className="text-white/40 text-xs py-2">
+              No pinned schema available for this submission — raw answers cannot be rendered.
+            </p>
+          ) : (
+            <div>
+              {rawRows.map((row) => (
+                <div key={row.id} className="flex gap-2 py-1.5 border-b border-white/5">
+                  <span className="text-white/40 text-xs font-mono w-1/3">{row.label}</span>
+                  <span className="text-white/70 text-sm flex-1 whitespace-pre-wrap break-words">{row.value || "—"}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </details>
 
       {/* Executive Summary */}
       <div className="space-y-2">
