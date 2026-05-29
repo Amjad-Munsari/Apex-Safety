@@ -497,6 +497,35 @@ async function runReportDraftGeneration(submissionId: string) {
     return { success: true }
   } catch (err: any) {
     console.error("generateReportDraft failed:", err)
+
+    // D-10: log to workflow_errors BEFORE flipping status / rethrowing.
+    // adminClient (service-role) bypasses RLS so the insert succeeds even when
+    // the caller is the after-submit background task (no admin JWT in scope).
+    // Schema (migrations/001:188-196): workflow_name + error_message + payload
+    // are the only input columns — there is NO top-level `workflow_type` or
+    // `severity` column; severity nests under payload (PATTERNS.md correction #1).
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: "ai_report_draft",
+      error_message: err?.message ?? String(err),
+      payload: {
+        submission_id: submissionId,
+        stack: err?.stack ?? null,
+        severity: "high",
+      },
+    })
+
+    // D-10: flip status so the Review page can render the retry CTA (Plan 06)
+    // instead of the generic "no draft yet" empty-state. Order: workflow_errors
+    // insert FIRST so the audit row exists even if this update later fails.
+    await adminClient
+      .from("form_submissions")
+      .update({ status: "ai_draft_failed" })
+      .eq("id", submissionId)
+
+    revalidatePath(`/admin/assessments/${submissionId}/review`)
+
+    // Preserve the existing error-message shape used by the manual Server Action
+    // wrapper at generateReportDraft (line ~503).
     throw new Error(`Failed to generate report draft via AI: ${err.message || String(err)}`)
   }
 }
