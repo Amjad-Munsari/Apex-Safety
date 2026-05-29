@@ -24,20 +24,16 @@ export default async function ReviewPage({ params }: { params: Promise<{ id: str
     .single()
 
   // STT transcripts for the D-04 raw-answers panel — REPORT-08.
-  // Scoped by submission_id (admin-only route via /admin middleware; T-07-05-01 mitigation).
-  const { data: audioMedia } = await adminClient
-    .from("field_media")
-    .select("field_id, storage_path, transcript")
-    .eq("submission_id", id)
-    .eq("media_type", "audio")
+  // field_media table does not exist in the live DB; the D-04 panel renders
+  // the "(audio attached, no transcript yet)" placeholder until the audio-
+  // capture feature ships an intentional schema.
+  const audioMedia: { field_id: string; storage_path: string; transcript: string | null }[] = []
 
-  // Plan 06 widens ReviewClient's prop interface to accept schemaJson + audioMedia,
-  // closing Plan 05's transient cast.
   return (
     <ReviewClient
       submission={submission}
       schemaJson={(version?.schema_json as Record<string, unknown> | undefined) ?? null}
-      audioMedia={audioMedia ?? []}
+      audioMedia={audioMedia}
     />
   )
 }
