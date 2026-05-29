@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { adminClient } from "@/lib/supabase/admin"
-import { requireActorUserId } from "@/lib/auth-helpers"
+import { requireActorUserId, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
@@ -82,14 +82,14 @@ export async function startAssessment(clientId: string, templateVersionId: strin
  * assessment form header).
  */
 export async function deleteAssessment(submissionId: string) {
-  // Auth gate — every other destructive action in this file checks; this one
-  // was missing it (code audit 2026-05-29). Without the gate, any caller who
-  // can invoke this Server Action could hard-delete arbitrary submissions,
-  // their parent assignments, and storage PDFs.
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    throw new Error("Unauthorized: Authentication required to delete assessment")
+  // Admin-role gate — every other destructive action in this file at least
+  // checks for an authenticated user; this one had nothing (code audit
+  // 2026-05-29). Without it, any caller who can invoke this Server Action
+  // could hard-delete arbitrary submissions, parent assignments, and storage
+  // PDFs. isAdmin() checks server-trusted admin_users, not client-set
+  // app_metadata.
+  if (!(await isAdmin())) {
+    throw new Error("Unauthorized: Admin role required to delete assessment")
   }
 
   // Fetch the assignment id and storage path first.

@@ -1,19 +1,18 @@
 "use server"
 
 import { adminClient } from "@/lib/supabase/admin"
-import { createClient } from "@/lib/supabase/server"
+import { isAdmin } from "@/lib/auth-helpers"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
 export async function getComplianceDocSignedUrl(
   docId: string,
   opts: { mode?: "view" | "download" } = {}
 ): Promise<{ url: string | null; filename: string | null }> {
-  // Auth gate — without this, any caller who could invoke the Server Action
-  // could mint a 5-min signed URL for any document by guessing docId.
-  // Code audit 2026-05-29.
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  // Admin-role gate — without this, any authenticated user (including a client
+  // user) could mint a 5-min signed URL for any document by guessing docId.
+  // isAdmin() checks the server-trusted admin_users table, not client-set
+  // app_metadata. Code audit 2026-05-29 + background security review.
+  if (!(await isAdmin())) {
     return { url: null, filename: null }
   }
 
@@ -45,11 +44,10 @@ export async function getComplianceDocSignedUrl(
 export async function sendManualExpiryReminder(
   docId: string
 ): Promise<{ ok: boolean; error?: string }> {
-  // Auth gate — without this, an unauthenticated caller could trigger n8n
-  // dispatches for arbitrary docs. Code audit 2026-05-29.
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  // Admin-role gate (not just authenticated) — without admin verification,
+  // any client user could trigger n8n dispatches for arbitrary docs.
+  // Code audit 2026-05-29 + background security review.
+  if (!(await isAdmin())) {
     return { ok: false, error: "Unauthorized" }
   }
 
