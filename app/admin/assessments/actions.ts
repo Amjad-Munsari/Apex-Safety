@@ -16,6 +16,7 @@ import {
 import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections"
 import { YELLOW_BROOM_EXEMPLAR } from "@/lib/ai/exemplars/yellow-broom-fra"
 import { buildReportPrompt } from "@/lib/ai/prompt-builder"
+import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
 export async function startAssessment(clientId: string, templateVersionId: string) {
   const supabase = await createClient()
@@ -731,6 +732,17 @@ export async function finalizeReport(
     throw new Error("Submission not found")
   }
 
+  // 1b. Resolve client-facing contact email (D-07 — copies cron/expiry pattern).
+  // If missing, do NOT throw — the PDF is still produced and the dispatch arm
+  // will record the failure via workflow_errors below.
+  const { data: clientUsers } = await adminClient
+    .from("client_users")
+    .select("name, email")
+    .eq("client_id", submission.client_id)
+    .limit(1)
+  const contact = clientUsers?.[0]
+  const contactEmail = contact?.email
+
   const client = submission.client as any
   const assessmentDate = new Date(submission.created_at).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -782,11 +794,48 @@ export async function finalizeReport(
   revalidatePath("/admin/review-queue")
   revalidatePath(`/admin/assessments/${submissionId}/review`)
 
-  // 5. Return a signed URL for immediate download
+  // 5. D-07 — mint a 7-day client-facing signed URL (separate from Matt's 5-min URL).
+  // This URL is ONLY ever placed inside the n8n payload; it must NOT be returned
+  // to the React client component (T-07-04-02 — keeps the long-lived URL out of
+  // Matt's browser context).
+  const { data: clientSigned } = await adminClient
+    .storage
+    .from("reports")
+    .createSignedUrl(fileName, 60 * 60 * 24 * 7)
+
+  // 6. D-07 — dispatch report_ready to n8n with the 7-day URL + en-GB-formatted
+  // assessmentDate (reuses the value computed above so the email date matches
+  // the PDF header).
+  const payload = {
+    type: "report_ready" as const,
+    client_email: contactEmail ?? "",
+    client_name: client?.name ?? "there",
+    report_url: clientSigned?.signedUrl ?? "",
+    assessment_date: assessmentDate,
+    report_storage_path: fileName,
+  }
+
+  // 7. D-08 — dispatch failure does NOT roll back the PDF / status flip.
+  // Insert a workflow_errors row (workflow_name='report_delivery_email') and
+  // surface deliveryEmailFailed=true so review-client.tsx can render the
+  // non-blocking toast (Plan 06 wires that).
+  const dispatchResult = await dispatchNotification(payload)
+  let deliveryEmailFailed = false
+  if (!dispatchResult.ok) {
+    deliveryEmailFailed = true
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: "report_delivery_email",
+      error_message: dispatchResult.error ?? "unknown dispatch failure",
+      payload: { ...payload, severity: "high" },
+    })
+    // do NOT throw — PDF is the artefact of record (D-08)
+  }
+
+  // 8. Return a signed URL for Matt's immediate download (D-05 — 5-min TTL).
   const { data: signedUrlData } = await adminClient
     .storage
     .from("reports")
     .createSignedUrl(fileName, 60 * 5) // 5 minute link
 
-  return { success: true, downloadUrl: signedUrlData?.signedUrl ?? null }
+  return { success: true, downloadUrl: signedUrlData?.signedUrl ?? null, deliveryEmailFailed }
 }
