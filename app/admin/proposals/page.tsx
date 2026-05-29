@@ -86,7 +86,9 @@ export default async function ProposalsPage() {
                       ? signedUrls.get(prop.proposal_pdf_path) ?? null
                       : null
 
-                    const detailHref = status === 'Contract Issued' ? `/admin/contracts/yellow-broom` : `/admin/proposals/${prop.id}`
+                    // Contracts feature has no DB backing yet — drop the deep-link
+                    // to /admin/contracts/yellow-broom (mocked). Code audit 2026-05-29.
+                    const detailHref = `/admin/proposals/${prop.id}`
 
                     return (
                       <ProposalCard
