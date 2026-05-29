@@ -117,7 +117,7 @@ describe("formBuilder registration — specialty entities", () => {
 // ============================================================
 
 describe("signatureField attribute set", () => {
-  it("has exactly label, required, helpText, attachPhotos attributes", async () => {
+  it("has exactly label, required, helpText, attachPhotos, visibilityRules attributes", async () => {
     const { signatureFieldEntity } = await import(
       "@/lib/form-builder/entities/signature-field"
     );
@@ -126,7 +126,8 @@ describe("signatureField attribute set", () => {
     expect(attrNames).toContain("required");
     expect(attrNames).toContain("helpText");
     expect(attrNames).toContain("attachPhotos");
-    expect(attrNames).toHaveLength(4);
+    expect(attrNames).toContain("visibilityRules");
+    expect(attrNames).toHaveLength(5);
   });
 
   it("attachPhotos defaults to false", async () => {
@@ -178,7 +179,7 @@ describe("multiPhotoField attribute set", () => {
 });
 
 describe("geolocationField attribute set", () => {
-  it("has exactly label, required, helpText, attachPhotos attributes (no map config)", async () => {
+  it("has exactly label, required, helpText, attachPhotos, visibilityRules attributes (no map config)", async () => {
     const { geolocationFieldEntity } = await import(
       "@/lib/form-builder/entities/geolocation-field"
     );
@@ -187,12 +188,13 @@ describe("geolocationField attribute set", () => {
     expect(attrNames).toContain("required");
     expect(attrNames).toContain("helpText");
     expect(attrNames).toContain("attachPhotos");
-    expect(attrNames).toHaveLength(4);
+    expect(attrNames).toContain("visibilityRules");
+    expect(attrNames).toHaveLength(5);
   });
 });
 
 describe("computedField attribute set", () => {
-  it("has exactly label, formula, computedInputs, attachPhotos — NO required attribute", async () => {
+  it("has exactly label, formula, computedInputs, attachPhotos, visibilityRules — NO required attribute", async () => {
     const { computedFieldEntity } = await import(
       "@/lib/form-builder/entities/computed-field"
     );
@@ -201,14 +203,15 @@ describe("computedField attribute set", () => {
     expect(attrNames).toContain("formula");
     expect(attrNames).toContain("computedInputs");
     expect(attrNames).toContain("attachPhotos");
+    expect(attrNames).toContain("visibilityRules");
     // Critically: NO required attribute (it is a read-only derived field)
     expect(attrNames).not.toContain("required");
-    expect(attrNames).toHaveLength(4);
+    expect(attrNames).toHaveLength(5);
   });
 });
 
 describe("repeatingSection attribute set", () => {
-  it("has exactly title, description, minInstances, maxInstances — NO attachPhotos", async () => {
+  it("has exactly title, description, minInstances, maxInstances, visibilityRules — NO attachPhotos", async () => {
     const { repeatingSectionEntity } = await import(
       "@/lib/form-builder/entities/repeating-section"
     );
@@ -217,9 +220,10 @@ describe("repeatingSection attribute set", () => {
     expect(attrNames).toContain("description");
     expect(attrNames).toContain("minInstances");
     expect(attrNames).toContain("maxInstances");
+    expect(attrNames).toContain("visibilityRules");
     // Container entity — D-05 "every non-section entity"; repeatingSection is excluded
     expect(attrNames).not.toContain("attachPhotos");
-    expect(attrNames).toHaveLength(4);
+    expect(attrNames).toHaveLength(5);
   });
 
   it("has childrenAllowed: true for nesting support", async () => {
