@@ -107,7 +107,6 @@ function DraggablePaletteButton({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      key={type}
       onClick={() => onAddEntity(type)}
       aria-label={`Add ${label} field`}
       className={cn(
