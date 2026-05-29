@@ -177,7 +177,14 @@ export function ReviewClient({
     setApproving(true)
     try {
       const result = await finalizeReport(submission.id, draft)
-      toast.success("PDF generated and saved!")
+      // D-08: non-blocking notice when the n8n delivery email failed but
+      // the PDF + status flip succeeded server-side. Wording matches
+      // CONTEXT §D-08 verbatim.
+      if (result.deliveryEmailFailed) {
+        toast.warning("Report saved, email retry queued")
+      } else {
+        toast.success("PDF generated and saved!")
+      }
       if (result.downloadUrl) {
         window.open(result.downloadUrl, "_blank")
       }
@@ -191,11 +198,21 @@ export function ReviewClient({
 
   // ── Empty state ───────────────────────────────────────────────────────────
   if (!draft) {
+    // D-11: when the prior AI generation failed, the row stays at
+    // status='ai_draft_failed' until Matt retries from here. Headline,
+    // copy, and button label flip to the retry path; the underlying
+    // handleGenerate handler is the same — generateReportDraft will clear
+    // the failed state on success or re-log workflow_errors on repeat.
+    const failed = submission.status === "ai_draft_failed"
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <h2 className="font-serif text-2xl text-white">No AI Draft Yet</h2>
+        <h2 className="font-serif text-2xl text-white">
+          {failed ? "AI Draft Failed" : "No AI Draft Yet"}
+        </h2>
         <p className="text-white/50 text-sm max-w-md text-center">
-          The assessment has been submitted. Click below to generate an AI draft from the raw answers.
+          {failed
+            ? "The previous AI generation failed. See /admin/month-summary for the logged error, then retry."
+            : "The assessment has been submitted. Click below to generate an AI draft from the raw answers."}
         </p>
         <Button
           id="generate-draft-btn"
@@ -203,7 +220,7 @@ export function ReviewClient({
           disabled={generating}
           className="bg-white text-black hover:bg-white/90 mt-4"
         >
-          {generating ? "Generating..." : "Generate AI Draft"}
+          {generating ? "Generating..." : failed ? "Retry Draft" : "Generate AI Draft"}
         </Button>
       </div>
     )
