@@ -27,6 +27,14 @@ export type NotificationPayload =
       assignment_url: string     // absolute URL to /client/assignments/[id]
       instructions: string | null
     }
+  | {
+      type: "report_ready"
+      client_email: string
+      client_name: string
+      report_url: string         // 7-day signed URL
+      assessment_date: string    // en-GB formatted, matches PDF header
+      report_storage_path: string // for n8n logging / dedup
+    }
 
 export interface DispatchResult {
   ok: boolean
