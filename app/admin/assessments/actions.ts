@@ -82,6 +82,16 @@ export async function startAssessment(clientId: string, templateVersionId: strin
  * assessment form header).
  */
 export async function deleteAssessment(submissionId: string) {
+  // Auth gate — every other destructive action in this file checks; this one
+  // was missing it (code audit 2026-05-29). Without the gate, any caller who
+  // can invoke this Server Action could hard-delete arbitrary submissions,
+  // their parent assignments, and storage PDFs.
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    throw new Error("Unauthorized: Authentication required to delete assessment")
+  }
+
   // Fetch the assignment id and storage path first.
   const { data: sub } = await adminClient
     .from("form_submissions")
