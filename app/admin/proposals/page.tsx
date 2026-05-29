@@ -70,7 +70,7 @@ export default async function ProposalsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {['Draft', 'Sent', 'Signed', 'Contract Issued'].map((status) => {
           const filtered = items.filter(i => i.status === status)
-          const totalValue = filtered.reduce((acc, curr) => acc + ((curr as any).total_price || calculateProposalTotal(curr.services_json)), 0)
+          const totalValue = filtered.reduce((acc, curr) => acc + ((curr as { total_price?: number }).total_price || calculateProposalTotal(curr.services_json)), 0)
 
           return (
             <div key={status} className="flex flex-col gap-4">
@@ -81,7 +81,7 @@ export default async function ProposalsPage() {
               
               <div className="flex flex-col gap-4 min-h-[500px] p-2 rounded-sm bg-white/[0.02] border border-white/[0.05]">
                   {filtered.map((prop) => {
-                    const total = (prop as any).total_price || calculateProposalTotal(prop.services_json)
+                    const total = (prop as { total_price?: number }).total_price || calculateProposalTotal(prop.services_json)
                     const documentUrl = prop.proposal_pdf_path
                       ? signedUrls.get(prop.proposal_pdf_path) ?? null
                       : null
@@ -94,7 +94,7 @@ export default async function ProposalsPage() {
                       <ProposalCard
                         key={prop.id}
                         id={prop.id}
-                        clientName={(prop.client as any)?.name || "Unknown client"}
+                        clientName={(prop.client as { name?: string } | null)?.name || "Unknown client"}
                         total={total}
                         createdAt={prop.created_at}
                         status={status as ProposalStatus}

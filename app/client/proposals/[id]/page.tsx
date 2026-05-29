@@ -51,7 +51,7 @@ export default async function ClientProposalDetailPage({
 
   const services = Array.isArray(proposal.services_json) ? proposal.services_json : [];
   const total =
-    Number((proposal as any).total_price) ||
+    Number((proposal as { total_price?: number }).total_price) ||
     calculateProposalTotal(proposal.services_json);
   const issuedAt = proposal.sent_at ?? proposal.created_at;
   const reference = `PRO-${proposal.id.slice(0, 6).toUpperCase()}`;

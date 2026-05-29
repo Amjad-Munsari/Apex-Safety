@@ -44,7 +44,7 @@ export default async function ClientDetailsPage({
     id: p.id,
     status: p.status,
     created_at: p.created_at,
-    total: (p as any).total_price || calculateProposalTotal(p.services_json),
+    total: (p as { total_price?: number }).total_price || calculateProposalTotal(p.services_json),
     pdfUrl: null as string | null,
   }))
 

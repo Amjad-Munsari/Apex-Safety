@@ -116,10 +116,11 @@ export default async function AdminDashboardPage() {
                 <tbody className="divide-y divide-white/5">
                   {clients?.map((client) => {
                     // Calculate next expiry
-                    const expiries = (client.documents as any[])
-                      ?.map((d: any) => ({ date: new Date(d.expiry_date), cat: d.document_category }))
-                      .filter((d: any) => !isNaN(d.date.getTime()))
-                      .sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
+                    type DocRow = { expiry_date: string | null; document_category: string | null };
+                    const expiries = (client.documents as DocRow[] | null)
+                      ?.map((d) => ({ date: new Date(d.expiry_date ?? ""), cat: d.document_category }))
+                      .filter((d) => !isNaN(d.date.getTime()))
+                      .sort((a, b) => a.date.getTime() - b.date.getTime());
 
                     const nextExpiry = expiries?.[0];
                     const proposalStatus = client.proposals?.[0]?.status;
@@ -202,9 +203,9 @@ export default async function AdminDashboardPage() {
                     {new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} &middot; {new Date(item.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                   <div>
-                    <div className="font-medium text-white mb-1">{(item.client as any)?.name}</div>
+                    <div className="font-medium text-white mb-1">{(item.client as { name?: string } | null)?.name}</div>
                     <div className="text-xs text-[#888] leading-relaxed">
-                      {(item.template as any)?.form_template?.name}<br />
+                      {(item.template as { form_template?: { name?: string } | null } | null)?.form_template?.name}<br />
                       Draft assessment
                     </div>
                   </div>
@@ -246,7 +247,7 @@ export default async function AdminDashboardPage() {
                       <div key={doc.id} className="flex justify-between items-start gap-4 border-b border-white/5 pb-5 last:border-0 last:pb-0">
                         <div>
                           <div className="text-white text-sm font-medium mb-1">{doc.filename}</div>
-                          <div className="text-xs text-[#888]">{(doc.client as any)?.name} <span className="font-mono ml-1 uppercase">{new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+                          <div className="text-xs text-[#888]">{(doc.client as { name?: string } | null)?.name} <span className="font-mono ml-1 uppercase">{new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                         </div>
                         {daysLeft < 0 ? (
                           <div className="inline-flex items-center px-2.5 py-1 text-danger border border-danger/40 text-[10px] font-mono uppercase tracking-wider rounded-sm shrink-0 mt-0.5 leading-none">

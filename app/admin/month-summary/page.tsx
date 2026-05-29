@@ -59,7 +59,14 @@ export default async function MonthSummaryPage() {
   });
 
   // Recent assessments this month
-  const { data: recentAssessments } = await adminClient
+  type RecentAssessmentRow = {
+    id: string
+    status: string
+    created_at: string
+    client: { name: string } | null
+    template: { form_templates: { name: string } | null } | null
+  }
+  const { data: recentAssessmentsRaw } = await adminClient
     .from("form_submissions")
     .select(`
       id,
@@ -71,6 +78,7 @@ export default async function MonthSummaryPage() {
     .gte("created_at", startOfMonth)
     .order("created_at", { ascending: false })
     .limit(10);
+  const recentAssessments = (recentAssessmentsRaw ?? []) as unknown as RecentAssessmentRow[];
 
   const stats = [
     {
@@ -253,10 +261,10 @@ export default async function MonthSummaryPage() {
               {recentAssessments.map((a) => (
                 <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="px-6 py-4 text-white font-medium">
-                    {(a.client as any)?.name || "—"}
+                    {a.client?.name || "—"}
                   </td>
                   <td className="px-4 py-4 text-white/60 text-xs">
-                    {(a.template as any)?.form_templates?.name || "—"}
+                    {a.template?.form_templates?.name || "—"}
                   </td>
                   <td className="px-4 py-4 text-white/50 font-mono text-xs">
                     {new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}

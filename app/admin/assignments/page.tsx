@@ -241,12 +241,15 @@ export default async function AssignmentsQueuePage({
               </tr>
             ) : (
               rows.map((row) => {
-                // PostgREST returns joined rows as an array or object depending on cardinality.
-                // Cast via `any` to handle both shapes safely.
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const templateData = (row.template as any) as { id: string; name: string } | null;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const clientData = (row.client as any) as { id: string; name: string } | null;
+                // PostgREST infers join cardinality and may return arrays for
+                // FK relations even when only one row exists. `as unknown` first
+                // satisfies the strict cast when the inferred type is the array
+                // shape but a single-row object is what we use.
+                type Joined = { id: string; name: string } | { id: string; name: string }[] | null;
+                const templateJoined = row.template as unknown as Joined;
+                const clientJoined = row.client as unknown as Joined;
+                const templateData = Array.isArray(templateJoined) ? templateJoined[0] ?? null : templateJoined;
+                const clientData = Array.isArray(clientJoined) ? clientJoined[0] ?? null : clientJoined;
                 return (
                   <tr
                     key={row.id}

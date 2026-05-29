@@ -77,13 +77,15 @@ export default async function ClientsPage() {
           </thead>
           <tbody className="divide-y divide-white/5">
             {clients?.map((client) => {
-              const expiries = (client.documents as any[])
-                ?.map((d: any) => ({ date: new Date(d.expiry_date), cat: d.document_category }))
-                .filter((d: any) => !isNaN(d.date.getTime()))
-                .sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
+              type DocRow = { expiry_date: string | null; document_category: string | null };
+              type ProposalRow = { status: string | null };
+              const expiries = (client.documents as DocRow[] | null)
+                ?.map((d) => ({ date: new Date(d.expiry_date ?? ""), cat: d.document_category }))
+                .filter((d) => !isNaN(d.date.getTime()))
+                .sort((a, b) => a.date.getTime() - b.date.getTime());
 
               const nextExpiry = expiries?.[0];
-              const proposalStatus = (client.proposals as any[])?.[0]?.status;
+              const proposalStatus = (client.proposals as ProposalRow[] | null)?.[0]?.status;
               const daysUntil = nextExpiry
                 ? Math.ceil((nextExpiry.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
                 : null;
@@ -134,7 +136,7 @@ export default async function ClientsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 font-mono text-xs text-right text-white/50">
-                    {(client.documents as any[])?.length || 0} <span className="ml-2 text-white/20">&gt;</span>
+                    {(client.documents as { id: string }[] | null)?.length || 0} <span className="ml-2 text-white/20">&gt;</span>
                   </td>
                 </tr>
               );

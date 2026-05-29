@@ -71,8 +71,8 @@ export default async function AssignmentLandingPage({ params }: Props) {
         <div className="mt-8 space-y-4">
           <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium leading-[1.1]">
             {(() => {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const t = assignment.template as any;
+              type TemplateJoin = { name?: string } | { name?: string }[] | null;
+              const t = assignment.template as TemplateJoin;
               return Array.isArray(t) ? (t[0]?.name ?? "Untitled form") : (t?.name ?? "Untitled form");
             })()}
           </h2>
@@ -87,8 +87,8 @@ export default async function AssignmentLandingPage({ params }: Props) {
   }
 
   // Supabase join may return array or object depending on cardinality inference
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawTemplate = assignment.template as any;
+  type TemplateJoin = { name?: string } | { name?: string }[] | null;
+  const rawTemplate = assignment.template as TemplateJoin;
   const templateName: string = Array.isArray(rawTemplate)
     ? (rawTemplate[0]?.name ?? "Untitled form")
     : (rawTemplate?.name ?? "Untitled form");

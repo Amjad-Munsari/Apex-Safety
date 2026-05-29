@@ -41,7 +41,7 @@ export default async function ProposalDetailPage({
   const status = (proposal.status as ProposalStatus) || "Draft"
   const tone = STATUS_TONE[status] ?? STATUS_TONE.Draft
   const total =
-    (proposal as any).total_price ?? calculateProposalTotal(proposal.services_json)
+    (proposal as { total_price?: number }).total_price ?? calculateProposalTotal(proposal.services_json)
   let documentUrl: string | null = null
   if (proposal.proposal_pdf_path) {
     const { data: signed, error: signError } = await adminClient.storage
@@ -53,7 +53,7 @@ export default async function ProposalDetailPage({
       documentUrl = signed?.signedUrl ?? null
     }
   }
-  const clientRecord = proposal.client as any
+  const clientRecord = proposal.client as { id?: string; name?: string; contact_name?: string } | null
   const clientName = clientRecord?.name ?? "Unknown client"
   const services = Array.isArray(proposal.services_json) ? proposal.services_json : []
 

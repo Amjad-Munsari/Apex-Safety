@@ -55,7 +55,7 @@ export default async function ClientProposalsPage() {
   const proposals = (rows ?? []).map((p) => {
     const services = Array.isArray(p.services_json) ? p.services_json : [];
     const total =
-      Number((p as any).total_price) || calculateProposalTotal(p.services_json);
+      Number((p as { total_price?: number }).total_price) || calculateProposalTotal(p.services_json);
     const issuedAt = p.sent_at ?? p.created_at;
     // Pull a working title from the first service if available so each card
     // reads more concretely than just "Proposal".

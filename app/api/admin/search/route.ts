@@ -41,12 +41,12 @@ export async function GET(request: Request) {
       id: d.id,
       title: d.filename,
       type: "document",
-      subtitle: (d.clients as any)?.name,
+      subtitle: (d.clients as { name?: string } | null)?.name,
       url: `/admin/clients/${d.client_id}`
     })) || []),
     ...(proposalsRes.data?.map(p => ({
       id: p.id,
-      title: `Proposal for ${(p.clients as any)?.name}`,
+      title: `Proposal for ${(p.clients as { name?: string } | null)?.name}`,
       subtitle: new Date(p.created_at).toLocaleDateString('en-GB'),
       type: "proposal",
       url: `/admin/proposals`

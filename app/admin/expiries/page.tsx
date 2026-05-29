@@ -60,7 +60,7 @@ export default async function ExpiriesPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2 text-white/70">
                       <Building2 className="w-3.5 h-3.5" />
-                      {(doc.client as any)?.name}
+                      {(doc.client as { name?: string } | null)?.name}
                     </div>
                   </td>
                   <td className="px-6 py-4 font-mono text-white/50">
@@ -79,7 +79,7 @@ export default async function ExpiriesPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <RemindButton clientName={(doc.client as any)?.name || "client"} />
+                    <RemindButton clientName={(doc.client as { name?: string } | null)?.name || "client"} />
                   </td>
                 </tr>
               )

@@ -42,13 +42,13 @@ export default async function ReviewQueuePage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-xl font-medium text-white">{(item.client as any)?.name}</h3>
+                    <h3 className="text-xl font-medium text-white">{(item.client as { name?: string } | null)?.name}</h3>
                     <Badge variant="outline" className="border-[#3b8273]/40 text-[#3b8273] font-mono text-[9px] uppercase tracking-widest">
                       Ready for Review
                     </Badge>
                   </div>
                   <p className="text-sm text-[#888] font-sans mb-4">
-                    {(item.template as any)?.form_template?.name}
+                    {(item.template as { form_template?: { name?: string } | null } | null)?.form_template?.name}
                   </p>
                   <div className="flex gap-6 text-[10px] font-mono uppercase tracking-widest text-[#555]">
                     <div className="flex items-center gap-2">

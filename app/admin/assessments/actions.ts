@@ -727,7 +727,7 @@ export async function finalizeReport(
   const contact = clientUsers?.[0]
   const contactEmail = contact?.email
 
-  const client = submission.client as any
+  const client = submission.client as { name?: string; site_address?: string } | null
   const assessmentDate = new Date(submission.created_at).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
