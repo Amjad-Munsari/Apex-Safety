@@ -388,11 +388,11 @@ export function TemplateBuilderClient({
           </div>
         </div>
 
-        {/* Right: Properties panel — w-96. Was w-72 (288px); too narrow for the
-            ConditionalLogicSection RuleRow (source + op + value + action + trash
-            all in one row, two flex-1 cols with min-w-0 collapsed to zero).
-            Widened to 384px so the value input remains clickable. */}
-        <div className={cn("w-96 border-l overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
+        {/* Right: Properties panel — w-[28rem] (448px). Sized so the
+            ConditionalLogicSection RuleRow stacked layout (source on line 1,
+            op + value on line 2, action + trash on line 3) gives the value
+            input ~280px of usable width. */}
+        <div className={cn("w-[28rem] border-l overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
           <PropertiesPanel
             builderStore={builderStore}
             selectedId={selectedId}

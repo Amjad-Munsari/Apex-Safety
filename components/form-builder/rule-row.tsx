@@ -184,13 +184,13 @@ export function RuleRow({
     rule.operator === "isEmpty" || rule.operator === "isNotEmpty";
 
   return (
-    <div className="flex gap-1.5 items-center min-h-[32px] py-1">
-      {/* Source-field dropdown */}
+    <div className="flex flex-col gap-1.5 py-2">
+      {/* Line 1 — Source-field dropdown (full row width) */}
       <select
         value={rule.sourceEntityId}
         onChange={handleSourceChange}
         className={cn(
-          "flex-1 min-w-0 border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
+          "w-full border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
           t.select
         )}
       >
@@ -207,70 +207,74 @@ export function RuleRow({
         ))}
       </select>
 
-      {/* Operator dropdown */}
-      <select
-        value={currentOperatorValid ? rule.operator : ""}
-        onChange={handleOperatorChange}
-        className={cn(
-          "w-28 border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
-          t.select
-        )}
-      >
-        <option value="">— operator —</option>
-        {operators.map((op) => (
-          <option key={op.value} value={op.value}>
-            {op.label}
-          </option>
-        ))}
-      </select>
+      {/* Line 2 — Operator dropdown + Value input */}
+      <div className="flex gap-1.5 items-center">
+        <select
+          value={currentOperatorValid ? rule.operator : ""}
+          onChange={handleOperatorChange}
+          className={cn(
+            "w-28 border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors shrink-0",
+            t.select
+          )}
+        >
+          <option value="">— operator —</option>
+          {operators.map((op) => (
+            <option key={op.value} value={op.value}>
+              {op.label}
+            </option>
+          ))}
+        </select>
 
-      {/* Value input — hidden (zero-width) when operator is isEmpty / isNotEmpty */}
-      <input
-        type="text"
-        value={isNullaryOperator ? "" : ((rule.value as string) ?? "")}
-        onChange={handleValueChange}
-        placeholder="value…"
-        readOnly={isNullaryOperator}
-        className={cn(
-          "border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
-          isNullaryOperator
-            ? "w-0 overflow-hidden p-0 border-0"
-            : cn("flex-1 min-w-0", t.input)
-        )}
-      />
+        {/* Value input — hidden (zero-width) when operator is isEmpty / isNotEmpty */}
+        <input
+          type="text"
+          value={isNullaryOperator ? "" : ((rule.value as string) ?? "")}
+          onChange={handleValueChange}
+          placeholder="value…"
+          readOnly={isNullaryOperator}
+          className={cn(
+            "border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
+            isNullaryOperator
+              ? "w-0 overflow-hidden p-0 border-0"
+              : cn("flex-1 min-w-0", t.input)
+          )}
+        />
+      </div>
 
-      {/* Arrow separator */}
-      <span className={cn("text-xs px-0.5 select-none", t.separator)}>→</span>
+      {/* Line 3 — Arrow + Action dropdown + Delete button */}
+      <div className="flex gap-1.5 items-center">
+        <span className={cn("text-xs px-0.5 select-none shrink-0", t.separator)}>→</span>
 
-      {/* Action dropdown */}
-      <select
-        value={rule.action}
-        onChange={handleActionChange}
-        className={cn(
-          "w-24 border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
-          t.select
-        )}
-      >
-        <option value="">— action —</option>
-        {actions.map((a) => (
-          <option key={a.value} value={a.value}>
-            {a.label}
-          </option>
-        ))}
-      </select>
+        <select
+          value={rule.action}
+          onChange={handleActionChange}
+          className={cn(
+            "w-28 border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors shrink-0",
+            t.select
+          )}
+        >
+          <option value="">— action —</option>
+          {actions.map((a) => (
+            <option key={a.value} value={a.value}>
+              {a.label}
+            </option>
+          ))}
+        </select>
 
-      {/* Delete button */}
-      <button
-        onClick={onDelete}
-        type="button"
-        className={cn(
-          "w-6 h-6 flex items-center justify-center transition-colors flex-shrink-0",
-          t.trashBtn
-        )}
-        aria-label="Remove rule"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </button>
+        <span className="flex-1" />
+
+        <button
+          onClick={onDelete}
+          type="button"
+          className={cn(
+            "w-6 h-6 flex items-center justify-center transition-colors flex-shrink-0",
+            t.trashBtn
+          )}
+          aria-label="Remove rule"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
+      </div>
     </div>
   );
 }
