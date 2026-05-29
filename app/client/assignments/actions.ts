@@ -71,12 +71,22 @@ export async function transitionAssignmentStatus(
   assignmentId: string,
   next: "in_progress" | "completed"
 ) {
-  const previous = next === "in_progress" ? "pending" : "in_progress";
-  const { error } = await supabase
-    .from("form_assignments")
-    .update({ status: next })
-    .eq("id", assignmentId)
-    .eq("status", previous);
+  // Two admin code paths create assignments with different status values:
+  //   - app/admin/assessments/actions.ts → "assigned" (matches DB default in 001:79)
+  //   - app/admin/assignments/actions.ts + lib/scheduler/* → "pending" (legacy)
+  // Both are "client hasn't started" semantically. Accept either to avoid silent
+  // no-ops; the earlier "pending"-only guard left every customer fill stuck.
+  const { error } = next === "in_progress"
+    ? await supabase
+        .from("form_assignments")
+        .update({ status: next })
+        .eq("id", assignmentId)
+        .in("status", ["assigned", "pending"])
+    : await supabase
+        .from("form_assignments")
+        .update({ status: next })
+        .eq("id", assignmentId)
+        .eq("status", "in_progress");
 
   if (error) {
     console.error("Status transition failed", { assignmentId, next, error });
