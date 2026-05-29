@@ -388,8 +388,11 @@ export function TemplateBuilderClient({
           </div>
         </div>
 
-        {/* Right: Properties panel — w-72 */}
-        <div className={cn("w-72 border-l overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
+        {/* Right: Properties panel — w-96. Was w-72 (288px); too narrow for the
+            ConditionalLogicSection RuleRow (source + op + value + action + trash
+            all in one row, two flex-1 cols with min-w-0 collapsed to zero).
+            Widened to 384px so the value input remains clickable. */}
+        <div className={cn("w-96 border-l overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
           <PropertiesPanel
             builderStore={builderStore}
             selectedId={selectedId}
