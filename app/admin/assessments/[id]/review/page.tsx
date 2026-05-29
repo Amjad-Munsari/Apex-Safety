@@ -1,9 +1,18 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import { adminClient } from "@/lib/supabase/admin"
+import { isAdmin } from "@/lib/auth-helpers"
 import { ReviewClient } from "./review-client"
 
 export default async function ReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+
+  // Defense-in-depth: the admin layout middleware should gate /admin/* routes,
+  // but the page still uses adminClient (service role). A direct RSC render
+  // without admin verification would leak the full submission row to any
+  // authenticated user. Code audit 2026-05-29.
+  if (!(await isAdmin())) {
+    redirect("/login")
+  }
 
   const { data: submission, error } = await adminClient
     .from("form_submissions")
