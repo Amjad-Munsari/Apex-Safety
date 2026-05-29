@@ -1,20 +1,10 @@
-"use client";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import {
-  ChevronDown,
-  Download,
-  ExternalLink
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
+import { createClient } from "@/lib/supabase/server";
+import { getClientContext } from "@/lib/auth-helpers";
+import { ReportsList } from "./reports-list";
 
-interface Report {
+export const dynamic = "force-dynamic";
+
+export interface Report {
   id: string;
   number: string;
   title: string;
@@ -25,15 +15,59 @@ interface Report {
   status: "FINAL" | "DRAFT" | "PENDING";
 }
 
-const reportsData: Report[] = [
-  { id: "REP-01", number: "01", title: "Fire Risk Assessment — Type 3", location: "Main Building", date: "22 Nov 2024", consultant: "Matt Robinson", pages: "18 pages", status: "FINAL" },
-  { id: "REP-02", number: "02", title: "Fire Risk Assessment — Type 1", location: "Annex Wing", date: "22 Nov 2024", consultant: "Matt Robinson", pages: "11 pages", status: "FINAL" },
-  { id: "REP-03", number: "03", title: "Site Risk Assessment — Kitchen", location: "Main Building", date: "04 Sep 2024", consultant: "Matt Robinson", pages: "7 pages", status: "FINAL" },
-  { id: "REP-04", number: "04", title: "Legionella Risk Assessment", location: "All plant rooms", date: "19 Jun 2024", consultant: "Matt Robinson", pages: "14 pages", status: "FINAL" },
-];
+const DATE_FMT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
 
-export default function ReportsPage() {
-  const [previewReport, setPreviewReport] = useState<Report | null>(null);
+function statusFor(s: string): Report["status"] {
+  if (s === "completed") return "FINAL";
+  if (s === "ai_draft_failed") return "PENDING";
+  return "DRAFT";
+}
+
+export default async function ReportsPage() {
+  const ctx = await getClientContext();
+  if (!ctx) {
+    return <ReportsEmpty headline="Sign in to view your reports." body="Once your account is linked to a client, completed assessments will appear here." />;
+  }
+
+  const supabase = await createClient();
+  const { data: client } = await supabase
+    .from("clients")
+    .select("site_address")
+    .eq("id", ctx.client_id)
+    .maybeSingle();
+
+  // Surface completed + draft-ready assessments. Submissions still in progress
+  // are filtered out — they're not deliverables yet.
+  const { data: submissions } = await supabase
+    .from("form_submissions")
+    .select(`
+      id,
+      status,
+      created_at,
+      submitted_at,
+      report_storage_path,
+      template:template_versions(form_templates(name))
+    `)
+    .eq("client_id", ctx.client_id)
+    .in("status", ["completed", "draft_ready_for_review", "ai_draft_failed"])
+    .is("deleted_at", null)
+    .order("submitted_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  const reports: Report[] = (submissions ?? []).map((row, idx) => {
+    const tpl = (row.template as { form_templates?: { name?: string } | null } | null)?.form_templates?.name ?? "Assessment";
+    const when = row.submitted_at ?? row.created_at;
+    return {
+      id: row.id,
+      number: String(idx + 1).padStart(2, "0"),
+      title: tpl,
+      location: client?.site_address ?? "—",
+      date: new Date(when).toLocaleDateString("en-GB", DATE_FMT),
+      consultant: "Matt Robinson",
+      pages: row.report_storage_path ? "PDF" : "—",
+      status: statusFor(row.status),
+    };
+  });
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -47,92 +81,20 @@ export default function ReportsPage() {
         </h2>
       </section>
 
-      {/* ─── REPORTS LIST ─── */}
-      <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
-        <div className="divide-y divide-[#f0ede6]">
-          {reportsData.map((report) => (
-            <div key={report.id} className="px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-8 group hover:bg-[#faf9f6]/50 transition-all">
+      {reports.length === 0 ? (
+        <ReportsEmpty headline="No reports yet." body="Completed assessments your consultant approves will appear here as downloadable PDFs." />
+      ) : (
+        <ReportsList reports={reports} />
+      )}
+    </div>
+  );
+}
 
-              {/* Left: Number & Info */}
-              <div className="flex flex-1 items-center gap-8 min-w-0">
-                <span className="font-serif text-[24px] text-[#8a857f] group-hover:text-[#1a1a1a] transition-colors tabular-nums shrink-0">
-                  {report.number}
-                </span>
-
-                <div className="min-w-0">
-                  <h4 className="font-sans font-semibold text-[15px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
-                    {report.title}
-                  </h4>
-                  <div className="flex items-center gap-2 font-mono text-[9px] tracking-[0.05em] text-[#8a857f] uppercase font-medium mt-1.5 whitespace-nowrap overflow-hidden">
-                    <span>{report.location}</span>
-                    <span className="opacity-60">&middot;</span>
-                    <span>{report.date}</span>
-                    <span className="opacity-60">&middot;</span>
-                    <span>{report.consultant}</span>
-                    <span className="opacity-60">&middot;</span>
-                    <span>{report.pages}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              <div className="shrink-0 w-32 flex justify-center">
-                <div className={cn(
-                  "w-full py-1.5 border rounded-[2px] font-mono text-[9px] uppercase tracking-[0.3em] font-bold leading-none flex items-center justify-center gap-2.5 whitespace-nowrap",
-                  report.status === "FINAL" ? "border-[#3b8273]/40 text-[#3b8273]" :
-                  report.status === "DRAFT" ? "border-[#c0a66d]/40 text-[#c0a66d]" :
-                  "border-[#e06050]/40 text-[#e06050]"
-                )}>
-                  <div className={cn(
-                    "w-1.5 h-1.5 rounded-full shrink-0",
-                    report.status === "FINAL" ? "bg-[#3b8273]" :
-                    report.status === "DRAFT" ? "bg-[#c0a66d]" :
-                    "bg-[#e06050]"
-                  )}></div>
-                  <span>{report.status}</span>
-                </div>
-              </div>
-
-              {/* Right: Action */}
-              <div className="shrink-0">
-                <DropdownMenu>
-                  <DropdownMenuTrigger className="flex items-center border border-[#e5e1d8] rounded-sm group/btn cursor-pointer bg-white overflow-hidden h-12 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all p-0">
-                    <div className="w-8 h-full flex items-center justify-center border-r border-[#e5e1d8] group-hover/btn:bg-[#faf9f6] transition-colors">
-                      <ChevronDown className="h-3.5 w-3.5 text-[#8a857f] group-hover/btn:text-[#1a1a1a] transition-colors" />
-                    </div>
-                    <div className="px-5 h-full flex items-center justify-center gap-2 group-hover/btn:bg-[#faf9f6] transition-colors min-w-[140px]">
-                      <span className="font-sans text-[12px] font-bold tracking-tight text-[#1a1a1a]">Download report</span>
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1 shadow-md bg-white">
-                    <DropdownMenuItem
-                      onClick={() => setPreviewReport(report)}
-                      className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
-                    >
-                       <Download className="h-3.5 w-3.5" /> Download PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => setPreviewReport(report)}
-                      className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
-                    >
-                       <ExternalLink className="h-3.5 w-3.5" /> View Online
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <PdfPreviewDialog
-        open={previewReport !== null}
-        onOpenChange={(o) => !o && setPreviewReport(null)}
-        title={previewReport?.title || ""}
-        subtitle={previewReport ? `${previewReport.location} · ${previewReport.date} · ${previewReport.consultant}` : undefined}
-        documentId={previewReport?.id}
-      />
+function ReportsEmpty({ headline, body }: { headline: string; body: string }) {
+  return (
+    <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
+      <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">{headline}</p>
+      <p className="font-sans text-[13px] text-[#8a857f] max-w-md mx-auto leading-relaxed">{body}</p>
     </div>
   );
 }
