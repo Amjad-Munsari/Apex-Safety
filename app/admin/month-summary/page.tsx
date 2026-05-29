@@ -29,12 +29,34 @@ export default async function MonthSummaryPage() {
       .gte("created_at", startOfMonth),
     adminClient
       .from("workflow_errors")
-      .select("id, workflow_name, error_message, submission_id, severity, created_at")
+      // submission_id and severity nest under payload JSONB, NOT top-level columns
+      // (see 001_initial_schema.sql:188-196). Earlier shipped query selected them
+      // as columns; PostgREST silently returned null, breaking the deep-link
+      // and Severity column. Per PATTERNS.md correction #1.
+      .select("id, workflow_name, error_message, payload, created_at")
       .gte("created_at", startOfMonth)
       .order("created_at", { ascending: false })
       .limit(25),
   ]);
-  const recentErrors = errorRowsRes.data ?? [];
+  // Insert-site `payload` shapes vary across surfaces (camelCase `submissionId`
+  // from assessment-submission-webhook, snake_case `submission_id` from Phase 7
+  // ai_report_draft / report_delivery_email). Tolerate both.
+  type ErrorPayload = {
+    submission_id?: string
+    submissionId?: string
+    severity?: string
+  }
+  const recentErrors = (errorRowsRes.data ?? []).map((e) => {
+    const payload = (e.payload ?? {}) as ErrorPayload
+    return {
+      id: e.id,
+      workflow_name: e.workflow_name,
+      error_message: e.error_message,
+      created_at: e.created_at,
+      submission_id: payload.submission_id ?? payload.submissionId ?? null,
+      severity: payload.severity ?? null,
+    }
+  });
 
   // Recent assessments this month
   const { data: recentAssessments } = await adminClient
