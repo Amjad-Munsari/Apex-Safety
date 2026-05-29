@@ -88,10 +88,11 @@ export const InterpreterRenderer = forwardRef<
         // Coltorapps emits EntityValueUpdated as part of its cascade-clear when an
         // entity transitions to unprocessable (containers + descendants get value:undefined).
         // Containers (sectionGroup, repeatingSection, computedField) and just-hidden
-        // entities both fail validateEntityValue's eligibility precondition. Swallowing
-        // here is correct — coltorapps' submit-time validateEntitiesValues remains the
-        // authority for real validation errors.
-        try { void interpreterStore.validateEntityValue(payload.entityId) } catch {}
+        // entities both fail validateEntityValue's eligibility precondition. The throw
+        // happens inside an `async` function so it surfaces as a rejected Promise — a
+        // sync try/catch will NOT catch it; use .catch() to swallow. Coltorapps'
+        // submit-time validateEntitiesValues remains the authority for real validation.
+        void interpreterStore.validateEntityValue(payload.entityId).catch(() => {})
         // Recompute completion % on every value change so the header
         // progress bar stays in sync with what the user has filled.
         // Phase 15: pass visibility map so hidden fields drop from the denominator (D-07).

@@ -251,11 +251,15 @@ Before starting any section, confirm all of these:
 
 **Fix:** Eliminated the setValue bridge. `shouldBeProcessed` now augments `entitiesValues` with computed values inline via `augmentAnswersWithComputedValues(schema, context.entitiesValues)`. The schema is registered with a module-level slot from `InterpreterRenderer` on mount. `ComputedFieldRenderer` is now a pure display component. See commit (TBD).
 
-**E4 — Mitigation value persists to answers_json** ⏸ NOT YET VERIFIED (1st attempt FAILED 2026-05-29 — new regression found, fixed; **re-run required**)
+**E4 — Mitigation value persists to answers_json** ✅ PASS (2026-05-29, after `530c355`)
 
-- [ ] After submitting, query `form_submissions.answers_json`
-- [ ] Verify the Mitigation entity's ID appears as a key with a non-empty value
-- [ ] Confirm the value matches what was filled in E3
+- [x] After submitting, query `form_submissions.answers_json`
+- [x] Verify the Mitigation entity's ID appears as a key with a non-empty value
+- [x] Confirm the value matches what was filled in E3
+
+**Verified submission:** `f0625f07-98b0-4d6f-a726-57777fafdb39` (2026-05-29 09:32:56 UTC). `answers_json` contains key `ce13e4af-a019-4b30-8099-9e43e49c96d5` with value `"E4 retry 530c355 — full suppression Q3"` — byte-exact match.
+
+**Side-effect win — D-01 cascade strip also verified by this submission.** Site type was set to "Residential" (hides Fire doors register section). The submission's `answers_json` contains NO key for: the sectionGroup entity, the repeatingSection (`0d02e4ef-...`), Door condition (`0e0a4730-...`), or Repair urgency (`235c503b-...`). This closes Section D5/D6 and G3's submission scrub contract — one of the 4 `human_needed` items in 15-VERIFICATION.md ("Submission scrub verified in answers_json (D-01)") — without a dedicated D5/D6 walk.
 
 **Status at session end (2026-05-28, prior session):**
 
@@ -293,9 +297,25 @@ Our `events.onEntityValueUpdated` callback at `interpreter-renderer.tsx:87-95` c
 
 **Why pre-`957221b` masked it:** The `ComputedFieldRenderer.setValue` bridge threw "Entity not processable" earlier in the typing flow, so the user never got to the Site type cascade.
 
-**Fix (this session, 2026-05-29):** Wrap the `validateEntityValue` call in `interpreter-renderer.tsx:88` in try/catch with a comment explaining the cascade-clear path. Submit-time validation in `app/admin/assessments/actions.ts` is the authority for real validation errors; the per-keystroke validate is only used to surface inline errors on touched fields, so swallowing eligibility-precondition throws is correct.
+**1st fix attempt (commit `530c355`, 2026-05-29):** Wrapped the call in a synchronous `try { void interpreterStore.validateEntityValue(payload.entityId) } catch {}`. This **looked** correct and the structural regression test passed (asserted the literal `try/catch` pattern was present).
 
-Locked by a structural regression test in `tests/form-interpreter/visibility-renderer.test.tsx` ("onEntityValueUpdated guards validateEntityValue against coltorapps cascade-clear events (E4 regression)").
+**E4 then passed** with submission `f0625f07-98b0-4d6f-a726-57777fafdb39` — because E4 only required setting Site type once (one-directional cascade-hide). The broken fix was masked.
+
+**2nd fix attempt (commit TBD, 2026-05-29) — required when E5 surfaced the latent bug:**
+
+E5 (stepping Likelihood down from 5→1 to verify Mitigation hides) re-threw `"Entity not eligible for validation"` despite `530c355` being in the bundle. Root cause of the broken fix: **`coltorapps.validateEntityValue` is `async`**. A synchronous `throw` inside an async function becomes a *rejected Promise*; the synchronous `try/catch` wrapping the call catches the synchronous return (a Promise), not the rejection. The Promise becomes an unhandled rejection → Next.js error overlay.
+
+**Real fix:**
+
+```ts
+void interpreterStore.validateEntityValue(payload.entityId).catch(() => {})
+```
+
+Locked by an updated regression test in `tests/form-interpreter/visibility-renderer.test.tsx` that asserts BOTH:
+1. The `.catch(...)` pattern IS present on the call
+2. A sync `try { void ... } catch {}` around the call is NOT present (explicit anti-pattern guard)
+
+**Lesson:** structural / pattern-presence tests must encode semantic invariants, not just literal syntax. Locking "a try/catch surrounds the call" was a false-positive guard — locking "a Promise-level .catch handler is attached" is the actual invariant.
 
 **Resume point (3rd attempt):** Hard-refresh after restart, repeat E4 steps from the top. Confirm:
 1. No "Entity not eligible for validation" overlay when changing Site type / Likelihood / Consequence

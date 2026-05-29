@@ -163,12 +163,13 @@ describe("visibility-renderer — entity hide/show integration", () => {
     // cascaded descendants all emit one each with value=undefined. validateEntityValue's
     // eligibility precondition rejects non-input + just-hidden entities and THROWS.
     //
-    // Without the guard, toggling a section's visibility from the builder/fill side throws
-    // "Entity not eligible for validation" into the React error boundary. This was discovered
-    // walking E4 of 15-UAT.md — the cascade-clear event for the "Fire doors register section"
-    // sectionGroup (hidden when Site type != Commercial) hit validateEntityValue and crashed.
+    // Critical subtlety: coltorapps' validateEntityValue is `async`. The throw becomes a
+    // rejected Promise — a synchronous `try/catch` will NOT catch it. The guard MUST be
+    // `.catch(() => {})` on the returned promise (or equivalent `.then(null, ...)`).
     //
-    // Locking: the onEntityValueUpdated body must wrap validateEntityValue in try/catch.
+    // This test exists because the first fix attempt used a sync `try { ... } catch {}`
+    // wrapper that was structurally present but semantically a no-op. The error then
+    // resurfaced walking E5 (hide Mitigation by lowering risk). Lock the real pattern.
     const { readFileSync } = await import("fs")
     const { resolve } = await import("path")
     const rendererSource = readFileSync(
@@ -176,8 +177,14 @@ describe("visibility-renderer — entity hide/show integration", () => {
       "utf-8"
     )
 
+    // Must be `.catch(...)` on the returned promise — sync try/catch is insufficient.
     expect(rendererSource).toMatch(
-      /try\s*\{\s*void\s+interpreterStore\.validateEntityValue\(payload\.entityId\)\s*\}\s*catch\s*\{\s*\}/
+      /interpreterStore\.validateEntityValue\(payload\.entityId\)\.catch\s*\(/
+    )
+
+    // Explicit anti-pattern guard: reject sync try/catch wrapping around the call.
+    expect(rendererSource).not.toMatch(
+      /try\s*\{\s*void\s+interpreterStore\.validateEntityValue\(payload\.entityId\)\s*\}\s*catch/
     )
   })
 
