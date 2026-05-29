@@ -177,56 +177,11 @@ export async function autosaveAnswers(submissionId: string, answersJson: Record<
   }
 }
 
-export async function submitAssessment(submissionId: string, finalAnswers: Record<string, unknown>) {
-  // Auth gate via SSR client; the write itself goes through adminClient so RLS
-  // can't silently zero-row the update when the admin JWT lacks the role claim.
-  // See autosaveAnswers above for the same pattern and rationale.
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error("Unauthorized: Authentication required for submission")
-  }
-
-  const { data: submission, error } = await adminClient
-    .from("form_submissions")
-    .update({
-      answers_json: finalAnswers,
-      status: "submitted",
-      submitted_at: new Date().toISOString()
-    })
-    .eq("id", submissionId)
-    .eq("submitted_by", user.id) // Ensure user owns the submission
-    .select("client_id")
-    .single()
-
-  if (error || !submission) {
-    throw new Error(`Failed to submit: ${error?.message || "Ownership verification failed"}`)
-  }
-
-  // Fire and forget webhook
-  const webhookUrl = process.env.N8N_ASSESSMENT_WEBHOOK_URL
-  if (webhookUrl) {
-    try {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submissionId }),
-        signal: AbortSignal.timeout(3000)
-      })
-    } catch (err) {
-      console.error("Webhook trigger failed", err)
-      // Log error to workflow_errors
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "assessment-submission-webhook",
-        error_message: String(err),
-        payload: { submissionId }
-      })
-    }
-  }
-
-  return { clientId: submission.client_id }
-}
+// Legacy `submitAssessment` removed 2026-05-29 — superseded by the validated
+// `submitAssessmentAction` below. Last caller was retired with the
+// form-interpreter migration; the legacy function had no remaining import
+// across app/ or components/, and shipping both risked duplicate
+// assessment-submission-webhook fires for the same submissionId.
 
 /**
  * Submit a form assessment with server-side validation.
@@ -373,16 +328,33 @@ export async function submitAssessmentAction(
     try {
       await runReportDraftGeneration(submissionId)
     } catch (err) {
+      // runReportDraftGeneration itself logs to workflow_errors and flips
+      // status='ai_draft_failed' before rethrowing (D-10). But if it threw
+      // BEFORE that point (e.g., the status-flip update itself failed), the
+      // submission would be stuck at 'submitted' and the Review page would
+      // show "Generate AI Draft" instead of "Retry Draft" — misleading
+      // because auto-generation did run and fail. Best-effort flip here
+      // closes that window. Code audit 2026-05-29 (M2).
       console.error("Auto report-draft generation failed", { submissionId, err })
+      try {
+        await adminClient
+          .from("form_submissions")
+          .update({ status: "ai_draft_failed" })
+          .eq("id", submissionId)
+          .eq("status", "submitted")
+      } catch (flipErr) {
+        console.error("Fallback status flip to ai_draft_failed also failed", { submissionId, flipErr })
+      }
     }
   })
 
   // Phase 18 SC#5 — fire the assessment-submission n8n webhook for the
   // Module 1 downstream (Matt's existing n8n workflows that fan out to
-  // Proton Mail / customer notifications / Drive backups). Mirrored from
-  // the legacy submitAssessment (actions.ts:194-212). Distinct from the
-  // AI-draft pipeline in the after() callback above — both are
-  // post-response background tasks; neither blocks Matt's submit redirect.
+  // Proton Mail / customer notifications / Drive backups). The legacy
+  // submitAssessment was removed 2026-05-29 (code audit M4); this is now
+  // the only webhook-firing path. Distinct from the AI-draft pipeline in
+  // the after() callback above — both are post-response background tasks;
+  // neither blocks Matt's submit redirect.
   // Inline (not extracted to lib/notifications/n8n-dispatch.ts) per
   // RESEARCH §Q5: that helper's typed union targets a DIFFERENT n8n URL
   // (N8N_WEBHOOK_URL → Proton Mail routing); the assessment webhook
@@ -506,8 +478,10 @@ async function runReportDraftGeneration(submissionId: string) {
     revalidatePath(`/admin/assessments/${submissionId}/review`)
 
     return { success: true }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("generateReportDraft failed:", err)
+    const errMessage = err instanceof Error ? err.message : String(err)
+    const errStack = err instanceof Error ? err.stack : null
 
     // D-10: log to workflow_errors BEFORE flipping status / rethrowing.
     // adminClient (service-role) bypasses RLS so the insert succeeds even when
@@ -517,10 +491,10 @@ async function runReportDraftGeneration(submissionId: string) {
     // `severity` column; severity nests under payload (PATTERNS.md correction #1).
     await adminClient.from("workflow_errors").insert({
       workflow_name: "ai_report_draft",
-      error_message: err?.message ?? String(err),
+      error_message: errMessage,
       payload: {
         submission_id: submissionId,
-        stack: err?.stack ?? null,
+        stack: errStack,
         severity: "high",
       },
     })
@@ -537,7 +511,7 @@ async function runReportDraftGeneration(submissionId: string) {
 
     // Preserve the existing error-message shape used by the manual Server Action
     // wrapper at generateReportDraft (line ~503).
-    throw new Error(`Failed to generate report draft via AI: ${err.message || String(err)}`)
+    throw new Error(`Failed to generate report draft via AI: ${errMessage}`)
   }
 }
 
