@@ -80,12 +80,21 @@ export default async function ClientDetailsPage({
     .order("created_at", { ascending: false })
 
   // Published templates — for the "Assign template" modal in the Assigned Forms tab.
-  const { data: publishedTemplates } = await adminClient
+  const { data: publishedTemplates, error: publishedTemplatesError } = await adminClient
     .from("form_templates")
     .select("id, name")
     .eq("is_published", true)
     .is("deleted_at", null)
     .order("name")
+
+  // Don't fail silently: a query error here (e.g. schema drift) previously
+  // emptied the picker with no signal. Surface it in logs so it's diagnosable.
+  if (publishedTemplatesError) {
+    console.error(
+      "[admin/clients/[id]] publishedTemplates query failed — Assign-Template picker will be empty:",
+      publishedTemplatesError.message
+    )
+  }
 
   // Assessments are form_submissions for this client. We join template_versions
   // → form_templates to surface the template name in the UI.
