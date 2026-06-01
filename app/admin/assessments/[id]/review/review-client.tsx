@@ -161,7 +161,13 @@ export function ReviewClient({
   const handleGenerate = async () => {
     setGenerating(true)
     try {
-      await generateReportDraft(submission.id)
+      const result = await generateReportDraft(submission.id)
+      // Update local state immediately — router.refresh() re-fetches the RSC
+      // but won't re-seed useState(draft), so the new draft wouldn't show
+      // until a full reload otherwise.
+      if (result?.draft) {
+        setDraft(result.draft as Draft)
+      }
       toast.success("AI draft generated successfully")
       router.refresh()
     } catch (err: any) {

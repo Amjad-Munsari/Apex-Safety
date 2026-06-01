@@ -477,7 +477,11 @@ async function runReportDraftGeneration(submissionId: string) {
     revalidatePath("/admin/assessments")
     revalidatePath(`/admin/assessments/${submissionId}/review`)
 
-    return { success: true }
+    // Return the generated draft so the client can update its local state
+    // immediately — router.refresh() alone won't re-seed the review page's
+    // useState(draft), so without this the regenerated draft only appears
+    // after a full manual reload.
+    return { success: true, draft: object }
   } catch (err: unknown) {
     console.error("generateReportDraft failed:", err)
     const errMessage = err instanceof Error ? err.message : String(err)
