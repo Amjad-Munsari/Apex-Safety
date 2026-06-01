@@ -154,17 +154,22 @@ export function AssignTemplateModal({
               <Select
                 value={selectedTemplate}
                 onValueChange={(v) => setSelectedTemplate(v ?? "")}
+                // items maps value→label so SelectValue renders the template
+                // NAME (not the raw id) once a template is picked.
+                items={Object.fromEntries(
+                  (templates ?? []).map((t) => [t.id, t.name])
+                )}
                 required
               >
-                <SelectTrigger className="bg-black/50 border-white/10 text-white">
+                <SelectTrigger className="w-full h-10 bg-black/50 border-white/15 text-white data-placeholder:text-white/45">
                   <SelectValue placeholder="Select template" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
+                <SelectContent className="w-[--anchor-width] max-h-64 bg-[#222] border-white/15 text-white">
                   {(templates ?? []).map((t) => (
                     <SelectItem
                       key={t.id}
                       value={t.id}
-                      className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]"
+                      className="text-white/90 data-highlighted:bg-[#3b8273]/35 data-highlighted:text-white focus:bg-[#3b8273]/35 focus:text-white"
                     >
                       {t.name}
                     </SelectItem>
