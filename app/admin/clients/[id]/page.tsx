@@ -73,7 +73,7 @@ export default async function ClientDetailsPage({
   // Assignments for this client — filtered by deleted_at IS NULL (T-16-08).
   const { data: assignmentRows } = await adminClient
     .from("form_assignments")
-    .select("id, status, due_date, instructions, created_at, template:form_templates(id, name)")
+    .select("id, status, due_date, instructions, created_at, template_version_id, template:form_templates(id, name)")
     .eq("client_id", id)
     .is("deleted_at", null)
     .order("due_date", { ascending: true, nullsFirst: false })

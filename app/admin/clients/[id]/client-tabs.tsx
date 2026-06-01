@@ -49,6 +49,7 @@ export interface AssignmentRow {
   due_date: string | null
   instructions: string | null
   created_at: string
+  template_version_id: string | null
   template: { id: string; name: string } | null
 }
 
@@ -521,9 +522,20 @@ export function ClientTabs({
                         </p>
                       )}
                     </div>
-                    {/* Revoke action */}
+                    {/* Actions: start an assessment from this assignment, or revoke it */}
                     {assignment.status !== "completed" && (
-                      <RevokeAssignmentButton assignmentId={assignment.id} />
+                      <div className="flex items-center gap-2 shrink-0">
+                        {assignment.template_version_id && (
+                          <Link
+                            href={`/admin/assessments/new?clientId=${clientId}&templateVersionId=${assignment.template_version_id}`}
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-[#c0a66d] hover:bg-[#c0a66d]/90 text-black font-medium font-mono text-[10px] uppercase tracking-widest transition-colors"
+                          >
+                            <ClipboardCheck className="w-3 h-3" />
+                            Start assessment
+                          </Link>
+                        )}
+                        <RevokeAssignmentButton assignmentId={assignment.id} />
+                      </div>
                     )}
                   </div>
                 ))}

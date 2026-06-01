@@ -58,6 +58,10 @@ export default async function CompliancePage({
     const exp = d.expiry_date ? new Date(d.expiry_date) : null;
     return exp && exp >= thirtyDaysFromNow;
   });
+  // Documents with no expiry date belong to none of the date buckets above.
+  // They were previously counted in "All" (docs.length) but rendered in no
+  // table at all — invisible. Surface them in their own section.
+  const undated = docs.filter((d) => !d.expiry_date);
 
   const counts: Record<FilterKey, number> = {
     all: docs.length,
@@ -133,6 +137,7 @@ export default async function CompliancePage({
           {expired.length > 0 && <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />}
           {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />}
           {current.length > 0 && <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />}
+          {undated.length > 0 && <DocTable title="No Expiry Date" color="white/40" docs={undated} now={now} />}
         </>
       )}
       {active === "expired" && (
