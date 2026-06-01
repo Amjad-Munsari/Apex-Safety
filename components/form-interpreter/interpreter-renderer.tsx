@@ -145,6 +145,17 @@ export const InterpreterRenderer = forwardRef<
     return () => setCurrentFormSchema(null)
   }, [schema])
 
+  // Emit the initial completion % once on mount. onEntityValueUpdated only
+  // fires on value CHANGES, so after a reload the store is seeded with
+  // initialValues but the parent's progress bar would otherwise sit at 0 until
+  // the user touches a field. Run once — purely a read of the seeded store.
+  useEffect(() => {
+    const values = interpreterStore.getEntitiesValues()
+    const visibility = evaluateVisibility(schema, values)
+    onProgressChange?.(computeFormProgress(schema, values, visibility))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   /**
    * propsRef — stable ref that mirrors props which change on each render but
    * must NOT be added to the components useMemo dependency array.
