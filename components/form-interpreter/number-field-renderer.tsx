@@ -45,7 +45,9 @@ export function NumberFieldRenderer({ entity, setValue, surface = "cream", dynam
         max={attrs.max}
         onChange={(v) => setValue(v)}
       />
-      {/* helpText not available on numberField entity in Phase 13 */}
+      {attrs.helpText && (
+        <p className={cn("text-xs", t.helpText)}>{attrs.helpText}</p>
+      )}
       {error && (
         <p className={cn("text-xs", t.error)}>{error}</p>
       )}

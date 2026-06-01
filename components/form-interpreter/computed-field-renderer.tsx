@@ -140,6 +140,9 @@ export function ComputedFieldRenderer({ entity, interpreterStore, surface = "cre
     <div className="flex flex-col gap-1.5">
       {/* Field label — no required asterisk (computedField has no requiredAttribute) */}
       <label className={cn("text-sm font-semibold", t.label)}>{attrs.label as string}</label>
+      {attrs.helpText && (
+        <p className={cn("text-xs", t.helpText)}>{attrs.helpText as string}</p>
+      )}
 
       {result ? (
         /* Computed badge — role="status" aria-live="polite" for accessibility */

@@ -24,6 +24,7 @@ import { createEntity } from "@coltorapps/builder";
 import { labelAttribute } from "../attributes/label";
 import { formulaAttribute } from "../attributes/formula";
 import { computedInputsAttribute } from "../attributes/computed-inputs";
+import { helpTextAttribute } from "../attributes/help-text";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
 import { visibilityRulesAttribute } from "../attributes/visibility-rules";
 import { makeShouldBeProcessed } from "../visibility/should-be-processed";
@@ -34,6 +35,7 @@ export const computedFieldEntity = createEntity({
     labelAttribute,
     formulaAttribute,
     computedInputsAttribute,
+    helpTextAttribute,
     attachPhotosAttribute,
     visibilityRulesAttribute,
   ],
