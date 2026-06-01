@@ -86,6 +86,34 @@ export async function getReportsAwaitingReview(limit: number = 3) {
   return data || []
 }
 
+/**
+ * Completed reports — assessments that have been reviewed, approved, and had
+ * their PDF generated (status='completed'). These leave the awaiting-review
+ * queue, so this powers the "Completed" tab so they remain findable.
+ */
+export async function getCompletedReports(limit: number = 50) {
+  const { data, error } = await adminClient
+    .from("form_submissions")
+    .select(`
+      id,
+      created_at,
+      submitted_at,
+      status,
+      report_storage_path,
+      client:clients(name),
+      template:template_versions(form_templates(name))
+    `)
+    .eq("status", "completed")
+    .order("submitted_at", { ascending: false, nullsFirst: false })
+    .limit(limit)
+
+  if (error) {
+    console.error("getCompletedReports error:", { code: error.code, message: error.message })
+    return []
+  }
+  return data || []
+}
+
 export async function getUpcomingExpiries(limit: number = 100) {
   const now = new Date().toISOString()
   const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
