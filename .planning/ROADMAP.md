@@ -31,9 +31,9 @@ The stage sequence is locked and must not be reordered:
 - [x] **Phase 4: Client Compliance Portal** — Magic-link portal login, RAG compliance dashboard, document library, assessment downloads, onboarding state, mobile-responsive
 - [x] **Phase 5: Document Upload, Notifications + Expiry Alerts** — Admin document upload, Twilio SMS, n8n #2 email, 30/14/7-day expiry cron (n8n #3), dedup constraint, expiry surface
 - [x] **Phase 6: Assessment Workflow** — Form assignment, on-site unassigned FRA flow, "anything else" field, draft recovery — **GREEN-LIGHT GATE: Matt live-demo sign-off required before Stage 4/5**
-- [ ] **Phase 7: AI Report Pipeline** — n8n workflow #1 (GPT-4 structured output, YELLOW BROOM few-shot), PDF to Storage, review gate UI (side-by-side STT + draft), approve/regenerate/edit, n8n error workflow
+- [x] **Phase 7: AI Report Pipeline** — n8n workflow #1 (GPT-4 structured output, YELLOW BROOM few-shot), PDF to Storage, review gate UI (side-by-side STT + draft), approve/regenerate/edit, n8n error workflow
 - [ ] **Phase 8: Hours Balance + PayPal Checkout** — Portal hours display, PayPal Orders v2 checkout, idempotent webhook, atomic credit write, receipt email, configurable pricing
-- [ ] **Phase 9: Proposal + Auto-Contract Pipeline** — Service selection from Packages.docx, OpenAI proposal draft, PDF render, SignWell e-sign, n8n #4 contract gen, dual-sign, storage
+- [x] **Phase 9: Proposal + Auto-Contract Pipeline** — Service selection from Packages.docx, OpenAI proposal draft, PDF render, SignWell e-sign, n8n #4 contract gen, dual-sign, storage
 - [x] **Phase 10: Admin Dashboard Logic** — Dynamic wiring of the existing dashboard cards to live data (compliance summary, expiry panel, review queue). Completed 2026-05-01, UAT pass (10-UAT.md, 3/3).
 - [x] **Phase 11: Ops, Seed Data + Handover** — Seed 5–10 clients, live walkthrough, quick-reference guide PDF, credential migration
 - [x] **Phase 12: Admin Dashboard UI Fixes** — Shipped out-of-flow (no plan/summary artifacts); commit `f2c7cce feat(admin): phase 12 - admin dashboard ui fixes and live data integration`.
@@ -42,10 +42,10 @@ The stage sequence is locked and must not be reordered:
 
 Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2 backlog (BUILDER / COND / SCHED clusters) — confirmed in scope via Finley (voice note 4/17) and the 2026-04-17 form-template ownership decision. Build prompt of record: `.planning/research/form-builder-build-prompt.md`. Phases 14–16 can overlap once 13 is done; full module ~4–5 weeks.
 
-- [ ] **Phase 13: Form Builder Foundation** — Coltorapps integration, 7 basic field types, dnd-kit three-panel builder, schema versioning, interpreter/renderer
+- [x] **Phase 13: Form Builder Foundation** — Coltorapps integration, 7 basic field types, dnd-kit three-panel builder, schema versioning, interpreter/renderer
 - [x] **Phase 14: Custom Field Types** — Signature, rating, multi-photo, geolocation, repeating sections, computed (PAS 79 risk matrix); per-field photo attach + STT
  (completed 2026-05-25)
-- [ ] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
+- [x] **Phase 15: Conditional Logic Engine** — `visibilityRules` per entity, builder condition UI, runtime show/hide/require, circular-dependency detection
 - [x] **Phase 16: Multi-Tenancy + Fork-on-Fill** — Template assignment, fork-on-fill, client-built templates, role gating, cross-org RLS (completed 2026-05-26)
 - [x] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup (completed 2026-05-27)
 - [x] **Phase 18: FRA Seed Template** — Blank FRA (Type 3) built via the builder, conditional sections, risk matrix, action plan, n8n report webhook (completed 2026-05-27)
@@ -109,16 +109,16 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 | 4. Client Compliance Portal | 1/1 | Completed | 2026-04-29 |
 | 5. Document Upload + Expiry Alerts | 2/2 | Completed | 2026-04-29 |
 | 6. Assessment Workflow | 1/1 | Completed | 2026-04-30 |
-| 7. AI Report Pipeline | 8/10 | In Progress|  |
+| 7. AI Report Pipeline | 10/10 | Complete   | 2026-05-29 |
 | 8. Hours Balance + PayPal Checkout | 0/1 | Not started | - |
 | 9. Proposal Pipeline | 1/1 | Completed | 2026-05-01 |
 | 10. Admin Dashboard Logic | 1/1 | Completed | 2026-05-01 |
 | 11. Demo Readiness & Polish | 1/1 | Completed | 2026-05-02 |
 | 11. Ops, Seed Data + Handover | 0/1 | Skipped | - |
-| 12. Admin Dashboard UI Fixes | 0/1 | Not started | - |
-| 13. Form Builder Foundation | 3/4 | In Progress|  |
+| 12. Admin Dashboard UI Fixes | 1/1 | Complete   | 2026-05-01 |
+| 13. Form Builder Foundation | 4/4 | Complete   | 2026-05-25 |
 | 14. Custom Field Types | 8/8 | Complete   | 2026-05-25 |
-| 15. Conditional Logic Engine | 8/9 | In Progress|  |
+| 15. Conditional Logic Engine | 9/9 | Complete   | 2026-05-29 |
 | 16. Multi-Tenancy + Fork-on-Fill | 8/8 | Complete   | 2026-05-26 |
 | 17. Assignment Scheduling + Notifications | 6/6 | Complete   | 2026-05-26 |
 | 18. FRA Seed Template | 3/3 | Complete   | 2026-05-27 |
@@ -285,7 +285,7 @@ Plans:
 - [x] 13-03-PLAN.md — Coltorapps interpreter renderer + assessment fill rewire + submitAssessmentAction with version pinning (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 13-04-PLAN.md — Drop-and-reseed migration 010, dead-code deletion, supabase db push, human-verify checkpoint (wave 3)
+- [x] 13-04-PLAN.md — Drop-and-reseed migration 010, dead-code deletion, supabase db push, human-verify checkpoint (wave 3)
 
 ### Phase 14: Custom Field Types
 > **Re-implementation, not net-new (reframed 2026-05-20 after Phase 13 discussion).** Phase 13's big-bang cutover to coltorapps drops the custom field types the pre-coltorapps builder had. Phase 14 rebuilds them as coltorapps entities. Their prior React components live in git history (`components/forms/*-field.tsx` before the Phase 13 cutover) — port the UI, rebuild the entity/attribute wiring. Until this phase lands, signature/rating/photo/geo/repeating fields and the full FRA template are unavailable.
@@ -349,7 +349,7 @@ Plans:
 - [x] 15-07-PLAN.md — CycleErrorBanner + Save/Publish error catch + Sonner toast + publish-blocked tooltip (wave 3)
 
 **Wave 4** *(smoke template + verification — sequential)*
-- [ ] 15-08-PLAN.md — Migration 012 (PAS 79 + FRA-doors + root-cascade smoke) + [BLOCKING] supabase db push + Playwright e2e + 15-UAT.md + human-verify (wave 4)
+- [x] 15-08-PLAN.md — Migration 012 (PAS 79 + FRA-doors + root-cascade smoke) + [BLOCKING] supabase db push + Playwright e2e + 15-UAT.md + human-verify (wave 4)
 
 ### Phase 16: Multi-Tenancy + Fork-on-Fill
 **Goal**: Both confirmed use cases are live — admin assigns templates to clients, and clients can fork an assigned template or build their own from scratch.
