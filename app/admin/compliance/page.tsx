@@ -8,13 +8,14 @@ import { UploadDocumentModal } from "@/components/admin/upload-document-modal";
 
 export const dynamic = "force-dynamic";
 
-type FilterKey = "all" | "current" | "expiring" | "expired";
+type FilterKey = "all" | "current" | "expiring" | "expired" | "undated";
 
 const TABS: { key: FilterKey; label: string }[] = [
   { key: "all",      label: "All" },
   { key: "current",  label: "Current" },
   { key: "expiring", label: "Expiring (30 days)" },
   { key: "expired",  label: "Expired" },
+  { key: "undated",  label: "No Expiry Date" },
 ];
 
 export default async function CompliancePage({
@@ -25,7 +26,7 @@ export default async function CompliancePage({
   const sp = await searchParams;
   const active: FilterKey = ((): FilterKey => {
     const v = sp.status;
-    if (v === "current" || v === "expiring" || v === "expired" || v === "all") return v;
+    if (v === "current" || v === "expiring" || v === "expired" || v === "undated" || v === "all") return v;
     return "all";
   })();
 
@@ -68,6 +69,7 @@ export default async function CompliancePage({
     current: current.length,
     expiring: expiring.length,
     expired: expired.length,
+    undated: undated.length,
   };
 
   const pct = compliance.total > 0 ? Math.round((compliance.current / compliance.total) * 100) : 0;
@@ -154,6 +156,11 @@ export default async function CompliancePage({
         current.length > 0
           ? <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />
           : <EmptyTab label="No current documents" />
+      )}
+      {active === "undated" && (
+        undated.length > 0
+          ? <DocTable title="No Expiry Date" color="white/40" docs={undated} now={now} />
+          : <EmptyTab label="No documents without an expiry date" />
       )}
     </div>
   );
