@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { autosaveAnswers } from "@/app/admin/assessments/actions"
 import { AssessmentFormHeader } from "@/components/assessments/assessment-form-header"
@@ -43,11 +43,31 @@ interface AssessmentClientProps {
  *   persistence point; autosave here covers only appendix (notes, media).
  * - normalizeFormSchema() call removed — schema arrives in coltorapps shape directly.
  */
+// Appendix keys live alongside the main-field answers inside answers_json but
+// are owned by this component (the interpreter store owns everything else).
+const APPENDIX_KEYS = ["__appendix_notes", "__appendix_media"] as const
+
 export function AssessmentClient({ submission, schema, templateName, clientId }: AssessmentClientProps) {
   const router = useRouter()
+
+  const savedAnswers = useMemo(
+    () => (submission.answers_json as Record<string, unknown> | null | undefined) ?? {},
+    [submission.answers_json],
+  )
+
+  // Main-field subset of the saved draft — used to rehydrate the interpreter
+  // store on reload (the part the Phase-13 migration stopped restoring).
+  const mainInitial = useMemo(() => {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(savedAnswers)) {
+      if (!APPENDIX_KEYS.includes(k as (typeof APPENDIX_KEYS)[number])) out[k] = v
+    }
+    return out
+  }, [savedAnswers])
+
   const [appendixAnswers, setAppendixAnswers] = useState<Record<string, unknown>>({
-    __appendix_notes: (submission.answers_json as Record<string, unknown> | null | undefined)?.__appendix_notes ?? "",
-    __appendix_media: (submission.answers_json as Record<string, unknown> | null | undefined)?.__appendix_media ?? [],
+    __appendix_notes: savedAnswers.__appendix_notes ?? "",
+    __appendix_media: savedAnswers.__appendix_media ?? [],
   })
   const [isSaving, setIsSaving] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -56,20 +76,48 @@ export function AssessmentClient({ submission, schema, templateName, clientId }:
   const [progress, setProgress] = useState(0)
 
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const pendingAnswersRef = useRef<Record<string, unknown>>(appendixAnswers)
+  // Latest interpreter (main-field) values — a ref so the high-frequency
+  // onValuesChange updates never trigger a render (focus-loss Pitfall 6).
+  const mainValuesRef = useRef<Record<string, unknown>>(mainInitial)
+  // Mirror of appendix state for use inside debounced/unmount closures.
+  const appendixRef = useRef<Record<string, unknown>>(appendixAnswers)
   const interpreterRef = useRef<InterpreterRendererHandle>(null)
 
-  const triggerAutosave = useCallback(async (latestAnswers: Record<string, unknown>) => {
+  // autosaveAnswers OVERWRITES the whole answers_json, so every save must write
+  // the union of main + appendix — otherwise one half wipes the other.
+  const buildMergedAnswers = useCallback(
+    () => ({ ...mainValuesRef.current, ...appendixRef.current }),
+    [],
+  )
+
+  const triggerAutosave = useCallback(async () => {
     try {
       setIsSaving(true)
-      await autosaveAnswers(submission.id, latestAnswers)
+      await autosaveAnswers(submission.id, buildMergedAnswers())
     } catch (err) {
       console.error("Autosave failed", err)
       toast.error("Failed to save draft automatically.")
     } finally {
       setIsSaving(false)
     }
-  }, [submission.id])
+  }, [submission.id, buildMergedAnswers])
+
+  // Debounced autosave — shared by both main-field and appendix changes.
+  const scheduleAutosave = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      void triggerAutosave()
+    }, 800)
+  }, [triggerAutosave])
+
+  // Main-field values changed in the interpreter — stash + debounce-save.
+  const handleMainValuesChange = useCallback(
+    (values: Record<string, unknown>) => {
+      mainValuesRef.current = values
+      scheduleAutosave()
+    },
+    [scheduleAutosave],
+  )
 
   // Cleanup pending saves on unmount / visibility change
   useEffect(() => {
@@ -82,7 +130,7 @@ export function AssessmentClient({ submission, schema, templateName, clientId }:
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden" && timeoutRef.current) {
         clearTimeout(timeoutRef.current)
-        triggerAutosave(pendingAnswersRef.current)
+        void triggerAutosave()
       }
     }
 
@@ -99,15 +147,8 @@ export function AssessmentClient({ submission, schema, templateName, clientId }:
   const handleAppendixChange = (key: string, value: unknown) => {
     setAppendixAnswers((prev) => {
       const updated = { ...prev, [key]: value }
-      pendingAnswersRef.current = updated
-
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-      timeoutRef.current = setTimeout(() => {
-        triggerAutosave(updated)
-      }, 800)
-
+      appendixRef.current = updated
+      scheduleAutosave()
       return updated
     })
   }
@@ -123,16 +164,20 @@ export function AssessmentClient({ submission, schema, templateName, clientId }:
         templateName={templateName}
         progress={progress}
         onSaveDraft={async () => {
-          await triggerAutosave(pendingAnswersRef.current)
-          toast.success("Draft saved manually")
-        }}
-        onSubmit={async () => {
-          // Flush any pending appendix autosave before the form submit
-          // races the server action.
           if (timeoutRef.current) {
             clearTimeout(timeoutRef.current)
             timeoutRef.current = null
-            await triggerAutosave(pendingAnswersRef.current)
+          }
+          await triggerAutosave()
+          toast.success("Draft saved manually")
+        }}
+        onSubmit={async () => {
+          // Flush any pending autosave before the form submit races the
+          // server action.
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current)
+            timeoutRef.current = null
+            await triggerAutosave()
           }
           const ok = await interpreterRef.current?.submit()
           if (ok) {
@@ -157,6 +202,8 @@ export function AssessmentClient({ submission, schema, templateName, clientId }:
         submissionId={submission.id}
         clientId={clientId}
         surface="dark"
+        initialValues={mainInitial}
+        onValuesChange={handleMainValuesChange}
         onProgressChange={setProgress}
         onSubmittingChange={setIsSubmitting}
       />

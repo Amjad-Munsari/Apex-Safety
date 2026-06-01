@@ -3,6 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
 import { useInterpreterStore, InterpreterEntities } from "@coltorapps/builder-react"
 import { validateEntitiesValues } from "@coltorapps/builder"
+import type { EntitiesValues } from "@coltorapps/builder"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formBuilder, type FormBuilderSchema } from "@/lib/form-builder"
@@ -65,6 +66,21 @@ interface InterpreterRendererProps {
    * consume it for upload paths) — this prop only diverts the FINAL submit.
    */
   onSubmit?: (values: Record<string, unknown>) => Promise<void>
+  /**
+   * Seed the interpreter store with previously-saved values for draft
+   * rehydration. Keyed by entity id, as stored in
+   * form_submissions.answers_json (the main-field subset — the parent owns the
+   * appendix keys). Without this, a reload mid-fill loses everything (the
+   * Phase-13 coltorapps migration dropped the original autosave/restore).
+   */
+  initialValues?: Record<string, unknown>
+  /**
+   * Fired with the current main-field values on every value change so the
+   * parent can debounce-autosave them. Same cadence as onProgressChange —
+   * the parent MUST update a ref + debounce (never setState synchronously),
+   * or the components map remounts and steals input focus (Pitfall 6).
+   */
+  onValuesChange?: (values: Record<string, unknown>) => void
 }
 
 const surfaceTokens = {
@@ -76,13 +92,24 @@ export const InterpreterRenderer = forwardRef<
   InterpreterRendererHandle,
   InterpreterRendererProps
 >(function InterpreterRenderer(
-  { schema, submissionId, clientId, surface = "cream", onProgressChange, onSubmittingChange, onSubmit },
+  { schema, submissionId, clientId, surface = "cream", onProgressChange, onSubmittingChange, onSubmit, initialValues, onValuesChange },
   ref,
 ) {
   const t = surfaceTokens[surface]
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // onValuesChange is read through a ref so the store's event closure (created
+  // once) always calls the latest callback without re-creating the store.
+  const onValuesChangeRef = useRef(onValuesChange)
+  onValuesChangeRef.current = onValuesChange
+
   const interpreterStore = useInterpreterStore(formBuilder, schema, {
+    // Draft rehydration — seed the store from the saved answers_json subset.
+    // entitiesValues is keyed by entity id → value, which is exactly the shape
+    // we persist; the cast bridges Record<string, unknown> → EntitiesValues.
+    ...(initialValues
+      ? { initialData: { entitiesValues: initialValues as unknown as EntitiesValues<typeof formBuilder> } }
+      : {}),
     events: {
       onEntityValueUpdated(payload) {
         // Coltorapps emits EntityValueUpdated as part of its cascade-clear when an
@@ -99,6 +126,10 @@ export const InterpreterRenderer = forwardRef<
         const values = interpreterStore.getEntitiesValues()
         const visibility = evaluateVisibility(schema, values)
         onProgressChange?.(computeFormProgress(schema, values, visibility))
+        // Surface the latest main-field values so the parent can debounce-
+        // autosave them (Phase-13 regression fix). Ref-routed; the parent
+        // must not setState synchronously (focus-loss Pitfall 6).
+        onValuesChangeRef.current?.(values as Record<string, unknown>)
       },
     },
   })
