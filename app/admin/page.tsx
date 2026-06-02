@@ -386,19 +386,17 @@ export default async function AdminDashboardPage() {
                 {stats.errorCount} {stats.errorCount === 1 ? 'Failing' : 'Failing'}
               </span>
             </div>
-            <Link href="/admin/errors" className="font-mono text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white border-b border-[#aaa] pb-0.5">Open Log</Link>
+            <Link href="/admin/errors" className="font-mono text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white inline-flex items-center gap-1 px-3 py-1 border border-white/15 rounded-[2px] hover:bg-white/5 transition-colors">View Log &rarr;</Link>
           </div>
 
           <div className="flex flex-col text-xs font-mono divide-y divide-white/5">
             {recentErrors.map((error) => (
-              <div key={error.id} className="flex items-start md:items-center gap-4 py-4 first:pt-0 last:pb-0 relative group">
-                <Link href="/admin/errors" className="absolute inset-0 z-0" />
-                <span className="w-24 shrink-0 text-[#666] relative z-10">
+              <div key={error.id} className="flex items-start md:items-center gap-4 py-4 first:pt-0 last:pb-0">
+                <span className="w-24 shrink-0 text-[#666]">
                   {Math.floor((Date.now() - new Date(error.created_at).getTime()) / (1000 * 60 * 60))} h ago
                 </span>
-                <div className="w-24 shrink-0 px-2 py-0.5 border border-danger/20 rounded-[2px] text-danger text-[10px] text-center font-bold relative z-10">ERR</div>
-                <span className="flex-1 truncate text-white/90 italic relative z-10">“{error.workflow_name}” <span className="text-white/40 not-italic ml-2">— {error.error_message}</span></span>
-                <span className="text-danger tracking-widest uppercase border-b border-danger/20 pb-0.5 text-[9px] font-bold ml-4 relative z-10">Manage</span>
+                <div className="w-24 shrink-0 px-2 py-0.5 border border-danger/20 rounded-[2px] text-danger text-[10px] text-center font-bold">ERR</div>
+                <span className="flex-1 truncate text-white/90 italic">“{error.workflow_name}” <span className="text-white/40 not-italic ml-2">— {error.error_message}</span></span>
               </div>
             ))}
             {recentErrors.length === 0 && (
@@ -413,7 +411,7 @@ export default async function AdminDashboardPage() {
         <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col animate-in-fade [animation-delay:0.9s]">
           <div className="flex items-center gap-3 mb-8">
             <span className="font-mono text-xs text-white/40">08</span>
-            <h3 className="font-sans font-medium text-white tracking-wide text-lg">This month</h3>
+            <h3 className="font-sans font-medium text-white tracking-wide text-lg whitespace-nowrap">This month</h3>
             <span className="font-mono text-[10px] text-white/50 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest ml-3 bg-white/5 px-2.5 py-1 leading-none">
               {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
             </span>
@@ -437,6 +435,10 @@ export default async function AdminDashboardPage() {
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Proposals<br />signed</div>
             </div>
           </div>
+
+          <Link href="/admin/month-summary" className="mt-8 self-start font-mono text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white border-b border-[#aaa] pb-0.5">
+            View full summary &rarr;
+          </Link>
         </Card>
       </div>
     </div>

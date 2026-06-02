@@ -28,15 +28,17 @@ type NavItem = {
 };
 
 const mainNav: NavItem[] = [
-  { label: "Dashboard",  href: "/admin",            statsKey: "reports",   exact: true },
-  { label: "Clients",    href: "/admin/clients",    statsKey: "clients" },
-  { label: "Compliance", href: "/admin/compliance", statsKey: "expiries" },
-  { label: "Expiries",   href: "/admin/expiries",   statsKey: "expiries" },
-  { label: "Proposals",  href: "/admin/proposals",  statsKey: "proposals" },
+  { label: "Dashboard",       href: "/admin",            statsKey: "reports",   exact: true },
+  { label: "Clients",         href: "/admin/clients",    statsKey: "clients" },
+  { label: "Compliance",      href: "/admin/compliance", statsKey: "expiries" },
+  { label: "Expiries",        href: "/admin/expiries",   statsKey: "expiries" },
+  { label: "Proposals",       href: "/admin/proposals",  statsKey: "proposals" },
+  { label: "Workflow Errors", href: "/admin/errors",     statsKey: "errors" },
 ];
 
 const systemTools: NavItem[] = [
-  { label: "Form Templates", href: "/admin/templates",      statsKey: null },
+  { label: "Month Summary",   href: "/admin/month-summary", statsKey: null },
+  { label: "Form Templates",  href: "/admin/templates",     statsKey: null },
   { label: "Service Catalog", href: "/admin/services",      statsKey: null },
   { label: "Notifications",   href: "/admin/notifications", statsKey: null },
   { label: "Settings",        href: "/admin/settings",      statsKey: null },

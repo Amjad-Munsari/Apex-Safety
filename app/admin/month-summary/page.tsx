@@ -2,6 +2,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { WorkflowErrorsTable } from "./_components/workflow-errors-table";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,10 @@ export default async function MonthSummaryPage() {
     submission_id?: string
     submissionId?: string
     severity?: string
+    client_name?: string
+    assessment_date?: string
+    type?: string
+    report_storage_path?: string
   }
   const recentErrors = (errorRowsRes.data ?? []).map((e) => {
     const payload = (e.payload ?? {}) as ErrorPayload
@@ -55,6 +60,10 @@ export default async function MonthSummaryPage() {
       created_at: e.created_at,
       submission_id: payload.submission_id ?? payload.submissionId ?? null,
       severity: payload.severity ?? null,
+      client_name: payload.client_name ?? null,
+      assessment_date: payload.assessment_date ?? null,
+      type: payload.type ?? null,
+      report_storage_path: payload.report_storage_path ?? null,
     }
   });
 
@@ -135,12 +144,6 @@ export default async function MonthSummaryPage() {
     delivered: "text-[#3b8273]",
   };
 
-  const severityColor: Record<string, string> = {
-    high: "text-danger",
-    medium: "text-gold",
-    low: "text-white/40",
-  };
-
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
@@ -173,73 +176,7 @@ export default async function MonthSummaryPage() {
       </div>
 
       {/* ─── WORKFLOW ERRORS (row-level, D-11(c) acceptance surface) ─── */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#555]">Workflow Errors This Month</span>
-          <span className="font-mono text-[10px] text-white/20 ml-auto">{recentErrors.length} records</span>
-        </div>
-        {recentErrors.length > 0 ? (
-          <>
-            <table className="w-full text-left font-sans text-sm">
-              <thead className="bg-[#151515]">
-                <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                  <th className="font-normal px-6 py-3 border-b border-white/5">Workflow</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">Message</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">Severity</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">Submission</th>
-                  <th className="font-normal px-4 py-3 border-b border-white/5">When</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {recentErrors.map((e) => (
-                  <tr key={e.id} className="hover:bg-white/[0.02] transition-colors align-top">
-                    <td className="px-6 py-4 font-mono text-xs text-white/80">{e.workflow_name}</td>
-                    <td className="px-4 py-4 text-white/70 text-xs max-w-md truncate">{e.error_message}</td>
-                    <td className="px-4 py-4">
-                      <span
-                        className={`font-mono text-[10px] uppercase tracking-widest ${
-                          severityColor[(e.severity ?? "").toLowerCase()] || "text-white/40"
-                        }`}
-                      >
-                        {e.severity || "—"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      {e.submission_id ? (
-                        <Link
-                          href={`/admin/assessments/${e.submission_id}/review`}
-                          className="font-mono text-[10px] text-white/60 hover:text-white"
-                        >
-                          {String(e.submission_id).slice(0, 8)}
-                        </Link>
-                      ) : (
-                        <span className="font-mono text-[10px] text-white/30">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4 text-white/50 font-mono text-xs">
-                      {new Date(e.created_at).toLocaleString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {recentErrors.length === 25 ? (
-              <div className="px-6 py-2 text-[10px] font-mono text-white/30">
-                Showing 25 most recent — see direct DB query for full month
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <div className="px-6 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
-            No workflow errors this month
-          </div>
-        )}
-      </Card>
+      <WorkflowErrorsTable rows={recentErrors} />
 
       {/* ─── RECENT ASSESSMENTS ─── */}
       <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">

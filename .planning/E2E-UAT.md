@@ -14,13 +14,12 @@ updated: 2026-06-01
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-number: 24
-name: "[VERIFY-5] workflow_errors row on /admin/month-summary (D-11c)"
+number: 25
+name: "Proposal builder — service selection (Phase 9)"
 expected: |
-  /admin/month-summary shows a "Workflow Errors This Month" list with the 3
-  existing report_delivery_email rows — severity pill (high→red), mono
-  workflow_name, truncated message, en-GB timestamp.
-awaiting: user response — SESSION PAUSED 2026-06-02, resume here (tests 24-55 remain)
+  The 4-step proposal wizard reads the live `services` catalog
+  (3 Monthly Packages, 10 Services, 25 Training courses).
+awaiting: user to run test 25 (tests 25-55 remain)
 
 ## Resume notes (paused 2026-06-02)
 - Next test: 24 (workflow_errors display on /admin/month-summary). 3 rows already exist in prod to verify against — no need to break the API key.
@@ -154,7 +153,8 @@ note: "Edit + regenerate both work. User found regenerated draft only appeared a
 
 ### 24. [VERIFY-5] workflow_errors row on /admin/month-summary (D-11c)
 expected: Force a failure (e.g. temporarily invalid OPENROUTER_API_KEY) → /admin/month-summary lists a row: workflow_name='ai_report_draft', truncated error message, severity pill 'high', deep-link to the review page, and an en-GB timestamp. (Skip if you don't want to break a live key — mark skip.)
-result: [pending]
+result: pass
+note: "Verified the display against the 3 existing in-month report_delivery_email rows (DB-confirmed created 2026-06-01): count card shows 3 (red), table lists workflow_name (mono), truncated 'webhook returned 404' message, 'high' severity pill in red, en-GB timestamps. Deep-link sub-criterion NOT exercised by data — report_delivery_email payloads carry no submission_id (Submission col correctly shows '—'); would need an ai_report_draft failure (break the key) to test the live link. Not broken, just untested-by-data. ENHANCEMENTS shipped this session (see Enhancements): row-expand dropdown on the Month Summary errors table (full message + payload details + 'Open assessment review' link when submission_id present); dashboard '07 Workflow errors' card simplified to plain rows + a single 'View Log' button; sidebar 'Workflow Errors' + 'Month Summary' nav entries added; dashboard '08 This month' card 'View full summary' footer link. CODE change → needs deploy."
 
 ### H. Proposal pipeline (Phase 9) — CREATES DATA
 
@@ -299,9 +299,9 @@ result: [pending]
 ## Summary
 
 total: 55
-passed: 20
+passed: 21
 issues: 0
-pending: 32
+pending: 31
 skipped: 1
 blocked: 2
 cosmetic: 1  # test 12 assign-modal polish — fixed, pending re-verify
@@ -381,6 +381,10 @@ cosmetic: 1  # test 12 assign-modal polish — fixed, pending re-verify
 - request: "From an assigned form, allow starting a new assessment (only Revoke existed)"
   status: done_pending_verify
   detail: "client-tabs.tsx Assigned Forms — added 'Start assessment' action linking to /admin/assessments/new?clientId=..&templateVersionId=.. (commit 2f7c0fa). Threaded template_version_id through query + AssignmentRow type. CODE change → needs deploy. Follow-up idea (NOT done): link the resulting submission back to the assignment so it auto-marks completed."
+
+- request: "Workflow-error surfaces — make errors easy to find + inspect (surfaced from test 24)"
+  status: done_pending_verify
+  detail: "Verified on localhost. (1) Month Summary errors table: whole row is a click-to-expand dropdown revealing full message + payload (client/date/type/storage path) + 'Open assessment review' link when submission_id present (app/admin/month-summary/_components/workflow-errors-table.tsx). (2) Dashboard '07 Workflow errors' card: reverted per-row links — rows are plain data, one section-level 'View Log' button to /admin/errors. (3) Navigation: added sidebar 'Workflow Errors' (with live count) + 'Month Summary' entries (components/app-sidebar.tsx); previously /admin/month-summary was URL-only. (4) Dashboard '08 This month' card: added 'View full summary' footer link (header kept single-line to avoid the cramped-wrap bug the user caught). Considered+rejected a per-error dedicated page and a cross-surface deep-link/highlight (reverted the /admin/errors anchor). CODE change → needs deploy."
 
 - request: "Completed assessments vanish from the review queue with no way to find them (a submitted/approved report 'disappeared' — surfaced from test 18)"
   status: done_pending_verify
