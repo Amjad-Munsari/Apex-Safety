@@ -14,12 +14,13 @@ updated: 2026-06-01
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-number: 25
-name: "Proposal builder — service selection (Phase 9)"
+number: 27
+name: "AI proposal draft — prod AI key gate (Phase 9)"
 expected: |
-  The 4-step proposal wizard reads the live `services` catalog
-  (3 Monthly Packages, 10 Services, 25 Training courses).
-awaiting: user to run test 25 (tests 25-55 remain)
+  draftProposalScope produces an AI draft in prod (real OpenRouter key).
+  If the key were missing it would throw a clear, actionable error rather
+  than ship canned text.
+awaiting: user to run test 27 (tests 27-55 remain)
 
 ## Resume notes (paused 2026-06-02)
 - Next test: 24 (workflow_errors display on /admin/month-summary). 3 rows already exist in prod to verify against — no need to break the API key.
@@ -160,11 +161,13 @@ note: "Verified the display against the 3 existing in-month report_delivery_emai
 
 ### 25. Proposal builder — service selection
 expected: The 4-step proposal wizard reads the live `services` catalog (3 Monthly Packages, 10 Services, 25 Training courses).
-result: [pending]
+result: pass
+note: "Wizard reads live from DB via fetchActiveServices() (services-server.ts) — deleted_at null + active filter; no hardcoded item list. Shows 38 live items = 3 Monthly Packages / 10 Services / 25 Training courses (matches the doc estimate). FINDING (see Observations): 16 rows soft-deleted in a single bulk op on 2026-05-12 — 13 legit unique offerings (FRA Type 1/3/4, Site Risk, Consulting Retainers 5/10/20h, 6 training courses) with NO live namesake, plus 2 genuine dedupes (PAT Testing, Emergency First Aid) and 1 test row. User DECISION 2026-06-02: keep the catalog as-is, do NOT restore — wizard loading from DB correctly is what matters. Latent code issue left as-is too (SERVICE_CATEGORIES hardcoded to 3 categories in lib/data/services.ts; would mis-bucket FRA/Testing categories under 'Services' IF ever restored)."
 
 ### 26. Pricing — overrides + VAT-inclusive total + save draft
 expected: You can override per-line prices (incl. NULL "quote on request" items); the total is VAT-inclusive; save-as-draft works; draft can be deleted (hard delete).
-result: [pending]
+result: pass
+note: "User verified on localhost: per-line overrides (incl. quote-on-request NULL items), VAT-inclusive total, save-as-draft and hard delete all work. UI polish shipped during this test: removed redundant '888 SAFETY SOLUTIONS · PROPOSALS' header brand, widened stepper spacing + restored step labels (collapse to numbers <1024px), left-aligned the stepper (proposals.css + advanced-proposal-builder.tsx). CODE change → needs deploy."
 
 ### 27. AI proposal draft (prod AI key gate)
 expected: draftProposalScope produces an AI draft in prod (real key). If the key were missing it would throw a clear actionable error rather than ship canned text.
@@ -299,9 +302,9 @@ result: [pending]
 ## Summary
 
 total: 55
-passed: 21
+passed: 23
 issues: 0
-pending: 31
+pending: 29
 skipped: 1
 blocked: 2
 cosmetic: 1  # test 12 assign-modal polish — fixed, pending re-verify
@@ -391,6 +394,13 @@ cosmetic: 1  # test 12 assign-modal polish — fixed, pending re-verify
   detail: "Added a 'Completed' tab to /admin/review-queue (Awaiting Review | Completed, with counts) via ?tab=, plus getCompletedReports() (status=completed). Completed cards link to the review page ('View Report') to view/download the finalised report (commit de70c51, build clean). CODE change → needs deploy. NEEDS USER RE-VERIFY: their completed assessment (b7027dea) appears under the Completed tab."
 
 ## Observations (found during UAT — not yet tests)
+
+- truth: "The live services catalog reflects Matt's full offering"
+  status: decided_keep_as_is
+  reason: "16 services soft-deleted in one bulk op at 2026-05-12 13:44:03 (same day as repo de-dup). 13 are legit unique offerings with no live namesake (FRA Type 1/3/4 £480/620/980, Site Risk £540, Consulting Retainer 5/10/20h £425/800/1500, + Basic Fire Awareness, DSE Assessment, Fire Marshal, Fire Warden, First Aid 3-day, Manual Handling). 2 are genuine dedupes (PAT Testing, Emergency First Aid — live namesakes exist). 1 is a test row (Test service — DELETE ME). Live catalog = 38 active (3 Monthly Packages / 10 Services / 25 Training)."
+  decision: "User 2026-06-02: KEEP as-is, do NOT restore. The proposal wizard loads correctly from the DB; that's the acceptance bar. (If Matt later wants FRA/retainer lines back: un-delete the 13 AND extend/derive SERVICE_CATEGORIES in lib/data/services.ts — currently hardcoded to 3 categories, would mis-bucket the FRA/Testing categories under 'Services'.)"
+  severity: info
+
 
 - truth: "field_media.transcript column exists on prod (per Phase 7 plan 07-09 'Migration 017 adds field_media.transcript')"
   status: drift_found

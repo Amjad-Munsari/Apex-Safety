@@ -222,11 +222,6 @@ export function AdvancedProposalBuilder({
     <div className="prop-shell">
       {/* ═══ Main Header ═══ */}
       <header className="prop-header">
-        <div className="prop-header-left">
-          <span className="prop-logo">888</span>
-          <span className="prop-brand">SAFETY SOLUTIONS · PROPOSALS</span>
-        </div>
-
         <nav className="prop-stepper">
           {STEPS.map((s, i) => (
             <div key={s.number} className="prop-step-wrapper">

@@ -55,6 +55,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .prop-logo {
@@ -78,7 +80,9 @@
 .prop-stepper {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0;
+  flex: 0 0 auto;
 }
 
 .prop-step-wrapper {
@@ -87,10 +91,10 @@
 }
 
 .prop-step-line {
-  width: 48px;
+  width: 56px;
   height: 1px;
   background: var(--p-border);
-  margin: 0 4px;
+  margin: 0 8px;
 }
 
 .prop-step-line.completed {
@@ -104,7 +108,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px 12px;
+  padding: 8px 18px;
   border-radius: 6px;
   transition: background 0.15s;
   font-family: var(--p-font-mono);
@@ -155,7 +159,10 @@
 .prop-header-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 24px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .prop-discard {
@@ -1268,6 +1275,35 @@
 /* ═══════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════ */
+/* The proposals shell is nested inside the admin layout (sidebar ~256px), so the
+   header column is much narrower than the viewport. Collapse the brand + stepper
+   labels well before the mobile breakpoint, otherwise the brand / stepper / user
+   block overlap in the narrow column. */
+/* Tighten the connector lines in the narrower admin column, but keep the
+   step labels — there's room now the brand is gone. */
+@media (max-width: 1280px) {
+  .prop-step-line {
+    width: 40px;
+    margin: 0 6px;
+  }
+
+  .prop-header {
+    padding: 0 24px;
+  }
+}
+
+/* Genuinely narrow: drop the word-labels and collapse to numbered circles. */
+@media (max-width: 1024px) {
+  .prop-step-label {
+    display: none;
+  }
+
+  .prop-step-line {
+    width: 24px;
+    margin: 0 3px;
+  }
+}
+
 @media (max-width: 900px) {
   .prop-services-step {
     grid-template-columns: 1fr;
