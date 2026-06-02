@@ -8,27 +8,28 @@ source:
   - phases 04-07, 09-18 SUMMARY.md files
   - .planning/phases/07-ai-report-pipeline/07-VERIFICATION.md (5 human_needed items)
 started: 2026-06-01
-updated: 2026-06-01
+updated: 2026-06-02
 ---
 
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
 number: 27
-name: "AI proposal draft — prod AI key gate (Phase 9)"
+name: "AI proposal draft — prod AI key gate (Phase 9) — START OF BATCH 27-55"
 expected: |
-  draftProposalScope produces an AI draft in prod (real OpenRouter key).
-  If the key were missing it would throw a clear, actionable error rather
-  than ship canned text.
-awaiting: user to run test 27 (tests 27-55 remain)
+  BATCH MODE: tests 27-55 were all presented to the user at once; user will
+  run them in the NEXT SESSION (2026-06-03) and report back which pass + any
+  issues. Test 27 itself: draftProposalScope produces a real AI draft via the
+  live OpenRouter key (not canned text); a missing key throws a clear error.
+awaiting: user to batch-test 27-55 next session (2026-06-03), then report results
 
-## Resume notes (paused 2026-06-02)
-- Next test: 24 (workflow_errors display on /admin/month-summary). 3 rows already exist in prod to verify against — no need to break the API key.
-- Re-verify after the latest deploy lands: test 23 regenerate now updates the draft without a manual reload (commit 71901ce).
-- Still-blocked (n8n demo/subscription): tests 9 + 22, and test 52 (reminders) when reached. Re-run once n8n is reactivated.
-- Deferred: test 20 (draft quality) — re-judge with a real FRA draft at tests 53-55.
-- Remaining sections after 24: H Proposals (25-28), I Client portal (29-32), J-O Form builder / multi-tenancy / scheduling / FRA seed (33-55).
+## Resume notes (paused 2026-06-02 — resume 2026-06-03)
+- MODE: batch. Tests 24, 25, 26 PASS this session. Tests 27-55 were ALL presented to the user at once; user will run them next session and report which pass + any issues. Don't re-present one-by-one — wait for the user's results list, then record + dig into issues.
+- Done this session: test 24 (workflow_errors display, pass) + workflow-error UI (sidebar nav, dashboard View Log, month-summary dropdown — commit f348da0). Tests 25/26 (proposal service-selection + pricing, pass) + proposal-header polish (commit 266ba88). Both pushed to origin/main.
+- Still-blocked (n8n demo/subscription): tests 9 + 22 (already recorded), and test 52 (reminders). Re-run once n8n is reactivated. Test 55's webhook half may also hit this — but its AI-draft half should still run.
+- Deferred: test 20 (draft quality) — re-judge with a real FRA draft during tests 53-55.
 - Watch-item: field_media.transcript drift (Phase-7 "migration 017" never applied to prod) — see Observations.
+- Decided (don't re-litigate): 16 services soft-deleted 2026-05-12 are kept as-is — see Observations (test 25).
 
 ## Tests
 
