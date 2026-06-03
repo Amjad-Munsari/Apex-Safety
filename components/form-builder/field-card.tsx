@@ -80,7 +80,13 @@ export function FieldCard({
   };
 
   const t = surfaceTokens[surface];
-  const label = (entity.attributes.label as string) ?? "";
+  // repeatingSection stores its name in `title` (the "Section Title" field),
+  // not `label` — fall back so its canvas card shows the name instead of "(no label)".
+  const label =
+    (entity.attributes.label as string) ??
+    (entity.attributes.title as string) ??
+    (entity.attributes.sectionTitle as string) ??
+    "";
   const typeLabel = ENTITY_TYPE_LABELS[entity.type] ?? entity.type;
 
   return (
