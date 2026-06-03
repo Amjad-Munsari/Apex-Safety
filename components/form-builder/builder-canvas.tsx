@@ -81,18 +81,67 @@ function decodeDragId(id: string): { sectionId: string | null; entityId: string 
  * Falls back to closestCenter when the pointer is outside every droppable
  * (fast drags, keyboard sensor).
  */
+/**
+ * Reorder only commits once the dragged item covers this fraction of another
+ * item (vs. dnd-kit's default ~50% center-crossing) — UAT test 34 "stickiness".
+ * Sections are large, so they need more travel before they swap.
+ */
+const REORDER_OVERLAP_THRESHOLD = 0.7;
+const SECTION_OVERLAP_THRESHOLD = 0.9;
+
+function verticalOverlapRatio(
+  a: { top: number; bottom: number; height: number },
+  b: { top: number; bottom: number; height: number }
+): number {
+  const overlap = Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  const denom = Math.min(a.height, b.height) || 1;
+  return overlap / denom;
+}
+
 const collisionDetectionStrategy: CollisionDetection = (args) => {
-  const pointerCollisions = pointerWithin(args);
-  if (pointerCollisions.length > 0) {
-    const childHit = pointerCollisions.find((c) => String(c.id).startsWith("section:"));
+  // Keyboard sensor (no pointer) — keep dnd-kit's default behaviour.
+  if (!args.pointerCoordinates) return closestCenter(args);
+
+  // Sections are large → require more overlap before they reorder.
+  const activeType = (args.active.data.current as { type?: string } | undefined)?.type;
+  const threshold =
+    activeType === "sectionGroup" ? SECTION_OVERLAP_THRESHOLD : REORDER_OVERLAP_THRESHOLD;
+
+  // Nesting: only when the pointer is genuinely inside a child or a section's
+  // inner drop zone (so dropping near a section doesn't auto-nest). Skipped when
+  // dragging a section — sections don't nest into sections, so the whole target
+  // section (incl. its "Drop fields here" area) counts toward the reorder
+  // threshold instead of that area being a nest-only dead zone.
+  if (activeType !== "sectionGroup") {
+    const pointer = pointerWithin(args);
+    const childHit = pointer.find((c) => String(c.id).startsWith("section:"));
     if (childHit) return [childHit];
-    const innerHit = pointerCollisions.find((c) =>
-      String(c.id).startsWith(SECTION_INNER_DROPPABLE_PREFIX)
-    );
+    const innerHit = pointer.find((c) => String(c.id).startsWith(SECTION_INNER_DROPPABLE_PREFIX));
     if (innerHit) return [innerHit];
-    return [pointerCollisions[0]];
   }
-  return closestCenter(args);
+
+  // Reorder among sortable cards: pick the most-overlapped one, but only treat
+  // it as the drop target once overlap clears the threshold.
+  const { collisionRect, droppableRects, droppableContainers } = args;
+  let best: (typeof droppableContainers)[number] | null = null;
+  let bestRatio = 0;
+  for (const container of droppableContainers) {
+    if (String(container.id).startsWith(SECTION_INNER_DROPPABLE_PREFIX)) continue;
+    const containerType = (container.data.current as { type?: string } | undefined)?.type;
+    // A field must NOT sibling-reorder against a section — that interaction is
+    // nesting (handled by pointerWithin above). Without this skip the field
+    // jumps below the section before the pointer reaches the inner drop zone.
+    if (activeType !== "sectionGroup" && containerType === "sectionGroup") continue;
+    const rect = droppableRects.get(container.id);
+    if (!rect) continue;
+    const ratio = verticalOverlapRatio(collisionRect, rect);
+    if (ratio > bestRatio) {
+      bestRatio = ratio;
+      best = container;
+    }
+  }
+  if (best && bestRatio >= threshold) return [{ id: best.id }];
+  return [];
 };
 
 export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "dark" }: Props) {
@@ -106,6 +155,21 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
     { type: string; attributes: Record<string, unknown>; children?: string[]; parentId?: string }
   >;
   const root = schema.root as string[];
+
+  // One flat sortable list (root items + each section's scoped children, in
+  // visual order) so dnd-kit's sibling-shifting works ACROSS containers — e.g.
+  // dragging a field out of a section shifts the root items to show where it
+  // will land, the same as any other reorder.
+  const flatItems: string[] = [];
+  for (const id of root) {
+    flatItems.push(id);
+    const e = entities[id];
+    if (e?.type === "sectionGroup") {
+      for (const childId of (e.children as string[]) ?? []) {
+        flatItems.push(`section:${id}:${childId}`);
+      }
+    }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -209,7 +273,7 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext items={root} strategy={verticalListSortingStrategy}>
+      <SortableContext items={flatItems} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2 max-w-2xl mx-auto">
           {root.map((entityId) => {
             const entity = entities[entityId];

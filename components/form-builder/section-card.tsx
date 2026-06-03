@@ -1,6 +1,6 @@
 "use client";
 
-import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -107,9 +107,6 @@ export function SectionCard({
   const t = surfaceTokens[surface];
   const title = (entity.attributes.title as string) ?? "Untitled Section";
 
-  // Child drag IDs are scoped with section prefix to avoid ID collisions (RESEARCH.md Pitfall 1)
-  const childDragIds = childEntities.map((child) => `section:${entity.id}:${child.id}`);
-
   return (
     <div
       ref={setNodeRef}
@@ -196,24 +193,25 @@ export function SectionCard({
             </p>
           </div>
         ) : (
-          <SortableContext items={childDragIds} strategy={verticalListSortingStrategy}>
-            <div className="flex flex-col gap-2">
-              {childEntities.map((child) => (
-                <FieldCard
-                  key={child.id}
-                  entity={child}
-                  dragId={`section:${entity.id}:${child.id}`}
-                  isSelected={selectedChildId === child.id}
-                  onSelect={() => {
-                    onSelectChild(child.id);
-                  }}
-                  onDuplicate={() => onDuplicateChild(child.id)}
-                  onDelete={() => onDeleteChild(child.id)}
-                  surface={surface}
-                />
-              ))}
-            </div>
-          </SortableContext>
+          // Children belong to the canvas's single flat SortableContext (see
+          // builder-canvas) — no nested context here, so shifting works when a
+          // field is dragged out of the section.
+          <div className="flex flex-col gap-2">
+            {childEntities.map((child) => (
+              <FieldCard
+                key={child.id}
+                entity={child}
+                dragId={`section:${entity.id}:${child.id}`}
+                isSelected={selectedChildId === child.id}
+                onSelect={() => {
+                  onSelectChild(child.id);
+                }}
+                onDuplicate={() => onDuplicateChild(child.id)}
+                onDelete={() => onDeleteChild(child.id)}
+                surface={surface}
+              />
+            ))}
+          </div>
         )}
       </div>
 
