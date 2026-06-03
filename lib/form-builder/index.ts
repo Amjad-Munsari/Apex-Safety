@@ -8,8 +8,6 @@ import { textareaFieldEntity } from "./entities/textarea-field";
 import { checkboxFieldEntity } from "./entities/checkbox-field";
 import { sectionGroupEntity } from "./entities/section-group";
 // Phase 14 specialty entities — registered in UI-SPEC §"Palette Extension" order
-import { signatureFieldEntity } from "./entities/signature-field";
-import { ratingFieldEntity } from "./entities/rating-field";
 import { multiPhotoFieldEntity } from "./entities/multi-photo-field";
 import { geolocationFieldEntity } from "./entities/geolocation-field";
 import { computedFieldEntity } from "./entities/computed-field";
@@ -25,9 +23,7 @@ export const formBuilder = createBuilder({
     textareaFieldEntity,
     checkboxFieldEntity,
     sectionGroupEntity,
-    // 6 specialty types (Phase 14)
-    signatureFieldEntity,
-    ratingFieldEntity,
+    // specialty types (Phase 14)
     multiPhotoFieldEntity,
     geolocationFieldEntity,
     computedFieldEntity,

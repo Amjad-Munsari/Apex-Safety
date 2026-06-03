@@ -10,8 +10,6 @@ import {
   Check,
   ChevronDown,
   Layers,
-  PenLine,
-  Star,
   Camera,
   MapPin,
   Calculator,
@@ -26,8 +24,6 @@ type EntityType =
   | "textareaField"
   | "checkboxField"
   | "sectionGroup"
-  | "signatureField"
-  | "ratingField"
   | "multiPhotoField"
   | "geolocationField"
   | "computedField"
@@ -51,8 +47,6 @@ const BASIC_FIELDS: FieldDef[] = [
 ];
 
 const SPECIALTY_FIELDS: FieldDef[] = [
-  { type: "signatureField", label: "Signature", icon: PenLine, description: "Draw and capture a handwritten signature" },
-  { type: "ratingField", label: "Rating", icon: Star, description: "Star-based numeric rating 1–N" },
   { type: "multiPhotoField", label: "Photos", icon: Camera, description: "Multi-photo capture with compression" },
   { type: "geolocationField", label: "Location", icon: MapPin, description: "GPS coordinates with map preview" },
   { type: "computedField", label: "Computed", icon: Calculator, description: "Auto-computed PAS 79 risk score" },

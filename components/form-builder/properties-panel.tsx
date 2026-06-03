@@ -11,8 +11,6 @@ import {
   Layers,
   Plus,
   X,
-  PenLine,
-  Star,
   Camera,
   MapPin,
   Calculator,
@@ -93,8 +91,6 @@ const entityTypeMeta: Record<
   checkboxField: { label: "Checkbox", icon: Check },
   sectionGroup: { label: "Section", icon: Layers },
   // Phase 14 specialty entities
-  signatureField: { label: "Signature", icon: PenLine },
-  ratingField: { label: "Rating", icon: Star },
   multiPhotoField: { label: "Photos", icon: Camera },
   geolocationField: { label: "Location", icon: MapPin },
   computedField: { label: "Computed", icon: Calculator },
@@ -243,7 +239,6 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
   const isDate = entity.type === "dateField";
   const isSelect = entity.type === "selectField";
   const isCheckbox = entity.type === "checkboxField";
-  const isRating = entity.type === "ratingField";
   const isMultiPhoto = entity.type === "multiPhotoField";
   const isComputed = entity.type === "computedField";
 
@@ -550,31 +545,6 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
               </AttributeRow>
             )}
 
-            {/* ratingField: maxRating number input */}
-            {isRating && (
-              <AttributeRow
-                id={`${selectedId}-max-rating`}
-                labelText="Max Rating"
-                hint="Number of stars shown (2–10)"
-                t={t}
-              >
-                <input
-                  id={`${selectedId}-max-rating`}
-                  type="number"
-                  min={2}
-                  max={10}
-                  value={(attrs.maxRating as number) ?? 5}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!isNaN(val)) setAttr("maxRating", val);
-                  }}
-                  className={cn(
-                    "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
-                    t.input
-                  )}
-                />
-              </AttributeRow>
-            )}
 
             {/* multiPhotoField: maxPhotos number input */}
             {isMultiPhoto && (

@@ -111,8 +111,6 @@ const surfaceTokens = {
 
 /** Specialty entity types not supported inside repeating sections in Phase 14. */
 const SPECIALTY_TYPES = new Set([
-  "signatureField",
-  "ratingField",
   "multiPhotoField",
   "geolocationField",
   "computedField",

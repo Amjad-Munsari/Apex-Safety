@@ -21,16 +21,12 @@ import { SelectFieldRenderer } from "./select-field-renderer"
 import { TextareaFieldRenderer } from "./textarea-field-renderer"
 import { CheckboxFieldRenderer } from "./checkbox-field-renderer"
 import { SectionGroupRenderer } from "./section-group-renderer"
-// Phase 14 — 6 specialty renderers (Plans 14-04 + 14-05, wired in Plan 14-06)
-import { SignatureFieldRenderer } from "./signature-field-renderer"
-import { RatingFieldRenderer } from "./rating-field-renderer"
+// Phase 14 — specialty renderers (Plans 14-04 + 14-05, wired in Plan 14-06)
 import { MultiPhotoFieldRenderer } from "./multi-photo-field-renderer"
 import { GeolocationFieldRenderer } from "./geolocation-field-renderer"
 import { ComputedFieldRenderer } from "./computed-field-renderer"
 import { RepeatingSectionRenderer } from "./repeating-section-renderer"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
-import type { signatureFieldEntity } from "@/lib/form-builder/entities/signature-field"
-import type { ratingFieldEntity } from "@/lib/form-builder/entities/rating-field"
 import type { multiPhotoFieldEntity } from "@/lib/form-builder/entities/multi-photo-field"
 import type { geolocationFieldEntity } from "@/lib/form-builder/entities/geolocation-field"
 import type { computedFieldEntity } from "@/lib/form-builder/entities/computed-field"
@@ -233,10 +229,6 @@ export const InterpreterRenderer = forwardRef<
     // Note: parameter types use EntityComponentProps<typeof entity> (the coltorapps
     // contract) rather than Parameters<typeof Renderer>[0] (which includes extra props
     // like clientId that are supplied by the wrapper, not by coltorapps).
-    signatureField: (p: EntityComponentProps<typeof signatureFieldEntity>) =>
-      <SignatureFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
-    ratingField: (p: EntityComponentProps<typeof ratingFieldEntity>) =>
-      <RatingFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
     multiPhotoField: (p: EntityComponentProps<typeof multiPhotoFieldEntity>) =>
       <MultiPhotoFieldRenderer {...p} surface={surface} clientId={propsRef.current.clientId} submissionId={propsRef.current.submissionId} dynamicRequired={propsRef.current.visibility[p.entity.id]?.required ?? false} />,
     geolocationField: (p: EntityComponentProps<typeof geolocationFieldEntity>) =>
