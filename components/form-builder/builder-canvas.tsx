@@ -11,7 +11,6 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
-  DragOverEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -23,7 +22,7 @@ import type { BuilderStore } from "@coltorapps/builder";
 import type { formBuilder } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
 import { FieldCard } from "./field-card";
-import { SectionCard } from "./section-card";
+import { SectionCard, SECTION_INNER_DROPPABLE_PREFIX } from "./section-card";
 
 interface Props {
   builderStore: BuilderStore<typeof formBuilder>;
@@ -70,7 +69,6 @@ function decodeDragId(id: string): { sectionId: string | null; entityId: string 
 export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "dark" }: Props) {
   const t = surfaceTokens[surface];
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [overSectionId, setOverSectionId] = useState<string | null>(null);
 
   const storeData = useBuilderStoreData(builderStore, () => true);
   const schema = storeData.schema;
@@ -89,25 +87,8 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
     setActiveId(event.active.id as string);
   }
 
-  function handleDragOver(event: DragOverEvent) {
-    const overId = event.over?.id as string | undefined;
-    if (!overId) {
-      setOverSectionId(null);
-      return;
-    }
-    const decoded = decodeDragId(overId);
-    if (decoded.sectionId) {
-      setOverSectionId(decoded.sectionId);
-    } else if (entities[overId]?.type === "sectionGroup") {
-      setOverSectionId(overId);
-    } else {
-      setOverSectionId(null);
-    }
-  }
-
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null);
-    setOverSectionId(null);
 
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -116,20 +97,25 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
     const overIdStr = over.id as string;
 
     const { sectionId: activeSectionId, entityId: activeEntityId } = decodeDragId(activeIdStr);
-    const { sectionId: overSectionId_, entityId: overEntityId } = decodeDragId(overIdStr);
 
-    // Case 1: Drop onto a section group container — reparent into that section
-    if (overEntityId && entities[overEntityId]?.type === "sectionGroup" && activeEntityId !== overEntityId) {
+    // Case A: dropped on a section's inner drop zone — NEST into that section.
+    // This is now the only "drop on a section" path that nests, which leaves
+    // dropping on the section card itself free to reorder it as a sibling so a
+    // field can be placed *before* a section (UAT test 34).
+    if (overIdStr.startsWith(SECTION_INNER_DROPPABLE_PREFIX)) {
+      const targetSectionId = overIdStr.slice(SECTION_INNER_DROPPABLE_PREFIX.length);
+      if (activeEntityId === targetSectionId) return; // can't nest a section into itself
       const currentParent = entities[activeEntityId]?.parentId;
-      if (currentParent) {
-        // Move within sections or un-nest then re-nest
+      if (currentParent && currentParent !== targetSectionId) {
         builderStore.unsetEntityParent(activeEntityId);
       }
-      if (overEntityId !== currentParent) {
-        builderStore.setEntityParent(activeEntityId, overEntityId);
+      if (currentParent !== targetSectionId) {
+        builderStore.setEntityParent(activeEntityId, targetSectionId);
       }
       return;
     }
+
+    const { sectionId: overSectionId_, entityId: overEntityId } = decodeDragId(overIdStr);
 
     // Case 2: Both are inside the same section — reorder within section
     if (activeSectionId && overSectionId_ && activeSectionId === overSectionId_) {
@@ -143,10 +129,11 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
       return;
     }
 
-    // Case 3: Active is in a section, drop target is at root — un-nest
+    // Case 3: Active is in a section, drop target is a root entity (incl. a
+    // section card) — un-nest and position it at that root index. Dropping
+    // onto a section card here lands the field just before it, not inside.
     if (activeSectionId && !overSectionId_) {
       builderStore.unsetEntityParent(activeEntityId);
-      // Then reorder to the correct root position
       const newIndex = root.indexOf(overEntityId);
       if (newIndex !== -1) {
         builderStore.setEntityIndex(activeEntityId, newIndex);
@@ -154,13 +141,15 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
       return;
     }
 
-    // Case 4: Active is at root, drop is inside a section — reparent
+    // Case 4: Active is at root, drop target is a field INSIDE a section —
+    // nest it into that section alongside the hovered child.
     if (!activeSectionId && overSectionId_) {
       builderStore.setEntityParent(activeEntityId, overSectionId_);
       return;
     }
 
-    // Case 5: Both at root — simple reorder
+    // Case 5: Both at root (incl. when the drop target is a section card) —
+    // simple sibling reorder, so a field can be dropped before/after a section.
     if (!activeSectionId && !overSectionId_) {
       const oldIndex = root.indexOf(activeEntityId);
       const newIndex = root.indexOf(overEntityId);
@@ -189,7 +178,6 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <SortableContext items={root} strategy={verticalListSortingStrategy}>

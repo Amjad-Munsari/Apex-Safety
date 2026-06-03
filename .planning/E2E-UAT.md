@@ -175,29 +175,41 @@ note: "User verified on localhost: per-line overrides (incl. quote-on-request NU
 
 ### 27. AI proposal draft (prod AI key gate)
 expected: draftProposalScope produces an AI draft in prod (real key). If the key were missing it would throw a clear actionable error rather than ship canned text.
-result: [pending]
+result: fail
+note: "User (2026-06-03): the AI generation doesn't work. NOT YET INVESTIGATED — fix deferred until the user finishes the full batch and says go. TODO when fixing: confirm exact symptom (error toast? silent no-op? hang?), check draftProposalScope server action + the OpenRouter key/env wiring in prod (per the key-gate expectation), and whether it throws a clear error vs fails silently."
+resolution: "ROOT-CAUSED 2026-06-03 — NOT a code bug. Symptom (user): localhost showed canned/generic text (no error). draftProposalScope returns canned text ONLY when process.env.OPENROUTER_API_KEY is falsy (dev fallback). The key IS in .env.local (line 4, valid sk-or- key, 73 chars) and a live generateText call with it SUCCEEDED in an isolated repro. So the running dev server simply doesn't have the var loaded — it was started before the key was added (env vars are not hot-reloaded). FIX: restart `npm run dev`. No code change. ACTION: user to restart + re-verify real AI draft."
 
 ### J. Form builder foundation (Phase 13) — CREATES DATA
 
 ### 33. Three-panel builder + 7 basic field types
 expected: The builder (palette / canvas / properties) lets you add all 7 basic entities: text, number, date, select, textarea, checkbox, sectionGroup.
-result: [pending]
+result: pass
+note: "User verified (2026-06-03)."
 
 ### 34. Drag-drop reorder + section reparenting
 expected: dnd-kit reordering works on the canvas, and you can reparent a field into/out of a sectionGroup.
-result: [pending]
+result: pass_with_issues
+note: "User (2026-06-03): reorder + reparent work, but two drag-drop issues to fix (DEFERRED until batch done):
+  (1) Can't drop a field BEFORE/in-front-of a section — dropping just above a section drops it INSIDE the section instead of placing it as a sibling above. Need a drop zone for 'sibling before the section'.
+  (2) No visual hint while dragging that the item will land INSIDE a section — the section gives no highlight/indicator on hover-to-nest. Need a drop-inside affordance (e.g. highlight the section body / insertion indicator).
+  (3) Sections should be draggable from the WHOLE box, not just the left side — extend the section's drag handle to the full header/box."
+resolution: "IMPLEMENTED 2026-06-03 (commit pending) in components/form-builder/{builder-canvas,section-card}.tsx. (1) Before-section: handleDragEnd no longer force-nests on any drop onto a section. Nesting now happens ONLY via the section's inner 'Drop fields here' zone (a dedicated useDroppable, id `secdrop:<id>`); dropping on the section card itself reorders it as a root sibling, so a field can land before a section. (2) Visual hint: that inner droppable highlights (teal border+bg, 'Drop fields here' turns teal) while a drag is over it (isOver) — fixes the dead overSectionId state that was computed but never wired to UI. (3) Whole-box drag: the section HEADER ROW is now the drag handle (not just the grip); children keep their own handles in the inner zone so their drags aren't captured; action buttons stopPropagation on pointerdown. NOTE: 'whole box' = the header (the child drop-zone can't also be a drag handle without breaking nested child reordering). NEEDS interactive re-verify by user (drag UX can't be unit-verified); expect possible iteration on collision feel."
 
 ### 35. Immutable versioning on save
 expected: Saving creates a `template_versions` row; re-saving creates the NEXT version without mutating the prior one.
-result: [pending]
+result: pass
+note: "User verified (2026-06-03)."
 
 ### 36. Fill + submit a built form (version pinning)
 expected: You can fill and submit the built form via the interpreter; the submission is pinned to the exact version_id it was filled against.
-result: [pending]
+result: pass
+note: "User verified (2026-06-03)."
 
 ### 37. Historical submission renders against original schema
 expected: After editing the template (new version), an older submission still renders against its ORIGINAL schema, not the latest.
-result: [pending]
+result: fail
+note: "User (2026-06-03): clicking 'View Report' gives a 404 — REGRESSION, it used to work in production. NOT YET INVESTIGATED. TODO when fixing: find the 'View Report' link target (likely the review-queue Completed tab cards added in commit de70c51, or a submission/report route), confirm the route/href and whether it 404s due to a wrong path, missing dynamic route, or an id mismatch. May be unrelated to the historical-schema rendering itself — the 404 blocks reaching the render."
+resolution: "INVESTIGATED 2026-06-03 — current code does NOT reproduce a 404; surfaced contradiction rather than blind-fix. User clicked the Review Queue → Completed tab 'View Report' (the only admin 'View Report' button), which links to /admin/assessments/{id}/review. Evidence: (a) that route returns HTTP 307 (redirect-to-login for an unauth probe) on the running :3000 server — i.e. the route EXISTS, not 404; (b) DB check — all 3 completed form_submissions (incl. b7027dea) have valid ids AND existing pinned template_versions, so the review page's only notFound() trigger (submission missing) can't fire. So an authenticated admin should reach the page. The 404 contradicts live code+data → most likely a stale dev server (consistent with test 27's stale-env finding). ACTION: user to restart `npm run dev` and re-click; if it STILL 404s, copy the exact address-bar URL so the real id can be traced. No code change made."
 
 ### K. Custom field types (Phase 14)
 

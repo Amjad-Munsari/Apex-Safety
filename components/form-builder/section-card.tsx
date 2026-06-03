@@ -1,12 +1,21 @@
 "use client";
 
 import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { GripVertical, Copy, Trash2 } from "lucide-react";
 import { FieldCard } from "./field-card";
 import type { BuilderStore } from "@coltorapps/builder";
 import type { formBuilder } from "@/lib/form-builder";
+
+/**
+ * Drag id prefix for a section's inner "drop fields here" zone. Dropping on
+ * this droppable is the (only) way to NEST a field into the section — which
+ * frees up dropping on the section card itself to reorder it as a sibling, so
+ * a field can be placed *before* a section (UAT test 34).
+ */
+export const SECTION_INNER_DROPPABLE_PREFIX = "secdrop:";
 
 interface SectionEntity {
   id: string;
@@ -40,20 +49,24 @@ const surfaceTokens = {
   dark: {
     base: "bg-[#1c1c1c] border-white/5",
     selected: "bg-[#1e2e2b] border-[#3b8273]/50",
-    grip: "text-white/20 hover:text-white/50",
+    grip: "text-white/20 group-hover/header:text-white/50",
     title: "text-white",
     dropZone: "border-white/10",
+    dropZoneActive: "border-[#3b8273] bg-[#3b8273]/10",
     dropZoneText: "text-white/20",
+    dropZoneTextActive: "text-[#3b8273]",
     actionBtn: "text-white/30 hover:text-white/70 hover:bg-white/5",
     deleteBtn: "text-white/30 hover:text-[#8b2b21] hover:bg-[#8b2b21]/10",
   },
   cream: {
     base: "bg-white border-[#e5e1d8]",
     selected: "bg-[#f5f3ee] border-[#1a1a1a]",
-    grip: "text-[#8a857f] hover:text-[#1a1a1a]",
+    grip: "text-[#8a857f] group-hover/header:text-[#1a1a1a]",
     title: "text-[#1a1a1a]",
     dropZone: "border-[#e5e1d8]",
+    dropZoneActive: "border-[#1a1a1a] bg-[#1a1a1a]/5",
     dropZoneText: "text-[#8a857f]",
+    dropZoneTextActive: "text-[#1a1a1a]",
     actionBtn: "text-[#8a857f] hover:text-[#1a1a1a] hover:bg-[#f0ede6]",
     deleteBtn: "text-[#8a857f] hover:text-[#8b2b21] hover:bg-[#8b2b21]/10",
   },
@@ -75,6 +88,14 @@ export function SectionCard({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entity.id,
     data: { entityId: entity.id, type: "sectionGroup" },
+  });
+
+  // Dedicated droppable for the inner "drop fields here" zone. `isOverInner`
+  // drives the highlight so a drag clearly signals it will nest INSIDE the
+  // section (UAT test 34), and dropping here is what nests (see handleDragEnd).
+  const { setNodeRef: setInnerDropRef, isOver: isOverInner } = useDroppable({
+    id: `${SECTION_INNER_DROPPABLE_PREFIX}${entity.id}`,
+    data: { sectionId: entity.id },
   });
 
   const style = {
@@ -99,16 +120,18 @@ export function SectionCard({
         isSelected ? t.selected : t.base
       )}
     >
-      {/* Section header */}
-      <div className="flex items-start gap-3 mb-3">
-        {/* Drag handle */}
-        <div
-          {...attributes}
-          {...listeners}
-          onClick={(e) => e.stopPropagation()}
-          aria-describedby="section-drag-instructions"
-          className={cn("mt-1 cursor-grab active:cursor-grabbing transition-colors shrink-0", t.grip)}
-        >
+      {/* Section header — the entire header row is the drag handle (UAT test 34),
+          so the section can be grabbed from anywhere across the box, not just
+          the small grip. Children live in the inner zone below and keep their
+          own handles, so this doesn't capture their drags. */}
+      <div
+        {...attributes}
+        {...listeners}
+        aria-describedby="section-drag-instructions"
+        className="group/header flex items-start gap-3 mb-3 cursor-grab active:cursor-grabbing"
+      >
+        {/* Drag affordance (the whole header is draggable) */}
+        <div className={cn("mt-1 transition-colors shrink-0", t.grip)}>
           <GripVertical className="w-4 h-4" />
         </div>
 
@@ -127,6 +150,7 @@ export function SectionCard({
           )}
         >
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDuplicate();
@@ -140,6 +164,7 @@ export function SectionCard({
             <Copy className="w-3.5 h-3.5" />
           </button>
           <button
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
@@ -155,11 +180,20 @@ export function SectionCard({
         </div>
       </div>
 
-      {/* Inset drop zone for child fields */}
-      <div className={cn("mt-2 min-h-[48px] border-2 border-dashed rounded-sm p-2", t.dropZone)}>
+      {/* Inset drop zone for child fields — dropping here nests into the section.
+          Highlights while a drag hovers it so the nest target is obvious. */}
+      <div
+        ref={setInnerDropRef}
+        className={cn(
+          "mt-2 min-h-[48px] border-2 border-dashed rounded-sm p-2 transition-colors",
+          isOverInner ? t.dropZoneActive : t.dropZone
+        )}
+      >
         {childEntities.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[48px]">
-            <p className={cn("text-xs font-mono", t.dropZoneText)}>Drop fields here</p>
+            <p className={cn("text-xs font-mono transition-colors", isOverInner ? t.dropZoneTextActive : t.dropZoneText)}>
+              Drop fields here
+            </p>
           </div>
         ) : (
           <SortableContext items={childDragIds} strategy={verticalListSortingStrategy}>
