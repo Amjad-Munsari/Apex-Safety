@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -11,6 +12,7 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -65,6 +67,33 @@ function decodeDragId(id: string): { sectionId: string | null; entityId: string 
   }
   return { sectionId: null, entityId: id };
 }
+
+/**
+ * Pointer-first collision detection so nesting only happens when the pointer is
+ * genuinely inside a section, not merely because the section's large card is the
+ * "closest center" (the bug behind UAT test 34's "can't drop before a section").
+ *
+ * Priority when the pointer is over something:
+ *  1. a child field         → reorder within / nest beside it
+ *  2. a section inner zone   → nest into that section (and highlight it)
+ *  3. otherwise (root field or section header) → sort among root cards, which is
+ *     what lets a field be dropped *before* a section.
+ * Falls back to closestCenter when the pointer is outside every droppable
+ * (fast drags, keyboard sensor).
+ */
+const collisionDetectionStrategy: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    const childHit = pointerCollisions.find((c) => String(c.id).startsWith("section:"));
+    if (childHit) return [childHit];
+    const innerHit = pointerCollisions.find((c) =>
+      String(c.id).startsWith(SECTION_INNER_DROPPABLE_PREFIX)
+    );
+    if (innerHit) return [innerHit];
+    return [pointerCollisions[0]];
+  }
+  return closestCenter(args);
+};
 
 export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "dark" }: Props) {
   const t = surfaceTokens[surface];
@@ -176,7 +205,7 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetectionStrategy}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
