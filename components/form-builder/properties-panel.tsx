@@ -454,9 +454,9 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                 >
                   <span
                     className={cn(
-                      "absolute top-0.5 w-4 h-4 rounded-full transition-transform",
+                      "absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform",
                       t.toggleKnob,
-                      (attrs.required as boolean) ? "translate-x-5" : "translate-x-0.5"
+                      (attrs.required as boolean) ? "translate-x-5" : "translate-x-0"
                     )}
                   />
                 </button>
@@ -483,9 +483,9 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                 >
                   <span
                     className={cn(
-                      "absolute top-0.5 w-4 h-4 rounded-full transition-transform",
+                      "absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform",
                       t.toggleKnob,
-                      (attrs.attachPhotos as boolean) ? "translate-x-5" : "translate-x-0.5"
+                      (attrs.attachPhotos as boolean) ? "translate-x-5" : "translate-x-0"
                     )}
                   />
                 </button>
@@ -521,9 +521,9 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                 >
                   <span
                     className={cn(
-                      "absolute top-0.5 w-4 h-4 rounded-full transition-transform",
+                      "absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform",
                       t.toggleKnob,
-                      (attrs.defaultChecked as boolean) ? "translate-x-5" : "translate-x-0.5"
+                      (attrs.defaultChecked as boolean) ? "translate-x-5" : "translate-x-0"
                     )}
                   />
                 </button>
