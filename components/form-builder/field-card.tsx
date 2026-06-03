@@ -13,6 +13,13 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
   textareaField: "Long Text",
   checkboxField: "Checkbox",
   sectionGroup: "Section",
+  // Phase 14 specialty types — names must match the palette (field-palette.tsx)
+  signatureField: "Signature",
+  ratingField: "Rating",
+  multiPhotoField: "Photos",
+  geolocationField: "Location",
+  computedField: "Computed",
+  repeatingSection: "Repeating Section",
 };
 
 interface Entity {
