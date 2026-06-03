@@ -15,16 +15,19 @@ updated: 2026-06-02
 <!-- OVERWRITE each test - shows where we are -->
 
 number: 27
-name: "AI proposal draft — prod AI key gate (Phase 9) — START OF BATCH 27-55"
+name: "AI proposal draft — prod AI key gate (Phase 9) — START OF ADMIN BATCH"
 expected: |
-  BATCH MODE: tests 27-55 were all presented to the user at once; user will
-  run them in the NEXT SESSION (2026-06-03) and report back which pass + any
-  issues. Test 27 itself: draftProposalScope produces a real AI draft via the
-  live OpenRouter key (not canned text); a missing key throws a clear error.
-awaiting: user to batch-test 27-55 next session (2026-06-03), then report results
+  BATCH MODE (admin-only): client-dependent tests (28, 29-32, 47-49) were
+  REMOVED 2026-06-03 to finish the admin side first. The remaining admin batch
+  is: 27, 33-46, 50-55 (numbers kept as-is, no renumber). User runs them and
+  reports which pass + any issues. Test 27 itself: draftProposalScope produces a
+  real AI draft via the live OpenRouter key (not canned text); a missing key
+  throws a clear error.
+awaiting: user to batch-test the admin set (27, 33-46, 50-55), then report results
 
 ## Resume notes (paused 2026-06-02 — resume 2026-06-03)
-- MODE: batch. Tests 24, 25, 26 PASS this session. Tests 27-55 were ALL presented to the user at once; user will run them next session and report which pass + any issues. Don't re-present one-by-one — wait for the user's results list, then record + dig into issues.
+- MODE: batch, ADMIN-ONLY. Client-dependent tests (28, 29-32, 47-49) REMOVED 2026-06-03 — finishing the admin side first; revisit the client portal later. Remaining admin batch: 27, 33-46, 50-55 (original numbers kept, not renumbered).
+- Tests 24, 25, 26 PASS (prev session). Don't re-present the batch one-by-one — wait for the user's results list, then record + dig into issues.
 - Done this session: test 24 (workflow_errors display, pass) + workflow-error UI (sidebar nav, dashboard View Log, month-summary dropdown — commit f348da0). Tests 25/26 (proposal service-selection + pricing, pass) + proposal-header polish (commit 266ba88). Both pushed to origin/main.
 - Still-blocked (n8n demo/subscription): tests 9 + 22 (already recorded), and test 52 (reminders). Re-run once n8n is reactivated. Test 55's webhook half may also hit this — but its AI-draft half should still run.
 - Deferred: test 20 (draft quality) — re-judge with a real FRA draft during tests 53-55.
@@ -174,28 +177,6 @@ note: "User verified on localhost: per-line overrides (incl. quote-on-request NU
 expected: draftProposalScope produces an AI draft in prod (real key). If the key were missing it would throw a clear actionable error rather than ship canned text.
 result: [pending]
 
-### 28. Send proposal + signed-URL PDF + view tracking
-expected: Sending generates a PDF reachable via a signed URL (proposals bucket is private); markProposalViewed fires once on the client's first view (sent_at/viewed_at audit columns populate).
-result: [pending]
-
-### I. Client portal (Phase 4) — uses a real client login
-
-### 29. Magic-link portal login
-expected: A client receives a magic link and signs in to the portal.
-result: [pending]
-
-### 30. Portal compliance dashboard (RLS-gated)
-expected: The portal shows the client's own RAG compliance status, reading only their data (RLS + client_id constraint) — never another org's.
-result: [pending]
-
-### 31. Document library + report/assessment downloads
-expected: The client sees their uploaded documents and delivered reports, and can download them.
-result: [pending]
-
-### 32. Onboarding view
-expected: A useful onboarding state renders for the client (high-fidelity, no broken/empty placeholders).
-result: [pending]
-
 ### J. Form builder foundation (Phase 13) — CREATES DATA
 
 ### 33. Three-panel builder + 7 basic field types
@@ -260,17 +241,8 @@ result: [pending]
 expected: Admin can assign a published master template to a specific client.
 result: [pending]
 
-### 47. Client forks an assigned template (fork-on-fill)
-expected: A client opens an assigned template, changes its structure, and on submit a forked copy is created — owned by the client's org with parent_template_id pointing back; the admin master is never mutated.
-result: [pending]
-
-### 48. Client builds a template from scratch
-expected: A client with the right role opens the builder and creates a template owned only by their org (parent_template_id = NULL).
-result: [pending]
-
-### 49. Cross-org RLS isolation
-expected: A client cannot see or open another org's templates or submissions (matches tests/security.spec.ts intent).
-result: [pending]
+<!-- Tests 47-49 (client fork-on-fill, client build-from-scratch, cross-org RLS)
+     REMOVED 2026-06-03 — client-dependent, deferred to a later client-portal pass. -->
 
 ### N. Assignment scheduling + notifications (Phase 17)
 
@@ -302,13 +274,14 @@ result: [pending]
 
 ## Summary
 
-total: 55
+total: 47  # was 55; 8 client-dependent tests (28, 29-32, 47-49) removed 2026-06-03 (admin-only focus)
 passed: 23
 issues: 0
-pending: 29
+pending: 21  # was 29; minus the 8 removed client tests (all were pending)
 skipped: 1
 blocked: 2
 cosmetic: 1  # test 12 assign-modal polish — fixed, pending re-verify
+removed: 8  # 28, 29, 30, 31, 32, 47, 48, 49 — client-dependent, deferred to a later client-portal pass
 
 ## Gaps
 
