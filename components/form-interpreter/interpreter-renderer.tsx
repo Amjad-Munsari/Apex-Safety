@@ -7,6 +7,7 @@ import type { EntitiesValues } from "@coltorapps/builder"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formBuilder, type FormBuilderSchema } from "@/lib/form-builder"
+import { sanitizeSchema } from "@/lib/form-builder/sanitize-schema"
 import { computeFormProgress } from "@/lib/form-builder/progress"
 import { evaluateVisibility } from "@/lib/form-builder/visibility/evaluate-visibility"
 import { setCurrentFormSchema } from "@/lib/form-builder/visibility/compute-computed-values"
@@ -88,11 +89,17 @@ export const InterpreterRenderer = forwardRef<
   InterpreterRendererHandle,
   InterpreterRendererProps
 >(function InterpreterRenderer(
-  { schema, submissionId, clientId, surface = "cream", onProgressChange, onSubmittingChange, onSubmit, initialValues, onValuesChange },
+  { schema: rawSchema, submissionId, clientId, surface = "cream", onProgressChange, onSubmittingChange, onSubmit, initialValues, onValuesChange },
   ref,
 ) {
   const t = surfaceTokens[surface]
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Strip entities of any since-removed type (e.g. signatureField/ratingField)
+  // before the store is created — otherwise coltorapps throws "entity type is
+  // unknown" for older schemas like the seeded FRA. Stable identity when there's
+  // nothing to remove, so this is safe to use everywhere `schema` is read below.
+  const schema = useMemo(() => sanitizeSchema(rawSchema), [rawSchema])
 
   // onValuesChange is read through a ref so the store's event closure (created
   // once) always calls the latest callback without re-creating the store.

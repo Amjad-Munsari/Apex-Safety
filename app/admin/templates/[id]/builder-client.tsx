@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from "react";
 import { useBuilderStore, useBuilderStoreData } from "@coltorapps/builder-react";
 import { formBuilder } from "@/lib/form-builder";
+import { sanitizeSchema } from "@/lib/form-builder/sanitize-schema";
 import { FieldPalette } from "@/components/form-builder/field-palette";
 import { BuilderCanvas } from "@/components/form-builder/builder-canvas";
 import { PropertiesPanel } from "@/components/form-builder/properties-panel";
@@ -108,9 +109,11 @@ export function TemplateBuilderClient({
   const [cycleState, setCycleState] = useState<CycleState | null>(null);
   const [publishBlocked, setPublishBlocked] = useState(false);
 
-  // Hydrate builder store from persisted schema (already coltorapps { entities, root } shape)
+  // Hydrate builder store from persisted schema (already coltorapps { entities, root } shape).
+  // sanitizeSchema drops entities of any since-removed type (e.g. signatureField)
+  // so older templates load instead of throwing "entity type is unknown".
   const builderStore = useBuilderStore(formBuilder, {
-    initialData: initialSchema ? { schema: initialSchema } : undefined,
+    initialData: initialSchema ? { schema: sanitizeSchema(initialSchema) } : undefined,
   });
 
   // Phase 15 — clear cycleState when admin edits a visibilityRules attribute

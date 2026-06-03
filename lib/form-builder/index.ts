@@ -13,22 +13,34 @@ import { geolocationFieldEntity } from "./entities/geolocation-field";
 import { computedFieldEntity } from "./entities/computed-field";
 import { repeatingSectionEntity } from "./entities/repeating-section";
 
+const registeredEntities = [
+  // 7 basic types (Phase 13)
+  textFieldEntity,
+  numberFieldEntity,
+  dateFieldEntity,
+  selectFieldEntity,
+  textareaFieldEntity,
+  checkboxFieldEntity,
+  sectionGroupEntity,
+  // specialty types (Phase 14) — signatureField + ratingField removed 2026-06-04
+  multiPhotoFieldEntity,
+  geolocationFieldEntity,
+  computedFieldEntity,
+  repeatingSectionEntity,
+];
+
 export const formBuilder = createBuilder({
-  entities: [
-    // 7 basic types (Phase 13)
-    textFieldEntity,
-    numberFieldEntity,
-    dateFieldEntity,
-    selectFieldEntity,
-    textareaFieldEntity,
-    checkboxFieldEntity,
-    sectionGroupEntity,
-    // specialty types (Phase 14)
-    multiPhotoFieldEntity,
-    geolocationFieldEntity,
-    computedFieldEntity,
-    repeatingSectionEntity,
-  ],
+  entities: registeredEntities,
 });
+
+/**
+ * Entity type names currently registered. Used by sanitizeSchema to strip
+ * entities of a type that's no longer registered (e.g. signatureField /
+ * ratingField, removed 2026-06-04) so older schemas — including the seeded FRA —
+ * still load instead of throwing "The provided entity type is unknown".
+ */
+export const KNOWN_ENTITY_TYPES: ReadonlySet<string> = new Set(
+  registeredEntities.map((e) => e.name)
+);
 
 export type FormBuilderSchema = Schema<typeof formBuilder>;
