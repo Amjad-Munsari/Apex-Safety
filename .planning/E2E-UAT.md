@@ -216,19 +216,23 @@ resolution: "INVESTIGATED 2026-06-03 — current code does NOT reproduce a 404; 
 
 ### 38. All 6 specialty fields build + render
 expected: Signature, rating, multi-photo, geolocation, repeating-section, and computed fields each drag in, configure, save, and render in both builder and interpreter.
-result: [pending]
+result: pass
+note: "User verified (2026-06-04). SCOPE CHANGE: signatureField + ratingField were REMOVED 2026-06-04 at user request (commit 09b3247), so only the 4 remaining specialty types (multi-photo, geolocation, computed, repeating-section) were tested + pass. Also fixed during this block: specialty field cards showed raw type names (8bd70dd → friendly names) and the repeating-section card showed '(no label)' (now falls back to its Section Title). Schema sanitizer (cad86aa) lets older templates with the removed types still load."
 
 ### 39. Signature PNG + geolocation map + repeating bounds
 expected: Signatures store as PNG; geolocation captures lat/lng on a Leaflet map (try on mobile); repeating sections honour min/max instance bounds.
-result: [pending]
+result: pass
+note: "User verified (2026-06-04). Signature half is N/A — signatureField removed 2026-06-04. Geolocation lat/lng + Leaflet map and repeating-section min/max bounds verified."
 
 ### 40. Computed PAS 79 risk band
 expected: The computed field outputs the correct PAS 79 risk level with standard colour coding from its likelihood × consequence inputs.
-result: [pending]
+result: pass
+note: "User verified (2026-06-04)."
 
 ### 41. Per-field photo attach (attachPhotos)
 expected: The attachPhotos toggle adds photo attachment to ANY field type, not just photo fields.
-result: [pending]
+result: pass
+note: "User verified (2026-06-04)."
 
 ### L. Conditional logic (Phase 15)
 
