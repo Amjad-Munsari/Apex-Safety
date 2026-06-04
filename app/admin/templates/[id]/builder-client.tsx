@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from "react";
 import { useBuilderStore, useBuilderStoreData } from "@coltorapps/builder-react";
 import { formBuilder } from "@/lib/form-builder";
 import { sanitizeSchema } from "@/lib/form-builder/sanitize-schema";
+import { defaultEntityAttributes } from "@/lib/form-builder/default-entity-attributes";
 import { FieldPalette } from "@/components/form-builder/field-palette";
 import { BuilderCanvas } from "@/components/form-builder/builder-canvas";
 import { PropertiesPanel } from "@/components/form-builder/properties-panel";
@@ -16,6 +17,25 @@ import Link from "next/link";
 import { toast } from "sonner";
 import type { FormBuilderSchema } from "@/lib/form-builder";
 import type { CycleState } from "@/components/form-builder/conditional-logic-section";
+
+/** Human-readable summary for a scope error, used in the save/publish toast. */
+function scopeErrorMessage(
+  err: { reason?: string; sourceLabel?: string; consumerLabel?: string } | undefined
+): string {
+  if (!err) return "";
+  const src = err.sourceLabel ?? "a field";
+  const consumer = err.consumerLabel ?? "a field";
+  switch (err.reason) {
+    case "root-references-inside-repeating":
+      return `"${consumer}" can't reference "${src}" inside a repeating section.`;
+    case "cross-instance":
+      return `"${consumer}" references "${src}" in a different instance.`;
+    case "orphan-source":
+      return `"${consumer}" references a deleted field.`;
+    default:
+      return "";
+  }
+}
 
 interface Props {
   templateId: string;
@@ -155,8 +175,10 @@ export function TemplateBuilderClient({
   }, 0);
 
   function handleAddEntity(type: Parameters<typeof builderStore.addEntity>[0]["type"]) {
+    // Seed required label/title so a freshly-added entity is immediately valid
+    // (empty label/title fails save with InvalidEntitiesAttributes).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const newEntity = builderStore.addEntity({ type, attributes: {} } as any);
+    const newEntity = builderStore.addEntity({ type, attributes: defaultEntityAttributes(type) } as any);
     setSelectedId(newEntity.id);
     setSavedState(false);
   }
@@ -186,15 +208,25 @@ export function TemplateBuilderClient({
             const cycleDescriptions = newCycleState.cycles
               .map((c) => c.labels.slice(0, 3).join(" → ") + (c.labels.length > 3 ? " …" : ""))
               .join("; ");
-            toast.error("Circular rule detected", {
-              description: cycleDescriptions || (parsed.scopeErrors?.[0]?.reason ?? ""),
-            });
+            const hasCycle = newCycleState.cycles.length > 0;
+            toast.error(
+              hasCycle ? "Circular rule detected" : "Invalid rule scope",
+              {
+                description:
+                  cycleDescriptions ||
+                  scopeErrorMessage(parsed.scopeErrors?.[0]) ||
+                  "Select the affected field to see details.",
+              }
+            );
             setSaveStatus("error");
             return;
           }
         } catch {
           // Not a JSON error — fall through to generic handler
         }
+        toast.error("Couldn't save", {
+          description: (err as Error)?.message ?? "Unknown error",
+        });
         setSaveStatus("error");
       }
     });
@@ -233,15 +265,25 @@ export function TemplateBuilderClient({
             const cycleDescriptions = newCycleState.cycles
               .map((c) => c.labels.slice(0, 3).join(" → ") + (c.labels.length > 3 ? " …" : ""))
               .join("; ");
-            toast.error("Circular rule detected", {
-              description: cycleDescriptions || (parsed.scopeErrors?.[0]?.reason ?? ""),
-            });
+            const hasCycle = newCycleState.cycles.length > 0;
+            toast.error(
+              hasCycle ? "Circular rule detected" : "Invalid rule scope",
+              {
+                description:
+                  cycleDescriptions ||
+                  scopeErrorMessage(parsed.scopeErrors?.[0]) ||
+                  "Select the affected field to see details.",
+              }
+            );
             setSaveStatus("error");
             return;
           }
         } catch {
           // Not a JSON error — fall through to generic handler
         }
+        toast.error("Couldn't publish", {
+          description: (err as Error)?.message ?? "Unknown error",
+        });
         setSaveStatus("error");
       }
     });

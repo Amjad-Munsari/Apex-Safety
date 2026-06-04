@@ -301,6 +301,15 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                 )}
               />
             </AttributeRow>
+            {/* Conditional logic on the section itself — hiding it cascades to
+                children (cascade-visibility.ts). Required for the FRA DSEAR sub-section. */}
+            <ConditionalLogicSection
+              entity={{ id: selectedId, type: entity.type, attributes: attrs }}
+              schema={{ entities }}
+              surface={surface}
+              onChange={(next) => setAttr("visibilityRules", next)}
+              cycleState={cycleState}
+            />
           </>
         ) : isRepeatingSection ? (
           /* repeatingSection-specific attributes */
@@ -376,6 +385,15 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
                 )}
               />
             </AttributeRow>
+            {/* Conditional logic on the repeating section itself — hiding it
+                cascades to all instances and their children. */}
+            <ConditionalLogicSection
+              entity={{ id: selectedId, type: entity.type, attributes: attrs }}
+              schema={{ entities }}
+              surface={surface}
+              onChange={(next) => setAttr("visibilityRules", next)}
+              cycleState={cycleState}
+            />
             {/* Type footer */}
             <div className={cn("pt-2 border-t", t.typeFooter)}>
               <span className="font-mono text-[10px] uppercase tracking-wider">
@@ -639,16 +657,17 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
               </>
             )}
 
-            {/* Conditional Logic Section — non-container entities only (UI-SPEC §1) */}
-            {!isSectionGroup && !isRepeatingSection && (
-              <ConditionalLogicSection
-                entity={{ id: selectedId, type: entity.type, attributes: attrs }}
-                schema={{ entities }}
-                surface={surface}
-                onChange={(next) => setAttr("visibilityRules", next)}
-                cycleState={cycleState}
-              />
-            )}
+            {/* Conditional Logic Section — every entity, including containers.
+                Sections must be hideable so the runtime parent→child cascade
+                (cascade-visibility.ts, UI-SPEC §1 "when a section is hidden")
+                is reachable, e.g. the FRA DSEAR sub-section. */}
+            <ConditionalLogicSection
+              entity={{ id: selectedId, type: entity.type, attributes: attrs }}
+              schema={{ entities }}
+              surface={surface}
+              onChange={(next) => setAttr("visibilityRules", next)}
+              cycleState={cycleState}
+            />
 
             {/* Type footer */}
             <div className={cn("pt-2 border-t", t.typeFooter)}>

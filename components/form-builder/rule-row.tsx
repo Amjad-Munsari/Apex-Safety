@@ -143,11 +143,15 @@ export function RuleRow({
   // Check if current operator is still valid after source-type change
   const currentOperatorValid = operators.some((op) => op.value === rule.operator);
 
-  // A7: filter "require" from action dropdown when host is computedField
+  // A7: filter "require" from action dropdown when host is computedField.
+  // Containers (sectionGroup/repeatingSection) can be shown/hidden but never
+  // "required", so drop require for them too.
+  const hostIsContainer =
+    hostEntityType === "sectionGroup" || hostEntityType === "repeatingSection";
   const actions: OperatorEntry[] = [
     { value: "show", label: "show" },
     { value: "hide", label: "hide" },
-    ...(hostEntityType !== "computedField"
+    ...(hostEntityType !== "computedField" && !hostIsContainer
       ? [{ value: "require", label: "require" }]
       : []),
   ];
@@ -175,6 +179,20 @@ export function RuleRow({
   function handleValueChange(e: React.ChangeEvent<HTMLInputElement>) {
     onChange({ ...rule, value: e.target.value });
   }
+
+  function handleValueSelectChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    onChange({ ...rule, value: e.target.value });
+  }
+
+  // When the source is a select field, offer its options as a dropdown so the
+  // rule value matches the option's stored VALUE (not a hand-typed label that
+  // would silently never match). null for non-select sources → free-text input.
+  const sourceOptions =
+    sourceType === "selectField"
+      ? ((sourceEntity?.attributes?.options as
+          | Array<{ value: string; label: string }>
+          | undefined) ?? [])
+      : null;
 
   function handleActionChange(e: React.ChangeEvent<HTMLSelectElement>) {
     onChange({ ...rule, action: e.target.value as VisibilityRule["action"] });
@@ -205,6 +223,18 @@ export function RuleRow({
             {(e.attributes?.label as string) ?? id}
           </option>
         ))}
+        {/* Keep a still-referenced source visible even when it became
+            out-of-scope (e.g. moved into a repeating section) or was deleted —
+            otherwise the control blanks out and the rule looks empty while the
+            schema still holds the (now invalid) reference. */}
+        {rule.sourceEntityId &&
+          !eligibleSources.some(([id]) => id === rule.sourceEntityId) && (
+            <option value={rule.sourceEntityId}>
+              {sourceEntity
+                ? `${(sourceEntity.attributes?.label as string) ?? rule.sourceEntityId} (out of scope)`
+                : `${rule.sourceEntityId} (deleted)`}
+            </option>
+          )}
       </select>
 
       {/* Line 2 — Operator dropdown + Value input */}
@@ -225,20 +255,40 @@ export function RuleRow({
           ))}
         </select>
 
-        {/* Value input — hidden (zero-width) when operator is isEmpty / isNotEmpty */}
-        <input
-          type="text"
-          value={isNullaryOperator ? "" : ((rule.value as string) ?? "")}
-          onChange={handleValueChange}
-          placeholder="value…"
-          readOnly={isNullaryOperator}
-          className={cn(
-            "border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
-            isNullaryOperator
-              ? "w-0 overflow-hidden p-0 border-0"
-              : cn("flex-1 min-w-0", t.input)
-          )}
-        />
+        {/* Value slot — a dropdown of the source select's options when the
+            source is a select, free text otherwise. Hidden (zero-width) when
+            operator is isEmpty / isNotEmpty (no reflow). */}
+        {sourceOptions && !isNullaryOperator ? (
+          <select
+            value={(rule.value as string) ?? ""}
+            onChange={handleValueSelectChange}
+            className={cn(
+              "flex-1 min-w-0 border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
+              t.select
+            )}
+          >
+            <option value="">— value —</option>
+            {sourceOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            value={isNullaryOperator ? "" : ((rule.value as string) ?? "")}
+            onChange={handleValueChange}
+            placeholder="value…"
+            readOnly={isNullaryOperator}
+            className={cn(
+              "border rounded-[3px] px-2 py-1 text-xs outline-none transition-colors",
+              isNullaryOperator
+                ? "w-0 overflow-hidden p-0 border-0"
+                : cn("flex-1 min-w-0", t.input)
+            )}
+          />
+        )}
       </div>
 
       {/* Line 3 — Arrow + Action dropdown + Delete button */}

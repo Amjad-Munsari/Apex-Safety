@@ -109,6 +109,9 @@ export function SelectFieldRenderer({ entity, setValue, surface = "cream", dynam
       <Select
         value={value}
         onValueChange={(v) => setValue(v)}
+        // base-ui's SelectValue renders the raw value unless given a value→label
+        // map; without this the trigger shows the option's value, not its label.
+        items={Object.fromEntries(options.map((o) => [o.value, o.label]))}
       >
         <SelectTrigger className={cn("h-12 rounded-sm", t.trigger)}>
           <SelectValue placeholder="Select an option..." />

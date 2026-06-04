@@ -93,7 +93,12 @@ export function FieldCard({
     <div
       ref={setNodeRef}
       style={style}
-      onClick={onSelect}
+      onClick={(e) => {
+        // Stop the click from bubbling to a parent SectionCard's onClick,
+        // which would otherwise re-select the section and clobber child selection.
+        e.stopPropagation();
+        onSelect();
+      }}
       className={cn(
         "group relative flex items-start gap-3 px-4 py-4 rounded-sm border cursor-pointer transition-all",
         isSelected ? t.selected : t.base

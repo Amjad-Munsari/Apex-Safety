@@ -25,6 +25,7 @@ import type { formBuilder } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
 import { FieldCard } from "./field-card";
 import { SectionCard, SECTION_INNER_DROPPABLE_PREFIX } from "./section-card";
+import { defaultEntityAttributes } from "@/lib/form-builder/default-entity-attributes";
 
 interface Props {
   builderStore: BuilderStore<typeof formBuilder>;
@@ -98,6 +99,11 @@ function verticalOverlapRatio(
   return overlap / denom;
 }
 
+// Both sectionGroup and repeatingSection nest child fields and behave as large
+// drop containers in the canvas. Treat them uniformly for drag/nesting.
+const CONTAINER_TYPES = new Set(["sectionGroup", "repeatingSection"]);
+const isContainer = (type?: string): boolean => !!type && CONTAINER_TYPES.has(type);
+
 const collisionDetectionStrategy: CollisionDetection = (args) => {
   // Keyboard sensor (no pointer) — keep dnd-kit's default behaviour.
   if (!args.pointerCoordinates) return closestCenter(args);
@@ -105,14 +111,14 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
   // Sections are large → require more overlap before they reorder.
   const activeType = (args.active.data.current as { type?: string } | undefined)?.type;
   const threshold =
-    activeType === "sectionGroup" ? SECTION_OVERLAP_THRESHOLD : REORDER_OVERLAP_THRESHOLD;
+    isContainer(activeType) ? SECTION_OVERLAP_THRESHOLD : REORDER_OVERLAP_THRESHOLD;
 
   // Nesting: only when the pointer is genuinely inside a child or a section's
   // inner drop zone (so dropping near a section doesn't auto-nest). Skipped when
   // dragging a section — sections don't nest into sections, so the whole target
   // section (incl. its "Drop fields here" area) counts toward the reorder
   // threshold instead of that area being a nest-only dead zone.
-  if (activeType !== "sectionGroup") {
+  if (!isContainer(activeType)) {
     const pointer = pointerWithin(args);
     const childHit = pointer.find((c) => String(c.id).startsWith("section:"));
     if (childHit) return [childHit];
@@ -131,7 +137,7 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
     // A field must NOT sibling-reorder against a section — that interaction is
     // nesting (handled by pointerWithin above). Without this skip the field
     // jumps below the section before the pointer reaches the inner drop zone.
-    if (activeType !== "sectionGroup" && containerType === "sectionGroup") continue;
+    if (!isContainer(activeType) && isContainer(containerType)) continue;
     const rect = droppableRects.get(container.id);
     if (!rect) continue;
     const ratio = verticalOverlapRatio(collisionRect, rect);
@@ -164,7 +170,7 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
   for (const id of root) {
     flatItems.push(id);
     const e = entities[id];
-    if (e?.type === "sectionGroup") {
+    if (isContainer(e?.type)) {
       for (const childId of (e.children as string[]) ?? []) {
         flatItems.push(`section:${id}:${childId}`);
       }
@@ -191,20 +197,34 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
 
     const { sectionId: activeSectionId, entityId: activeEntityId } = decodeDragId(activeIdStr);
 
+    // The dragged entity must still exist in the live store. Stale drag ids
+    // (e.g. after a reparent/delete mid-interaction) would otherwise make
+    // coltorapps' setEntityParent throw "Entity not found" and white-screen the
+    // builder. Bail out quietly instead.
+    if (!activeEntityId || !entities[activeEntityId]) return;
+
+    // Nesting helper that no-ops on a missing/invalid target rather than letting
+    // coltorapps throw. Re-checks against the live snapshot before mutating.
+    const nestInto = (childId: string, parentId: string) => {
+      if (!entities[childId] || !entities[parentId]) return;
+      if (childId === parentId) return;
+      const currentParent = entities[childId]?.parentId;
+      if (currentParent === parentId) return;
+      try {
+        if (currentParent) builderStore.unsetEntityParent(childId);
+        builderStore.setEntityParent(childId, parentId);
+      } catch {
+        // Reparent rejected by the store (stale id / not allowed) — ignore.
+      }
+    };
+
     // Case A: dropped on a section's inner drop zone — NEST into that section.
     // This is now the only "drop on a section" path that nests, which leaves
     // dropping on the section card itself free to reorder it as a sibling so a
     // field can be placed *before* a section (UAT test 34).
     if (overIdStr.startsWith(SECTION_INNER_DROPPABLE_PREFIX)) {
       const targetSectionId = overIdStr.slice(SECTION_INNER_DROPPABLE_PREFIX.length);
-      if (activeEntityId === targetSectionId) return; // can't nest a section into itself
-      const currentParent = entities[activeEntityId]?.parentId;
-      if (currentParent && currentParent !== targetSectionId) {
-        builderStore.unsetEntityParent(activeEntityId);
-      }
-      if (currentParent !== targetSectionId) {
-        builderStore.setEntityParent(activeEntityId, targetSectionId);
-      }
+      nestInto(activeEntityId, targetSectionId);
       return;
     }
 
@@ -217,7 +237,11 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
       const oldIndex = children.indexOf(activeEntityId);
       const newIndex = children.indexOf(overEntityId);
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        builderStore.setEntityIndex(activeEntityId, newIndex);
+        try {
+          builderStore.setEntityIndex(activeEntityId, newIndex);
+        } catch {
+          /* stale id — ignore */
+        }
       }
       return;
     }
@@ -226,18 +250,28 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
     // section card) — un-nest and position it at that root index. Dropping
     // onto a section card here lands the field just before it, not inside.
     if (activeSectionId && !overSectionId_) {
-      builderStore.unsetEntityParent(activeEntityId);
-      const newIndex = root.indexOf(overEntityId);
-      if (newIndex !== -1) {
-        builderStore.setEntityIndex(activeEntityId, newIndex);
+      try {
+        builderStore.unsetEntityParent(activeEntityId);
+        const newIndex = root.indexOf(overEntityId);
+        if (newIndex !== -1) builderStore.setEntityIndex(activeEntityId, newIndex);
+      } catch {
+        // Stale id — ignore.
       }
+      return;
+    }
+
+    // Case 3b: Active is in section X, drop target is a child of a DIFFERENT
+    // section Y — move it across into Y. (Now reachable since repeating sections
+    // also nest children.)
+    if (activeSectionId && overSectionId_ && activeSectionId !== overSectionId_) {
+      nestInto(activeEntityId, overSectionId_);
       return;
     }
 
     // Case 4: Active is at root, drop target is a field INSIDE a section —
     // nest it into that section alongside the hovered child.
     if (!activeSectionId && overSectionId_) {
-      builderStore.setEntityParent(activeEntityId, overSectionId_);
+      nestInto(activeEntityId, overSectionId_);
       return;
     }
 
@@ -247,7 +281,11 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
       const oldIndex = root.indexOf(activeEntityId);
       const newIndex = root.indexOf(overEntityId);
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-        builderStore.setEntityIndex(activeEntityId, newIndex);
+        try {
+          builderStore.setEntityIndex(activeEntityId, newIndex);
+        } catch {
+          /* stale id — ignore */
+        }
       }
     }
   }
@@ -279,7 +317,7 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
             const entity = entities[entityId];
             if (!entity) return null;
 
-            if (entity.type === "sectionGroup") {
+            if (isContainer(entity.type)) {
               const childIds = (entity.children as string[]) ?? [];
               const childEntities = childIds
                 .map((cId) => ({ id: cId, ...entities[cId] }))
@@ -293,14 +331,14 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
               return (
                 <SectionCard
                   key={entityId}
-                  entity={{ id: entityId, type: "sectionGroup", attributes: entity.attributes, children: entity.children }}
+                  entity={{ id: entityId, type: entity.type as "sectionGroup" | "repeatingSection", attributes: entity.attributes, children: entity.children }}
                   childEntities={childEntities}
                   isSelected={selectedId === entityId}
                   onSelect={() => onSelect(entityId)}
                   onDuplicate={() => {
-                    // Add new sectionGroup — duplicate copies type only (no deep attribute cloning in Phase 13)
+                    // Duplicate copies type only (no deep attribute cloning in Phase 13)
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    builderStore.addEntity({ type: "sectionGroup", attributes: {} } as any);
+                    builderStore.addEntity({ type: entity.type, attributes: defaultEntityAttributes(entity.type) } as any);
                   }}
                   onDelete={() => {
                     builderStore.deleteEntity(entityId);
@@ -312,7 +350,7 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
                     const child = entities[id];
                     if (child) {
                       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const newEntity = builderStore.addEntity({ type: child.type, attributes: {} } as any);
+                      const newEntity = builderStore.addEntity({ type: child.type, attributes: defaultEntityAttributes(child.type) } as any);
                       builderStore.setEntityParent(newEntity.id, entityId);
                     }
                   }}
@@ -334,7 +372,7 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
                 onSelect={() => onSelect(entityId)}
                 onDuplicate={() => {
                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  builderStore.addEntity({ type: entity.type, attributes: {} } as any);
+                  builderStore.addEntity({ type: entity.type, attributes: defaultEntityAttributes(entity.type) } as any);
                 }}
                 onDelete={() => {
                   builderStore.deleteEntity(entityId);

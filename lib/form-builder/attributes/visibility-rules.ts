@@ -65,44 +65,44 @@ export const visibilityRulesAttribute = createAttribute({
 
     const rawRules: unknown[] = Array.isArray(v.rules) ? v.rules : [];
 
-    const rules: VisibilityRule[] = rawRules.map((r, i) => {
+    const rules: VisibilityRule[] = [];
+    rawRules.forEach((r, i) => {
       if (!r || typeof r !== "object" || Array.isArray(r)) {
         throw new Error(`Rule #${i} is not an object.`);
       }
       const raw = r as Record<string, unknown>;
 
-      // sourceEntityId: must be a non-empty string.
-      if (
-        typeof raw.sourceEntityId !== "string" ||
-        raw.sourceEntityId.length === 0
-      ) {
-        throw new Error(
-          `Rule #${i}: sourceEntityId must be a non-empty string.`
-        );
-      }
+      // Incomplete (in-progress) rule from the builder — an empty sourceEntityId
+      // (just added, no source picked), operator (reset when the source type
+      // changes), or action (placeholder still selected). These are no-ops, so
+      // drop them silently rather than failing the whole schema with
+      // InvalidEntitiesAttributes. Note: this is distinct from a *present but
+      // invalid* value below, which still signals genuine corruption.
+      const sourceEmpty =
+        typeof raw.sourceEntityId !== "string" || raw.sourceEntityId.length === 0;
+      const operatorEmpty =
+        typeof raw.operator !== "string" || raw.operator.length === 0;
+      const actionEmpty = typeof raw.action !== "string" || raw.action.length === 0;
+      if (sourceEmpty || operatorEmpty || actionEmpty) return;
 
-      // operator: must be one of the seven D-06 values.
-      if (
-        typeof raw.operator !== "string" ||
-        !VALID_OPERATORS.has(raw.operator)
-      ) {
+      // operator: a non-empty value must be one of the seven D-06 values.
+      if (!VALID_OPERATORS.has(raw.operator as string)) {
         throw new Error(
           `Rule #${i}: operator must be one of ${[...VALID_OPERATORS].join(", ")}.`
         );
       }
-
-      // action: must be one of the three D-07 values.
-      if (typeof raw.action !== "string" || !VALID_ACTIONS.has(raw.action)) {
+      // action: a non-empty value must be one of the three D-07 values.
+      if (!VALID_ACTIONS.has(raw.action as string)) {
         throw new Error(`Rule #${i}: action must be show, hide, or require.`);
       }
 
-      return {
-        sourceEntityId: raw.sourceEntityId,
+      rules.push({
+        sourceEntityId: raw.sourceEntityId as string,
         operator: raw.operator as VisibilityRule["operator"],
         // value defaults to null when missing (D-05).
         value: (raw.value ?? null) as VisibilityRule["value"],
         action: raw.action as VisibilityRule["action"],
-      };
+      });
     });
 
     return { rules, logic };

@@ -19,7 +19,7 @@ export const SECTION_INNER_DROPPABLE_PREFIX = "secdrop:";
 
 interface SectionEntity {
   id: string;
-  type: "sectionGroup";
+  type: "sectionGroup" | "repeatingSection";
   attributes: Record<string, unknown>;
   children?: string[];
 }
@@ -87,7 +87,7 @@ export function SectionCard({
 }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: entity.id,
-    data: { entityId: entity.id, type: "sectionGroup" },
+    data: { entityId: entity.id, type: entity.type },
   });
 
   // Dedicated droppable for the inner "drop fields here" zone. `isOverInner`
@@ -105,7 +105,10 @@ export function SectionCard({
   };
 
   const t = surfaceTokens[surface];
-  const title = (entity.attributes.title as string) ?? "Untitled Section";
+  const isRepeating = entity.type === "repeatingSection";
+  const title =
+    (entity.attributes.title as string) ??
+    (isRepeating ? "Untitled Repeating Section" : "Untitled Section");
 
   return (
     <div
@@ -133,10 +136,15 @@ export function SectionCard({
         </div>
 
         {/* Section title */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
           <h3 className={cn("font-serif text-lg font-normal leading-[1.3]", t.title)}>
             {title}
           </h3>
+          {isRepeating && (
+            <span className="shrink-0 px-1.5 py-0.5 rounded-[3px] border border-current font-mono text-[9px] uppercase tracking-widest opacity-50">
+              Repeating
+            </span>
+          )}
         </div>
 
         {/* Action buttons */}

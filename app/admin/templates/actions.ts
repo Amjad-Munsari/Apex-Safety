@@ -4,6 +4,31 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { requireActorUserId } from "@/lib/auth-helpers";
 
+// Build a readable "attr@entityId: message" summary from a coltorapps
+// SchemaValidationError reason (InvalidEntitiesAttributes), whose error values
+// may be Error instances that JSON.stringify to "{}".
+function describeAttributeErrors(reason: unknown): string {
+  const errs = (
+    reason as {
+      payload?: { entitiesAttributesErrors?: Record<string, Record<string, unknown>> };
+    }
+  )?.payload?.entitiesAttributesErrors;
+  if (!errs || typeof errs !== "object") return "";
+  const parts: string[] = [];
+  for (const [entityId, attrErrs] of Object.entries(errs)) {
+    for (const [attr, e] of Object.entries(attrErrs ?? {})) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : typeof e === "string"
+            ? e
+            : JSON.stringify(e);
+      parts.push(`${attr}@${entityId.slice(0, 8)}: ${msg}`);
+    }
+  }
+  return parts.join("; ");
+}
+
 // ── createTemplate ──────────────────────────────────────────────────────────
 
 export async function createTemplate(name: string, templateType: string) {
@@ -57,7 +82,11 @@ export async function saveDraftAction(
   const { formBuilder } = await import("@/lib/form-builder");
   const result = await validateSchema(rawSchema, formBuilder);
   if (!result.success) {
-    throw new Error(`Invalid schema: ${result.reason.code}`);
+    // Surface which entities/attributes failed so the builder toast is actionable
+    // instead of a bare "InvalidEntitiesAttributes".
+    const detail = describeAttributeErrors(result.reason);
+    console.error("[template save] schema validation failed:", result.reason.code, detail);
+    throw new Error(`Invalid schema: ${result.reason.code}${detail ? ` — ${detail}` : ""}`);
   }
 
   // Phase 15 — reject cyclic rule graphs (D-08, Pitfall 2)
@@ -112,7 +141,11 @@ export async function publishTemplateAction(
   const { formBuilder } = await import("@/lib/form-builder");
   const result = await validateSchema(rawSchema, formBuilder);
   if (!result.success) {
-    throw new Error(`Invalid schema: ${result.reason.code}`);
+    // Surface which entities/attributes failed so the builder toast is actionable
+    // instead of a bare "InvalidEntitiesAttributes".
+    const detail = describeAttributeErrors(result.reason);
+    console.error("[template save] schema validation failed:", result.reason.code, detail);
+    throw new Error(`Invalid schema: ${result.reason.code}${detail ? ` — ${detail}` : ""}`);
   }
 
   // Phase 15 — reject cyclic rule graphs (D-08, Pitfall 2)
