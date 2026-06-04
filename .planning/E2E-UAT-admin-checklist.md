@@ -78,27 +78,27 @@ Flags: 🚫 = blocked on n8n (skip until reactivated)  ·  ⏸ = deferred sub-it
 
 ## Conditional Logic (Phase 15)
 
-- [ ] **42. Builder condition UI — show/hide/require rules**
+- [x] **42. Builder condition UI — show/hide/require rules**
   - Add a visibility rule: source field, operator, value, action (show/hide/require).
   - Verify: operators filter by source type; `isEmpty`/`isNotEmpty` hides the value input WITHOUT layout reflow.
-  - Result:
+  - Result: PASS — operators filter by source type (text→contains, numeric→>/<); is empty/is not empty hides value input without reflow. Note: `contains` only appears when an OTHER text field is the source (host excluded from its own source list). Select sources now offer a value dropdown of their options (fix this session).
 
-- [ ] **43. Runtime show / hide / require**
+- [x] **43. Runtime show / hide / require**
   - Fill the source field at runtime.
   - Verify: dependent field shows / hides / becomes required as configured.
   - Verify: hide wins over show; hiding a parent cascades to children.
-  - Result:
+  - Result: PASS — show/hide/require all behave at runtime; hide wins over show; hiding a section cascades to its child. Required this session: enabling conditional logic on sections (so cascade is reachable), child-selection fix in sections, select label display fix.
 
-- [ ] **44. Circular-dependency detection**
+- [x] **44. Circular-dependency detection**
   - Create a rule cycle (A → B → A).
   - Verify: cycle banner appears ("Circular rule: A → B"); save is REJECTED.
   - Create an out-of-scope reference → verify a scope-error banner.
-  - Result:
+  - Result: PASS — A→B→A cycle rejected with toast + banner; root-references-inside-repeating scope error rejected with "Invalid rule scope" toast + banner on the consumer field. Required this session: repeating-section child nesting in the builder, drag-crash hardening, incomplete-rule pruning, clear schema-error messages, default labels/titles on new entities.
 
-- [ ] **45. Hidden answers scrubbed server-side**
+- [x] **45. Hidden answers scrubbed server-side**
   - Fill a field, then hide it via a rule, then submit.
   - Verify: the hidden field's answer is NOT persisted and never reaches the AI report prompt (server-side scrub).
-  - Result:
+  - Result: PASS — verified at DB level. Submission for The Steel City Hotel (2026-06-04 20:25) stored answers_json with only the "Has hazard?"=yes key; the hidden "Hazard details" value (SECRET-SCRUB-TEST) was entirely absent (key gone, not null). stripHiddenAnswers in submitAssessmentAction confirmed working.
 
 ---
 
