@@ -93,25 +93,23 @@ export function FieldCard({
     <div
       ref={setNodeRef}
       style={style}
+      {...attributes}
+      {...listeners}
       onClick={(e) => {
         // Stop the click from bubbling to a parent SectionCard's onClick,
         // which would otherwise re-select the section and clobber child selection.
         e.stopPropagation();
         onSelect();
       }}
+      aria-describedby="drag-instructions"
       className={cn(
-        "group relative flex items-start gap-3 px-4 py-4 rounded-sm border cursor-pointer transition-all",
+        "group relative flex items-start gap-3 px-4 py-4 rounded-sm border cursor-grab active:cursor-grabbing transition-all",
         isSelected ? t.selected : t.base
       )}
     >
-      {/* Drag handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        onClick={(e) => e.stopPropagation()}
-        aria-describedby="drag-instructions"
-        className={cn("mt-0.5 cursor-grab active:cursor-grabbing transition-colors shrink-0", t.grip)}
-      >
+      {/* Drag affordance — the whole card is the handle (matches SectionCard),
+          so this grip is a visual cue only. */}
+      <div className={cn("mt-0.5 transition-colors shrink-0", t.grip)}>
         <GripVertical className="w-4 h-4" />
       </div>
 
@@ -135,6 +133,7 @@ export function FieldCard({
         )}
       >
         <button
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             onDuplicate();
@@ -148,6 +147,7 @@ export function FieldCard({
           <Copy className="w-3.5 h-3.5" />
         </button>
         <button
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             onDelete();

@@ -25,7 +25,6 @@ import type { formBuilder } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
 import { FieldCard } from "./field-card";
 import { SectionCard, SECTION_INNER_DROPPABLE_PREFIX } from "./section-card";
-import { defaultEntityAttributes } from "@/lib/form-builder/default-entity-attributes";
 
 interface Props {
   builderStore: BuilderStore<typeof formBuilder>;
@@ -113,31 +112,35 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
   const threshold =
     isContainer(activeType) ? SECTION_OVERLAP_THRESHOLD : REORDER_OVERLAP_THRESHOLD;
 
-  // Nesting: only when the pointer is genuinely inside a child or a section's
-  // inner drop zone (so dropping near a section doesn't auto-nest). Skipped when
-  // dragging a section — sections don't nest into sections, so the whole target
-  // section (incl. its "Drop fields here" area) counts toward the reorder
-  // threshold instead of that area being a nest-only dead zone.
+  // Pointer-driven resolution when dragging a field. Priority by what the
+  // pointer is actually over, so nesting and reordering coexist:
+  //   1. a section CHILD      → drop beside it (reorder within / nest beside)
+  //   2. a section inner zone → nest into that section
+  //   3. any other root card  → reorder against it. This includes a SECTION's
+  //      own card (its header strip, since the inner zone matched first above),
+  //      which is what lets a field be dropped before OR after a section.
   if (!isContainer(activeType)) {
     const pointer = pointerWithin(args);
     const childHit = pointer.find((c) => String(c.id).startsWith("section:"));
     if (childHit) return [childHit];
     const innerHit = pointer.find((c) => String(c.id).startsWith(SECTION_INNER_DROPPABLE_PREFIX));
     if (innerHit) return [innerHit];
+    const rootHit = pointer.find((c) => {
+      const id = String(c.id);
+      return !id.startsWith(SECTION_INNER_DROPPABLE_PREFIX) && !id.startsWith("section:");
+    });
+    if (rootHit) return [rootHit];
   }
 
-  // Reorder among sortable cards: pick the most-overlapped one, but only treat
-  // it as the drop target once overlap clears the threshold.
+  // Fallback for when the pointer is outside every droppable (fast drags, or
+  // dragging below the last card to append after a trailing section): pick the
+  // most-overlapped sortable card. Sections ARE eligible here so a field can
+  // land below a section that is the last item on the canvas.
   const { collisionRect, droppableRects, droppableContainers } = args;
   let best: (typeof droppableContainers)[number] | null = null;
   let bestRatio = 0;
   for (const container of droppableContainers) {
     if (String(container.id).startsWith(SECTION_INNER_DROPPABLE_PREFIX)) continue;
-    const containerType = (container.data.current as { type?: string } | undefined)?.type;
-    // A field must NOT sibling-reorder against a section — that interaction is
-    // nesting (handled by pointerWithin above). Without this skip the field
-    // jumps below the section before the pointer reaches the inner drop zone.
-    if (!isContainer(activeType) && isContainer(containerType)) continue;
     const rect = droppableRects.get(container.id);
     if (!rect) continue;
     const ratio = verticalOverlapRatio(collisionRect, rect);
@@ -290,6 +293,63 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
     }
   }
 
+  // Deep-duplicate an entity: clone its attributes verbatim and, for a
+  // container, recursively clone its children. Internal conditional-rule
+  // references (a rule whose source is another entity inside the cloned subtree)
+  // are remapped to the new ids so the copy is self-contained; references to
+  // entities OUTSIDE the subtree are kept as-is. Returns the new root id.
+  function duplicateEntity(sourceId: string, parentId?: string): string | null {
+    const idMap = new Map<string, string>();
+
+    const cloneRec = (sid: string, pid?: string): string | null => {
+      const src = entities[sid];
+      if (!src) return null;
+      // structuredClone preserves nested attribute data (options, visibilityRules).
+      const attributes = structuredClone(src.attributes ?? {});
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cloned = builderStore.addEntity({ type: src.type, attributes } as any);
+      idMap.set(sid, cloned.id);
+      if (pid) builderStore.setEntityParent(cloned.id, pid);
+      for (const childId of (src.children as string[]) ?? []) {
+        cloneRec(childId, cloned.id);
+      }
+      return cloned.id;
+    };
+
+    const newRootId = cloneRec(sourceId, parentId);
+    if (!newRootId) return null;
+
+    // Remap intra-subtree rule sources so a duplicated section's internal
+    // show/hide logic follows the copy rather than pointing back at the original.
+    for (const [oldId, clonedId] of idMap) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rules = (entities[oldId]?.attributes as any)?.visibilityRules;
+      if (!rules || !Array.isArray(rules.rules) || rules.rules.length === 0) continue;
+      let changed = false;
+      const remapped = {
+        ...rules,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rules: rules.rules.map((r: any) => {
+          if (r && typeof r.sourceEntityId === "string" && idMap.has(r.sourceEntityId)) {
+            changed = true;
+            return { ...r, sourceEntityId: idMap.get(r.sourceEntityId) };
+          }
+          return r;
+        }),
+      };
+      if (changed) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          builderStore.setEntityAttribute(clonedId, "visibilityRules" as any, remapped as any);
+        } catch {
+          /* attribute set rejected — leave the cloned rule as-is */
+        }
+      }
+    }
+
+    return newRootId;
+  }
+
   // Build drag overlay info
   const activeDecodedId = activeId ? decodeDragId(activeId) : null;
   const activeEntity = activeDecodedId ? entities[activeDecodedId.entityId] : null;
@@ -336,9 +396,15 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
                   isSelected={selectedId === entityId}
                   onSelect={() => onSelect(entityId)}
                   onDuplicate={() => {
-                    // Duplicate copies type only (no deep attribute cloning in Phase 13)
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    builderStore.addEntity({ type: entity.type, attributes: defaultEntityAttributes(entity.type) } as any);
+                    // Deep copy (attributes + children), placed right after the original.
+                    const newId = duplicateEntity(entityId);
+                    if (newId) {
+                      const idx = root.indexOf(entityId);
+                      if (idx !== -1) {
+                        try { builderStore.setEntityIndex(newId, idx + 1); } catch { /* ignore */ }
+                      }
+                      onSelect(newId);
+                    }
                   }}
                   onDelete={() => {
                     builderStore.deleteEntity(entityId);
@@ -347,11 +413,15 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
                   selectedChildId={selectedId}
                   onSelectChild={(id) => onSelect(id)}
                   onDuplicateChild={(id) => {
-                    const child = entities[id];
-                    if (child) {
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      const newEntity = builderStore.addEntity({ type: child.type, attributes: defaultEntityAttributes(child.type) } as any);
-                      builderStore.setEntityParent(newEntity.id, entityId);
+                    // Deep copy the child within this section, after the original.
+                    const newId = duplicateEntity(id, entityId);
+                    if (newId) {
+                      const children = (entities[entityId]?.children as string[]) ?? [];
+                      const idx = children.indexOf(id);
+                      if (idx !== -1) {
+                        try { builderStore.setEntityIndex(newId, idx + 1); } catch { /* ignore */ }
+                      }
+                      onSelect(newId);
                     }
                   }}
                   onDeleteChild={(id) => {
@@ -371,8 +441,15 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
                 isSelected={selectedId === entityId}
                 onSelect={() => onSelect(entityId)}
                 onDuplicate={() => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  builderStore.addEntity({ type: entity.type, attributes: defaultEntityAttributes(entity.type) } as any);
+                  // Deep copy (attributes preserved), placed right after the original.
+                  const newId = duplicateEntity(entityId);
+                  if (newId) {
+                    const idx = root.indexOf(entityId);
+                    if (idx !== -1) {
+                      try { builderStore.setEntityIndex(newId, idx + 1); } catch { /* ignore */ }
+                    }
+                    onSelect(newId);
+                  }
                 }}
                 onDelete={() => {
                   builderStore.deleteEntity(entityId);
