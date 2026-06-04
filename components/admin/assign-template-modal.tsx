@@ -179,36 +179,43 @@ export function AssignTemplateModal({
             </div>
           )}
 
-          {/* (b) Clients checkbox grid */}
+          {/* (b) Clients — bare text when launched from a client page, else a checkbox grid */}
           <div className="flex flex-col gap-2">
             <Label className="text-white/70 font-mono text-xs uppercase tracking-widest">
-              Clients
+              {preselectClientId ? "Client" : "Clients"}
             </Label>
-            <div className="max-h-48 overflow-y-auto flex flex-col gap-2 pr-1">
-              {clients.map((c) => (
-                <div key={c.id} className="flex items-center gap-3">
-                  <Checkbox
-                    id={`client-${c.id}`}
-                    checked={selectedClients.has(c.id)}
-                    onCheckedChange={(checked) =>
-                      toggleClient(c.id, Boolean(checked))
-                    }
-                    className="border-white/30 data-checked:bg-[#c0a66d] data-checked:border-[#c0a66d]"
-                  />
-                  <Label
-                    htmlFor={`client-${c.id}`}
-                    className="text-white text-sm font-sans cursor-pointer"
-                  >
-                    {c.name}
-                  </Label>
-                </div>
-              ))}
-              {clients.length === 0 && (
-                <p className="text-white/40 text-xs font-mono">
-                  No clients available
-                </p>
-              )}
-            </div>
+            {preselectClientId ? (
+              <p className="text-white text-sm font-sans">
+                {clients.find((c) => c.id === preselectClientId)?.name ??
+                  "this client"}
+              </p>
+            ) : (
+              <div className="max-h-48 overflow-y-auto flex flex-col gap-2 pr-1">
+                {clients.map((c) => (
+                  <div key={c.id} className="flex items-center gap-3">
+                    <Checkbox
+                      id={`client-${c.id}`}
+                      checked={selectedClients.has(c.id)}
+                      onCheckedChange={(checked) =>
+                        toggleClient(c.id, Boolean(checked))
+                      }
+                      className="border-white/30 data-checked:bg-[#c0a66d] data-checked:border-[#c0a66d]"
+                    />
+                    <Label
+                      htmlFor={`client-${c.id}`}
+                      className="text-white text-sm font-sans cursor-pointer"
+                    >
+                      {c.name}
+                    </Label>
+                  </div>
+                ))}
+                {clients.length === 0 && (
+                  <p className="text-white/40 text-xs font-mono">
+                    No clients available
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* (c) Due date */}

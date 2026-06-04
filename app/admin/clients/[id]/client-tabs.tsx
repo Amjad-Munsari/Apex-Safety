@@ -125,7 +125,7 @@ function buildComplianceFromDocuments(documents: DocumentRow[]): Record<string, 
 
 export function ClientTabs({
   clientId,
-  clientName: _clientName,
+  clientName,
   hoursBalance,
   contactName,
   contactEmail,
@@ -463,7 +463,7 @@ export function ClientTabs({
               </div>
               <AssignTemplateModal
                 preselectClientId={clientId}
-                clients={[]}
+                clients={[{ id: clientId, name: clientName }]}
                 templates={publishedTemplates}
                 triggerLabel="Assign template"
               />
