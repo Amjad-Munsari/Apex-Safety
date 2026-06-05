@@ -66,6 +66,7 @@ function StatusPill({ status }: { status: string }) {
 export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
   const dueDateText = formatDate(assignment.due_date);
   const overdue = isOverdue(assignment.due_date);
+  const overdueDays = daysOverdue(assignment.due_date);
 
   return (
     <article className="bg-white border border-[#e5e1d8] rounded-sm p-5 flex flex-col gap-4 hover:border-[#1a1a1a]/30 transition-colors cursor-pointer">
@@ -83,14 +84,25 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
         >
           DUE · {dueDateText}
         </span>
-        <StatusPill status={assignment.status} />
+        {/* When overdue, the OVERDUE pill + "was due" text carry the status —
+            suppress the redundant "Pending" pill, but keep a meaningful "In progress". */}
+        {(!(variant === "active" && overdue) || assignment.status === "in_progress") && (
+          <StatusPill status={assignment.status} />
+        )}
         {variant === "active" && (
           <OverduePill
-            daysOverdue={daysOverdue(assignment.due_date)}
+            daysOverdue={overdueDays}
             status={assignment.status}
           />
         )}
       </div>
+
+      {/* Overdue detail line (active tab only) */}
+      {variant === "active" && overdue && assignment.status !== "completed" && (
+        <p className="text-xs text-[#a14a2a]">
+          Was due {overdueDays} day{overdueDays === 1 ? "" : "s"} ago
+        </p>
+      )}
 
       {/* Row 3: Instructions clamp (active tab only) */}
       {variant === "active" && assignment.instructions && (

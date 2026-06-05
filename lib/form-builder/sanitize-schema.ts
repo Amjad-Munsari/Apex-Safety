@@ -25,6 +25,27 @@ export function sanitizeSchema(schema: FormBuilderSchema): FormBuilderSchema {
   for (const [id, entity] of Object.entries(entities)) {
     if (!KNOWN_ENTITY_TYPES.has(entity.type)) removed.add(id);
   }
+
+  // Cascade: a sectionGroup whose children ALL get removed collapses into an
+  // empty, purposeless container that still renders a stray heading + divider
+  // (e.g. the seeded FRA's signature-only section once signatureField is
+  // stripped). Drop such now-childless sections too. Loop until stable, since
+  // emptying one section can empty its parent. Sections authored with zero
+  // children are left untouched — only those emptied BY removal are dropped.
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const [id, entity] of Object.entries(entities)) {
+      if (removed.has(id) || entity.type !== "sectionGroup") continue;
+      const kids = Array.isArray(entity.children) ? entity.children : [];
+      if (kids.length === 0) continue; // intentionally empty — leave as authored
+      if (kids.every((childId) => removed.has(childId))) {
+        removed.add(id);
+        changed = true;
+      }
+    }
+  }
+
   if (removed.size === 0) return schema;
 
   const nextEntities: Record<string, RawEntity> = {};

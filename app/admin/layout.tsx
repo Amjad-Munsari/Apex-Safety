@@ -33,9 +33,9 @@ export default async function AdminLayout({
 
   return (
     <SidebarProvider>
-      <div data-surface="admin" className="flex h-screen overflow-hidden bg-background w-full text-foreground antialiased">
+      <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
         <AppSidebar stats={sidebarStats} />
-        <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        <div className="flex-1 flex flex-col h-full max-h-full min-h-0 overflow-hidden">
           {/* Top Bar */}
           <header className="h-[72px] min-h-[72px] flex items-center justify-between px-8 border-b border-white/5 shrink-0 bg-background/50">
             {/* Search */}
@@ -60,8 +60,10 @@ export default async function AdminLayout({
             </div>
           </header>
 
-          {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto px-8 pb-8">
+          {/* Main Content Area — explicit bg so the dark surface covers the full
+              scroll height (the root <body> is the light theme background; without
+              this, content scrolled past the first viewport reveals white). */}
+          <main className="flex-1 min-h-0 overflow-y-auto px-8 pb-8 bg-background">
             {children}
           </main>
         </div>

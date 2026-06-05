@@ -424,6 +424,10 @@
   text-align: left;
   cursor: pointer;
   font-family: var(--p-font-sans);
+  /* Allow the grid item to shrink below its intrinsic content width so a long,
+     nowrap email can't blow out the 1fr track (keeps both columns equal width
+     and lets .prop-client-card-contact truncate with an ellipsis). */
+  min-width: 0;
   transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 

@@ -7,7 +7,6 @@ import Link from "next/link"
 import { AssignTemplateModal } from "@/components/admin/assign-template-modal"
 import { RevokeAssignmentButton } from "@/app/admin/assignments/revoke-assignment-button"
 import { daysOverdue } from "@/lib/assignments/is-overdue"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 type RagStatus = "CURRENT" | "EXPIRING" | "EXPIRED"
 
@@ -486,35 +485,39 @@ export function ClientTabs({
                         {assignment.template?.name ?? "—"}
                       </div>
                       {/* Metadata row: due date + status pill + overdue indicator */}
-                      <div className="flex items-center gap-3 mt-1">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
-                          DUE · {formatDueDate(assignment.due_date)}
-                        </span>
-                        <span
-                          className={`inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] leading-none ${assignmentStatusClass(assignment.status)}`}
-                        >
-                          {assignmentStatusLabel(assignment.status)}
-                        </span>
-                        {(() => {
-                          const d = daysOverdue(assignment.due_date);
-                          if (d < 1 || assignment.status === "completed") return null;
-                          return (
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger
-                                  className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#a14a2a] bg-[#a14a2a]/10"
-                                  aria-label={`Overdue — was due ${d} day${d === 1 ? "" : "s"} ago`}
+                      {(() => {
+                        const d = daysOverdue(assignment.due_date);
+                        const overdue = d >= 1 && assignment.status !== "completed";
+                        // When overdue, the bold OVERDUE pill IS the status — suppress the
+                        // redundant "Pending" pill, but keep a meaningful "In progress".
+                        const showStatusPill = !overdue || assignment.status === "in_progress";
+                        return (
+                          <>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                                DUE · {formatDueDate(assignment.due_date)}
+                              </span>
+                              {showStatusPill && (
+                                <span
+                                  className={`inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] leading-none ${assignmentStatusClass(assignment.status)}`}
                                 >
+                                  {assignmentStatusLabel(assignment.status)}
+                                </span>
+                              )}
+                              {overdue && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#a14a2a] bg-[#a14a2a]/10">
                                   OVERDUE
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  Was due {d} day{d === 1 ? "" : "s"} ago
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          );
-                        })()}
-                      </div>
+                                </span>
+                              )}
+                            </div>
+                            {overdue && (
+                              <p className="text-xs text-[#a14a2a] mt-1">
+                                Was due {d} day{d === 1 ? "" : "s"} ago
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                       {/* Instructions (if present) */}
                       {assignment.instructions && (
                         <p className="text-sm text-white/60 line-clamp-2 mt-1">

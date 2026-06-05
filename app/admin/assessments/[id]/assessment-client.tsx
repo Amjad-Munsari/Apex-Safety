@@ -155,7 +155,7 @@ export function AssessmentClient({ submission, schema, templateName, clientId }:
 
   return (
     <div
-      className="min-h-full px-8 pb-24"
+      className="px-8 pb-10"
       style={{ background: "var(--p-bg)", color: "var(--p-text)" }}
     >
       <AssessmentFormHeader

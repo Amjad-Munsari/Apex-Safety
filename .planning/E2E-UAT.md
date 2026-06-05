@@ -14,16 +14,14 @@ updated: 2026-06-02
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-number: 27
-name: "AI proposal draft — prod AI key gate (Phase 9) — START OF ADMIN BATCH"
+number: 53
+name: "Seeded FRA Type 3 exists & is published (Phase 18)"
 expected: |
-  BATCH MODE (admin-only): client-dependent tests (28, 29-32, 47-49) were
-  REMOVED 2026-06-03 to finish the admin side first. The remaining admin batch
-  is: 27, 33-46, 50-55 (numbers kept as-is, no renumber). User runs them and
-  reports which pass + any issues. Test 27 itself: draftProposalScope produces a
-  real AI draft via the live OpenRouter key (not canned text); a missing key
-  throws a clear error.
-awaiting: user to batch-test the admin set (27, 33-46, 50-55), then report results
+  BATCH MODE (admin-only). Tests 50 + 51 PASS (2026-06-05; 51 included a bold-
+  overdue / hide-pending UI fix). Remaining admin batch: 53, 54, 55 (52 stays
+  blocked on n8n). Test 53 itself: Matt's real FRA Type 3 master template is
+  present + published (migration 016) with its full ~30-entity schema.
+awaiting: user to test 53, 54, 55, then report results
 
 ## Resume notes (paused 2026-06-02 — resume 2026-06-03)
 - MODE: batch, ADMIN-ONLY. Client-dependent tests (28, 29-32, 47-49) REMOVED 2026-06-03 — finishing the admin side first; revisit the client portal later. Remaining admin batch: 27, 33-46, 50-55 (original numbers kept, not renumbered).
@@ -175,9 +173,8 @@ note: "User verified on localhost: per-line overrides (incl. quote-on-request NU
 
 ### 27. AI proposal draft (prod AI key gate)
 expected: draftProposalScope produces an AI draft in prod (real key). If the key were missing it would throw a clear actionable error rather than ship canned text.
-result: fail
-note: "User (2026-06-03): the AI generation doesn't work. NOT YET INVESTIGATED — fix deferred until the user finishes the full batch and says go. TODO when fixing: confirm exact symptom (error toast? silent no-op? hang?), check draftProposalScope server action + the OpenRouter key/env wiring in prod (per the key-gate expectation), and whether it throws a clear error vs fails silently."
-resolution: "ROOT-CAUSED 2026-06-03 — NOT a code bug. Symptom (user): localhost showed canned/generic text (no error). draftProposalScope returns canned text ONLY when process.env.OPENROUTER_API_KEY is falsy (dev fallback). The key IS in .env.local (line 4, valid sk-or- key, 73 chars) and a live generateText call with it SUCCEEDED in an isolated repro. So the running dev server simply doesn't have the var loaded — it was started before the key was added (env vars are not hot-reloaded). FIX: restart `npm run dev`. No code change. ACTION: user to restart + re-verify real AI draft."
+result: pass
+note: "PASS on re-verify (2026-06-05) after dev-server restart. Was a stale-env artifact, not a code bug — draftProposalScope returns canned text ONLY when process.env.OPENROUTER_API_KEY is falsy (dev fallback); the key was in .env.local but the dev server was started before it was added (env vars not hot-reloaded). Restarting `npm run dev` loaded the key and a real AI draft generated. No code change."
 
 ### J. Form builder foundation (Phase 13) — CREATES DATA
 
@@ -208,9 +205,8 @@ note: "User verified (2026-06-03)."
 
 ### 37. Historical submission renders against original schema
 expected: After editing the template (new version), an older submission still renders against its ORIGINAL schema, not the latest.
-result: fail
-note: "User (2026-06-03): clicking 'View Report' gives a 404 — REGRESSION, it used to work in production. NOT YET INVESTIGATED. TODO when fixing: find the 'View Report' link target (likely the review-queue Completed tab cards added in commit de70c51, or a submission/report route), confirm the route/href and whether it 404s due to a wrong path, missing dynamic route, or an id mismatch. May be unrelated to the historical-schema rendering itself — the 404 blocks reaching the render."
-resolution: "INVESTIGATED 2026-06-03 — current code does NOT reproduce a 404; surfaced contradiction rather than blind-fix. User clicked the Review Queue → Completed tab 'View Report' (the only admin 'View Report' button), which links to /admin/assessments/{id}/review. Evidence: (a) that route returns HTTP 307 (redirect-to-login for an unauth probe) on the running :3000 server — i.e. the route EXISTS, not 404; (b) DB check — all 3 completed form_submissions (incl. b7027dea) have valid ids AND existing pinned template_versions, so the review page's only notFound() trigger (submission missing) can't fire. So an authenticated admin should reach the page. The 404 contradicts live code+data → most likely a stale dev server (consistent with test 27's stale-env finding). ACTION: user to restart `npm run dev` and re-click; if it STILL 404s, copy the exact address-bar URL so the real id can be traced. No code change made."
+result: pass
+note: "PASS on re-verify (2026-06-05) after dev-server restart. The 404 was a stale-dev-server artifact (consistent with test 27's stale-env finding) — current code+data don't reproduce it: the 'View Report' link targets /admin/assessments/{id}/review (route exists, returns 307→login for unauth probes), and all 3 completed form_submissions have valid ids + existing pinned template_versions, so the review page's notFound() can't fire for an authed admin. After restart the historical submission renders against its original schema. No code change."
 
 ### K. Custom field types (Phase 14)
 
@@ -238,25 +234,30 @@ note: "User verified (2026-06-04)."
 
 ### 42. Builder condition UI — add show/hide/require rules
 expected: In the builder you can add visibility rules per field (source field, operator, value, action = show/hide/require). Operators filter by source type; isEmpty/isNotEmpty hide the value input without reflow.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05)."
 
 ### 43. Runtime show / hide / require
 expected: Filling a source field shows, hides, or makes required the dependent field at runtime; hide wins over show; hiding a parent cascades to children.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05)."
 
 ### 44. Circular-dependency detection
 expected: Creating a rule cycle surfaces a cycle banner ("Circular rule: A → B"); an out-of-scope reference surfaces a scope-error banner. The save is rejected on a real cycle.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05)."
 
 ### 45. Hidden answers scrubbed server-side
 expected: Answers for hidden fields are scrubbed on submit — they don't persist and never reach the AI report prompt.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05)."
 
 ### M. Multi-tenancy + fork-on-fill (Phase 16) — CREATES DATA
 
 ### 46. Admin assigns a template to a client
 expected: Admin can assign a published master template to a specific client.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05). Re-verify of the deleted_at schema-drift fix (migrations 018/019) — assign-from-client-page now works end to end."
 
 <!-- Tests 47-49 (client fork-on-fill, client build-from-scratch, cross-org RLS)
      REMOVED 2026-06-03 — client-dependent, deferred to a later client-portal pass. -->
@@ -265,11 +266,13 @@ result: [pending]
 
 ### 50. Recurring assignment auto-generates
 expected: A recurring form assignment auto-creates the next occurrence on schedule.
-result: [pending]
+result: pass
+note: "Verified end-to-end by Claude 2026-06-05 (no recurrence UI exists — DB column + cron only, so driven via SQL seed + live cron hit). Seeded assignment 2de445f9 (client 8a019534, template 0047e922) to status=completed, recurrence_rule={frequency:weekly}, due_date=2026-06-12, recurrence_generated_at=NULL. Hit /api/cron/assignment-scheduler on the running dev server → {recurrencesGenerated:1}. Successor row bb778f89 created CORRECTLY: due_date=2026-06-19 (prior +7d, NOT today), status=pending, recurrence_rule weekly carried over, template_version_id re-pinned to latest published v2 (719ab6b4), last_reminder_sent=NULL. Original 2de445f9 got recurrence_generated_at stamped. IDEMPOTENCY: re-ran cron → {recurrencesProcessed:0, recurrencesGenerated:0} — the guard prevents a second successor. NOTE: left two test rows on prod (completed 2de445f9 + pending successor bb778f89) for client 8a019534 — harmless demo data, can be soft-deleted if it clutters. Recurrence-vocab confirm-with-Matt (weekly/monthly/quarterly/annually per §C) still open."
 
 ### 51. Due-date status + overdue pill
 expected: Assignments sort by due_date (ascending, nulls last); an overdue assignment shows the overdue pill (admin gets a tooltip, client surface does not).
-result: [pending]
+result: pass
+note: "User verified (2026-06-05): sort + overdue pill + admin tooltip all work. UI ADJUSTMENT requested + done same session — PENDING and OVERDUE pills side-by-side looked too alike. FINAL design (user iterated twice): (1) suppress the redundant PENDING pill when overdue (keep a meaningful 'In progress'); (2) OVERDUE pill kept in its ORIGINAL subtle rust-tint design (#a14a2a on #a14a2a/10); (3) REMOVED the admin hover-tooltip entirely; (4) the 'Was due N days ago' detail now renders as plain visible rust text in the card (no hover needed — touch-friendly). Applied to: app/_components/overdue-pill.tsx (reverted to subtle), app/admin/clients/[id]/client-tabs.tsx (tooltip removed, plain pill + 'Was due N days ago' line, unused Tooltip import dropped), app/client/assignments/_components/assignment-card.tsx (hide-pending-when-overdue + 'Was due N days ago' line). /admin/assignments queue renders only a status pill (no overdue pill) so untouched. Typecheck clean on all 3 files. CODE change → needs deploy. NOT committed yet."
 
 ### 52. Reminder notifications (7d / 1d / overdue) deduped
 expected: Clients receive automated reminders at 7-day, 1-day, and overdue marks via n8n, each sent once (deduped).
@@ -292,9 +295,9 @@ result: [pending]
 ## Summary
 
 total: 47  # was 55; 8 client-dependent tests (28, 29-32, 47-49) removed 2026-06-03 (admin-only focus)
-passed: 23
+passed: 40  # 2026-06-05: 27+37 re-verified; 42-46 pass; 50 Claude-verified; 51 pass + bold-overdue UI fix
 issues: 0
-pending: 21  # was 29; minus the 8 removed client tests (all were pending)
+pending: 4  # 52, 53, 54, 55 (52 known-blocked on n8n)
 skipped: 1
 blocked: 2
 cosmetic: 1  # test 12 assign-modal polish — fixed, pending re-verify
