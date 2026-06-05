@@ -45,7 +45,7 @@ export default async function ServicesPage() {
         </div>
 
         <ServiceDialog>
-          <Button className="bg-gold text-foreground hover:bg-gold/90 rounded-md px-4 font-medium text-sm h-9 tracking-wide flex gap-2">
+          <Button className="bg-gold text-black hover:bg-gold/90 rounded-md px-4 font-medium text-sm h-9 tracking-wide flex gap-2">
             <Plus className="w-4 h-4" /> Add Service
           </Button>
         </ServiceDialog>
@@ -114,10 +114,10 @@ function CategoryGroup({
       <tr className="bg-foreground/[0.02]">
         <td
           colSpan={4}
-          className="px-6 py-2.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground border-b border-foreground/5"
+          className="px-6 py-3.5 font-mono uppercase tracking-widest text-muted-foreground border-b border-foreground/5"
         >
-          <span className="text-foreground/80">{title}</span>
-          <span className="ml-3 text-muted-foreground">{services.length} services</span>
+          <span className="text-sm font-semibold text-[#3b8273]">{title}</span>
+          <span className="ml-3 text-[10px] text-muted-foreground">{services.length} services</span>
         </td>
       </tr>
       {services.map(service => (

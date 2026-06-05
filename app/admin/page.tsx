@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ComplianceChart } from "./compliance-chart";
+import { describeWorkflowError } from "@/lib/workflow-errors";
 import {
   getDashboardStats,
   getReportsAwaitingReview,
@@ -54,18 +55,18 @@ export default async function AdminDashboardPage() {
     <div className="flex flex-col gap-10 pt-8 pb-20">
 
       {/* ─── GREETING & STATS HEADER ─── */}
-      <div className="flex justify-between items-end animate-in-fade [animation-delay:0.1s]">
-        <div className="flex flex-col gap-2">
+      <div className="flex justify-between items-end gap-8 min-w-0 animate-in-fade [animation-delay:0.1s]">
+        <div className="flex flex-col gap-2 min-w-0">
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
             <span className="text-[#3b8273] font-semibold">01</span>
             SINGLE PANE OF GLASS
           </div>
-          <h2 className="font-serif text-[32px] md:text-[34px] leading-tight text-[#aaa] whitespace-nowrap">
+          <h2 className="font-serif text-[26px] md:text-[30px] leading-tight text-[#aaa]">
             <span className="text-white">Welcome back, Matt.</span> {stats.totalItemsNeeded} {stats.totalItemsNeeded === 1 ? 'item needs' : 'items need'} you today.
           </h2>
         </div>
 
-        <div className="flex gap-12 text-right">
+        <div className="flex gap-6 lg:gap-8 text-right shrink-0">
           <div className="flex flex-col items-end gap-1">
             <div className="font-mono text-[10px] tracking-widest uppercase text-[#555]">Drafts to review</div>
             <div className="font-serif text-3xl text-gold">{stats.reviewCount}</div>
@@ -389,16 +390,23 @@ export default async function AdminDashboardPage() {
             <Link href="/admin/errors" className="font-mono text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white inline-flex items-center gap-1 px-3 py-1 border border-white/15 rounded-[2px] hover:bg-white/5 transition-colors">View Log &rarr;</Link>
           </div>
 
-          <div className="flex flex-col text-xs font-mono divide-y divide-white/5">
-            {recentErrors.map((error) => (
-              <div key={error.id} className="flex items-start md:items-center gap-4 py-4 first:pt-0 last:pb-0">
-                <span className="w-24 shrink-0 text-[#666]">
-                  {Math.floor((Date.now() - new Date(error.created_at).getTime()) / (1000 * 60 * 60))} h ago
-                </span>
-                <div className="w-24 shrink-0 px-2 py-0.5 border border-danger/20 rounded-[2px] text-danger text-[10px] text-center font-bold">ERR</div>
-                <span className="flex-1 truncate text-white/90 italic">“{error.workflow_name}” <span className="text-white/40 not-italic ml-2">— {error.error_message}</span></span>
-              </div>
-            ))}
+          <div className="flex flex-col text-xs divide-y divide-white/5">
+            {recentErrors.map((error) => {
+              const friendly = describeWorkflowError(error.workflow_name);
+              const who = error.details.find((d) => d.label === "Client")?.value;
+              return (
+                <div key={error.id} className="flex items-start md:items-center gap-4 py-4 first:pt-0 last:pb-0">
+                  <span className="w-24 shrink-0 text-[#666] font-mono">
+                    {Math.floor((Date.now() - new Date(error.created_at).getTime()) / (1000 * 60 * 60))} h ago
+                  </span>
+                  <div className="w-12 shrink-0 px-2 py-0.5 border border-danger/20 rounded-[2px] text-danger text-[10px] text-center font-bold font-mono">ERR</div>
+                  <span className="flex-1 truncate text-white/90 font-sans">
+                    {friendly.title}
+                    {who && <span className="text-white/40 ml-2">— {who}</span>}
+                  </span>
+                </div>
+              );
+            })}
             {recentErrors.length === 0 && (
               <div className="py-8 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
                 No active workflow errors

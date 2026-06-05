@@ -142,41 +142,210 @@ export async function getComplianceAggregates() {
   const now = new Date().toISOString()
   const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  // Run counts in parallel
-  const [expiredRes, expiringRes, totalRes] = await Promise.all([
+  // Run counts in parallel. Each bucket is counted directly so documents with a
+  // NULL expiry_date land in their own `undated` bucket instead of being folded
+  // into `current` (which is what `total - expired - expiring` used to do).
+  const [expiredRes, expiringRes, currentRes, totalRes] = await Promise.all([
     adminClient.from("documents").select("*", { count: "exact", head: true }).lt("expiry_date", now),
     adminClient.from("documents").select("*", { count: "exact", head: true }).gte("expiry_date", now).lt("expiry_date", thirtyDaysFromNow),
+    adminClient.from("documents").select("*", { count: "exact", head: true }).gte("expiry_date", thirtyDaysFromNow),
     adminClient.from("documents").select("*", { count: "exact", head: true })
   ])
 
   const expired = expiredRes.count || 0
   const expiring = expiringRes.count || 0
+  const current = currentRes.count || 0
   const total = totalRes.count || 0
-  const current = total - expired - expiring
+  const undated = total - expired - expiring - current
 
-  if (expiredRes.error || expiringRes.error || totalRes.error) {
-    console.error("getComplianceAggregates error:", { 
-      expired: expiredRes.error?.message, 
-      expiring: expiringRes.error?.message, 
-      total: totalRes.error?.message 
+  if (expiredRes.error || expiringRes.error || currentRes.error || totalRes.error) {
+    console.error("getComplianceAggregates error:", {
+      expired: expiredRes.error?.message,
+      expiring: expiringRes.error?.message,
+      current: currentRes.error?.message,
+      total: totalRes.error?.message
     })
   }
 
-  return { current, expiring, expired, total }
+  return { current, expiring, expired, undated, total }
 }
 
-export async function getWorkflowErrors() {
+export type WorkflowErrorDetail = { label: string; value: string }
+
+export type WorkflowErrorWithDetails = {
+  id: string
+  workflow_name: string
+  error_message: string | null
+  created_at: string
+  details: WorkflowErrorDetail[]
+  /** payload.severity, when present (e.g. "high"). */
+  severity: string | null
+  /** Resolved submission id for deep-linking to the assessment review, if any. */
+  submissionId: string | null
+}
+
+type RawWorkflowErrorRow = {
+  id: string
+  workflow_name: string
+  error_message: string | null
+  created_at: string
+  payload: unknown
+}
+
+function cadenceLabel(cadence: unknown): string | null {
+  switch (cadence) {
+    case "7d": return "7 days before due"
+    case "1d": return "1 day before due"
+    case "overdue": return "Overdue"
+    default: return cadence ? String(cadence) : null
+  }
+}
+
+function formatDay(value: unknown): string | null {
+  if (!value) return null
+  const d = new Date(String(value))
+  if (isNaN(d.getTime())) return String(value)
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+}
+
+// PostgREST embeds can come back as an object or a single-element array.
+function embedName(rel: unknown): string | undefined {
+  const r = Array.isArray(rel) ? rel[0] : rel
+  return (r as { name?: string } | null | undefined)?.name
+}
+
+/**
+ * Enriches raw workflow_errors rows with human-readable identifying details
+ * (client name, document/form name, dates) so they can be acted on without
+ * cross-referencing IDs. Some workflows store names directly in the payload;
+ * others only store IDs, which are resolved here against the DB.
+ */
+async function enrichWorkflowErrors(rows: RawWorkflowErrorRow[]): Promise<WorkflowErrorWithDetails[]> {
+  // Collect IDs that need resolving to names.
+  const submissionIds = new Set<string>()
+  const assignmentIds = new Set<string>()
+  const clientIds = new Set<string>()
+  for (const r of rows) {
+    const p = (r.payload ?? {}) as Record<string, unknown>
+    const sub = p.submission_id ?? p.submissionId
+    if (sub) submissionIds.add(String(sub))
+    if (p.assignment_id) assignmentIds.add(String(p.assignment_id))
+    if (p.client_id) clientIds.add(String(p.client_id))
+  }
+
+  const [subsRes, assignsRes, clientsRes] = await Promise.all([
+    submissionIds.size
+      ? adminClient.from("form_submissions").select("id, client:clients(name)").in("id", [...submissionIds])
+      : Promise.resolve({ data: [] as { id: string; client: unknown }[] }),
+    assignmentIds.size
+      ? adminClient.from("form_assignments").select("id, client:clients(name), template:form_templates(name)").in("id", [...assignmentIds])
+      : Promise.resolve({ data: [] as { id: string; client: unknown; template: unknown }[] }),
+    clientIds.size
+      ? adminClient.from("clients").select("id, name").in("id", [...clientIds])
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+  ])
+
+  const subClient = new Map<string, string | undefined>()
+  for (const s of (subsRes.data ?? []) as { id: string; client: unknown }[]) {
+    subClient.set(s.id, embedName(s.client))
+  }
+  const assignInfo = new Map<string, { client?: string; form?: string }>()
+  for (const a of (assignsRes.data ?? []) as { id: string; client: unknown; template: unknown }[]) {
+    assignInfo.set(a.id, { client: embedName(a.client), form: embedName(a.template) })
+  }
+  const clientName = new Map<string, string>()
+  for (const c of (clientsRes.data ?? []) as { id: string; name: string }[]) {
+    clientName.set(c.id, c.name)
+  }
+
+  return rows.map((r) => {
+    const p = (r.payload ?? {}) as Record<string, unknown>
+    const details: WorkflowErrorDetail[] = []
+    const push = (label: string, value: unknown) => {
+      if (value) details.push({ label, value: String(value) })
+    }
+
+    switch (r.workflow_name) {
+      case "report_delivery_email":
+        push("Client", p.client_name)
+        push("Assessment date", p.assessment_date)
+        break
+      case "expiry_alert":
+      case "expiry_alert_manual":
+        push("Client", p.client_name)
+        push("Document", p.document_name)
+        push("Expiry date", formatDay(p.expiry_date))
+        break
+      case "document_uploaded":
+        push("Client", p.client_id ? clientName.get(String(p.client_id)) : undefined)
+        push("Document", p.document_name)
+        break
+      case "ai_report_draft":
+      case "assessment-submission-webhook": {
+        const id = p.submission_id ?? p.submissionId
+        push("Client", id ? subClient.get(String(id)) : undefined)
+        break
+      }
+      case "assignment_reminder": {
+        const info = p.assignment_id ? assignInfo.get(String(p.assignment_id)) : undefined
+        push("Client", info?.client)
+        push("Form", info?.form)
+        push("Reminder", cadenceLabel(p.cadence))
+        break
+      }
+    }
+
+    const subId = p.submission_id ?? p.submissionId
+
+    return {
+      id: r.id,
+      workflow_name: r.workflow_name,
+      error_message: r.error_message,
+      created_at: r.created_at,
+      details,
+      severity: p.severity ? String(p.severity) : null,
+      submissionId: subId ? String(subId) : null,
+    }
+  })
+}
+
+/**
+ * Recent workflow errors for the dashboard / errors log, newest first.
+ */
+export async function getWorkflowErrors(limit: number = 5): Promise<WorkflowErrorWithDetails[]> {
   const { data, error } = await adminClient
     .from("workflow_errors")
-    .select("*")
+    .select("id, workflow_name, error_message, payload, created_at")
     .order("created_at", { ascending: false })
-    .limit(5)
+    .limit(limit)
 
   if (error) {
     console.error(`getWorkflowErrors failure: ${error.message} (Code: ${error.code})`)
     return []
   }
-  return data || []
+  return enrichWorkflowErrors((data ?? []) as RawWorkflowErrorRow[])
+}
+
+/**
+ * Workflow errors since a given ISO timestamp (e.g. start of month), newest
+ * first. Same enrichment as getWorkflowErrors.
+ */
+export async function getWorkflowErrorsSince(
+  sinceIso: string,
+  limit: number = 25,
+): Promise<WorkflowErrorWithDetails[]> {
+  const { data, error } = await adminClient
+    .from("workflow_errors")
+    .select("id, workflow_name, error_message, payload, created_at")
+    .gte("created_at", sinceIso)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error(`getWorkflowErrorsSince failure: ${error.message} (Code: ${error.code})`)
+    return []
+  }
+  return enrichWorkflowErrors((data ?? []) as RawWorkflowErrorRow[])
 }
 
 const VAT_RATE = 0.2

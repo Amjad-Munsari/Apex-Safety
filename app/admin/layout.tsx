@@ -63,7 +63,7 @@ export default async function AdminLayout({
           {/* Main Content Area — explicit bg so the dark surface covers the full
               scroll height (the root <body> is the light theme background; without
               this, content scrolled past the first viewport reveals white). */}
-          <main className="flex-1 min-h-0 overflow-y-auto px-8 pb-8 bg-background">
+          <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-8 pb-8 bg-background">
             {children}
           </main>
         </div>

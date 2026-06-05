@@ -111,7 +111,7 @@ export default async function CompliancePage({
       </div>
 
       {/* ─── TABS ─── */}
-      <div className="flex items-center gap-6 border-b border-white/5">
+      <div className="flex items-center gap-10 border-b border-white/5">
         {TABS.map((tab) => {
           const isActive = active === tab.key;
           const href = tab.key === "all" ? "/admin/compliance" : `/admin/compliance?status=${tab.key}`;
@@ -136,9 +136,9 @@ export default async function CompliancePage({
       {/* ─── TABLES (filtered by tab) ─── */}
       {active === "all" && (
         <>
-          {expired.length > 0 && <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />}
-          {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />}
           {current.length > 0 && <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />}
+          {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />}
+          {expired.length > 0 && <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />}
           {undated.length > 0 && <DocTable title="No Expiry Date" color="white/40" docs={undated} now={now} />}
         </>
       )}

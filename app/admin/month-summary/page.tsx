@@ -1,4 +1,5 @@
 import { adminClient } from "@/lib/supabase/admin";
+import { getWorkflowErrorsSince } from "@/lib/supabase/dashboard";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -11,7 +12,7 @@ export default async function MonthSummaryPage() {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const monthName = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
-  const [assessmentsRes, documentsRes, proposalsRes, errorsRes, errorRowsRes] = await Promise.all([
+  const [assessmentsRes, documentsRes, proposalsRes, errorsRes, recentErrors] = await Promise.all([
     adminClient
       .from("form_submissions")
       .select("*", { count: "exact", head: true })
@@ -28,44 +29,10 @@ export default async function MonthSummaryPage() {
       .from("workflow_errors")
       .select("*", { count: "exact", head: true })
       .gte("created_at", startOfMonth),
-    adminClient
-      .from("workflow_errors")
-      // submission_id and severity nest under payload JSONB, NOT top-level columns
-      // (see 001_initial_schema.sql:188-196). Earlier shipped query selected them
-      // as columns; PostgREST silently returned null, breaking the deep-link
-      // and Severity column. Per PATTERNS.md correction #1.
-      .select("id, workflow_name, error_message, payload, created_at")
-      .gte("created_at", startOfMonth)
-      .order("created_at", { ascending: false })
-      .limit(25),
+    // Same enrichment (friendly title/message + resolved client/form names) as
+    // the dashboard and /admin/errors surfaces.
+    getWorkflowErrorsSince(startOfMonth, 25),
   ]);
-  // Insert-site `payload` shapes vary across surfaces (camelCase `submissionId`
-  // from assessment-submission-webhook, snake_case `submission_id` from Phase 7
-  // ai_report_draft / report_delivery_email). Tolerate both.
-  type ErrorPayload = {
-    submission_id?: string
-    submissionId?: string
-    severity?: string
-    client_name?: string
-    assessment_date?: string
-    type?: string
-    report_storage_path?: string
-  }
-  const recentErrors = (errorRowsRes.data ?? []).map((e) => {
-    const payload = (e.payload ?? {}) as ErrorPayload
-    return {
-      id: e.id,
-      workflow_name: e.workflow_name,
-      error_message: e.error_message,
-      created_at: e.created_at,
-      submission_id: payload.submission_id ?? payload.submissionId ?? null,
-      severity: payload.severity ?? null,
-      client_name: payload.client_name ?? null,
-      assessment_date: payload.assessment_date ?? null,
-      type: payload.type ?? null,
-      report_storage_path: payload.report_storage_path ?? null,
-    }
-  });
 
   // Recent assessments this month
   type RecentAssessmentRow = {
@@ -195,24 +162,42 @@ export default async function MonthSummaryPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {recentAssessments.map((a) => (
-                <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
+              {recentAssessments.map((a) => {
+                // Editable drafts open the fill page; everything else opens the
+                // read-only review surface. The fill page autosaves on mount
+                // (interpreter cascade-clear) and only matches status='draft',
+                // so sending a submitted/completed assessment there throws.
+                const editable = a.status === "draft" || a.status === "in_progress";
+                const href = editable
+                  ? `/admin/assessments/${a.id}`
+                  : `/admin/assessments/${a.id}/review`;
+                return (
+                <tr key={a.id} className="group relative hover:bg-white/[0.02] transition-colors cursor-pointer">
                   <td className="px-6 py-4 text-white font-medium">
-                    {a.client?.name || "—"}
+                    <Link
+                      href={href}
+                      className="absolute inset-0 z-0"
+                      aria-label={`Open ${a.client?.name || "assessment"}`}
+                    />
+                    <span className="relative z-10 pointer-events-none">{a.client?.name || "—"}</span>
                   </td>
                   <td className="px-4 py-4 text-white/60 text-xs">
-                    {a.template?.form_templates?.name || "—"}
+                    <span className="relative z-10 pointer-events-none">{a.template?.form_templates?.name || "—"}</span>
                   </td>
                   <td className="px-4 py-4 text-white/50 font-mono text-xs">
-                    {new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    <span className="relative z-10 pointer-events-none">
+                      {new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                    </span>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`font-mono text-[10px] uppercase tracking-widest ${statusColor[a.status] || "text-white/40"}`}>
+                    <span className={`relative z-10 pointer-events-none inline-flex items-center justify-between gap-3 w-full font-mono text-[10px] uppercase tracking-widest ${statusColor[a.status] || "text-white/40"}`}>
                       {statusLabel[a.status] || a.status}
+                      <span className="text-white/20">&rarr;</span>
                     </span>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         ) : (

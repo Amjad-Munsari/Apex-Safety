@@ -31,7 +31,6 @@ const mainNav: NavItem[] = [
   { label: "Dashboard",       href: "/admin",            statsKey: "reports",   exact: true },
   { label: "Clients",         href: "/admin/clients",    statsKey: "clients" },
   { label: "Compliance",      href: "/admin/compliance", statsKey: "expiries" },
-  { label: "Expiries",        href: "/admin/expiries",   statsKey: "expiries" },
   { label: "Proposals",       href: "/admin/proposals",  statsKey: "proposals" },
   { label: "Workflow Errors", href: "/admin/errors",     statsKey: "errors" },
 ];
