@@ -14,14 +14,17 @@ updated: 2026-06-02
 ## Current Test
 <!-- OVERWRITE each test - shows where we are -->
 
-number: 53
-name: "Seeded FRA Type 3 exists & is published (Phase 18)"
+number: DONE
+name: "Admin batch complete"
 expected: |
-  BATCH MODE (admin-only). Tests 50 + 51 PASS (2026-06-05; 51 included a bold-
-  overdue / hide-pending UI fix). Remaining admin batch: 53, 54, 55 (52 stays
-  blocked on n8n). Test 53 itself: Matt's real FRA Type 3 master template is
-  present + published (migration 016) with its full ~30-entity schema.
-awaiting: user to test 53, 54, 55, then report results
+  ADMIN BATCH COMPLETE (2026-06-05). All admin-side tests pass except the
+  n8n-blocked items. Tests 53, 54, 55 PASS (real FRA end-to-end: fill →
+  submit → AI draft in review queue). Deferred test 20 (draft quality) also
+  PASS, judged against the real FRA draft. Only outstanding: tests 9, 22, 52
+  (all blocked on n8n demo/subscription) + the webhook half of 55. The 8
+  client-dependent tests (28, 29-32, 47-49) remain removed for a later
+  client-portal pass.
+awaiting: n8n reactivation to close 9/22/52, OR a client-portal pass for the removed tests
 
 ## Resume notes (paused 2026-06-02 — resume 2026-06-03)
 - MODE: batch, ADMIN-ONLY. Client-dependent tests (28, 29-32, 47-49) REMOVED 2026-06-03 — finishing the admin side first; revisit the client portal later. Remaining admin batch: 27, 33-46, 50-55 (original numbers kept, not renumbered).
@@ -135,8 +138,8 @@ result: pass
 
 ### 20. [VERIFY-2] Draft quality (Matt's judgment)
 expected: Draft tone matches your authoring style; no invented hazards; severities calibrated against the YELLOW BROOM reference.
-result: skipped
-reason: "Current draft is from the Phase 15 smoke-test template, not a realistic FRA. Deferred — re-judge with a real FRA draft (tests 53-55, FRA seed template)."
+result: pass
+note: "PASS on re-judge (2026-06-05) — judged against the real FRA draft produced in test 55 (was skipped earlier for lack of a realistic FRA). User accepted the draft quality: tone/severities acceptable, no invented hazards flagged."
 
 ### 21. Approve → branded PDF in reports bucket
 expected: Approving produces a branded PDF stored in the `reports` bucket; status advances to completed.
@@ -282,24 +285,27 @@ result: [pending]
 
 ### 53. Seeded Blank FRA (Type 3) exists & is published
 expected: Matt's real FRA Type 3 template is present as a published template (from migration 016), with its full 30-entity schema.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05). FRA Type 3 present + published on /admin/templates; full ~30-entity schema loads in the builder (5 sections + conditional sub-sections, PAS 79 computed field, Action Plan repeating section, geolocation + photo fields). Confirmed live via the fill-page DOM during the white-strip debugging too."
 
 ### 54. Fill the real FRA end-to-end
 expected: Open the seeded FRA, work through conditional sections, the PAS 79 risk matrix, the Action Plan repeating section, signature, geolocation, and photo fields — fill and submit successfully.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05). Worked through conditional sub-sections (policy remediation / obstruction details / detection upgrade plan show on the right driver answers), PAS 79 likelihood×consequence risk band, Action Plan repeating section (add/remove instances), geolocation + photo fields; submit succeeded (status → submitted). Signature half N/A — signatureField removed 2026-06-04 (its orphan section also cleaned by the sanitizer cascade this session). NOTE: surfaced + fixed a major layout bug during this test — a white strip / phantom document scroll on the fill page (and all admin pages); root cause was a flex min-height:auto scroll leak parking the document mid-scroll; fixed by pinning the admin shell to the viewport (position:fixed inset-0) + min-h-0 containment + html/body overflow lock. Committed 774df5d."
 
 ### 55. Real FRA submit triggers the report webhook + AI pipeline
 expected: Submitting the seeded FRA fires the n8n report webhook AND runs the AI draft pipeline (the modern submit path), landing a draft in the review queue.
-result: [pending]
+result: pass
+note: "User verified (2026-06-05). AI-draft half PASS — submitting the real FRA ran the AI pipeline (live OpenRouter) and the draft landed in /admin/review-queue (Awaiting Review → Begin Review). n8n report-webhook half remains blocked (demo/subscription, same gate as tests 9/22) — not exercised. Draft-quality (deferred test 20) judged here too: user accepted the draft — see test 20."
 
 ## Summary
 
 total: 47  # was 55; 8 client-dependent tests (28, 29-32, 47-49) removed 2026-06-03 (admin-only focus)
-passed: 40  # 2026-06-05: 27+37 re-verified; 42-46 pass; 50 Claude-verified; 51 pass + bold-overdue UI fix
+passed: 44  # 2026-06-05: admin batch complete — 53/54/55 + deferred 20 now pass
 issues: 0
-pending: 4  # 52, 53, 54, 55 (52 known-blocked on n8n)
-skipped: 1
-blocked: 2
+pending: 0  # admin batch fully resolved (remaining gaps are n8n-blocked, see below)
+skipped: 0  # was 1 (test 20) — re-judged + passed against the real FRA draft
+blocked: 3  # 9, 22, 52 — all n8n demo/subscription; re-run on reactivation
 cosmetic: 1  # test 12 assign-modal polish — fixed, pending re-verify
 removed: 8  # 28, 29, 30, 31, 32, 47, 48, 49 — client-dependent, deferred to a later client-portal pass
 
