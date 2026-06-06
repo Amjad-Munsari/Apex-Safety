@@ -54,7 +54,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
   const pathname = usePathname();
 
   const isItemActive = (item: NavItem) =>
-    item.exact ? pathname === item.href : pathname.startsWith(item.href);
+    item.exact ? pathname === item.href : (pathname ?? "").startsWith(item.href);
 
   return (
     <Sidebar className="border-none bg-black">

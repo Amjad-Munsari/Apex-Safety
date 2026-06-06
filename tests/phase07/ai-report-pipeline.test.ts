@@ -191,6 +191,8 @@ vi.mock("@/lib/pdf/generator", () => ({
 
 vi.mock("@/lib/auth-helpers", () => ({
   requireActorUserId: vi.fn(async () => "admin-1"),
+  requireAdmin: vi.fn(async () => "admin-1"),
+  isAdmin: vi.fn(async () => true),
 }))
 
 // ── Form-builder helpers imported at the top of actions.ts ───────────────────
