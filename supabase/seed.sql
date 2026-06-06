@@ -129,10 +129,27 @@ SET name        = EXCLUDED.name,
 -- and Matt builds the first real proposal himself.
 
 -- ─────────────────────────────────────────────────────────────
--- CLIENT USERS (Optional: for testing portal login)
+-- ADMIN USERS (for admin portal login)
+-- ─────────────────────────────────────────────────────────────
+-- Note: auth.users must be created via the dashboard or Supabase Auth API.
+-- These records link existing auth users to the admin surface.
+-- The admin's app_metadata must also carry {"role": "admin"} (set in the
+-- Supabase dashboard) for the admin RLS policies to apply.
+-- Auth account: admin@test.com
+
+INSERT INTO admin_users (id, name, email)
+VALUES
+  ('3497bbaa-f5c9-4d3b-a9d2-b13795d60e83', 'Matt Robinson', 'admin@test.com')
+ON CONFLICT (id) DO NOTHING;
+
+-- ─────────────────────────────────────────────────────────────
+-- CLIENT USERS (for testing portal login)
 -- ─────────────────────────────────────────────────────────────
 -- Note: auth.users must be created via the dashboard or Supabase Auth API.
 -- These records link existing auth users to clients.
--- INSERT INTO client_users (id, client_id, name, email, role)
--- VALUES 
---   ('UUID_FROM_AUTH_USERS', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Merlin Admin', 'merlin@test.com', 'admin');
+-- Auth account: user@test.com — linked to Merlin Print Works Ltd.
+
+INSERT INTO client_users (id, client_id, name, email, role)
+VALUES
+  ('89ceb1b3-72fc-4c99-925e-266fbf3e1238', 'a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Merlin Admin', 'user@test.com', 'admin')
+ON CONFLICT (id) DO NOTHING;

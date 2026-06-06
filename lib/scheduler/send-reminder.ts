@@ -9,9 +9,11 @@ export async function sendAssignmentReminder(args: {
   assignmentId: string;
   instructions: string | null;
 }) {
+  // VERCEL_URL has no protocol, so prepend https:// when falling back to it.
   const base =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "");
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
+    "https://fire-safety-platform.vercel.app";
 
   return dispatchNotification({
     type: "assignment_reminder",
