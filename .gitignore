@@ -13,8 +13,8 @@
 # testing
 /coverage
 
-# next.js
-/.next/
+# next.js (no trailing slash — .next is a symlink to .next.nosync here)
+/.next
 /out/
 
 # production
@@ -46,3 +46,8 @@ next-env.d.ts
 scratch/
 node_modules.nosync
 .next.nosync
+
+# Planning artifacts and local Claude config — not for the repo (and their
+# iCloud-evicted contents stall git's untracked scan)
+.planning/
+.claude/
