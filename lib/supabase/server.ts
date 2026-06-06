@@ -5,7 +5,20 @@ import { cookies } from "next/headers"
 
 export async function createClient() {
   const cookieStore = await cookies()
-  const isDemoMode = cookieStore.get("demo_mode")?.value === "1"
+  const demoModeRequested = cookieStore.get("demo_mode")?.value === "1"
+
+  // Demo mode bypasses ALL RLS via the service-role key, so it must never be
+  // active in production. Force it off regardless of the cookie, and warn if a
+  // request actually attempted to use it.
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    process.env.VERCEL_ENV === "production"
+  if (demoModeRequested && isProduction) {
+    console.warn(
+      "[supabase/server] demo_mode request blocked in production — RLS bypass denied."
+    )
+  }
+  const isDemoMode = demoModeRequested && !isProduction
 
   // In demo mode, we use the service role key to bypass RLS since the user
   // doesn't have a real Supabase Auth session.
