@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { adminClient } from "@/lib/supabase/admin"
-import { requireActorUserId, isAdmin } from "@/lib/auth-helpers"
+import { requireAdmin, isAdmin } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
@@ -14,11 +14,19 @@ import {
   buildPhotoStoragePath,
 } from "@/lib/form-builder/storage/upload-paths"
 import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections"
+import { extractPAS79Summary } from "@/lib/form-builder/risk/pas79"
 import { YELLOW_BROOM_EXEMPLAR } from "@/lib/ai/exemplars/yellow-broom-fra"
 import { buildReportPrompt } from "@/lib/ai/prompt-builder"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
 export async function startAssessment(clientId: string, templateVersionId: string) {
+  // Admin-role gate — writes via the service-role adminClient (RLS bypassed),
+  // so an authenticated-user check alone lets any client user start an
+  // assessment for any org. isAdmin() checks server-trusted admin_users.
+  if (!(await isAdmin())) {
+    throw new Error("Unauthorized: Admin role required to start assessment")
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -145,7 +153,12 @@ export async function deleteAssessment(submissionId: string) {
 }
 
 export async function autosaveAnswers(submissionId: string, answersJson: Record<string, unknown>) {
-  // Auth gate via SSR client so unauthenticated callers can't trigger writes.
+  // Admin-role gate — writes via the service-role adminClient (RLS bypassed).
+  // An authenticated-user check alone lets any client user autosave into any
+  // admin draft. requireAdmin() enforces admin_users membership (and stays
+  // demo-compatible: returns null actor in the dev/preview demo flow).
+  await requireAdmin()
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -187,7 +200,7 @@ export async function autosaveAnswers(submissionId: string, answersJson: Record<
  * Submit a form assessment with server-side validation.
  *
  * Security contract (T-13-09, T-13-10, T-13-11):
- * 1. Auth gate: requireActorUserId — unauthenticated callers are rejected.
+ * 1. Admin gate: requireAdmin — non-admin (and unauthenticated) callers are rejected.
  * 2. Pinned version: schema is fetched from template_versions using the
  *    submission's own template_version_id FK — the client cannot supply a
  *    different (weaker) version.
@@ -202,8 +215,11 @@ export async function submitAssessmentAction(
   submissionId: string,
   rawValues: unknown
 ): Promise<void> {
-  // T-13-11: auth gate before any read/write
-  const userId = await requireActorUserId("admin")
+  // T-13-11: admin-role gate before any read/write. requireAdmin() enforces
+  // admin_users membership (real-prod) while staying demo-compatible — it
+  // returns a null actor in the dev/preview demo flow, same as the previous
+  // requireActorUserId("admin") which only checked for *any* authenticated user.
+  const userId = await requireAdmin()
 
   // Step 1: fetch submission row to read the pinned template_version_id
   const { data: submission, error: subError } = await adminClient
@@ -430,6 +446,20 @@ async function runReportDraftGeneration(submissionId: string) {
     submission.answers_json as Record<string, unknown>
   )
 
+  // Step 3b: Recompute the PAS 79 risk rating from the PINNED schema + raw
+  // answers. The on-screen renderer computes this badge but deliberately never
+  // persists it (computed-field-renderer.tsx ~128-133), so answers_json carries
+  // the likelihood/consequence inputs but not the derived level. We recompute
+  // here — NOT from expandedAnswers (which relabels repeatingSection children),
+  // but from the raw answers_json the renderer/visibility engine also read, so
+  // the dependency entity IDs resolve. Returns null when there is no PAS 79
+  // field or its inputs are missing/out of range — buildReportPrompt then omits
+  // the line entirely (no "undefined" in the prompt).
+  const pas79Summary = extractPAS79Summary(
+    version.schema_json as Parameters<typeof extractPAS79Summary>[0],
+    submission.answers_json as Record<string, unknown>
+  )
+
   // Step 4: Initialize createOpenAI
   const openai = createOpenAI({
     baseURL: "https://openrouter.ai/api/v1",
@@ -457,6 +487,13 @@ async function runReportDraftGeneration(submissionId: string) {
         exemplar: YELLOW_BROOM_EXEMPLAR,
         exemplarLabel: "YELLOW BROOM 2023 FRA, anonymised",
         expandedAnswers,
+        pas79: pas79Summary
+          ? {
+              likelihood: pas79Summary.likelihood,
+              consequence: pas79Summary.consequence,
+              level: pas79Summary.result.level,
+            }
+          : null,
       }),
     })
 
@@ -525,12 +562,11 @@ async function runReportDraftGeneration(submissionId: string) {
  * missing for any reason.
  */
 export async function generateReportDraft(submissionId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error("Unauthorized: Authentication required to generate draft")
-  }
+  // Admin-role gate — runReportDraftGeneration writes via the service-role
+  // adminClient and spends an LLM call; an authenticated-user check alone lets
+  // any client user burn AI quota / overwrite admin drafts. requireAdmin()
+  // enforces admin_users membership and stays demo-compatible.
+  await requireAdmin()
 
   return runReportDraftGeneration(submissionId)
 }
@@ -576,8 +612,11 @@ export async function uploadMediaAction(
   clientId: string,
   kind: "signature" | "photo"
 ): Promise<string> {
-  // Step 1: T-14-03-01 — auth gate, FIRST line; carry-forward of T-13-11
-  await requireActorUserId("admin")
+  // Step 1: T-14-03-01 — admin-role gate, FIRST line; carry-forward of T-13-11.
+  // requireAdmin() enforces admin_users membership (real-prod) while staying
+  // demo-compatible, upgrading the previous requireActorUserId("admin") which
+  // only required *any* authenticated user.
+  await requireAdmin()
 
   // Step 2: Validate non-empty inputs BEFORE revealing any path structure
   if (!clientId) throw new Error("uploadMediaAction: clientId is required")
@@ -702,6 +741,13 @@ export async function finalizeReport(
     complianceStatus: "Pass" | "Action Required" | "Fail"
   }
 ) {
+  // Admin-role gate — finalizeReport mints client-facing signed report URLs,
+  // generates/uploads the PDF, and fires n8n delivery via the service-role
+  // adminClient. An authenticated-user check alone lets any client user trigger
+  // report delivery for any submission. requireAdmin() enforces admin_users
+  // membership and stays demo-compatible.
+  await requireAdmin()
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

@@ -42,12 +42,29 @@ export function buildReportPrompt(args: {
   exemplar: string
   exemplarLabel: string
   expandedAnswers: Record<string, unknown>
+  /**
+   * Recomputed PAS 79 risk rating for this submission, or null when the form
+   * has no PAS 79 computedField (or its inputs were unfilled / out of range).
+   *
+   * The renderer never persists the derived level (see prompt-builder header +
+   * computed-field-renderer.tsx ~128-133), so the caller recomputes it via
+   * extractPAS79Summary and threads it in here. When null we inject nothing —
+   * no "undefined" leaks into the prompt. Computed risk is OUTSIDE the
+   * <user_provided_answers> sentinels: it is our own derived statement, not
+   * untrusted input, so it is not subject to the injection guard.
+   */
+  pas79?: { likelihood: number; consequence: number; level: string } | null
 }): string {
-  const { exemplar, exemplarLabel, expandedAnswers } = args
+  const { exemplar, exemplarLabel, expandedAnswers, pas79 } = args
   const citation = `Few-shot reference: ${exemplarLabel}`
   const divider = "Now draft a report from these answers:"
   const answers = JSON.stringify(expandedAnswers, null, 2)
   const wrappedAnswers = `<user_provided_answers>\n${answers}\n</user_provided_answers>`
+
+  // Only emit the PAS 79 line when we actually have a recomputed rating.
+  const pas79Statement = pas79
+    ? `Computed PAS 79 risk rating: ${pas79.level} (likelihood ${pas79.likelihood}, consequence ${pas79.consequence}). This rating is system-computed from the assessor's likelihood and consequence inputs — treat it as authoritative.`
+    : null
 
   return [
     PERSONA,
@@ -55,10 +72,14 @@ export function buildReportPrompt(args: {
     INJECTION_GUARD,
     citation,
     exemplar,
+    pas79Statement,
     divider,
     wrappedAnswers,
     // Tail-anchor — repeat the core rule after the user data so any
     // mid-data injection attempt is immediately followed by the genuine rule.
     NO_HALLUCINATION,
-  ].join("\n\n")
+  ]
+    // Drop the PAS 79 slot when absent so no blank section appears.
+    .filter((part): part is string => part !== null)
+    .join("\n\n")
 }
