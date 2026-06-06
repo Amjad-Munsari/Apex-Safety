@@ -93,7 +93,7 @@ export function NewClientButton({
               label="Primary Contact"
               value={form.contactName}
               onChange={(v) => setForm((f) => ({ ...f, contactName: v }))}
-              placeholder="Sarah Whitfield"
+              placeholder="Jane Smith"
             />
             <Field
               label="Email"
