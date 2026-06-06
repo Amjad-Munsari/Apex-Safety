@@ -9,6 +9,18 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * Run the proxy on every path EXCEPT:
+     * - api            (API routes carry their own auth / service-role secrets)
+     * - auth           (Supabase OAuth callback + signout under /auth/*)
+     * - _next/static   (static build assets)
+     * - _next/image    (image optimization)
+     * - favicon.ico, sitemap.xml, robots.txt, manifest (metadata files)
+     * - any path with a static asset file extension (images, fonts, etc.)
+     *
+     * /login/* IS matched on purpose: the proxy lets unauthenticated users
+     * through but redirects already-authenticated users to their home surface.
+     */
+    "/((?!api|auth|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff2?|ttf|map)$).*)",
   ],
 }
