@@ -2,7 +2,7 @@
 
 import { adminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { requireActorUserId } from "@/lib/auth-helpers";
+import { requireAdmin } from "@/lib/auth-helpers";
 
 export interface CreateAssignmentsInput {
   dueDate?: string;
@@ -19,7 +19,11 @@ export async function createAssignments(
   clientIds: string[],
   opts?: CreateAssignmentsInput
 ): Promise<{ created: number }> {
-  const adminUserId = await requireActorUserId("admin");
+  // T-16-02, T-16-07: admin-role gate. requireActorUserId("admin") only checked
+  // for *any* authenticated user (the "admin" arg was ignored) — a client user
+  // could create assignments via the service-role adminClient. requireAdmin()
+  // enforces admin_users membership and stays demo-compatible.
+  const adminUserId = await requireAdmin();
 
   if (clientIds.length === 0) {
     throw new Error("Select at least one client");
@@ -74,7 +78,8 @@ export async function updateAssignment(
   assignmentId: string,
   patch: { dueDate?: string | null; instructions?: string | null }
 ): Promise<void> {
-  await requireActorUserId("admin");
+  // T-16-02, T-16-07: admin-role gate (was requireActorUserId, auth-only).
+  await requireAdmin();
 
   const { data: current, error: readError } = await adminClient
     .from("form_assignments")
@@ -111,7 +116,8 @@ export async function updateAssignment(
 // T-16-02, T-16-07: requireActorUserId("admin") is the first statement.
 
 export async function revokeAssignment(assignmentId: string): Promise<void> {
-  await requireActorUserId("admin");
+  // T-16-02, T-16-07: admin-role gate (was requireActorUserId, auth-only).
+  await requireAdmin();
 
   const { data: current, error: readError } = await adminClient
     .from("form_assignments")

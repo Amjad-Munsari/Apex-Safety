@@ -35,6 +35,8 @@ const VALID_FIELD_ID = "33333333-3333-3333-3333-333333333333";
 // Mock @/lib/auth-helpers so server-only modules don't throw in jsdom
 vi.mock("@/lib/auth-helpers", () => ({
   requireActorUserId: vi.fn().mockResolvedValue("mock-admin-user-id"),
+  requireAdmin: vi.fn().mockResolvedValue("mock-admin-user-id"),
+  isAdmin: vi.fn().mockResolvedValue(true),
   getActorUserId: vi.fn().mockResolvedValue("mock-admin-user-id"),
 }));
 
@@ -88,7 +90,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 // ── Structural assertion: auth gate is the FIRST statement ──────────────────
 
 describe("uploadMediaAction — structural auth gate assertion (T-14-03-01)", () => {
-  it("source file contains requireActorUserId('admin') in uploadMediaAction body", () => {
+  it("source file contains requireAdmin() in uploadMediaAction body", () => {
     const actionsPath = path.resolve(
       __dirname,
       "../../app/admin/assessments/actions.ts"
@@ -105,20 +107,22 @@ describe("uploadMediaAction — structural auth gate assertion (T-14-03-01)", ()
     expect(fnMatch).not.toBeNull();
     const fnBody = fnMatch![0];
 
-    // requireActorUserId("admin") must appear in the function body
-    expect(fnBody).toMatch(/requireActorUserId\(\s*["']admin["']\s*\)/);
+    // requireAdmin() — the admin_users-membership gate — must appear in the body
+    expect(fnBody).toMatch(/requireAdmin\(\s*\)/);
 
     // It must appear BEFORE any other await expression (i.e., it is first)
     // Find position of requireActorUserId vs any other await
-    const authPos = fnBody.indexOf('requireActorUserId("admin")');
+    // Anchor on the awaited call — the explanatory comment above it also
+    // mentions requireAdmin() and must not be matched.
+    const authPos = fnBody.indexOf("await requireAdmin()");
     const firstAwaitPos = fnBody.indexOf("await ");
     // The auth await should be the first or very close to first await
     expect(authPos).toBeGreaterThan(-1);
     // Auth gate line appears within a few lines of the function start
     const preAuth = fnBody.substring(0, authPos);
-    // Should have no other await before requireActorUserId
+    // No await may precede the auth gate — it must be the first awaited call.
     const awaitBeforeAuth = (preAuth.match(/\bawait\b/g) || []).length;
-    expect(awaitBeforeAuth).toBe(1); // the "await requireActorUserId" itself
+    expect(awaitBeforeAuth).toBe(0); // authPos anchors on "await requireAdmin()" itself
   });
 
   it("source file contains adminClient.from('field_media').insert", () => {

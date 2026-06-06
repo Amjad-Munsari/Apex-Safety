@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
+import { requireAdmin } from "@/lib/auth-helpers"
 import { generateText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 
@@ -15,6 +16,11 @@ const openrouter = createOpenAI({
 })
 
 export async function draftProposalScope(services: any[]) {
+  // Admin-role gate — spends an LLM call. Without this any authenticated user
+  // could burn AI quota. requireAdmin() enforces admin_users membership and
+  // stays demo-compatible.
+  await requireAdmin()
+
   if (!process.env.OPENROUTER_API_KEY) {
     // In production the AI draft is non-negotiable per Milestone 2 spec — a
     // silent canned-text fallback shipped real proposals before the gap was
@@ -69,6 +75,11 @@ export async function createProposal(data: {
    */
   saveAsDraft?: boolean
 }) {
+  // Admin-role gate — inserts proposals + generates/uploads PDFs via the
+  // service-role adminClient (RLS bypassed). requireAdmin() enforces admin_users
+  // membership and stays demo-compatible.
+  await requireAdmin()
+
   // Insert the proposal record first to get an ID
   const { data: proposal, error } = await adminClient
     .from("proposals")
@@ -170,6 +181,10 @@ export async function createProposal(data: {
  * bucket. Confirmation lives in the UI (AlertDialog on the detail page).
  */
 export async function deleteProposal(proposalId: string) {
+  // Admin-role gate — hard-deletes proposal rows + storage PDFs via the
+  // service-role adminClient. requireAdmin() enforces admin_users membership.
+  await requireAdmin()
+
   // Fetch the storage path first so we can delete the PDF too.
   const { data: row } = await adminClient
     .from("proposals")
@@ -206,6 +221,11 @@ export async function updateProposalStatus(
   proposalId: string,
   status: "Draft" | "Sent" | "Signed" | "Contract Issued"
 ) {
+  // Admin-role gate — both call sites are admin-surface; updates proposal
+  // lifecycle status via the service-role adminClient. requireAdmin() enforces
+  // admin_users membership.
+  await requireAdmin()
+
   const patch: Record<string, unknown> = { status }
   if (status === "Sent") patch.sent_at = new Date().toISOString()
 

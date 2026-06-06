@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
+import { requireAdmin } from "@/lib/auth-helpers"
 import type { ServiceCategory } from "@/lib/data/services"
 
 type ServicePayload = {
@@ -14,6 +15,9 @@ type ServicePayload = {
 }
 
 export async function addService(data: ServicePayload) {
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient.from("services").insert([
     {
       name: data.name,
@@ -35,6 +39,9 @@ export async function addService(data: ServicePayload) {
 }
 
 export async function updateService(id: string, data: ServicePayload) {
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient
     .from("services")
     .update({
@@ -57,6 +64,9 @@ export async function updateService(id: string, data: ServicePayload) {
 }
 
 export async function toggleServiceActive(id: string, active: boolean) {
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient
     .from("services")
     .update({ active })
@@ -72,6 +82,9 @@ export async function toggleServiceActive(id: string, active: boolean) {
 }
 
 export async function deleteService(id: string) {
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient
     .from("services")
     .update({ deleted_at: new Date().toISOString() })
