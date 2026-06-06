@@ -1,53 +1,98 @@
-"use client";
+import { createClient } from "@/lib/supabase/server";
+import { getClientContext } from "@/lib/auth-helpers";
+import { AssessmentsList } from "./assessments-list";
 
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { ChevronRight, Download, ExternalLink } from "lucide-react";
-import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
+export const dynamic = "force-dynamic";
 
-type AssessmentStatus = "completed" | "in_progress" | "scheduled";
+export type AssessmentStatus = "completed" | "in_progress" | "scheduled";
 
-interface AssessmentRow {
+export interface AssessmentRow {
   id: string;
   name: string;
   date: string;
   status: AssessmentStatus;
 }
 
-const ASSESSMENTS: AssessmentRow[] = [
-  { id: "ASMT-8801", name: "Monthly Fire Safety Check — April 2026", date: "18 Apr 2026", status: "in_progress" },
-  { id: "ASMT-8802", name: "Quarterly Site Risk Audit", date: "21 Apr 2026", status: "scheduled" },
-  { id: "REP-4402", name: "Fire Risk Assessment (Type 3)", date: "12 Mar 2026", status: "completed" },
-  { id: "REP-4391", name: "Annual Safety Review", date: "05 Feb 2026", status: "completed" },
-];
+const DATE_FMT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
 
-const STATUS_LABEL: Record<AssessmentStatus, string> = {
-  completed: "Completed",
-  in_progress: "In Progress",
-  scheduled: "Scheduled",
-};
+// Map a form_submissions.status lifecycle value onto the three buckets the
+// client surface shows. A submission row only exists once a fill has started,
+// so there is no "scheduled" DB state — that bucket is kept on the type for
+// display completeness but is not produced here.
+export function statusForSubmission(s: string): AssessmentStatus {
+  if (s === "completed" || s === "delivered") return "completed";
+  return "in_progress";
+}
 
-const STATUS_PILL: Record<AssessmentStatus, { border: string; text: string; dot: string }> = {
-  completed: { border: "border-[#3b8273]", text: "text-[#3b8273]", dot: "bg-[#3b8273]" },
-  in_progress: { border: "border-[#c0a66d]", text: "text-[#c0a66d]", dot: "bg-[#c0a66d]" },
-  scheduled: { border: "border-[#8a857f]", text: "text-[#6b6560]", dot: "bg-[#8a857f]" },
-};
+// Supabase nests the template join as either an object or a single-element
+// array depending on cardinality inference; normalise to a name string.
+type TemplateJoin =
+  | { form_templates?: { name?: string } | { name?: string }[] | null }
+  | { form_templates?: { name?: string } | { name?: string }[] | null }[]
+  | null;
 
-const STATUS_ORDER: Record<AssessmentStatus, number> = {
-  in_progress: 0,
-  scheduled: 1,
-  completed: 2,
-};
+function templateName(join: TemplateJoin): string {
+  const tv = Array.isArray(join) ? join[0] : join;
+  const tpl = Array.isArray(tv?.form_templates) ? tv?.form_templates[0] : tv?.form_templates;
+  return tpl?.name ?? "Assessment";
+}
 
-export default function AssessmentListPage() {
-  const [previewRow, setPreviewRow] = useState<AssessmentRow | null>(null);
+export default async function AssessmentListPage() {
+  const ctx = await getClientContext();
 
-  const sorted = [...ASSESSMENTS].sort(
-    (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
+  if (!ctx) {
+    return (
+      <AssessmentsListShell>
+        <AssessmentsEmpty
+          headline="Sign in to view your assessments."
+          body="Once your account is linked to a client, your fire-safety assessments will appear here."
+        />
+      </AssessmentsListShell>
+    );
+  }
+
+  const supabase = await createClient();
+
+  // RLS-scoped client. Defense-in-depth: also filter by client_id explicitly.
+  const { data: submissions } = await supabase
+    .from("form_submissions")
+    .select(`
+      id,
+      status,
+      created_at,
+      submitted_at,
+      template:template_versions(form_templates(name))
+    `)
+    .eq("client_id", ctx.client_id)
+    .is("deleted_at", null)
+    .order("submitted_at", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  const rows: AssessmentRow[] = (submissions ?? []).map((row) => {
+    const when = row.submitted_at ?? row.created_at;
+    return {
+      id: row.id,
+      name: templateName(row.template as TemplateJoin),
+      date: new Date(when).toLocaleDateString("en-GB", DATE_FMT),
+      status: statusForSubmission(row.status),
+    };
+  });
+
+  return (
+    <AssessmentsListShell>
+      {rows.length === 0 ? (
+        <AssessmentsEmpty
+          headline="No assessments yet."
+          body="When Matt carries out a fire-safety inspection on-site, the report will appear here for you to review and download."
+        />
+      ) : (
+        <AssessmentsList rows={rows} />
+      )}
+    </AssessmentsListShell>
   );
+}
 
+function AssessmentsListShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
@@ -68,110 +113,16 @@ export default function AssessmentListPage() {
         </div>
       </div>
 
-      {/* ─── TABLE ─── */}
-      <section className="space-y-4">
-        <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-sm overflow-hidden">
-          {/* Column header */}
-          <div className="hidden md:grid grid-cols-[minmax(0,1fr)_140px_140px_220px] gap-4 px-6 py-3 border-b border-[#f0ede6] font-mono text-[8px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
-            <span>Name</span>
-            <span>Date</span>
-            <span>Status</span>
-            <span className="text-right">Actions</span>
-          </div>
+      {children}
+    </div>
+  );
+}
 
-          <div className="divide-y divide-[#f0ede6]">
-            {sorted.map((row) => {
-              const pill = STATUS_PILL[row.status];
-              const isCompleted = row.status === "completed";
-              return (
-                <div
-                  key={row.id}
-                  className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_140px_140px_220px] gap-4 px-6 py-4 items-center hover:bg-[#faf9f6]/80 transition-all group"
-                >
-                  {/* Name */}
-                  <Link href={`/client/assessments/${row.id}`} className="min-w-0 space-y-1">
-                    <div className="font-sans font-extrabold text-[14px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
-                      {row.name}
-                    </div>
-                    <div className="font-mono text-[8px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
-                      {row.id}
-                    </div>
-                  </Link>
-
-                  {/* Date */}
-                  <div className="font-mono text-[10px] tracking-[0.15em] text-[#6b6560] uppercase font-bold">
-                    <span className="md:hidden text-[#8a857f] mr-2">Date:</span>
-                    {row.date}
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1.5 px-2.5 py-1 border rounded-full font-mono text-[8px] uppercase tracking-[0.16em] font-bold leading-none",
-                        pill.border,
-                        pill.text
-                      )}
-                    >
-                      <span className={cn("w-0.5 h-0.5 rounded-full", pill.dot)} />
-                      {STATUS_LABEL[row.status].toUpperCase().split("").join(" ")}
-                    </span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center justify-start md:justify-end gap-2">
-                    {isCompleted ? (
-                      <>
-                        <Button
-                          variant="outline"
-                          onClick={() => setPreviewRow(row)}
-                          className="rounded-sm border-[#1a1a1a] bg-transparent text-[#1a1a1a] hover:bg-[#1a1a1a]! hover:text-white! h-8 px-4 font-bold text-[8.5px] uppercase tracking-[0.25em] shadow-none transition-all"
-                        >
-                          <ExternalLink className="w-3 h-3 mr-1.5" />
-                          View Report
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setPreviewRow(row)}
-                          aria-label={`Download ${row.id} PDF`}
-                          className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6]! h-8 px-3 shadow-none"
-                        >
-                          <Download className="w-3.5 h-3.5 text-[#6b6560]" />
-                        </Button>
-                      </>
-                    ) : (
-                      <Link href={`/client/assessments/${row.id}`}>
-                        <Button
-                          variant="outline"
-                          className="rounded-sm border-[#e5e1d8] bg-transparent text-[#1a1a1a] hover:bg-[#f9f8f6] h-8 px-4 font-bold text-[8.5px] uppercase tracking-[0.25em] shadow-none transition-all"
-                        >
-                          View
-                          <ChevronRight className="w-3 h-3 ml-1" />
-                        </Button>
-                      </Link>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── FOOTNOTE ─── */}
-      <div className="pt-8 text-center">
-        <p className="font-mono text-[9px] text-[#8a857f] tracking-[0.2em] uppercase font-bold">
-          All data synced with 888 Safety Cloud &middot; Last updated 2m ago
-        </p>
-      </div>
-
-      <PdfPreviewDialog
-        open={previewRow !== null}
-        onOpenChange={(o) => !o && setPreviewRow(null)}
-        title={previewRow?.name || ""}
-        subtitle={previewRow ? `${previewRow.id} · ${previewRow.date}` : undefined}
-        documentId={previewRow?.id}
-      />
+function AssessmentsEmpty({ headline, body }: { headline: string; body: string }) {
+  return (
+    <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
+      <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">{headline}</p>
+      <p className="font-sans text-[13px] text-[#8a857f] max-w-md mx-auto leading-relaxed">{body}</p>
     </div>
   );
 }

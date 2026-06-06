@@ -1,59 +1,18 @@
-"use client"
-
-import React, { use, useState } from "react"
-import { Button } from "@/components/ui/button"
-import {
-  ChevronLeft,
-  Download,
-  ExternalLink,
-  Calendar,
-  Clock,
-  FileText,
-} from "lucide-react"
 import Link from "next/link"
+import { notFound } from "next/navigation"
+import { ChevronLeft, Calendar, Clock, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog"
+import { createClient } from "@/lib/supabase/server"
+import { getClientContext } from "@/lib/auth-helpers"
+import { ReportActions } from "./report-actions"
+import { statusForSubmission, type AssessmentStatus } from "../page"
 
-type AssessmentStatus = "completed" | "in_progress" | "scheduled"
+export const dynamic = "force-dynamic"
 
-interface AssessmentDetail {
-  id: string
-  name: string
-  type: string
-  date: string
-  status: AssessmentStatus
-}
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
-const ASSESSMENT_FIXTURES: Record<string, AssessmentDetail> = {
-  "ASMT-8801": {
-    id: "ASMT-8801",
-    name: "Monthly Fire Safety Check — April 2026",
-    type: "Fire Risk Assessment (Type 3)",
-    date: "18 Apr 2026",
-    status: "in_progress",
-  },
-  "ASMT-8802": {
-    id: "ASMT-8802",
-    name: "Quarterly Site Risk Audit",
-    type: "Site Risk Assessment",
-    date: "21 Apr 2026",
-    status: "scheduled",
-  },
-  "REP-4402": {
-    id: "REP-4402",
-    name: "Fire Risk Assessment (Type 3)",
-    type: "Fire Risk Assessment (Type 3)",
-    date: "12 Mar 2026",
-    status: "completed",
-  },
-  "REP-4391": {
-    id: "REP-4391",
-    name: "Annual Safety Review",
-    type: "Annual Review",
-    date: "05 Feb 2026",
-    status: "completed",
-  },
-}
+const DATE_FMT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" }
 
 const STATUS_LABEL: Record<AssessmentStatus, string> = {
   completed: "Completed",
@@ -67,23 +26,63 @@ const STATUS_PILL: Record<AssessmentStatus, { border: string; text: string; dot:
   scheduled: { border: "border-[#8a857f]", text: "text-[#6b6560]", dot: "bg-[#8a857f]" },
 }
 
-export default function ClientAssessmentDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = use(params)
-  const [previewOpen, setPreviewOpen] = useState(false)
+// Supabase nests the template join as either an object or a single-element
+// array depending on cardinality inference; normalise to a name string.
+type TemplateJoin =
+  | { form_templates?: { name?: string } | { name?: string }[] | null }
+  | { form_templates?: { name?: string } | { name?: string }[] | null }[]
+  | null
 
-  const assessment: AssessmentDetail = ASSESSMENT_FIXTURES[id] ?? {
-    id,
-    name: "Assessment",
-    type: "—",
-    date: "—",
-    status: "scheduled",
+function templateName(join: TemplateJoin): string {
+  const tv = Array.isArray(join) ? join[0] : join
+  const tpl = Array.isArray(tv?.form_templates) ? tv?.form_templates[0] : tv?.form_templates
+  return tpl?.name ?? "Assessment"
+}
+
+interface Props {
+  params: Promise<{ id: string }>
+}
+
+export default async function ClientAssessmentDetailPage({ params }: Props) {
+  const { id } = await params
+
+  if (!UUID_RE.test(id)) {
+    notFound()
   }
 
-  const pill = STATUS_PILL[assessment.status]
+  const supabase = await createClient()
+  const ctx = await getClientContext()
+
+  // RLS-scoped fetch of the single submission. Defense-in-depth: verify the
+  // row belongs to the authenticated client's org in addition to RLS.
+  const { data: submission } = await supabase
+    .from("form_submissions")
+    .select(`
+      id,
+      client_id,
+      status,
+      created_at,
+      submitted_at,
+      deleted_at,
+      template:template_versions(form_templates(name))
+    `)
+    .eq("id", id)
+    .maybeSingle()
+
+  if (!submission || submission.deleted_at !== null) {
+    notFound()
+  }
+
+  if (ctx && submission.client_id !== ctx.client_id) {
+    notFound()
+  }
+
+  const name = templateName(submission.template as TemplateJoin)
+  const status = statusForSubmission(submission.status)
+  const when = submission.submitted_at ?? submission.created_at
+  const date = new Date(when).toLocaleDateString("en-GB", DATE_FMT)
+  const pill = STATUS_PILL[status]
+  const subtitle = date
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -100,20 +99,15 @@ export default function ClientAssessmentDetailPage({
 
       {/* Hero */}
       <section className="space-y-3">
-        <div className="flex items-center gap-3 font-mono text-[8px] tracking-[0.3em] uppercase font-bold">
-          <span className="text-[#8a857f]">{assessment.id}</span>
-          <span className="text-[#d8d4cc]">·</span>
-          <span className="text-[#8a857f]">{assessment.type}</span>
-        </div>
         <div className="flex items-end justify-between gap-6 flex-wrap">
           <div className="space-y-2">
             <h2 className="font-serif text-[32px] text-[#1a1a1a] font-medium tracking-tight leading-[1.05]">
-              {assessment.name}.
+              {name}.
             </h2>
             <div className="flex items-center gap-4 font-mono text-[9px] tracking-[0.25em] uppercase font-bold">
               <span className="flex items-center gap-1.5 text-[#6b6560]">
                 <Calendar className="w-3 h-3" />
-                {assessment.date}
+                {date}
               </span>
               <span className="text-[#d8d4cc]">·</span>
               <span
@@ -124,7 +118,7 @@ export default function ClientAssessmentDetailPage({
                 )}
               >
                 <span className={cn("w-0.5 h-0.5 rounded-full", pill.dot)} />
-                {STATUS_LABEL[assessment.status].toUpperCase().split("").join(" ")}
+                {STATUS_LABEL[status].toUpperCase().split("").join(" ")}
               </span>
             </div>
           </div>
@@ -133,7 +127,7 @@ export default function ClientAssessmentDetailPage({
 
       {/* Body — status-specific */}
       <section className="bg-white border border-[#e5e1d8] rounded-sm p-8 shadow-sm">
-        {assessment.status === "completed" && (
+        {status === "completed" && (
           <div className="flex flex-col gap-6">
             <div className="flex items-start gap-5">
               <div className="w-10 h-10 rounded-sm bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
@@ -149,28 +143,11 @@ export default function ClientAssessmentDetailPage({
                 </p>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2.5 pt-1">
-              <Button
-                onClick={() => setPreviewOpen(true)}
-                variant="outline"
-                className="rounded-sm border-[#1a1a1a] bg-transparent text-[#1a1a1a] hover:bg-[#1a1a1a]! hover:text-white! h-10 px-6 font-bold text-[10px] uppercase tracking-[0.25em] shadow-none transition-all"
-              >
-                <ExternalLink className="w-3.5 h-3.5 mr-2" />
-                View Report
-              </Button>
-              <Button
-                onClick={() => setPreviewOpen(true)}
-                variant="outline"
-                className="rounded-sm border-[#e5e1d8] bg-transparent text-[#1a1a1a] hover:bg-[#f9f8f6] h-10 px-6 font-bold text-[10px] uppercase tracking-[0.25em] shadow-none transition-all"
-              >
-                <Download className="w-3.5 h-3.5 mr-2" />
-                Download PDF
-              </Button>
-            </div>
+            <ReportActions title={name} subtitle={subtitle} documentId={submission.id} />
           </div>
         )}
 
-        {assessment.status === "in_progress" && (
+        {status === "in_progress" && (
           <div className="flex items-start gap-5">
             <div className="w-10 h-10 rounded-sm bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5" />
@@ -187,14 +164,14 @@ export default function ClientAssessmentDetailPage({
           </div>
         )}
 
-        {assessment.status === "scheduled" && (
+        {status === "scheduled" && (
           <div className="flex items-start gap-5">
             <div className="w-10 h-10 rounded-sm bg-[#f5f3ee] text-[#6b6560] flex items-center justify-center shrink-0">
               <Calendar className="w-5 h-5" />
             </div>
             <div className="space-y-1.5 max-w-xl">
               <h4 className="font-serif text-[18px] text-[#1a1a1a] font-medium leading-tight">
-                Scheduled for {assessment.date}.
+                Scheduled for {date}.
               </h4>
               <p className="text-[#6b6560] text-[13px] font-sans tracking-tight">
                 Matt will visit on the scheduled date to carry out this assessment on-site. If you
@@ -204,14 +181,6 @@ export default function ClientAssessmentDetailPage({
           </div>
         )}
       </section>
-
-      <PdfPreviewDialog
-        open={previewOpen}
-        onOpenChange={setPreviewOpen}
-        title={assessment.name}
-        subtitle={`${assessment.id} · ${assessment.date}`}
-        documentId={assessment.id}
-      />
     </div>
   )
 }

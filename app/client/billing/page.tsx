@@ -12,16 +12,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-interface Transaction {
-  date: string;
-  reference: string;
-  description: string;
-  change: string;
-  isPositive: boolean;
-  balance: string;
-  method: string;
-}
-
 interface HoursPackage {
   hours: number;
   price: number;
@@ -36,20 +26,7 @@ const PACKAGES: HoursPackage[] = [
   { hours: 20, price: 1800, perHour: 90, saveLabel: "Save £180" },
 ];
 
-const INITIAL_TRANSACTIONS: Transaction[] = [
-  { date: "10 Apr 2026", reference: "INV-2026-044", description: "Top-up - 10 hours", change: "+10h", isPositive: true, balance: "14.5h", method: "PayPal" },
-  { date: "04 Apr 2026", reference: "VIS-0412", description: "Site visit - Main Building", change: "-6h", isPositive: false, balance: "4.5h", method: "—" },
-  { date: "21 Mar 2026", reference: "VIS-0401", description: "Site visit - Annex Wing", change: "-4h", isPositive: false, balance: "10.5h", method: "—" },
-  { date: "28 Feb 2026", reference: "RPT-0088", description: "Report drafting & issue", change: "-2h", isPositive: false, balance: "14.5h", method: "—" },
-  { date: "01 Feb 2026", reference: "INV-2026-021", description: "Top-up - 15 hours", change: "+15h", isPositive: true, balance: "16.5h", method: "PayPal" },
-  { date: "15 Jan 2026", reference: "VIS-0389", description: "Site visit - Annex Wing", change: "-3.5h", isPositive: false, balance: "1.5h", method: "—" },
-];
-
 const TODAY_LABEL = "03 May 2026";
-
-function formatBalance(hours: number): string {
-  return Number.isInteger(hours) ? `${hours}h` : `${hours.toFixed(1)}h`;
-}
 
 function formatBalanceDisplay(hours: number): string {
   return Number.isInteger(hours) ? hours.toString() : hours.toFixed(1);
@@ -57,7 +34,6 @@ function formatBalanceDisplay(hours: number): string {
 
 export default function BillingPage() {
   const [balance, setBalance] = useState(4.5);
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [lastTopUp, setLastTopUp] = useState("10 Apr");
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -76,19 +52,8 @@ export default function BillingPage() {
 
     setTimeout(() => {
       const newBalance = balance + pkg.hours;
-      const reference = `INV-2026-${String(Math.floor(Math.random() * 900) + 100).padStart(3, "0")}`;
-      const newTx: Transaction = {
-        date: TODAY_LABEL,
-        reference,
-        description: `Top-up - ${pkg.hours} hours`,
-        change: `+${pkg.hours}h`,
-        isPositive: true,
-        balance: formatBalance(newBalance),
-        method: "PayPal",
-      };
 
       setBalance(newBalance);
-      setTransactions((prev) => [newTx, ...prev]);
       setLastTopUp(TODAY_LABEL.split(" ").slice(0, 2).join(" "));
       setProcessing(false);
       setDialogOpen(false);
@@ -152,38 +117,12 @@ export default function BillingPage() {
           Transaction History
         </h3>
 
-        <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#f9f8f6] border-b border-[#e5e1d8]">
-                <th className="px-6 py-3 font-mono text-[9px] uppercase tracking-[0.15em] font-bold text-[#8a857f]">Date</th>
-                <th className="px-6 py-3 font-mono text-[9px] uppercase tracking-[0.15em] font-bold text-[#8a857f]">Reference</th>
-                <th className="px-6 py-3 font-mono text-[9px] uppercase tracking-[0.15em] font-bold text-[#8a857f]">Description</th>
-                <th className="px-6 py-3 font-mono text-[9px] uppercase tracking-[0.15em] font-bold text-[#8a857f] text-right">Change</th>
-                <th className="px-6 py-3 font-mono text-[9px] uppercase tracking-[0.15em] font-bold text-[#8a857f] text-right">Balance</th>
-                <th className="px-6 py-3 font-mono text-[9px] uppercase tracking-[0.15em] font-bold text-[#8a857f]">Method</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#f0ede6]">
-              {transactions.map((tx, index) => (
-                <tr key={`${tx.reference}-${index}`} className="group hover:bg-[#faf9f6]/50 transition-colors">
-                  <td className="px-6 py-4 font-mono text-[11px] text-[#1a1a1a] font-medium">{tx.date}</td>
-                  <td className="px-6 py-4 font-mono text-[11px] text-[#8a857f] font-medium tracking-tight group-hover:text-[#1a1a1a] transition-colors">{tx.reference}</td>
-                  <td className="px-6 py-4 font-sans text-[12px] text-[#1a1a1a] font-bold tracking-tight">{tx.description}</td>
-                  <td
-                    className={cn(
-                      "px-6 py-4 font-mono text-[11px] font-bold text-right",
-                      tx.isPositive ? "text-[#3b8273]" : "text-[#1a1a1a]"
-                    )}
-                  >
-                    {tx.change}
-                  </td>
-                  <td className="px-6 py-4 font-mono text-[11px] text-[#1a1a1a] font-bold text-right">{tx.balance}</td>
-                  <td className="px-6 py-4 font-sans text-[11px] text-[#6b6560] font-medium">{tx.method}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
+          <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">Transaction history coming soon.</p>
+          <p className="font-sans text-[13px] text-[#8a857f] max-w-md mx-auto leading-relaxed">
+            Top-ups and hours drawn down against site visits will be itemised here once billing is
+            live. For a statement in the meantime, message your consultant.
+          </p>
         </div>
       </section>
 
