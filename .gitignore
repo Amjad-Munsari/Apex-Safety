@@ -46,6 +46,7 @@ next-env.d.ts
 scratch/
 node_modules.nosync
 .next.nosync
+.git.nosync
 
 # Planning artifacts and local Claude config — not for the repo (and their
 # iCloud-evicted contents stall git's untracked scan)
