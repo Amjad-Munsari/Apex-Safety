@@ -340,5 +340,9 @@ export async function forkAssignedTemplate(
   revalidatePath("/client/templates");
 
   // Step 11: Redirect to builder — LAST statement, outside try/catch (PITFALL 1)
-  redirect(`/client/templates/${fork.id}/edit`);
+  // The customer template builder lives at /client/templates/[id] (page.tsx mounts
+  // TemplateBuilderClient). There is no /edit subroute — the prior `/edit` suffix
+  // 404'd. "Customise first" is structure-editing, so the builder is the correct
+  // continuation: the user adjusts fields, publishes, then fills the fork.
+  redirect(`/client/templates/${fork.id}`);
 }
