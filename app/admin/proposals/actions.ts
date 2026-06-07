@@ -217,6 +217,109 @@ export async function deleteProposal(proposalId: string) {
   revalidatePath("/admin")
 }
 
+/**
+ * (Re)generate and upload the proposal PDF for an existing proposal row, then
+ * persist `proposal_pdf_path` + `total_price`. This is the manual rescue path
+ * for proposals whose PDF was never produced — e.g. the generation step in
+ * `createProposal` threw and was swallowed (row stays Draft with no PDF), or
+ * legacy rows that predate PDF generation but have since advanced to
+ * Signed / Contract Issued. Status is NOT changed here; this only fills the PDF.
+ *
+ * The scope-of-work paragraph is not persisted on the proposal row, so we use a
+ * neutral fallback when regenerating. Everything else (client details, line
+ * items, totals) is reconstructed from the stored `services_json`.
+ */
+export async function regenerateProposalPdf(proposalId: string) {
+  // Admin-role gate — generates/uploads PDFs via the service-role adminClient
+  // (RLS bypassed). requireAdmin() enforces admin_users membership.
+  await requireAdmin()
+
+  const { data: proposal, error } = await adminClient
+    .from("proposals")
+    .select("id, client_id, services_json")
+    .eq("id", proposalId)
+    .single()
+
+  if (error || !proposal) {
+    console.error("Error loading proposal for PDF regeneration:", error)
+    throw new Error("Could not load proposal to generate PDF.")
+  }
+
+  const servicesJson = Array.isArray(proposal.services_json) ? proposal.services_json : []
+  if (servicesJson.length === 0) {
+    throw new Error("This proposal has no services, so a PDF cannot be generated.")
+  }
+
+  // 1. Get Client details
+  const { data: client } = await adminClient
+    .from("clients")
+    .select("name, site_address, contact_name")
+    .eq("id", proposal.client_id)
+    .single()
+  const clientName = client?.name || "Unknown Client"
+
+  // 2. Generate PDF Buffer
+  const { generateProposalPdfBuffer } = await import("@/lib/pdf/generator")
+
+  // Map services to PDF props — tolerate both the `{ service, quantity }` shape
+  // used by createProposal and any flattened line items.
+  const pdfServices = servicesJson.map((s: any) => ({
+    name: s?.service?.name || s?.name || "Service",
+    description: s?.service?.description || s?.description || "",
+    quantity: Number(s?.quantity) || 1,
+    unit_price: Number(s?.service?.unit_price ?? s?.unit_price ?? s?.price) || 0,
+  }))
+
+  const subtotal = pdfServices.reduce(
+    (acc: number, s: { quantity: number; unit_price: number }) => acc + s.quantity * s.unit_price,
+    0
+  )
+  const vat = subtotal * VAT_RATE
+  const total = subtotal + vat
+
+  const pdfBuffer = await generateProposalPdfBuffer({
+    clientName,
+    clientAddress: client?.site_address || "Address TBD",
+    contactName: client?.contact_name || "Contact TBD",
+    scopeText:
+      "888 Safety will deliver the services detailed below in full compliance with UK fire safety regulations.",
+    services: pdfServices,
+    subtotalAmount: subtotal,
+    vatAmount: vat,
+    totalAmount: total,
+    date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+  })
+
+  // 3. Upload to Supabase Storage (upsert — same path scheme as createProposal)
+  const fileName = `${proposal.client_id}/proposal_${proposal.id}.pdf`
+
+  const { error: uploadError } = await adminClient.storage
+    .from("proposals")
+    .upload(fileName, pdfBuffer, {
+      contentType: "application/pdf",
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.error("Error uploading proposal PDF:", uploadError)
+    throw new Error("Failed to upload proposal PDF.")
+  }
+
+  // 4. Persist the storage path + VAT-inclusive total. Status is left untouched.
+  const { error: updateError } = await adminClient
+    .from("proposals")
+    .update({ proposal_pdf_path: fileName, total_price: total })
+    .eq("id", proposal.id)
+
+  if (updateError) {
+    console.error("Error saving proposal PDF path:", updateError)
+    throw new Error("PDF generated but could not be linked to the proposal.")
+  }
+
+  revalidatePath("/admin/proposals")
+  revalidatePath(`/admin/proposals/${proposalId}`)
+}
+
 export async function updateProposalStatus(
   proposalId: string,
   status: "Draft" | "Sent" | "Signed" | "Contract Issued"

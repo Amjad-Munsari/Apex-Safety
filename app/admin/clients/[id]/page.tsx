@@ -79,6 +79,17 @@ export default async function ClientDetailsPage({
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
 
+  // Supabase can return the `template:form_templates(id, name)` join as an
+  // ARRAY instead of an object; normalize to the object-or-null shape the
+  // AssignmentRow type expects so `assignment.template?.name` can't blow up
+  // the Assigned Forms panel at render time (same pattern as the assessments
+  // normalization below and app/admin/assessments/new/page.tsx).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assignments = (assignmentRows ?? []).map((row: any) => ({
+    ...row,
+    template: Array.isArray(row.template) ? row.template[0] ?? null : row.template ?? null,
+  }))
+
   // Published templates — for the "Assign template" modal in the Assigned Forms tab.
   const { data: publishedTemplates, error: publishedTemplatesError } = await adminClient
     .from("form_templates")
@@ -215,8 +226,7 @@ export default async function ClientDetailsPage({
         proposals={proposals}
         assessments={assessments}
         hoursLog={hoursLog}
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        assignments={(assignmentRows ?? []) as any[]}
+        assignments={assignments}
         publishedTemplates={publishedTemplates ?? []}
       />
     </div>

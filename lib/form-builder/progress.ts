@@ -21,6 +21,7 @@
  */
 
 import type { VisibilityState } from "./visibility/types";
+import { isFileFieldType } from "./file-field-types";
 
 /** Minimal structural shape — FormBuilderSchema satisfies this. */
 type ProgressSchema = {
@@ -98,7 +99,10 @@ function isRepeatingSectionFilled(
   // Quality gate — check required children in each instance
   const children = entity.children ?? [];
   const requiredChildren = children.filter(
-    (childId) => schema.entities[childId]?.attributes?.required === true
+    (childId) =>
+      schema.entities[childId]?.attributes?.required === true &&
+      // BUG 3: photo/file-upload children are recommended, not required — never gate progress.
+      !isFileFieldType(schema.entities[childId]?.type)
   );
 
   if (requiredChildren.length === 0) return true;
@@ -155,6 +159,11 @@ export function computeFormProgress(
   const requiredIds = Object.entries(schema.entities).flatMap(([id, entity]) => {
     // Skip entities that are children of a repeatingSection
     if (repeatingSectionChildIds.has(id)) return [];
+
+    // BUG 3: photo/file-upload fields are recommended, not required — never
+    // count toward the completion denominator (so they can't keep the
+    // "Submit assessment" button disabled via progress < 100).
+    if (isFileFieldType(entity.type)) return [];
 
     // Phase 15: if visibility is provided and this entity is hidden, exclude entirely (D-07).
     if (visibility && visibility[id]?.visible === false) return [];

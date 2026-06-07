@@ -90,6 +90,7 @@ export default async function ProposalDetailPage({
             clientName={clientName}
             status={status}
             documentUrl={documentUrl}
+            hasPdf={Boolean(proposal.proposal_pdf_path)}
           />
         </div>
       </div>

@@ -262,16 +262,25 @@ export function MultiPhotoFieldRenderer({
   const canAdd =
     photos.length + pendingItems.length < maxPhotos && !isProcessing
 
+  // BUG 3: photo fields marked `required` are treated as RECOMMENDED, not
+  // required — they never block submission. When the template marks this field
+  // required (statically or via a fired `require` rule) but no photos have been
+  // added yet, show a non-blocking hint instead of the required `*` asterisk.
+  const isRecommended = Boolean(attrs.required) || dynamicRequired
+  const showRecommendedHint = isRecommended && photos.length === 0
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-1.5">
       <label className={cn("text-sm font-semibold", t.label)}>
         {attrs.label}
-        {(attrs.required || dynamicRequired) && (
-          <span className={cn("ml-1", t.required)}>*</span>
-        )}
       </label>
+
+      {/* BUG 3: non-blocking recommendation in place of a hard required gate. */}
+      {showRecommendedHint && (
+        <p className={cn("text-xs", t.helpText)}>Photos recommended but not required</p>
+      )}
 
       {/* Photo grid — grid-cols-2 mobile, sm:grid-cols-3 desktop (UI-SPEC §multiPhotoFieldRenderer) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
