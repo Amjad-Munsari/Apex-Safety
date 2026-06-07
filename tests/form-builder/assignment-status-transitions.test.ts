@@ -15,6 +15,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const updateSpy = vi.fn();
 const eqIdSpy = vi.fn();
 const eqStatusSpy = vi.fn();
+// in_progress transition terminates on .in("status", ["assigned","pending"]).
+const inStatusSpy = vi.fn();
 
 // form_submissions spy chain — supports both INSERT (draft-create) and UPDATE (submit)
 const insertSpy = vi.fn();
@@ -32,7 +34,8 @@ const maybeSingleSpy = vi.fn();
 function makeAssignmentsChain() {
   // Supports: .update().eq("id", ...).eq("status", ...) for transitionAssignmentStatus
   eqStatusSpy.mockResolvedValue({ error: null });
-  eqIdSpy.mockReturnValue({ eq: eqStatusSpy });
+  inStatusSpy.mockResolvedValue({ error: null });
+  eqIdSpy.mockReturnValue({ eq: eqStatusSpy, in: inStatusSpy });
   updateSpy.mockReturnValue({ eq: eqIdSpy });
 
   // Supports: .select().eq("id", ...).maybeSingle() for requireOwnedAssignment
@@ -162,7 +165,8 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
     vi.clearAllMocks();
     // Re-wire spies after clear
     eqStatusSpy.mockResolvedValue({ error: null });
-    eqIdSpy.mockReturnValue({ eq: eqStatusSpy });
+    inStatusSpy.mockResolvedValue({ error: null });
+    eqIdSpy.mockReturnValue({ eq: eqStatusSpy, in: inStatusSpy });
     updateSpy.mockReturnValue({ eq: eqIdSpy });
 
     // Re-wire submissions spies after clear
@@ -198,13 +202,13 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
   });
 
   // ── Test 1: pending → in_progress ──────────────────────────────────────────
-  it("pending → in_progress: calls .update({status:'in_progress'}).eq('id', id).eq('status','pending')", async () => {
+  it("pending → in_progress: calls .update({status:'in_progress'}).eq('id', id).in('status', ['assigned','pending'])", async () => {
     const supabase = await createClient();
     await transitionAssignmentStatus(supabase as never, "asg-1", "in_progress");
 
     expect(updateSpy).toHaveBeenCalledWith({ status: "in_progress" });
     expect(eqIdSpy).toHaveBeenCalledWith("id", "asg-1");
-    expect(eqStatusSpy).toHaveBeenCalledWith("status", "pending");
+    expect(inStatusSpy).toHaveBeenCalledWith("status", ["assigned", "pending"]);
   });
 
   // ── Test 2: in_progress → completed ──────────────────────────────────────
@@ -219,7 +223,7 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
 
   // ── Test 3: error does not throw (Pattern 4) ─────────────────────────────
   it("logs but does NOT throw when the DB update returns an error", async () => {
-    eqStatusSpy.mockResolvedValueOnce({ error: { message: "boom" } });
+    inStatusSpy.mockResolvedValueOnce({ error: { message: "boom" } });
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const supabase = await createClient();
@@ -256,7 +260,7 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
 
     // Assert assignment was transitioned pending → in_progress
     expect(updateSpy).toHaveBeenCalledWith({ status: "in_progress" });
-    expect(eqStatusSpy).toHaveBeenCalledWith("status", "pending");
+    expect(inStatusSpy).toHaveBeenCalledWith("status", ["assigned", "pending"]);
   });
 
   // ── Test 5: submitAssignedFillByIdAction UPDATE shape (B1 coverage) ──────

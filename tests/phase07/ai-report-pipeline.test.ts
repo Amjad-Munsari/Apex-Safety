@@ -310,7 +310,9 @@ describe("Phase 7 — AI report pipeline contract", () => {
     const { generateReportDraft } = await import("@/app/admin/assessments/actions")
     const result = await generateReportDraft(SUBMISSION_ID)
 
-    expect(result).toEqual({ success: true })
+    // Success path returns { success: true } and (now) the generated draft too.
+    // The meaningful contract here is success === true with no dispatch/error row.
+    expect(result).toMatchObject({ success: true })
 
     // The draft path must NEVER trigger a notification dispatch (D-06).
     expect(dispatchNotificationSpy).not.toHaveBeenCalled()

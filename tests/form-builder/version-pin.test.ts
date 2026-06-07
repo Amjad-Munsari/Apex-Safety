@@ -85,6 +85,15 @@ vi.mock("@/lib/supabase/server", () => ({
     auth: {
       getUser: () => Promise.resolve({ data: { user: { id: "user-123" } } }),
     },
+    // isAdmin() (invoked by submitAssessmentAction's ownership gate) looks up
+    // admin_users via this client — return a row so the caller is treated as admin.
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: () => Promise.resolve({ data: { id: "user-123" }, error: null }),
+        }),
+      }),
+    }),
   }),
 }));
 
