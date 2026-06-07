@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -91,7 +90,6 @@ export function CustomiseFirstButton({ assignmentId }: CustomiseFirstButtonProps
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={pending}>Keep original</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirm}
               disabled={pending}
