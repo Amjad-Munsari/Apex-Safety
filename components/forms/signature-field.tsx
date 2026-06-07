@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useEffect, useRef, useState } from "react"
-import SignaturePad from "signature_pad"
 import { Eraser, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -38,10 +37,18 @@ const surfaceTokens = {
 
 const CANVAS_HEIGHT = 180
 
+function getPos(canvas: HTMLCanvasElement, e: MouseEvent | TouchEvent) {
+  const rect = canvas.getBoundingClientRect()
+  if ("touches" in e) {
+    const touch = e.touches[0] ?? e.changedTouches[0]
+    return { x: touch.clientX - rect.left, y: touch.clientY - rect.top }
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+}
+
 export function SignatureField({ value, onChange, surface = "dark" }: SignatureFieldProps) {
   const t = surfaceTokens[surface]
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const padRef = useRef<SignaturePad | null>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [hasStrokes, setHasStrokes] = useState(false)
   const [editing, setEditing] = useState(!value)
@@ -56,48 +63,57 @@ export function SignatureField({ value, onChange, surface = "dark" }: SignatureF
     const rect = canvas.getBoundingClientRect()
     canvas.width = rect.width * dpr
     canvas.height = CANVAS_HEIGHT * dpr
-
-    // Construct SignaturePad AFTER sizing so its internal coordinate mapping
-    // is correct from the start. backgroundColor transparent so toDataURL
-    // produces a PNG with a transparent background (matching original behaviour).
-    const pad = new SignaturePad(canvas, {
-      penColor: t.inkColor,
-      backgroundColor: "rgba(0,0,0,0)",
-    })
-
-    // signature_pad scales via the canvas pixel dimensions it reads — calling
-    // clear() after construction re-applies those dimensions internally.
-    pad.clear()
-
-    // Track active stroke for the border highlight.
-    const onBegin = () => setIsDrawing(true)
-    const onEnd = () => {
-      setIsDrawing(false)
-      setHasStrokes(!pad.isEmpty())
-    }
-
-    pad.addEventListener("beginStroke", onBegin)
-    pad.addEventListener("endStroke", onEnd)
-
-    padRef.current = pad
-
-    return () => {
-      pad.removeEventListener("beginStroke", onBegin)
-      pad.removeEventListener("endStroke", onEnd)
-      pad.off()
-      padRef.current = null
-    }
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    ctx.scale(dpr, dpr)
+    ctx.lineCap = "round"
+    ctx.lineJoin = "round"
+    ctx.lineWidth = 2
+    ctx.strokeStyle = t.inkColor
   }, [editing, t.inkColor])
 
+  const handleStart = (e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    e.preventDefault()
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    const { x, y } = getPos(canvas, e.nativeEvent)
+    ctx.beginPath()
+    ctx.moveTo(x, y)
+    setIsDrawing(true)
+  }
+
+  const handleMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    e.preventDefault()
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    const { x, y } = getPos(canvas, e.nativeEvent)
+    ctx.lineTo(x, y)
+    ctx.stroke()
+    if (!hasStrokes) setHasStrokes(true)
+  }
+
+  const handleEnd = () => {
+    setIsDrawing(false)
+  }
+
   const clear = () => {
-    padRef.current?.clear()
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     setHasStrokes(false)
   }
 
   const done = () => {
-    const pad = padRef.current
-    if (!pad || !hasStrokes) return
-    const dataUrl = pad.toDataURL("image/png")
+    const canvas = canvasRef.current
+    if (!canvas || !hasStrokes) return
+    const dataUrl = canvas.toDataURL("image/png")
     onChange(dataUrl)
     setEditing(false)
   }
@@ -164,6 +180,13 @@ export function SignatureField({ value, onChange, surface = "dark" }: SignatureF
           "w-full rounded-sm border cursor-crosshair transition-colors",
           isDrawing ? t.canvasActive : t.canvas
         )}
+        onMouseDown={handleStart}
+        onMouseMove={handleMove}
+        onMouseUp={handleEnd}
+        onMouseLeave={handleEnd}
+        onTouchStart={handleStart}
+        onTouchMove={handleMove}
+        onTouchEnd={handleEnd}
       />
       <div className="flex items-center justify-between">
         <span className={cn("text-xs", t.instruction)}>

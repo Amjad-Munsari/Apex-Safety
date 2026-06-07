@@ -43,6 +43,35 @@ export function ProposalActions({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
 
+  function handleSendForSignature() {
+    setOptimisticStatus("Sent")
+    startTransition(async () => {
+      const res = await fetch(`/api/proposals/${proposalId}/send-for-signature`, {
+        method: "POST",
+      })
+      if (!res.ok) {
+        setOptimisticStatus(status)
+        let errorCode: string | undefined
+        try {
+          const body = (await res.json()) as { error?: string }
+          errorCode = body.error
+        } catch {
+          // non-JSON body — fall through to generic message
+        }
+        if (errorCode === "no_pdf") {
+          toast.error("Generate the proposal PDF before sending.")
+        } else if (errorCode === "no_client_email") {
+          toast.error("This client has no contact email on file.")
+        } else {
+          toast.error("Could not send proposal for signature. Please try again.")
+        }
+        return
+      }
+      toast.success(`Proposal sent to ${clientName} for signature`)
+      router.refresh()
+    })
+  }
+
   function advance(next: ProposalStatus, message: string) {
     setOptimisticStatus(next)
     startTransition(async () => {
@@ -152,7 +181,7 @@ export function ProposalActions({
         <div className="flex items-center">
           {canSend && (
             <Button
-              onClick={() => advance("Sent", `Proposal sent to ${clientName} for signature`)}
+              onClick={handleSendForSignature}
               disabled={pending}
               className="bg-gold hover:bg-gold/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
             >
