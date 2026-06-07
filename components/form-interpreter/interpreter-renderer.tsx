@@ -106,12 +106,27 @@ export const InterpreterRenderer = forwardRef<
   const onValuesChangeRef = useRef(onValuesChange)
   onValuesChangeRef.current = onValuesChange
 
+  // Seed only values whose key is an entity in the (sanitized) schema. Saved
+  // answers_json can carry non-entity metadata (e.g. __appendix_media /
+  // __appendix_notes), and sanitizeSchema may have dropped unknown-type entities
+  // (e.g. a legacy signatureField) — coltorapps throws "Entity not found" if
+  // entitiesValues references anything not present in the schema.
+  const seededValues = useMemo(() => {
+    if (!initialValues) return undefined
+    const entityIds = new Set(Object.keys(schema?.entities ?? {}))
+    const filtered: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(initialValues)) {
+      if (entityIds.has(key)) filtered[key] = value
+    }
+    return filtered
+  }, [initialValues, schema])
+
   const interpreterStore = useInterpreterStore(formBuilder, schema, {
     // Draft rehydration — seed the store from the saved answers_json subset.
     // entitiesValues is keyed by entity id → value, which is exactly the shape
     // we persist; the cast bridges Record<string, unknown> → EntitiesValues.
-    ...(initialValues
-      ? { initialData: { entitiesValues: initialValues as unknown as EntitiesValues<typeof formBuilder> } }
+    ...(seededValues
+      ? { initialData: { entitiesValues: seededValues as unknown as EntitiesValues<typeof formBuilder> } }
       : {}),
     events: {
       onEntityValueUpdated(payload) {
