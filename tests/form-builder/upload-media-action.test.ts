@@ -32,10 +32,17 @@ const VALID_FIELD_ID = "33333333-3333-3333-3333-333333333333";
 
 // ── Mock setup ───────────────────────────────────────────────────────────────
 
-// Mock @/lib/auth-helpers so server-only modules don't throw in jsdom
+// Mock @/lib/auth-helpers. uploadMediaAction now gates via authorizeSubmissionAccess
+// (admin OR owning client), so isAdmin/getClientContext must be mocked. Default: admin.
+const mockIsAdmin = vi.fn().mockResolvedValue(true);
+const mockGetClientContext = vi
+  .fn()
+  .mockResolvedValue({ client_id: "11111111-1111-1111-1111-111111111111" });
 vi.mock("@/lib/auth-helpers", () => ({
   requireActorUserId: vi.fn().mockResolvedValue("mock-admin-user-id"),
   getActorUserId: vi.fn().mockResolvedValue("mock-admin-user-id"),
+  isAdmin: () => mockIsAdmin(),
+  getClientContext: () => mockGetClientContext(),
 }));
 
 // Mock next/cache and next/server so "use server" helpers don't fail
@@ -70,6 +77,17 @@ vi.mock("@/lib/supabase/admin", () => ({
     from: vi.fn((table: string) => {
       if (table === "field_media") {
         return { insert: mockInsert };
+      }
+      if (table === "form_submissions") {
+        // authorizeSubmissionAccess looks up the owning org by submission id.
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          single: vi.fn().mockResolvedValue({
+            data: { client_id: "11111111-1111-1111-1111-111111111111" },
+            error: null,
+          }),
+        };
       }
       // Default stub for other tables
       return {
@@ -442,14 +460,17 @@ describe("uploadMediaAction — input validation", () => {
     mockInsert.mockResolvedValue({ error: null });
   });
 
-  it("rejects empty clientId", async () => {
+  it("rejects a caller who is neither admin nor the owning client (IDOR gate)", async () => {
     const { uploadMediaAction } = await import(
       "@/app/admin/assessments/actions"
     );
+    // Not an admin, and the caller's org differs from the submission's owner.
+    mockIsAdmin.mockResolvedValueOnce(false);
+    mockGetClientContext.mockResolvedValueOnce({ client_id: "99999999-9999-9999-9999-999999999999" });
     const dataUrl = makeDataUrl("image/png", 100_000);
     await expect(
-      uploadMediaAction(VALID_SUBMISSION_ID, VALID_FIELD_ID, dataUrl, "image", "", "signature")
-    ).rejects.toThrow();
+      uploadMediaAction(VALID_SUBMISSION_ID, VALID_FIELD_ID, dataUrl, "image", VALID_CLIENT_ID, "signature")
+    ).rejects.toThrow(/Unauthorized/i);
   });
 
   it("rejects empty submissionId", async () => {

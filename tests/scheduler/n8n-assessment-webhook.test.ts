@@ -43,7 +43,9 @@ const submissionsSelectEqSingleSpy = vi.fn().mockResolvedValue({
   data: { template_version_id: "tv-id-1" },
   error: null,
 })
-const submissionsUpdateEqEqSpy = vi.fn().mockResolvedValue({ error: null })
+const submissionsUpdateEqEqSpy = vi
+  .fn()
+  .mockResolvedValue({ data: [{ id: "11111111-1111-4111-a111-111111111111" }], error: null })
 
 // template_versions: .select("schema_json").eq(id).single()
 const versionsSelectEqSingleSpy = vi.fn().mockResolvedValue({
@@ -63,12 +65,14 @@ vi.mock("@/lib/supabase/admin", () => ({
           select: () => ({
             eq: () => ({ single: () => submissionsSelectEqSingleSpy() }),
           }),
-          // Called in Step 4: .update(...).eq(...).eq(...)
-          update: () => ({
-            eq: () => ({
-              eq: () => submissionsUpdateEqEqSpy(),
-            }),
-          }),
+          // Step 4: .update(...).eq("id").eq("status")[.eq("submitted_by")].select("id")
+          // Self-chaining eq() supports the optional submitted_by predicate; the
+          // terminal select() resolves the result.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          update: () => {
+            const chain: any = { eq: () => chain, select: () => submissionsUpdateEqEqSpy() }
+            return chain
+          },
         }
       }
       if (table === "template_versions") {
@@ -92,6 +96,9 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 vi.mock("@/lib/auth-helpers", () => ({
   requireActorUserId: vi.fn().mockResolvedValue("admin-user-id-1"),
+  // submitAssessmentAction now gates via authorizeSubmissionAccess (admin OR owner).
+  isAdmin: vi.fn().mockResolvedValue(true),
+  getClientContext: vi.fn().mockResolvedValue({ client_id: "client-id-1" }),
 }))
 
 // ── Form builder mocks ───────────────────────────────────────────────────────
@@ -133,9 +140,10 @@ vi.mock("ai", () => ({
 }))
 
 vi.mock("@ai-sdk/openai", () => ({
-  createOpenAI: () => ({
-    call: () => ({}),
-  }),
+  // createOpenAI returns a model factory that is CALLED as openrouter("model").
+  // It must be a function, else runReportDraftGeneration throws "openai is not a
+  // function" and logs a spurious second workflow_errors row.
+  createOpenAI: () => () => ({}),
 }))
 
 // ── Suite ────────────────────────────────────────────────────────────────────
@@ -153,7 +161,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
       data: { schema_json: { entities: {}, root: [] } },
       error: null,
     })
-    submissionsUpdateEqEqSpy.mockResolvedValue({ error: null })
+    submissionsUpdateEqEqSpy.mockResolvedValue({ data: [{ id: FAKE_SUBMISSION_ID }], error: null })
     workflowErrorsInsertSpy.mockResolvedValue({ error: null })
     // Stub OPENROUTER_API_KEY so runReportDraftGeneration doesn't throw
     vi.stubEnv("OPENROUTER_API_KEY", "test-key-placeholder")
