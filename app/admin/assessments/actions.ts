@@ -248,15 +248,25 @@ export async function submitAssessmentAction(
   // Step 3: server-side validation — T-13-09
   const { validateEntitiesValues } = await import("@coltorapps/builder")
   const { formBuilder } = await import("@/lib/form-builder")
+  const { sanitizeSchema } = await import("@/lib/form-builder/sanitize-schema")
   const { pruneSchemaForValidation } = await import("@/lib/form-builder/prune-schema-for-validation")
   const { setCurrentFormSchema } = await import("@/lib/form-builder/visibility/compute-computed-values")
+
+  // The pinned schema_json can contain since-removed entity types (e.g. the
+  // seeded FRA's signatureField, deregistered 2026-06-04). The client renders
+  // AND validates against the sanitized schema (interpreter-renderer.tsx), but
+  // feeding the raw schema into coltorapps here throws
+  // `Unkown entity type "signatureField"` (typo is upstream) and crashes the
+  // whole submit. Sanitize once and use it for every consumer below so the
+  // server validates exactly what the client validated.
+  const schemaJson = sanitizeSchema(version.schema_json as Parameters<typeof sanitizeSchema>[0])
 
   // coltorapps walks entity.children recursively and validates each at the root level,
   // but repeatingSection child values live nested inside instances[] — so any static
   // `required: true` on a template child would always fail at the root. Prune to stop
   // the walk at repeatingSection; the section's own validator still enforces the
   // { instances } shape and min/max counts.
-  const prunedSchema = pruneSchemaForValidation(version.schema_json as Parameters<typeof pruneSchemaForValidation>[0])
+  const prunedSchema = pruneSchemaForValidation(schemaJson)
 
   // Register the schema in the module-level slot so makeShouldBeProcessed's
   // augmentation path can derive computedField values (D-02) during the
@@ -268,7 +278,7 @@ export async function submitAssessmentAction(
   // TODO: under concurrent server actions this slot is racy; the low-traffic
   // admin context makes that acceptable for now. A future hardening could
   // use AsyncLocalStorage or thread the schema through the walker directly.
-  setCurrentFormSchema(version.schema_json as Parameters<typeof setCurrentFormSchema>[0])
+  setCurrentFormSchema(schemaJson as Parameters<typeof setCurrentFormSchema>[0])
   let result: Awaited<ReturnType<typeof validateEntitiesValues>>
   try {
     result = await validateEntitiesValues(rawValues, formBuilder, prunedSchema as Parameters<typeof validateEntitiesValues>[2])
@@ -282,7 +292,7 @@ export async function submitAssessmentAction(
   // Per-instance required enforcement — mirrors the client guard in interpreter-renderer.tsx.
   const { validateInstanceRequired } = await import("@/lib/form-builder/validate-instance-required")
   const instanceFailures = validateInstanceRequired(
-    version.schema_json as Parameters<typeof validateInstanceRequired>[0],
+    schemaJson as Parameters<typeof validateInstanceRequired>[0],
     result.data as Record<string, unknown>
   )
   if (instanceFailures.length > 0) {
@@ -302,8 +312,8 @@ export async function submitAssessmentAction(
   // module-level slot (cleared above).
   const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility")
   const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers")
-  const visibility = evaluateVisibility(version.schema_json as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)
-  const scrubbedAnswers = stripHiddenAnswers(version.schema_json as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility)
+  const visibility = evaluateVisibility(schemaJson as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)
+  const scrubbedAnswers = stripHiddenAnswers(schemaJson as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility)
 
   // Step 4: write validated data — T-13-13 (audit trail); uses SCRUBBED answers (D-01).
   // submitted_by ownership filter matches the legacy submitAssessment + autosaveAnswers
