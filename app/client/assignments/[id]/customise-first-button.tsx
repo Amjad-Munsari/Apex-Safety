@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -72,6 +73,16 @@ export function CustomiseFirstButton({ assignmentId }: CustomiseFirstButtonProps
       {/* Confirmation dialog — UI-SPEC locked copy */}
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogContent>
+          {/* Corner close — dismisses the dialog (same as "Keep original"). */}
+          <button
+            type="button"
+            onClick={() => setOpen(false)}
+            disabled={pending}
+            aria-label="Close"
+            className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#8a857f] transition-colors hover:bg-black/5 hover:text-[#1a1a1a] disabled:opacity-50"
+          >
+            <X className="h-4 w-4" />
+          </button>
           <AlertDialogHeader>
             <AlertDialogTitle>Create your own copy?</AlertDialogTitle>
             <AlertDialogDescription>
