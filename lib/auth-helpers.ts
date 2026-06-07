@@ -18,6 +18,11 @@ export async function getUser() {
 }
 
 export async function isDemoMode() {
+  // Never honor the demo cookie in production. Demo mode synthesizes a client
+  // context by picking an arbitrary org (limit(1)) and rides on the service-role
+  // RLS bypass — both unacceptable in prod (code review CR-02/CR-03). Gating
+  // here disables every demo path (context resolvers, actor id) in one place.
+  if (process.env.NODE_ENV === "production") return false
   const cookieStore = await cookies()
   return cookieStore.get("demo_mode")?.value === "1"
 }

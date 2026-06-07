@@ -11,6 +11,14 @@ function shortRef(uuid: string): string {
   return `CON-${uuid.slice(0, 6).toUpperCase()}`;
 }
 
+/** Shape of a single line item in proposals.services_json (loosely typed in the DB). */
+interface ServiceJsonItem {
+  name?: string;
+  service?: { name?: string; unit_price?: number };
+  price?: number;
+  quantity?: number;
+}
+
 export default async function ClientContractsPage() {
   const ctx = await getClientContext();
   if (!ctx?.client_id) {
@@ -42,9 +50,14 @@ export default async function ClientContractsPage() {
 
   const signedUrlMap = new Map<string, string>();
   if (paths.length > 0) {
-    const { data: signedItems } = await adminClient.storage
+    const { data: signedItems, error: signError } = await adminClient.storage
       .from("proposals")
       .createSignedUrls(paths, 60 * 60);
+    if (signError) {
+      // Don't swallow storage failures — a silent disabled Download button is
+      // otherwise indistinguishable from "no contract" (code review WR-02).
+      console.error("[contracts] createSignedUrls failed:", signError.message);
+    }
     if (signedItems) {
       for (const item of signedItems) {
         if (item.path && item.signedUrl) {
@@ -55,13 +68,15 @@ export default async function ClientContractsPage() {
   }
 
   const mappedContracts = contracts.map((c) => {
-    const services = Array.isArray(c.services_json) ? c.services_json : [];
+    const services: ServiceJsonItem[] = Array.isArray(c.services_json)
+      ? (c.services_json as ServiceJsonItem[])
+      : [];
     const total =
       Number((c as { total_price?: number }).total_price) ||
       calculateProposalTotal(c.services_json);
     const issuedAt = c.sent_at ?? c.created_at;
     const firstName =
-      (services[0] as any)?.service?.name ?? (services[0] as any)?.name ?? "Compliance Services";
+      services[0]?.service?.name ?? services[0]?.name ?? "Compliance Services";
     const title =
       services.length === 1 ? firstName : "Compliance & Training Programme";
     const signedUrl = c.contract_pdf_path

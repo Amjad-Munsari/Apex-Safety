@@ -35,12 +35,20 @@ export default async function SubmissionViewerPage({ params }: Props) {
   const supabase = await createClient();
   const ctx = await getClientContext();
 
+  // No resolved client context → 404 before any query. Never fall through to an
+  // unscoped fetch (code review CR-01/WR-03: a null ctx must not skip ownership).
+  if (!ctx) {
+    notFound();
+  }
+
   // Step 1: Fetch the most-recent submitted submission for this assignment.
-  // Scoped by assignment_id + status = "submitted"; order by submitted_at desc, limit 1.
+  // Explicitly scoped by client_id (T-19-07) so the IDOR boundary does not depend
+  // on RLS alone — correct even under the demo-mode service-role client.
   const { data: submission } = await supabase
     .from("form_submissions")
     .select("id, answers_json, template_version_id, client_id, submitted_at")
     .eq("assignment_id", id)
+    .eq("client_id", ctx.client_id)
     .eq("status", "submitted")
     .order("submitted_at", { ascending: false })
     .limit(1)
@@ -50,9 +58,9 @@ export default async function SubmissionViewerPage({ params }: Props) {
     notFound();
   }
 
-  // Defense-in-depth ownership check (T-19-07): RLS is primary; this is belt-and-suspenders.
-  // A foreign org's assignment_id either returns no row (RLS) or hits this guard.
-  if (ctx && submission.client_id !== ctx.client_id) {
+  // Defense-in-depth ownership check (T-19-07): the query above is already
+  // client_id-scoped; this is belt-and-suspenders.
+  if (submission.client_id !== ctx.client_id) {
     notFound();
   }
 

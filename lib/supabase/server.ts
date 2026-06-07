@@ -5,7 +5,12 @@ import { cookies } from "next/headers"
 
 export async function createClient() {
   const cookieStore = await cookies()
-  const isDemoMode = cookieStore.get("demo_mode")?.value === "1"
+  // Demo mode bypasses RLS via the service-role key. NEVER honor it in
+  // production — a demo cookie there would disable row-level security for
+  // every /client query (code review CR-03). Gated to non-production only.
+  const isDemoMode =
+    process.env.NODE_ENV !== "production" &&
+    cookieStore.get("demo_mode")?.value === "1"
 
   // In demo mode, we use the service role key to bypass RLS since the user
   // doesn't have a real Supabase Auth session.
