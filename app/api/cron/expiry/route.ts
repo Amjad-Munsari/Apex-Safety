@@ -15,7 +15,12 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 })
     }
     // dev/preview without a secret: allow unauthenticated curl for manual testing
-  } else if (authHeader !== `Bearer ${cronSecret}` && querySecret !== cronSecret) {
+  } else if (
+    authHeader !== `Bearer ${cronSecret}` &&
+    // Query-param secret is accepted for manual testing in non-prod only — in
+    // production it would leak the secret into access logs / Referer.
+    !(process.env.NODE_ENV !== "production" && querySecret === cronSecret)
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

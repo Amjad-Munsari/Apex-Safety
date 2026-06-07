@@ -1,8 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-const ADMIN_EMAILS = ["admin@test.com"]
-
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -44,11 +42,23 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Admin vs client routing is decided by the server-trusted admin_users table,
+  // not a hardcoded email list. The admin_users self-select RLS policy permits
+  // this lookup for the signed-in user.
+  let isAdminUser = false
+  if (user) {
+    const { data: adminRow } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("id", user.id)
+      .maybeSingle()
+    isAdminUser = !!adminRow
+  }
+
   if (pathname.startsWith("/login")) {
     if (user) {
-      const isAdmin = ADMIN_EMAILS.includes(user.email ?? "")
       const url = request.nextUrl.clone()
-      url.pathname = isAdmin ? "/admin" : "/client"
+      url.pathname = isAdminUser ? "/admin" : "/client"
       return NextResponse.redirect(url)
     }
     return supabaseResponse
@@ -69,8 +79,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname.startsWith("/admin")) {
-    const isAdmin = ADMIN_EMAILS.includes(user.email ?? "")
-    if (!isAdmin) {
+    if (!isAdminUser) {
       const url = request.nextUrl.clone()
       url.pathname = "/client"
       return NextResponse.redirect(url)
@@ -78,8 +87,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && pathname.startsWith("/client")) {
-    const isAdmin = ADMIN_EMAILS.includes(user.email ?? "")
-    if (isAdmin) {
+    if (isAdminUser) {
       const url = request.nextUrl.clone()
       url.pathname = "/admin"
       return NextResponse.redirect(url)
