@@ -50,6 +50,10 @@ Drag-drop form builder via `@coltorapps/builder` + dnd-kit. Promoted from the v2
 - [x] **Phase 17: Assignment Scheduling + Notifications** — Recurrence engine, due-date status machine, n8n reminders (7d / 1d / overdue) with dedup (completed 2026-05-27)
 - [x] **Phase 18: FRA Seed Template** — Blank FRA (Type 3) built via the builder, conditional sections, risk matrix, action plan, n8n report webhook (completed 2026-05-27)
 
+### Milestone 2 — Productionization (added 2026-06-07)
+
+- [ ] **Phase 19: Client Portal Productionization** — Replace mock/stub client-portal surfaces with real DB-backed data: identity wiring (header/footer), Assignments nav consolidation (drop mock Assessments), completed-submission viewer, Contracts from proposals. Billing/PayPal (Phase 8) excluded.
+
 ---
 
 ## Phase Details
@@ -443,6 +447,23 @@ Plans:
 
 **Wave 2** *(BLOCKING: db push + types + cleanup + UAT — sequential)*
 - [x] 18-03-PLAN.md — Migration 016 applied to live DB; legacy `lib/forms/fra-template.ts` deleted after grep-check (P4); 18-UAT.md authored; ROADMAP updated (wave 2)
+
+### Phase 19: Client Portal Productionization
+
+**Goal:** A signed-in client sees their real org and identity in the portal chrome, navigates to real Assignments (mock Assessments removed), opens a read-only view of any completed submission, and downloads their counter-signed contracts — all DB-backed with honest empty states.
+**Requirements**: D-01..D-11 (CONTEXT.md decisions — no formal REQ IDs)
+**Depends on:** Phase 18
+**Plans:** 4 plans
+
+Plans:
+
+**Wave 0**
+- [ ] 19-01-PLAN.md — Identity helper getClientContextWithIdentity() + Wave 0 unit test (D-02)
+
+**Wave 1** *(parallel after Wave 0)*
+- [ ] 19-02-PLAN.md — Layout server/client split + dynamic identity + nav swap (Assessments→Assignments) + delete mock route (D-01, D-03, D-04, D-05, D-06)
+- [ ] 19-03-PLAN.md — Read-only completed-submission viewer + repoint Completed-tab link (D-07, D-08)
+- [ ] 19-04-PLAN.md — Contracts from proposals (status "Contract Issued") + signed-URL download + empty state (D-09, D-10, D-11)
 
 ---
 
