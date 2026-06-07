@@ -134,35 +134,8 @@ describe("maxInstancesAttribute.validate", () => {
   });
 });
 
-describe("maxRatingAttribute.validate", () => {
-  it("coerces undefined to 5 (default) without throwing", async () => {
-    const { maxRatingAttribute } = await import(
-      "@/lib/form-builder/attributes/max-rating"
-    );
-    expect(maxRatingAttribute.validate(undefined as unknown as number)).toBe(5);
-  });
-
-  it("accepts a valid in-range integer (7)", async () => {
-    const { maxRatingAttribute } = await import(
-      "@/lib/form-builder/attributes/max-rating"
-    );
-    expect(maxRatingAttribute.validate(7)).toBe(7);
-  });
-
-  it("rejects 1 (below min of 2) with a thrown Error", async () => {
-    const { maxRatingAttribute } = await import(
-      "@/lib/form-builder/attributes/max-rating"
-    );
-    expect(() => maxRatingAttribute.validate(1)).toThrow();
-  });
-
-  it("rejects 11 (above max of 10) with a thrown Error", async () => {
-    const { maxRatingAttribute } = await import(
-      "@/lib/form-builder/attributes/max-rating"
-    );
-    expect(() => maxRatingAttribute.validate(11)).toThrow();
-  });
-});
+// maxRatingAttribute (ratingField) is intentionally unsupported (product
+// decision 2026-06) — block removed.
 
 describe("maxPhotosAttribute.validate", () => {
   it("coerces undefined to 5 (default) without throwing", async () => {

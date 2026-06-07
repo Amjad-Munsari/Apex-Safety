@@ -19,11 +19,11 @@ import { createBuilderStore } from "@coltorapps/builder";
 // ============================================================
 
 describe("formBuilder registration — specialty entities", () => {
-  it("includes all 6 new entity types + 7 existing = 13 total", async () => {
+  // signatureField/ratingField are intentionally unsupported builder entity
+  // types (product decision 2026-06): 4 specialty + 7 existing = 11 total.
+  it("includes the 4 specialty entity types + 7 existing = 11 total", async () => {
     const { formBuilder } = await import("@/lib/form-builder/index");
     const names = formBuilder.entities.map((e: { name: string }) => e.name);
-    expect(names).toContain("signatureField");
-    expect(names).toContain("ratingField");
     expect(names).toContain("multiPhotoField");
     expect(names).toContain("geolocationField");
     expect(names).toContain("computedField");
@@ -36,31 +36,9 @@ describe("formBuilder registration — specialty entities", () => {
     expect(names).toContain("textareaField");
     expect(names).toContain("checkboxField");
     expect(names).toContain("sectionGroup");
-    expect(formBuilder.entities).toHaveLength(13);
-  });
-
-  it("can addEntity signatureField via builderStore", async () => {
-    const { formBuilder } = await import("@/lib/form-builder/index");
-    const store = createBuilderStore(formBuilder);
-    const { id } = store.addEntity({
-      type: "signatureField",
-      attributes: { label: "Signature" },
-    });
-    const schema = store.getSchema();
-    expect(schema.entities[id]).toBeDefined();
-    expect(schema.entities[id].type).toBe("signatureField");
-  });
-
-  it("can addEntity ratingField via builderStore", async () => {
-    const { formBuilder } = await import("@/lib/form-builder/index");
-    const store = createBuilderStore(formBuilder);
-    const { id } = store.addEntity({
-      type: "ratingField",
-      attributes: { label: "Rating" },
-    });
-    const schema = store.getSchema();
-    expect(schema.entities[id]).toBeDefined();
-    expect(schema.entities[id].type).toBe("ratingField");
+    expect(names).not.toContain("signatureField");
+    expect(names).not.toContain("ratingField");
+    expect(formBuilder.entities).toHaveLength(11);
   });
 
   it("can addEntity multiPhotoField via builderStore", async () => {
@@ -116,47 +94,6 @@ describe("formBuilder registration — specialty entities", () => {
 // Attribute coverage tests
 // ============================================================
 
-describe("signatureField attribute set", () => {
-  it("has exactly label, required, helpText, attachPhotos, visibilityRules attributes", async () => {
-    const { signatureFieldEntity } = await import(
-      "@/lib/form-builder/entities/signature-field"
-    );
-    const attrNames = signatureFieldEntity.attributes.map((a: { name: string }) => a.name);
-    expect(attrNames).toContain("label");
-    expect(attrNames).toContain("required");
-    expect(attrNames).toContain("helpText");
-    expect(attrNames).toContain("attachPhotos");
-    expect(attrNames).toContain("visibilityRules");
-    expect(attrNames).toHaveLength(5);
-  });
-
-  it("attachPhotos defaults to false", async () => {
-    const { attachPhotosAttribute } = await import(
-      "@/lib/form-builder/attributes/attach-photos"
-    );
-    expect(attachPhotosAttribute.validate(undefined as unknown as boolean)).toBe(false);
-  });
-});
-
-describe("ratingField attribute set", () => {
-  it("has label, required, helpText, maxRating, attachPhotos attributes", async () => {
-    const { ratingFieldEntity } = await import("@/lib/form-builder/entities/rating-field");
-    const attrNames = ratingFieldEntity.attributes.map((a: { name: string }) => a.name);
-    expect(attrNames).toContain("label");
-    expect(attrNames).toContain("required");
-    expect(attrNames).toContain("helpText");
-    expect(attrNames).toContain("maxRating");
-    expect(attrNames).toContain("attachPhotos");
-  });
-
-  it("maxRating defaults to 5 when not supplied", async () => {
-    const { maxRatingAttribute } = await import(
-      "@/lib/form-builder/attributes/max-rating"
-    );
-    expect(maxRatingAttribute.validate(undefined as unknown as number)).toBe(5);
-  });
-});
-
 describe("multiPhotoField attribute set", () => {
   it("has label, required, helpText, maxPhotos, attachPhotos attributes", async () => {
     const { multiPhotoFieldEntity } = await import(
@@ -194,7 +131,7 @@ describe("geolocationField attribute set", () => {
 });
 
 describe("computedField attribute set", () => {
-  it("has exactly label, formula, computedInputs, attachPhotos, visibilityRules — NO required attribute", async () => {
+  it("has exactly label, formula, computedInputs, helpText, attachPhotos, visibilityRules — NO required attribute", async () => {
     const { computedFieldEntity } = await import(
       "@/lib/form-builder/entities/computed-field"
     );
@@ -202,11 +139,12 @@ describe("computedField attribute set", () => {
     expect(attrNames).toContain("label");
     expect(attrNames).toContain("formula");
     expect(attrNames).toContain("computedInputs");
+    expect(attrNames).toContain("helpText");
     expect(attrNames).toContain("attachPhotos");
     expect(attrNames).toContain("visibilityRules");
     // Critically: NO required attribute (it is a read-only derived field)
     expect(attrNames).not.toContain("required");
-    expect(attrNames).toHaveLength(5);
+    expect(attrNames).toHaveLength(6);
   });
 });
 
@@ -238,96 +176,6 @@ describe("repeatingSection attribute set", () => {
 // ============================================================
 // validate() tests
 // ============================================================
-
-describe("signatureFieldEntity.validate()", () => {
-  it("returns value when required and a non-empty storage path is provided", async () => {
-    const { signatureFieldEntity } = await import(
-      "@/lib/form-builder/entities/signature-field"
-    );
-    const result = signatureFieldEntity.validate("form-media/sig.png", {
-      entity: { attributes: { required: true, label: "Signature" } },
-    } as never);
-    expect(result).toBe("form-media/sig.png");
-  });
-
-  it("throws when required and value is undefined", async () => {
-    const { signatureFieldEntity } = await import(
-      "@/lib/form-builder/entities/signature-field"
-    );
-    expect(() =>
-      signatureFieldEntity.validate(undefined, {
-        entity: { attributes: { required: true, label: "Signature" } },
-      } as never)
-    ).toThrow();
-  });
-
-  it("throws when value is not a string", async () => {
-    const { signatureFieldEntity } = await import(
-      "@/lib/form-builder/entities/signature-field"
-    );
-    expect(() =>
-      signatureFieldEntity.validate(42 as unknown as string, {
-        entity: { attributes: { required: false, label: "Signature" } },
-      } as never)
-    ).toThrow();
-  });
-
-  it("accepts undefined when not required", async () => {
-    const { signatureFieldEntity } = await import(
-      "@/lib/form-builder/entities/signature-field"
-    );
-    const result = signatureFieldEntity.validate(undefined, {
-      entity: { attributes: { required: false, label: "Signature" } },
-    } as never);
-    expect(result).toBeUndefined();
-  });
-});
-
-describe("ratingFieldEntity.validate()", () => {
-  it("returns the value for a valid rating within bounds", async () => {
-    const { ratingFieldEntity } = await import("@/lib/form-builder/entities/rating-field");
-    const result = ratingFieldEntity.validate(3, {
-      entity: { attributes: { required: false, label: "Rating", maxRating: 5 } },
-    } as never);
-    expect(result).toBe(3);
-  });
-
-  it("throws when value is 0 (out of range [1, max])", async () => {
-    const { ratingFieldEntity } = await import("@/lib/form-builder/entities/rating-field");
-    expect(() =>
-      ratingFieldEntity.validate(0 as unknown as number, {
-        entity: { attributes: { required: false, label: "Rating", maxRating: 5 } },
-      } as never)
-    ).toThrow();
-  });
-
-  it("throws when value exceeds maxRating", async () => {
-    const { ratingFieldEntity } = await import("@/lib/form-builder/entities/rating-field");
-    expect(() =>
-      ratingFieldEntity.validate(6, {
-        entity: { attributes: { required: false, label: "Rating", maxRating: 5 } },
-      } as never)
-    ).toThrow();
-  });
-
-  it("throws when value is not a number", async () => {
-    const { ratingFieldEntity } = await import("@/lib/form-builder/entities/rating-field");
-    expect(() =>
-      ratingFieldEntity.validate("not a number" as unknown as number, {
-        entity: { attributes: { required: false, label: "Rating", maxRating: 5 } },
-      } as never)
-    ).toThrow();
-  });
-
-  it("throws when required and value is undefined", async () => {
-    const { ratingFieldEntity } = await import("@/lib/form-builder/entities/rating-field");
-    expect(() =>
-      ratingFieldEntity.validate(undefined as unknown as number, {
-        entity: { attributes: { required: true, label: "Rating", maxRating: 5 } },
-      } as never)
-    ).toThrow();
-  });
-});
 
 describe("geolocationFieldEntity.validate()", () => {
   it("returns valid geolocation object", async () => {

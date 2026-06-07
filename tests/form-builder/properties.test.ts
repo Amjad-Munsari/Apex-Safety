@@ -137,14 +137,6 @@ describe("Properties Panel (BUILDER-02)", () => {
     expect(getAttrs(store, entity.id).attachPhotos).toBe(true);
   });
 
-  it("attachPhotos toggle: setEntityAttribute works on signatureField (specialty — D-05)", () => {
-    const store = createBuilderStore(formBuilder);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const entity = store.addEntity({ type: "signatureField", attributes: {} } as any);
-    store.setEntityAttribute(entity.id, "attachPhotos", true);
-    expect(getAttrs(store, entity.id).attachPhotos).toBe(true);
-  });
-
   it("attachPhotos toggle: setEntityAttribute works on computedField (no required attr — D-05)", () => {
     const store = createBuilderStore(formBuilder);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -153,34 +145,8 @@ describe("Properties Panel (BUILDER-02)", () => {
     expect(getAttrs(store, entity.id).attachPhotos).toBe(true);
   });
 
-  // ── Phase 14: ratingField maxRating attribute editor ─────────────────────
-
-  it("ratingField maxRating: setEntityAttribute maxRating=7 stores 7", () => {
-    const store = createBuilderStore(formBuilder);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const entity = store.addEntity({ type: "ratingField", attributes: {} } as any);
-    store.setEntityAttribute(entity.id, "maxRating", 7);
-    expect(getAttrs(store, entity.id).maxRating).toBe(7);
-  });
-
-  it("ratingField maxRating: validate(1) throws (below minimum 2)", async () => {
-    // coltorapps builder store wraps attribute errors; test via direct validate() per Phase 13 pattern
-    const { maxRatingAttribute } = await import("@/lib/form-builder/attributes/max-rating");
-    expect(() => maxRatingAttribute.validate(1 as unknown as number)).toThrow();
-  });
-
-  it("ratingField maxRating: validate(11) throws (above maximum 10)", async () => {
-    const { maxRatingAttribute } = await import("@/lib/form-builder/attributes/max-rating");
-    expect(() => maxRatingAttribute.validate(11 as unknown as number)).toThrow();
-  });
-
-  it("ratingField maxRating: setEntityAttribute maxRating=10 stores 10 (maximum allowed)", () => {
-    const store = createBuilderStore(formBuilder);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const entity = store.addEntity({ type: "ratingField", attributes: {} } as any);
-    store.setEntityAttribute(entity.id, "maxRating", 10);
-    expect(getAttrs(store, entity.id).maxRating).toBe(10);
-  });
+  // ratingField maxRating editor tests removed — ratingField is intentionally
+  // unsupported (product decision 2026-06).
 
   // ── Phase 14: multiPhotoField maxPhotos attribute editor ─────────────────
 
@@ -266,15 +232,12 @@ describe("Properties Panel (BUILDER-02)", () => {
 
   // ── Phase 14: properties panel EntityType metadata coverage ──────────────
 
-  it("PropertiesPanel entityTypeMeta includes all 6 new specialty type names", () => {
-    // Structural test: the properties-panel.tsx file references all 6 new entity type keys
-    // We use a file-content check as the component uses entityTypeMeta at runtime.
-    // The actual assertion is in the structural grep in PLAN verification — this ensures
-    // the store round-trips work for all specialty types.
+  it("PropertiesPanel entityTypeMeta includes the 4 supported specialty type names", () => {
+    // Round-trips each supported specialty type through the store; their meta is
+    // needed by PropertiesPanel. signatureField/ratingField are intentionally
+    // unsupported (product decision 2026-06).
     const store = createBuilderStore(formBuilder);
     const specialtyTypes = [
-      "signatureField",
-      "ratingField",
       "multiPhotoField",
       "geolocationField",
       "computedField",

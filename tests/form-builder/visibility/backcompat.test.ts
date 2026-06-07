@@ -61,25 +61,8 @@ const MIGRATION_011_SEED_SCHEMA = {
         attachPhotos: false,
       },
     },
-    [SEED_ENTITY_IDS.signature]: {
-      type: "signatureField",
-      attributes: {
-        label: "Inspector signature",
-        required: true,
-        helpText: "Sign using the canvas below",
-        attachPhotos: true,
-      },
-    },
-    [SEED_ENTITY_IDS.rating]: {
-      type: "ratingField",
-      attributes: {
-        label: "Overall site safety rating",
-        required: true,
-        helpText: "Rate from 1 (poor) to 5 (excellent)",
-        maxRating: 5,
-        attachPhotos: true,
-      },
-    },
+    // signatureField / ratingField are intentionally unsupported builder entity
+    // types (product decision 2026-06) — omitted from this backcompat fixture.
     [SEED_ENTITY_IDS.photos]: {
       type: "multiPhotoField",
       attributes: {
@@ -189,8 +172,6 @@ const MIGRATION_011_SEED_SCHEMA = {
     SEED_ENTITY_IDS.siteName,
     SEED_ENTITY_IDS.inspNotes,
     SEED_ENTITY_IDS.observations,
-    SEED_ENTITY_IDS.signature,
-    SEED_ENTITY_IDS.rating,
     SEED_ENTITY_IDS.photos,
     SEED_ENTITY_IDS.geolocation,
     SEED_ENTITY_IDS.likelihood,

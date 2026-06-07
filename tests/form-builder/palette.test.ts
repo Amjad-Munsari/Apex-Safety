@@ -111,11 +111,11 @@ describe("Field Palette (BUILDER-01)", () => {
 
   // ── Phase 14 specialty type palette cases (BUILDER-01 extension) ─────────
 
-  it("all 6 specialty entity types can be added to the builder store without error", () => {
+  // signatureField and ratingField are intentionally NOT supported builder entity
+  // types (product decision 2026-06). The builder offers four specialty types.
+  it("all 4 specialty entity types can be added to the builder store without error", () => {
     const store = createBuilderStore(formBuilder);
     const specialtyTypes = [
-      "signatureField",
-      "ratingField",
       "multiPhotoField",
       "geolocationField",
       "computedField",
@@ -128,24 +128,7 @@ describe("Field Palette (BUILDER-01)", () => {
     }
 
     const schema = store.getSchema();
-    // 6 specialty types added
-    expect(Object.keys(schema.entities)).toHaveLength(6);
-  });
-
-  it("addEntity signatureField succeeds and the entity appears in schema with correct type", () => {
-    const store = createBuilderStore(formBuilder);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const entity = store.addEntity({ type: "signatureField", attributes: { label: "Inspector Signature" } } as any);
-    const schema = store.getSchema();
-    expect(schema.entities[entity.id].type).toBe("signatureField");
-  });
-
-  it("addEntity ratingField succeeds and the entity appears in schema with correct type", () => {
-    const store = createBuilderStore(formBuilder);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const entity = store.addEntity({ type: "ratingField", attributes: { label: "Risk Level" } } as any);
-    const schema = store.getSchema();
-    expect(schema.entities[entity.id].type).toBe("ratingField");
+    expect(Object.keys(schema.entities)).toHaveLength(4);
   });
 
   it("addEntity multiPhotoField succeeds and the entity appears in schema with correct type", () => {
