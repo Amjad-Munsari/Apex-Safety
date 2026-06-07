@@ -6,10 +6,21 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { NextRequest } from "next/server"
+import { PDFDocument } from "pdf-lib"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const FIXED_HASH = "aabbcc00" + "0".repeat(56) // 64-char hex
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/** Build a minimal valid PDF Blob for use in download mocks. */
+async function makeMinimalPdfBlob(): Promise<Blob> {
+  const doc = await PDFDocument.create()
+  doc.addPage()
+  const bytes = await doc.save()
+  return new Blob([bytes as BlobPart], { type: "application/pdf" })
+}
 
 // ── Spies (declared before vi.mock so hoisting can close over them) ───────────
 
@@ -23,6 +34,10 @@ const clientsSingleSpy = vi.fn()
 const signaturesInsertSpy = vi.fn()
 // storage.from().createSignedUrl()
 const storageSignedUrlSpy = vi.fn()
+// storage.from().download()
+const storageDownloadSpy = vi.fn()
+// storage.from().upload()
+const storageUploadSpy = vi.fn()
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
@@ -71,6 +86,12 @@ vi.mock("@/lib/supabase/admin", () => ({
       from: (_bucket: string) => ({
         createSignedUrl: (_path: string, _ttl: number) =>
           storageSignedUrlSpy(),
+        download: (_path: string) => storageDownloadSpy(_path),
+        upload: (
+          path: string,
+          data: unknown,
+          opts: unknown
+        ) => storageUploadSpy(path, data, opts),
       }),
     },
   },
@@ -134,7 +155,7 @@ const VALID_PROPOSAL_ROW = {
     { service: { name: "Training" }, quantity: 2 },
   ],
   total_price: 1200,
-  proposal_pdf_path: "proposals/test.pdf",
+  proposal_pdf_path: "client-uuid-5678/proposal_proposal-uuid-1234.pdf",
   signing_token_used: false,
   signing_token_expires_at: FUTURE,
   created_at: "2026-05-01T10:00:00.000Z",
@@ -148,10 +169,23 @@ const VALID_CLIENT = {
   contact_email: "jane@acme.example",
 }
 
+// A real 1×1 PNG data URL — valid for embedSignatureInPdf
+const TINY_PNG_DATA_URL =
+  "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+
 const VALID_POST_BODY = {
   signer_name: "John Doe",
   signer_email: "john@example.com",
-  signature_image: "data:image/png;base64,iVBORw0KGgo=",
+  signature_image: TINY_PNG_DATA_URL,
+}
+
+// The consume mock's returned row now includes proposal_pdf_path
+const VALID_CONSUMED_ROW = {
+  id: VALID_PROPOSAL_ROW.id,
+  client_id: VALID_PROPOSAL_ROW.client_id,
+  signing_document_hash: "dochashtestvalue",
+  services_json: VALID_PROPOSAL_ROW.services_json,
+  proposal_pdf_path: VALID_PROPOSAL_ROW.proposal_pdf_path,
 }
 
 // ── Suite: GET ────────────────────────────────────────────────────────────────
@@ -285,17 +319,14 @@ describe("POST /api/sign/[token]", () => {
     expect(json).toEqual({ error: "already_signed" })
   })
 
-  it("returns 200 on success path — inserts signature row with ip + dispatches proposal_signed", async () => {
+  it("returns 200 on success path and re-uploads a stamped PDF", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
     // Lookup → valid row
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
-    // Atomic consume → success
+    // Atomic consume → success, now includes proposal_pdf_path
     proposalsUpdateSpy.mockResolvedValue({
-      data: {
-        id: VALID_PROPOSAL_ROW.id,
-        client_id: VALID_PROPOSAL_ROW.client_id,
-        signing_document_hash: "dochashtestvalue",
-        services_json: VALID_PROPOSAL_ROW.services_json,
-      },
+      data: VALID_CONSUMED_ROW,
       error: null,
     })
     // Signature insert → success
@@ -306,6 +337,44 @@ describe("POST /api/sign/[token]", () => {
       error: null,
     })
     dispatchSpy.mockResolvedValue({ ok: true })
+    // PDF download → returns a real PDF Blob
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    // PDF upload → success
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json).toEqual({ success: true })
+
+    // The stamped PDF must be re-uploaded to the same path
+    expect(storageUploadSpy).toHaveBeenCalledTimes(1)
+    const [uploadPath, _uploadData, uploadOpts] =
+      storageUploadSpy.mock.calls[0] as [string, unknown, Record<string, unknown>]
+    expect(uploadPath).toBe(VALID_PROPOSAL_ROW.proposal_pdf_path)
+    expect(uploadOpts).toMatchObject({ contentType: "application/pdf", upsert: true })
+  })
+
+  it("returns 200 and inserts signature row with ip + dispatches proposal_signed", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
+    // Lookup → valid row
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    // Atomic consume → success
+    proposalsUpdateSpy.mockResolvedValue({
+      data: VALID_CONSUMED_ROW,
+      error: null,
+    })
+    // Signature insert → success
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    // Client for notification
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme Fire Ltd", contact_email: "jane@acme.example" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
     expect(res.status).toBe(200)
@@ -321,7 +390,7 @@ describe("POST /api/sign/[token]", () => {
     expect(insertArg.ip_address).toBe("1.2.3.4")
     expect(insertArg.user_agent).toBe("TestAgent/1.0")
     expect(insertArg.document_hash).toBe("dochashtestvalue")
-    expect(insertArg.signature_image).toBe(VALID_POST_BODY.signature_image)
+    expect(insertArg.signature_image).toBe(TINY_PNG_DATA_URL)
 
     // Notification dispatched with correct type
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
@@ -334,13 +403,65 @@ describe("POST /api/sign/[token]", () => {
     expect(revalidateSpy).toHaveBeenCalledWith("/admin/proposals")
   })
 
+  it("returns 200 even when PDF download fails — graceful best-effort", async () => {
+    // Lookup → valid row
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    // Atomic consume → success
+    proposalsUpdateSpy.mockResolvedValue({
+      data: VALID_CONSUMED_ROW,
+      error: null,
+    })
+    // Signature insert → success
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    // Client for notification
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme Fire Ltd", contact_email: "jane@acme.example" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true })
+    // PDF download FAILS
+    storageDownloadSpy.mockResolvedValue({ data: null, error: { message: "storage error" } })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    // Must still return 200 — signature row is already persisted
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json).toEqual({ success: true })
+    // Upload must NOT have been called
+    expect(storageUploadSpy).not.toHaveBeenCalled()
+  })
+
+  it("returns 200 even when PDF upload (re-stamp) throws — graceful best-effort", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({
+      data: VALID_CONSUMED_ROW,
+      error: null,
+    })
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme Fire Ltd", contact_email: "jane@acme.example" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    // Upload THROWS
+    storageUploadSpy.mockRejectedValue(new Error("upload timeout"))
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json).toEqual({ success: true })
+  })
+
   it("returns 200 even when signature insert fails — does not 500 after successful consume", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
     proposalsUpdateSpy.mockResolvedValue({
       data: {
-        id: VALID_PROPOSAL_ROW.id,
-        client_id: VALID_PROPOSAL_ROW.client_id,
-        signing_document_hash: "dochashtestvalue",
+        ...VALID_CONSUMED_ROW,
         services_json: [],
       },
       error: null,
@@ -355,6 +476,8 @@ describe("POST /api/sign/[token]", () => {
       error: null,
     })
     dispatchSpy.mockResolvedValue({ ok: true })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
     // Still succeeds — consume was atomic, insert failure is logged not 500d
@@ -364,14 +487,11 @@ describe("POST /api/sign/[token]", () => {
   })
 
   it("defaults ip_address to '0.0.0.0' when x-forwarded-for header is absent", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
     proposalsUpdateSpy.mockResolvedValue({
-      data: {
-        id: VALID_PROPOSAL_ROW.id,
-        client_id: VALID_PROPOSAL_ROW.client_id,
-        signing_document_hash: "dochashtestvalue",
-        services_json: [],
-      },
+      data: VALID_CONSUMED_ROW,
       error: null,
     })
     signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
@@ -380,6 +500,8 @@ describe("POST /api/sign/[token]", () => {
       error: null,
     })
     dispatchSpy.mockResolvedValue({ ok: true })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
 
     // Request with no x-forwarded-for
     const req = new NextRequest("https://example.com/api/sign/abc", {
@@ -398,10 +520,8 @@ describe("POST /api/sign/[token]", () => {
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
     proposalsUpdateSpy.mockResolvedValue({
       data: {
-        id: VALID_PROPOSAL_ROW.id,
-        client_id: VALID_PROPOSAL_ROW.client_id,
+        ...VALID_CONSUMED_ROW,
         signing_document_hash: null,
-        services_json: [],
       },
       error: null,
     })
@@ -411,5 +531,30 @@ describe("POST /api/sign/[token]", () => {
     const json = await res.json()
     expect(json).toEqual({ error: "server_error" })
     expect(signaturesInsertSpy).not.toHaveBeenCalled()
+  })
+
+  it("skips PDF embed when proposal_pdf_path is null — still returns 200", async () => {
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({
+      data: {
+        ...VALID_CONSUMED_ROW,
+        proposal_pdf_path: null,
+      },
+      error: null,
+    })
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Z", contact_email: "z@z.com" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json).toEqual({ success: true })
+    // Neither download nor upload should be called when path is null
+    expect(storageDownloadSpy).not.toHaveBeenCalled()
+    expect(storageUploadSpy).not.toHaveBeenCalled()
   })
 })

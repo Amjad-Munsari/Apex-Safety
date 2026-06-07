@@ -4,6 +4,7 @@ import { adminClient } from "@/lib/supabase/admin"
 import { hashToken } from "@/lib/signing"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
+import { embedSignatureInPdf } from "@/lib/pdf/embed-signature"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -208,12 +209,13 @@ export async function POST(
     .eq("signing_token", hash)
     .eq("signing_token_used", false)
     .gt("signing_token_expires_at", new Date().toISOString())
-    .select("id, client_id, signing_document_hash, services_json")
+    .select("id, client_id, signing_document_hash, services_json, proposal_pdf_path")
     .maybeSingle<{
       id: string
       client_id: string
       signing_document_hash: string | null
       services_json: unknown
+      proposal_pdf_path: string | null
     }>()
 
   if (consumeError) {
@@ -261,7 +263,42 @@ export async function POST(
     // Do not 500 — proposal is already marked Signed. Log for manual recovery.
   }
 
-  // 8. Load client + dispatch notification
+  // 8. Embed signature into PDF and re-upload (best-effort — must not fail the request)
+  if (consumed.proposal_pdf_path) {
+    try {
+      const { data: pdfBlob, error: downloadError } = await adminClient.storage
+        .from("proposals")
+        .download(consumed.proposal_pdf_path)
+
+      if (downloadError || !pdfBlob) {
+        throw new Error(
+          downloadError?.message ?? "download returned null blob"
+        )
+      }
+
+      const pdfArrayBuffer = await pdfBlob.arrayBuffer()
+      const pdfBytes = new Uint8Array(pdfArrayBuffer)
+
+      const stampedBytes = await embedSignatureInPdf(pdfBytes, signatureImage, {
+        signerName,
+        signedAt: now,
+      })
+
+      await adminClient.storage
+        .from("proposals")
+        .upload(consumed.proposal_pdf_path, stampedBytes, {
+          contentType: "application/pdf",
+          upsert: true,
+        })
+    } catch (err) {
+      console.error(
+        `[sign] PDF signature embed failed for proposal ${consumed.id}:`,
+        err
+      )
+    }
+  }
+
+  // 9. Load client + dispatch notification
   try {
     const { data: clientRow } = await adminClient
       .from("clients")
@@ -283,9 +320,9 @@ export async function POST(
     console.error("[sign/[token]] Notification dispatch failed:", err)
   }
 
-  // 9. Revalidate admin Kanban
+  // 10. Revalidate admin Kanban
   revalidatePath("/admin/proposals")
 
-  // 10. Return success
+  // 11. Return success
   return NextResponse.json({ success: true })
 }
