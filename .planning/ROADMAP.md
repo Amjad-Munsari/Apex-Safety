@@ -453,17 +453,17 @@ Plans:
 **Goal:** A signed-in client sees their real org and identity in the portal chrome, navigates to real Assignments (mock Assessments removed), opens a read-only view of any completed submission, and downloads their counter-signed contracts — all DB-backed with honest empty states.
 **Requirements**: D-01..D-11 (CONTEXT.md decisions — no formal REQ IDs)
 **Depends on:** Phase 18
-**Plans:** 4 plans
+**Plans:** 3/4 plans executed
 
 Plans:
 
 **Wave 0**
-- [ ] 19-01-PLAN.md — Identity helper getClientContextWithIdentity() + Wave 0 unit test (D-02)
+- [x] 19-01-PLAN.md — Identity helper getClientContextWithIdentity() + Wave 0 unit test (D-02)
 
 **Wave 1** *(parallel after Wave 0)*
 - [ ] 19-02-PLAN.md — Layout server/client split + dynamic identity + nav swap (Assessments→Assignments) + delete mock route (D-01, D-03, D-04, D-05, D-06)
-- [ ] 19-03-PLAN.md — Read-only completed-submission viewer + repoint Completed-tab link (D-07, D-08)
-- [ ] 19-04-PLAN.md — Contracts from proposals (status "Contract Issued") + signed-URL download + empty state (D-09, D-10, D-11)
+- [x] 19-03-PLAN.md — Read-only completed-submission viewer + repoint Completed-tab link (D-07, D-08)
+- [x] 19-04-PLAN.md — Contracts from proposals (status "Contract Issued") + signed-URL download + empty state (D-09, D-10, D-11)
 
 ---
 
