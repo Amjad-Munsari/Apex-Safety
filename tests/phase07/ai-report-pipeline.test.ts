@@ -191,6 +191,10 @@ vi.mock("@/lib/pdf/generator", () => ({
 
 vi.mock("@/lib/auth-helpers", () => ({
   requireActorUserId: vi.fn(async () => "admin-1"),
+  // submitAssessmentAction/generateReportDraft now gate via isAdmin() and the
+  // submission-ownership helper (authorizeSubmissionAccess).
+  isAdmin: vi.fn(async () => true),
+  getClientContext: vi.fn(async () => ({ client_id: "client-1" })),
 }))
 
 // ── Form-builder helpers imported at the top of actions.ts ───────────────────

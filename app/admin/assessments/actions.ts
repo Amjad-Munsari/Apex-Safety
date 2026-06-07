@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { adminClient } from "@/lib/supabase/admin"
-import { requireActorUserId, isAdmin } from "@/lib/auth-helpers"
+import { requireActorUserId, isAdmin, getClientContext } from "@/lib/auth-helpers"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
@@ -18,7 +18,28 @@ import { YELLOW_BROOM_EXEMPLAR } from "@/lib/ai/exemplars/yellow-broom-fra"
 import { buildReportPrompt } from "@/lib/ai/prompt-builder"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
+// Authorize a caller to act on a specific submission. Admins always pass; a
+// client may only act on a submission owned by their OWN org. Returns the
+// submission's authoritative client_id — callers must use this, never a
+// client-supplied clientId. The form-interpreter that calls these actions is
+// shared by the admin and client surfaces, so a bare admin gate is wrong here.
+async function authorizeSubmissionAccess(submissionId: string): Promise<string> {
+  const { data: sub } = await adminClient
+    .from("form_submissions")
+    .select("client_id")
+    .eq("id", submissionId)
+    .single()
+  if (!sub) throw new Error("Submission not found")
+  if (await isAdmin()) return sub.client_id as string
+  const ctx = await getClientContext()
+  if (!ctx || ctx.client_id !== sub.client_id) throw new Error("Unauthorized")
+  return sub.client_id as string
+}
+
 export async function startAssessment(clientId: string, templateVersionId: string) {
+  // Admin-only: spins up an assignment + draft submission for an arbitrary
+  // clientId, so it must verify the caller is a real admin (not just logged in).
+  if (!(await isAdmin())) throw new Error("Unauthorized")
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -153,6 +174,10 @@ export async function autosaveAnswers(submissionId: string, answersJson: Record<
     throw new Error("Unauthorized: Authentication required for autosave")
   }
 
+  // Org-ownership gate (admin, or the client org that owns this submission) —
+  // defense-in-depth alongside the submitted_by filter below.
+  await authorizeSubmissionAccess(submissionId)
+
   // Write via adminClient (service-role) so RLS can't silently null out the
   // update when the admin's JWT lacks `app_metadata.role = 'admin'`. The
   // `submitted_by` filter keeps the defense-in-depth that only the admin who
@@ -202,8 +227,11 @@ export async function submitAssessmentAction(
   submissionId: string,
   rawValues: unknown
 ): Promise<void> {
-  // T-13-11: auth gate before any read/write
+  // T-13-11: auth gate before any read/write. requireActorUserId only proves
+  // authentication; authorizeSubmissionAccess adds the org-ownership gate so a
+  // client cannot force-submit another org's draft (incl. null submitted_by).
   const userId = await requireActorUserId("admin")
+  await authorizeSubmissionAccess(submissionId)
 
   // Step 1: fetch submission row to read the pinned template_version_id
   const { data: submission, error: subError } = await adminClient
@@ -525,12 +553,9 @@ async function runReportDraftGeneration(submissionId: string) {
  * missing for any reason.
  */
 export async function generateReportDraft(submissionId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error("Unauthorized: Authentication required to generate draft")
-  }
+  // Admin-only: triggers AI report generation (cost) and overwrites the draft.
+  // Clients must not be able to run this on any submission.
+  if (!(await isAdmin())) throw new Error("Unauthorized")
 
   return runReportDraftGeneration(submissionId)
 }
@@ -576,13 +601,17 @@ export async function uploadMediaAction(
   clientId: string,
   kind: "signature" | "photo"
 ): Promise<string> {
-  // Step 1: T-14-03-01 — auth gate, FIRST line; carry-forward of T-13-11
-  await requireActorUserId("admin")
-
-  // Step 2: Validate non-empty inputs BEFORE revealing any path structure
-  if (!clientId) throw new Error("uploadMediaAction: clientId is required")
+  // Step 1: ownership gate. This action is reachable from the CLIENT form-fill
+  // flow (the shared form-interpreter calls it for photo/signature fields), so a
+  // bare admin gate is wrong. authorizeSubmissionAccess allows the owning client
+  // OR an admin and returns the authoritative client_id.
   if (!submissionId) throw new Error("uploadMediaAction: submissionId is required")
   if (!fieldId) throw new Error("uploadMediaAction: fieldId is required")
+
+  // SECURITY: never trust the caller-supplied clientId — derive it from the
+  // submission row, otherwise a caller could write into another org's folder
+  // (and reach the unsanitized storage-path builder). T-14-03-01.
+  clientId = await authorizeSubmissionAccess(submissionId)
 
   // Step 3: Parse the data URL header and enforce MIME whitelist (T-14-03-02)
   // Format: data:<mime>;base64,<data>
@@ -702,12 +731,9 @@ export async function finalizeReport(
     complianceStatus: "Pass" | "Action Required" | "Fail"
   }
 ) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    throw new Error("Unauthorized: Authentication required to finalize report")
-  }
+  // Admin-only: generates/overwrites the canonical report PDF, flips the
+  // submission to completed, and emails the client a download link.
+  if (!(await isAdmin())) throw new Error("Unauthorized")
 
   // 1. Fetch submission + client details
   const { data: submission, error: fetchError } = await adminClient

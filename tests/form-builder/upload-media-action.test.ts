@@ -88,7 +88,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 // ── Structural assertion: auth gate is the FIRST statement ──────────────────
 
 describe("uploadMediaAction — structural auth gate assertion (T-14-03-01)", () => {
-  it("source file contains requireActorUserId('admin') in uploadMediaAction body", () => {
+  it("gates on submission ownership and derives clientId from the submission (not the caller arg)", () => {
     const actionsPath = path.resolve(
       __dirname,
       "../../app/admin/assessments/actions.ts"
@@ -105,20 +105,17 @@ describe("uploadMediaAction — structural auth gate assertion (T-14-03-01)", ()
     expect(fnMatch).not.toBeNull();
     const fnBody = fnMatch![0];
 
-    // requireActorUserId("admin") must appear in the function body
-    expect(fnBody).toMatch(/requireActorUserId\(\s*["']admin["']\s*\)/);
+    // The ownership gate (admin OR owning client) must be present, and the
+    // authoritative clientId must be DERIVED from it — never trusted from the
+    // caller-supplied arg (which would allow writing into another org's folder).
+    expect(fnBody).toMatch(/authorizeSubmissionAccess\(\s*submissionId\s*\)/);
+    expect(fnBody).toMatch(/clientId\s*=\s*await\s+authorizeSubmissionAccess/);
 
-    // It must appear BEFORE any other await expression (i.e., it is first)
-    // Find position of requireActorUserId vs any other await
-    const authPos = fnBody.indexOf('requireActorUserId("admin")');
-    const firstAwaitPos = fnBody.indexOf("await ");
-    // The auth await should be the first or very close to first await
-    expect(authPos).toBeGreaterThan(-1);
-    // Auth gate line appears within a few lines of the function start
-    const preAuth = fnBody.substring(0, authPos);
-    // Should have no other await before requireActorUserId
-    const awaitBeforeAuth = (preAuth.match(/\bawait\b/g) || []).length;
-    expect(awaitBeforeAuth).toBe(1); // the "await requireActorUserId" itself
+    // The gate must run before any storage upload.
+    const gatePos = fnBody.indexOf("authorizeSubmissionAccess");
+    const uploadPos = fnBody.indexOf(".upload(");
+    expect(gatePos).toBeGreaterThan(-1);
+    expect(gatePos).toBeLessThan(uploadPos);
   });
 
   it("source file contains adminClient.from('field_media').insert", () => {
