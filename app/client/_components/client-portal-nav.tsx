@@ -112,8 +112,10 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
           })}
         </nav>
 
-        {/* Right side */}
-        <div className="flex items-center gap-4 lg:gap-6 shrink-0 justify-self-end">
+        {/* Right side — pinned to column 3 so it stays right-aligned even when
+            the center nav is hidden on mobile (a display:none grid item is
+            removed from flow, which would otherwise auto-place this in column 2). */}
+        <div className="flex items-center gap-4 lg:gap-6 shrink-0 col-start-3 justify-self-end">
           <div className="hidden lg:flex flex-col items-end leading-tight">
             <span className="text-[12px] font-bold tracking-tight text-[#1a1a1a] whitespace-nowrap">
               {userName}
