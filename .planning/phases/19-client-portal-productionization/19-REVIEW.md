@@ -17,7 +17,15 @@ findings:
   warning: 3
   info: 1
   total: 7
-status: issues_found
+status: resolved
+resolved: 2026-06-07
+resolution_commit: 06c61b0
+resolution_note: >
+  CR-01, CR-02, CR-03, WR-02, WR-03, IN-01 fixed in 06c61b0 (demo mode env-gated
+  to non-production; submission query client_id-scoped with null-ctx rejection;
+  signed-URL errors logged; as-any removed). WR-01 (explicit read-only guard in
+  SubmissionViewerClient) accepted as low risk — viewer remains read-only by
+  prop omission; deferred to a future hardening pass.
 ---
 
 # Phase 19: Code Review Report
