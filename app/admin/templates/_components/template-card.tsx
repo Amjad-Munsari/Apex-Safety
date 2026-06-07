@@ -73,7 +73,7 @@ export function TemplateCard({
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
                 {isPublished ? (
-                  <Badge className="bg-[#3b8273]/20 text-[#3b8273] border-[#3b8273]/30 text-[10px] font-mono">
+                  <Badge className="bg-teal/20 text-teal border-teal/30 text-[10px] font-mono">
                     LIVE
                   </Badge>
                 ) : (

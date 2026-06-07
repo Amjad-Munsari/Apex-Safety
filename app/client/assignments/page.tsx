@@ -30,7 +30,7 @@ export default async function ClientAssignmentsPage() {
       {/* Page header */}
       <section className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
+          <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
             05 · Assigned Forms
           </span>
         </div>

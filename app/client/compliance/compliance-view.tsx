@@ -144,7 +144,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                               ? "border-[#e06050]/40 text-[#e06050]"
                               : doc.status === "EXPIRING"
                               ? "border-[#c0a66d]/40 text-[#c0a66d]"
-                              : "border-[#3b8273]/40 text-[#3b8273]"
+                              : "border-teal/40 text-teal"
                           )}
                         >
                           <div
@@ -154,7 +154,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                                 ? "bg-[#e06050]"
                                 : doc.status === "EXPIRING"
                                 ? "bg-[#c0a66d]"
-                                : "bg-[#3b8273]"
+                                : "bg-teal"
                             )}
                           ></div>
                           <span>{doc.status}</span>

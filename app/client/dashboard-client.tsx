@@ -31,7 +31,7 @@ export function ClientDashboard({ data, greeting }: Props) {
       <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="space-y-2">
           <div className="flex items-center gap-3">
-             <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">01 Today</span>
+             <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">01 Today</span>
           </div>
           <div className="space-y-1">
             <h2 className="font-serif text-[30px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">
@@ -88,7 +88,7 @@ export function ClientDashboard({ data, greeting }: Props) {
               <>
                 <div className="grid grid-cols-3 gap-4 mb-8">
                   <div className="text-center space-y-1">
-                    <div className="font-serif text-[42px] text-[#3b8273] leading-none">{data.current}</div>
+                    <div className="font-serif text-[42px] text-teal leading-none">{data.current}</div>
                     <div className="font-mono text-[8px] uppercase tracking-[0.25em] text-[#8a857f] font-bold">Current</div>
                   </div>
                   <div className="text-center space-y-1">
@@ -104,7 +104,7 @@ export function ClientDashboard({ data, greeting }: Props) {
                 {/* Custom Multi-Color Progress Bar — proportional to real counts */}
                 <div className="space-y-3">
                   <div className="h-1 w-full flex overflow-hidden">
-                    <div className="h-full bg-[#3b8273]" style={{ width: `${(data.current / data.total) * 100}%` }}></div>
+                    <div className="h-full bg-teal" style={{ width: `${(data.current / data.total) * 100}%` }}></div>
                     <div className="h-full bg-[#c0a66d] ml-[1.5px]" style={{ width: `${(data.expiring / data.total) * 100}%` }}></div>
                     <div className="h-full bg-[#8b2b21] ml-[1.5px]" style={{ width: `${(data.expired / data.total) * 100}%` }}></div>
                   </div>

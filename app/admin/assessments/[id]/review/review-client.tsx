@@ -23,8 +23,8 @@ interface Draft {
 }
 
 const SEVERITY_COLORS: Record<Severity, string> = {
-  Low: "#3b8273",
-  Medium: "#d97706",
+  Low: "var(--teal)",
+  Medium: "var(--gold)",
   High: "#dc2626",
   Critical: "#7c3aed",
 }

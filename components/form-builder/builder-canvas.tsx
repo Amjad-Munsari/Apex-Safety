@@ -37,7 +37,7 @@ const surfaceTokens = {
   dark: {
     emptyText: "text-white/30",
     emptySubtext: "text-white/20",
-    overlayCard: "bg-[#2a2a2a] border border-[#3b8273]/50",
+    overlayCard: "bg-[#2a2a2a] border border-teal/50",
     overlayText: "text-white",
   },
   cream: {

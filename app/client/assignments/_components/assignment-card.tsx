@@ -51,7 +51,7 @@ function StatusPill({ status }: { status: string }) {
     status === "in_progress"
       ? "text-[#c0a66d] bg-[#c0a66d]/10"
       : status === "completed"
-        ? "text-[#3b8273] bg-[#3b8273]/10"
+        ? "text-teal bg-teal/10"
         : "text-[#666] bg-[#555]/10";
 
   return (
@@ -113,7 +113,7 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
 
       {/* Completed tab: View submission link */}
       {variant === "completed" && (
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#3b8273]">
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-teal">
           View submission →
         </span>
       )}

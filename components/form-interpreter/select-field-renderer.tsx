@@ -26,7 +26,7 @@ const surfaceTokens = {
     helpText: "text-white/40",
     error: "text-[#8b2b21]",
     multiItem: "border-white/10 text-white/70 bg-white/5 cursor-pointer",
-    multiChecked: "border-[#3b8273] bg-[#3b8273]/10 text-white cursor-pointer",
+    multiChecked: "border-teal bg-teal/10 text-white cursor-pointer",
   },
   cream: {
     label: "text-[#1a1a1a]",

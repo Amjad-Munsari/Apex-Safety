@@ -40,7 +40,7 @@ interface Props {
 const surfaceTokens = {
   dark: {
     base: "bg-[#1c1c1c] border-white/5 hover:border-white/10 hover:bg-[#222]",
-    selected: "bg-[#1e2e2b] border-[#3b8273]/50 shadow-[0_0_0_1px_rgba(59,130,115,0.2)]",
+    selected: "bg-[#1e2e2b] border-teal/50 shadow-[0_0_0_1px_rgba(59,130,115,0.2)]",
     grip: "text-white/20 hover:text-white/50",
     label: "text-white",
     typeBadge: "text-white/30",

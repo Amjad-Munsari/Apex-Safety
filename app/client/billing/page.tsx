@@ -102,7 +102,7 @@ export default function BillingPage() {
       {/* ─── PAGE HEADER ─── */}
       <section className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
+          <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
             04 Billing
           </span>
         </div>
@@ -173,7 +173,7 @@ export default function BillingPage() {
                   <td
                     className={cn(
                       "px-6 py-4 font-mono text-[11px] font-bold text-right",
-                      tx.isPositive ? "text-[#3b8273]" : "text-[#1a1a1a]"
+                      tx.isPositive ? "text-teal" : "text-[#1a1a1a]"
                     )}
                   >
                     {tx.change}
@@ -258,7 +258,7 @@ export default function BillingPage() {
                           )}
                         </div>
                         {pkg.saveLabel && (
-                          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-[#3b8273] font-bold">
+                          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-teal font-bold">
                             {pkg.saveLabel}
                           </span>
                         )}

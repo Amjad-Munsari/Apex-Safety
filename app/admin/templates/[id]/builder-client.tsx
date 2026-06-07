@@ -66,9 +66,9 @@ const surfaceTokens = {
     backLink: "text-white/50 hover:text-white",
     backDivider: "bg-white/10",
     saveLabel: "text-white/50 hover:text-white",
-    savedTag: "text-[#3b8273]",
+    savedTag: "text-teal",
     errorTag: "text-[#8b2b21]",
-    publishBtn: "bg-[#3b8273] hover:bg-[#3b8273]/90 text-white",
+    publishBtn: "bg-teal hover:bg-teal/90 text-white",
     emptyIconRing: "border-white/10",
     emptyIcon: "text-white/20",
     emptyText: "text-white/30",
@@ -88,7 +88,7 @@ const surfaceTokens = {
     backLink: "text-[#6b6560] hover:text-black",
     backDivider: "bg-[#e5e1d8]",
     saveLabel: "text-[#6b6560] hover:text-black",
-    savedTag: "text-[#3b8273]",
+    savedTag: "text-teal",
     errorTag: "text-[#8b2b21]",
     publishBtn: "bg-[#1a1a1a] hover:bg-black text-white",
     emptyIconRing: "border-[#e5e1d8]",
@@ -327,7 +327,7 @@ export function TemplateBuilderClient({
               DRAFT v{versionNumber}
             </Badge>
           ) : isPublished ? (
-            <Badge className="bg-[#3b8273]/20 text-[#3b8273] border-[#3b8273]/30 text-[10px] font-mono shrink-0">
+            <Badge className="bg-teal/20 text-teal border-teal/30 text-[10px] font-mono shrink-0">
               LIVE v{publishedVersionNumber}
             </Badge>
           ) : null}

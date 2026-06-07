@@ -20,8 +20,8 @@ function statusTone(status: Status): { ring: string; dot: string; bg: string; la
     case "Signed":
     case "Contract Issued":
       return {
-        ring: "border-[#3b8273]/40 text-[#3b8273]",
-        dot: "bg-[#3b8273]",
+        ring: "border-teal/40 text-teal",
+        dot: "bg-teal",
         bg: "bg-[#f4f8f6]",
         label: status === "Signed" ? "Signed" : "Contract Issued",
       };
@@ -77,7 +77,7 @@ export default async function ClientProposalsPage() {
       {/* Hero */}
       <section className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
+          <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
             07 · Proposals
           </span>
         </div>

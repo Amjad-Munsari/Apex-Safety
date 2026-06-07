@@ -5,16 +5,31 @@ import { Upload, Save } from "lucide-react"
 import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { DEFAULT_BRANDING, applyBranding, loadBranding, saveBranding } from "@/lib/branding"
 
 export function SettingsForm() {
-  const [primary, setPrimary] = React.useState("#3b8273")
-  const [secondary, setSecondary] = React.useState("#d97706")
+  const [primary, setPrimary] = React.useState(DEFAULT_BRANDING.primary)
+  const [secondary, setSecondary] = React.useState(DEFAULT_BRANDING.secondary)
   const [signOff, setSignOff] = React.useState("Matt Robinson")
   const [senderName, setSenderName] = React.useState("888 Safety & Training")
   const [logoName, setLogoName] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
+
+  // Hydrate the pickers from any previously-saved palette so they reflect the
+  // colours currently live on the app.
+  React.useEffect(() => {
+    const saved = loadBranding()
+    if (saved) {
+      setPrimary(saved.primary)
+      setSecondary(saved.secondary)
+    }
+  }, [])
+
+  // NOTE: picking a colour only updates local state (and the in-card Preview
+  // swatches below). Nothing is applied to the rest of the app until Save —
+  // see handleSave. This keeps unsaved edits from leaking onto the live UI.
 
   function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -26,9 +41,13 @@ export function SettingsForm() {
 
   async function handleSave() {
     setSaving(true)
-    await new Promise((r) => setTimeout(r, 600))
+    // Persist + re-assert the palette so it survives reload (BrandingProvider
+    // re-applies it on every load).
+    saveBranding({ primary, secondary })
+    applyBranding({ primary, secondary })
+    await new Promise((r) => setTimeout(r, 400))
     setSaving(false)
-    toast.success("Settings saved", { description: "Changes apply to new documents going forward." })
+    toast.success("Settings saved", { description: "Brand colours now apply across the app." })
   }
 
   return (
@@ -181,8 +200,8 @@ function Toggle({ defaultOn }: { defaultOn?: boolean }) {
     <button
       type="button"
       onClick={() => setOn((v) => !v)}
-      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d97706]/40 ${
-        on ? "bg-[#d97706]" : "bg-white/20"
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
+        on ? "bg-gold" : "bg-white/20"
       }`}
       aria-pressed={on}
     >

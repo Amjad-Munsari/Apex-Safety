@@ -48,13 +48,13 @@ interface Props {
 const surfaceTokens = {
   dark: {
     base: "bg-[#1c1c1c] border-white/5",
-    selected: "bg-[#1e2e2b] border-[#3b8273]/50",
+    selected: "bg-[#1e2e2b] border-teal/50",
     grip: "text-white/20 group-hover/header:text-white/50",
     title: "text-white",
     dropZone: "border-white/10",
-    dropZoneActive: "border-[#3b8273] bg-[#3b8273]/10",
+    dropZoneActive: "border-teal bg-teal/10",
     dropZoneText: "text-white/20",
-    dropZoneTextActive: "text-[#3b8273]",
+    dropZoneTextActive: "text-teal",
     actionBtn: "text-white/30 hover:text-white/70 hover:bg-white/5",
     deleteBtn: "text-white/30 hover:text-[#8b2b21] hover:bg-[#8b2b21]/10",
   },

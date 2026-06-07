@@ -2,7 +2,6 @@ import { getComplianceAggregates } from "@/lib/supabase/dashboard";
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { ComplianceDocRowItem, type ComplianceDocRow } from "./compliance-doc-row";
 import { UploadDocumentModal } from "@/components/admin/upload-document-modal";
 
@@ -79,12 +78,8 @@ export default async function CompliancePage({
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-          </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-[#3b8273] font-semibold">03</span>
+            <span className="text-teal font-semibold">03</span>
             COMPLIANCE OVERVIEW
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-white">Document Compliance</h2>
@@ -98,7 +93,7 @@ export default async function CompliancePage({
       {/* ─── STAT CARDS ─── */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Current", count: compliance.current, color: "[#3b8273]", pct: compliance.total > 0 ? Math.round((compliance.current / compliance.total) * 100) : 0 },
+          { label: "Current", count: compliance.current, color: "teal", pct: compliance.total > 0 ? Math.round((compliance.current / compliance.total) * 100) : 0 },
           { label: "Expiring (30 days)", count: compliance.expiring, color: "gold", pct: compliance.total > 0 ? Math.round((compliance.expiring / compliance.total) * 100) : 0 },
           { label: "Expired", count: compliance.expired, color: "danger", pct: compliance.total > 0 ? Math.round((compliance.expired / compliance.total) * 100) : 0 },
         ].map((stat) => (
@@ -136,7 +131,7 @@ export default async function CompliancePage({
       {/* ─── TABLES (filtered by tab) ─── */}
       {active === "all" && (
         <>
-          {current.length > 0 && <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />}
+          {current.length > 0 && <DocTable title="Current" color="teal" docs={current} now={now} />}
           {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />}
           {expired.length > 0 && <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />}
           {undated.length > 0 && <DocTable title="No Expiry Date" color="white/40" docs={undated} now={now} />}
@@ -154,7 +149,7 @@ export default async function CompliancePage({
       )}
       {active === "current" && (
         current.length > 0
-          ? <DocTable title="Current" color="[#3b8273]" docs={current} now={now} />
+          ? <DocTable title="Current" color="teal" docs={current} now={now} />
           : <EmptyTab label="No current documents" />
       )}
       {active === "undated" && (

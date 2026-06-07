@@ -23,12 +23,12 @@ export default async function TemplatesPage() {
     .order("created_at", { ascending: false });
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-[#3b8273] font-semibold">07</span>
+            <span className="text-teal font-semibold">07</span>
             FORM TEMPLATES
           </div>
           <h2 className="font-serif text-[32px] leading-tight text-white">

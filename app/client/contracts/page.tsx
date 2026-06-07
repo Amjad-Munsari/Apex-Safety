@@ -5,7 +5,7 @@ export default function ClientContractsPage() {
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <section className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
+          <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
             08 · Contracts
           </span>
         </div>

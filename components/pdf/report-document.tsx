@@ -1,9 +1,12 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { BRAND } from "@/lib/branding"
 
+// PDFs render server-side via @react-pdf, which can't resolve CSS custom
+// properties — so brand accents come from the shared BRAND hexes, not --teal/--gold.
 const SEVERITY_COLORS: Record<string, string> = {
-  Low: "#3b8273",
-  Medium: "#d97706",
+  Low: BRAND.teal,
+  Medium: BRAND.gold,
   High: "#dc2626",
   Critical: "#7c3aed",
 }
@@ -103,8 +106,8 @@ export interface ReportDocumentProps {
 }
 
 const STATUS_COLOR: Record<string, string> = {
-  Pass: "#3b8273",
-  "Action Required": "#d97706",
+  Pass: BRAND.teal,
+  "Action Required": BRAND.gold,
   Fail: "#dc2626",
 }
 

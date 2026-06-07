@@ -32,11 +32,11 @@ const mainNav: NavItem[] = [
   { label: "Clients",         href: "/admin/clients",    statsKey: "clients" },
   { label: "Compliance",      href: "/admin/compliance", statsKey: "expiries" },
   { label: "Proposals",       href: "/admin/proposals",  statsKey: "proposals" },
-  { label: "Workflow Errors", href: "/admin/errors",     statsKey: "errors" },
+  { label: "Workflow Errors", href: "/admin/errors",        statsKey: "errors" },
+  { label: "Month Summary",   href: "/admin/month-summary", statsKey: null },
 ];
 
 const systemTools: NavItem[] = [
-  { label: "Month Summary",   href: "/admin/month-summary", statsKey: null },
   { label: "Form Templates",  href: "/admin/templates",     statsKey: null },
   { label: "Service Catalog", href: "/admin/services",      statsKey: null },
   { label: "Notifications",   href: "/admin/notifications", statsKey: null },
@@ -117,15 +117,15 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="p-8 border-t border-white/5">
-        <div className="flex flex-col gap-3 font-mono text-[11px]">
+      <SidebarFooter className="px-8 py-6 border-t border-white/5">
+        <div className="flex flex-col gap-2.5 font-mono text-[12px]">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
             <span className="text-white font-semibold tracking-wide">Matt Robinson</span>
           </div>
           <span className="text-white/40">888FST@proton.me</span>
           <form action="/auth/signout" method="POST">
-            <button type="submit" className="text-white/30 hover:text-white/60 transition-colors text-[10px] uppercase tracking-[0.15em]">
+            <button type="submit" className="mt-1 w-full rounded-[4px] border border-white/15 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.15em] text-white/70 hover:border-gold hover:bg-white/10 hover:text-white transition-colors">
               Sign out
             </button>
           </form>

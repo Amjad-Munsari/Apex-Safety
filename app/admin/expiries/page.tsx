@@ -1,8 +1,7 @@
 import { getUpcomingExpiries } from "@/lib/supabase/dashboard"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
-import { ArrowLeft, FileText, Building2 } from "lucide-react"
+import { FileText, Building2 } from "lucide-react"
 import { RemindButton } from "./remind-button"
 
 export const dynamic = "force-dynamic"
@@ -15,10 +14,6 @@ export default async function ExpiriesPage() {
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-          </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
             <span className="text-[#d4a373] font-semibold">02</span>
             COMPLIANCE MONITORING

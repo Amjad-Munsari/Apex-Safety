@@ -1,7 +1,6 @@
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { RevokeAssignmentButton } from "./revoke-assignment-button";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +11,7 @@ function StatusPill({ status }: { status: string }) {
     status === "in_progress"
       ? "text-[#c0a66d] bg-[#c0a66d]/10"
       : status === "completed"
-        ? "text-[#3b8273] bg-[#3b8273]/10"
+        ? "text-teal bg-teal/10"
         : "text-[#666] bg-[#555]/10";
 
   const label =
@@ -160,15 +159,6 @@ export default async function AssignmentsQueuePage({
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
       <div className="flex flex-col gap-2">
-        <Link
-          href="/admin"
-          className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span className="font-mono text-xs uppercase tracking-widest">
-            Back to Dashboard
-          </span>
-        </Link>
         <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
           <span className="text-gold font-semibold">07</span>
           ASSIGNMENT QUEUE

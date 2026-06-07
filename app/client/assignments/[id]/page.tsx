@@ -76,7 +76,7 @@ export default async function AssignmentLandingPage({ params }: Props) {
               return Array.isArray(t) ? (t[0]?.name ?? "Untitled form") : (t?.name ?? "Untitled form");
             })()}
           </h2>
-          <div className="bg-[#f5f3ee] rounded-sm p-4 border-l-2 border-[#3b8273]">
+          <div className="bg-[#f5f3ee] rounded-sm p-4 border-l-2 border-teal">
             <p className="text-sm font-sans text-[#1a1a1a]">
               This form has already been submitted.
             </p>

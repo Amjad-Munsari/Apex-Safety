@@ -169,7 +169,7 @@ export function AssignTemplateModal({
                     <SelectItem
                       key={t.id}
                       value={t.id}
-                      className="text-white/90 data-highlighted:bg-[#3b8273]/35 data-highlighted:text-white focus:bg-[#3b8273]/35 focus:text-white"
+                      className="text-white/90 data-highlighted:bg-teal/35 data-highlighted:text-white focus:bg-teal/35 focus:text-white"
                     >
                       {t.name}
                     </SelectItem>

@@ -47,7 +47,7 @@ export default async function AdminDashboardPage() {
     .select("status");
 
   const complianceData = [
-    { name: 'Current', value: compliance.current, color: '#3b8273' },
+    { name: 'Current', value: compliance.current, color: 'var(--teal)' },
     { name: 'Expiring', value: compliance.expiring, color: '#d4a373' },
     { name: 'Expired', value: compliance.expired, color: '#e63946' },
   ];
@@ -58,7 +58,7 @@ export default async function AdminDashboardPage() {
       <div className="flex justify-between items-end gap-8 min-w-0 animate-in-fade [animation-delay:0.1s]">
         <div className="flex flex-col gap-2 min-w-0">
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-[#3b8273] font-semibold">01</span>
+            <span className="text-teal font-semibold">01</span>
             SINGLE PANE OF GLASS
           </div>
           <h2 className="font-serif text-[26px] md:text-[30px] leading-tight text-[#aaa]">
@@ -166,7 +166,7 @@ export default async function AdminDashboardPage() {
                           <div className="text-xs text-[#666]">{nextExpiry?.cat || "No upcoming"}</div>
                         </td>
                         <td className="px-4 py-4">
-                          <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === 'Signed' ? '#3b8273' : 'gold') : 'white'}/40 text-${proposalStatus ? (proposalStatus === 'Signed' ? '#3b8273' : 'gold') : 'white'}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
+                          <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === 'Signed' ? 'teal' : 'gold') : 'white'}/40 text-${proposalStatus ? (proposalStatus === 'Signed' ? 'teal' : 'gold') : 'white'}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
                             {proposalStatus || "None"}
                           </div>
                         </td>
@@ -287,7 +287,7 @@ export default async function AdminDashboardPage() {
 
           <div className="flex justify-center gap-6 mt-4 font-mono text-[10px] text-white/80">
             <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#3b8273]"></div> Current {compliance.current}
+              <div className="w-2.5 h-2.5 rounded-full bg-teal"></div> Current {compliance.current}
             </div>
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-[#d4a373]"></div> Expiring {compliance.expiring}

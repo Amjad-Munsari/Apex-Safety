@@ -10,6 +10,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { BrandingProvider } from "@/components/branding-provider";
 
 const NAV_ITEMS = [
   { id: "01", label: "Dashboard", href: "/client" },
@@ -38,6 +39,7 @@ export default function ClientLayout({
 
   return (
     <div data-surface="client" className="min-h-screen bg-[#fbfaf5] text-[#1a1a1a] font-sans antialiased text-sm">
+      <BrandingProvider />
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e5e1d8]">
         <div className="max-w-[1320px] mx-auto h-16 lg:h-20 px-4 lg:px-6 xl:px-8 flex items-center justify-between gap-4">

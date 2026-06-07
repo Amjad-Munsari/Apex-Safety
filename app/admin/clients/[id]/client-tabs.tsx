@@ -155,7 +155,7 @@ export function ClientTabs({
 
   function assignmentStatusClass(status: string): string {
     if (status === "in_progress") return "text-[#c0a66d] bg-[#c0a66d]/10"
-    if (status === "completed") return "text-[#3b8273] bg-[#3b8273]/10"
+    if (status === "completed") return "text-teal bg-teal/10"
     return "text-[#666] bg-[#555]/10"
   }
 

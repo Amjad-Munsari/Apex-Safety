@@ -51,13 +51,13 @@ export function ReportsList({ reports }: Props) {
               <div className="shrink-0 w-32 flex justify-center">
                 <div className={cn(
                   "w-full py-1.5 border rounded-[2px] font-mono text-[9px] uppercase tracking-[0.3em] font-bold leading-none flex items-center justify-center gap-2.5 whitespace-nowrap",
-                  report.status === "FINAL" ? "border-[#3b8273]/40 text-[#3b8273]" :
+                  report.status === "FINAL" ? "border-teal/40 text-teal" :
                   report.status === "DRAFT" ? "border-[#c0a66d]/40 text-[#c0a66d]" :
                   "border-[#e06050]/40 text-[#e06050]"
                 )}>
                   <div className={cn(
                     "w-1.5 h-1.5 rounded-full shrink-0",
-                    report.status === "FINAL" ? "bg-[#3b8273]" :
+                    report.status === "FINAL" ? "bg-teal" :
                     report.status === "DRAFT" ? "bg-[#c0a66d]" :
                     "bg-[#e06050]"
                   )}></div>

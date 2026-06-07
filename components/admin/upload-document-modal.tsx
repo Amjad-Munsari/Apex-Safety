@@ -114,7 +114,7 @@ export function UploadDocumentModal({
                     <SelectItem
                       key={c.id}
                       value={c.id}
-                      className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]"
+                      className="text-white focus:bg-teal/20 focus:text-[#d4af6e]"
                     >
                       {c.name}
                     </SelectItem>
@@ -151,7 +151,7 @@ export function UploadDocumentModal({
                   <SelectItem
                     key={cat}
                     value={cat}
-                    className="text-white focus:bg-[#3b8273]/20 focus:text-[#d4af6e]"
+                    className="text-white focus:bg-teal/20 focus:text-[#d4af6e]"
                   >
                     {cat}
                   </SelectItem>

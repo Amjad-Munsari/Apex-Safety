@@ -44,7 +44,7 @@ export function PdfPreviewDialog({
             </div>
             <DialogPrimitive.Close
               aria-label="Close"
-              className="shrink-0 rounded-sm p-1.5 text-[#6b6560] hover:bg-[#f0ede6] hover:text-[#1a1a1a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3b8273]/30"
+              className="shrink-0 rounded-sm p-1.5 text-[#6b6560] hover:bg-[#f0ede6] hover:text-[#1a1a1a] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal/30"
             >
               <X className="w-4 h-4" />
             </DialogPrimitive.Close>
@@ -96,8 +96,8 @@ export function PdfPreviewDialog({
                   03 Risk Rating
                 </p>
                 <p>
-                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-[#3b8273]/40 text-[#3b8273] font-mono text-[8.5px] uppercase tracking-[0.2em] font-bold rounded-full">
-                    <span className="w-1 h-1 rounded-full bg-[#3b8273]" />
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 border border-teal/40 text-teal font-mono text-[8.5px] uppercase tracking-[0.2em] font-bold rounded-full">
+                    <span className="w-1 h-1 rounded-full bg-teal" />
                     Moderate — Tolerable
                   </span>
                 </p>

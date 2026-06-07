@@ -1,5 +1,4 @@
-import Link from "next/link"
-import { ArrowLeft, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ServiceDialog } from "@/components/services/service-dialog"
@@ -27,15 +26,8 @@ export default async function ServicesPage() {
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <Link
-            href="/admin"
-            className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-          </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
-            <span className="text-foreground font-semibold">05</span>
+            <span className="text-teal font-semibold">08</span>
             SERVICE CATALOG
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-foreground">Services</h2>
@@ -116,7 +108,7 @@ function CategoryGroup({
           colSpan={4}
           className="px-6 py-3.5 font-mono uppercase tracking-widest text-muted-foreground border-b border-foreground/5"
         >
-          <span className="text-sm font-semibold text-[#3b8273]">{title}</span>
+          <span className="text-sm font-semibold text-teal">{title}</span>
           <span className="ml-3 text-[10px] text-muted-foreground">{services.length} services</span>
         </td>
       </tr>

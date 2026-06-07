@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { CheckCircle2 } from "lucide-react"
+import { BRAND } from "@/lib/branding"
 
-const colors = ["#3b8273", "#c0a66d", "#d97706", "#1a1a1a", "#e06050"]
+const colors = [BRAND.teal, "#c0a66d", BRAND.gold, "#1a1a1a", "#e06050"]
 
 type Confetti = { id: number; left: number; delay: number; rotate: number; color: string }
 
@@ -37,12 +38,12 @@ export function SignSuccess({ title, message }: { title: string; message: string
       </div>
 
       {/* Icon */}
-      <div className="relative w-16 h-16 rounded-full bg-[#3b8273]/10 ring-1 ring-[#3b8273]/20 flex items-center justify-center mb-6">
-        <CheckCircle2 className="w-8 h-8 text-[#3b8273]" />
+      <div className="relative w-16 h-16 rounded-full bg-teal/10 ring-1 ring-teal/20 flex items-center justify-center mb-6">
+        <CheckCircle2 className="w-8 h-8 text-teal" />
       </div>
 
       <div className="space-y-2 relative">
-        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-[#3b8273] font-bold">
+        <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-teal font-bold">
           Signed & Sealed
         </div>
         <h3 className="font-serif text-[28px] text-[#1a1a1a] tracking-tight">{title}</h3>

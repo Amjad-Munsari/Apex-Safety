@@ -1,7 +1,6 @@
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -23,10 +22,6 @@ export default async function HoursPage() {
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
       <div className="flex flex-col gap-2">
-        <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-        </Link>
         <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
           <span className="text-white/60 font-semibold">05</span>
           HOURS MANAGEMENT
@@ -42,7 +37,7 @@ export default async function HoursPage() {
         {[
           { label: "Critical (< 3h)", count: critical.length, color: "danger" },
           { label: "Low (3–10h)", count: warning.length, color: "gold" },
-          { label: "Healthy (10h+)", count: healthy.length, color: "[#3b8273]" },
+          { label: "Healthy (10h+)", count: healthy.length, color: "teal" },
         ].map((s) => (
           <Card key={s.label} className="bg-[#1c1c1c] border-white/5 rounded-sm p-6">
             <div className={`font-mono text-[10px] uppercase tracking-widest text-${s.color} mb-3`}>{s.label}</div>
@@ -61,8 +56,8 @@ export default async function HoursPage() {
             const balance = client.hours_balance || 0;
             const isDanger = balance < 3;
             const isWarning = balance < 10;
-            const barColor = isDanger ? "bg-danger" : isWarning ? "bg-gold" : "bg-[#3b8273]";
-            const textColor = isDanger ? "text-danger" : isWarning ? "text-gold" : "text-[#3b8273]";
+            const barColor = isDanger ? "bg-danger" : isWarning ? "bg-gold" : "bg-teal";
+            const textColor = isDanger ? "text-danger" : isWarning ? "text-gold" : "text-teal";
             const progressWidth = Math.min(100, (balance / maxBalance) * 100);
 
             return (

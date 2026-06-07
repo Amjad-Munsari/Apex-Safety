@@ -1,7 +1,6 @@
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { NewClientButton } from "@/components/clients/new-client-dialog";
 import { ActivePill } from "./_components/active-pill";
 
@@ -46,12 +45,8 @@ export default async function ClientsPage() {
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-          </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-white font-semibold">01</span>
+            <span className="text-teal font-semibold">02</span>
             CLIENT MANAGEMENT
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-white">All Clients</h2>
@@ -131,7 +126,7 @@ export default async function ClientsPage() {
                     <div className="text-xs text-[#666]">{nextExpiry?.cat || "No upcoming"}</div>
                   </td>
                   <td className="px-4 py-4">
-                    <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
+                    <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "teal" : "gold") : "white"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "teal" : "gold") : "white"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
                       {proposalStatus || "None"}
                     </div>
                   </td>

@@ -1,5 +1,6 @@
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { BrandingProvider } from "@/components/branding-provider";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -34,6 +35,7 @@ export default async function AdminLayout({
   return (
     <SidebarProvider>
       <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
+        <BrandingProvider />
         <AppSidebar stats={sidebarStats} />
         <div className="flex-1 flex flex-col h-full max-h-full min-h-0 overflow-hidden">
           {/* Top Bar */}

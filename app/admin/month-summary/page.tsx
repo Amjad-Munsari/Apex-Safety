@@ -2,7 +2,6 @@ import { adminClient } from "@/lib/supabase/admin";
 import { getWorkflowErrorsSince } from "@/lib/supabase/dashboard";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import { WorkflowErrorsTable } from "./_components/workflow-errors-table";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +67,7 @@ export default async function MonthSummaryPage() {
       num: "02",
       label: "Documents Uploaded",
       count: documentsRes.count || 0,
-      color: "[#3b8273]",
+      color: "teal",
       sub: "compliance docs",
     },
     {
@@ -104,23 +103,19 @@ export default async function MonthSummaryPage() {
     in_progress: "text-white/40",
     submitted: "text-white/60",
     draft_ready_for_review: "text-gold",
-    completed: "text-[#3b8273]",
+    completed: "text-teal",
     ai_draft_failed: "text-danger",
     // Legacy
     draft: "text-[#555]",
-    delivered: "text-[#3b8273]",
+    delivered: "text-teal",
   };
 
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
       <div className="flex flex-col gap-2">
-        <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-          <ArrowLeft className="w-4 h-4" />
-          <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-        </Link>
         <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-          <span className="text-white/60 font-semibold">08</span>
+          <span className="text-teal font-semibold">06</span>
           MONTHLY REPORT
         </div>
         <h2 className="font-serif text-[34px] leading-tight text-white">Month Summary</h2>

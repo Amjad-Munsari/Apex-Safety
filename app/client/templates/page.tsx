@@ -29,7 +29,7 @@ export default async function ClientTemplatesPage() {
       {/* Hero */}
       <section className="space-y-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
+          <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
             06 · My Templates
           </span>
         </div>

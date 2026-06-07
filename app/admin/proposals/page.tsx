@@ -2,7 +2,6 @@ import { adminClient } from "@/lib/supabase/admin"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
 import { ProposalCard } from "./proposal-card"
 
 type ProposalStatus = "Draft" | "Sent" | "Signed" | "Contract Issued"
@@ -44,12 +43,8 @@ export default async function ProposalsPage() {
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-          </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-gold font-semibold">06</span>
+            <span className="text-gold font-semibold">04</span>
             SALES PIPELINE
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-white">

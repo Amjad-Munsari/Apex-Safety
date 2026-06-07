@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft, ClipboardCheck, Clock, FileEdit, CheckCircle2 } from "lucide-react"
+import { ClipboardCheck, Clock, FileEdit, CheckCircle2 } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -35,12 +35,8 @@ export default async function ReviewQueuePage({
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-          </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-[#3b8273] font-semibold">03</span>
+            <span className="text-teal font-semibold">03</span>
             QUALITY ASSURANCE
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-white">
@@ -91,7 +87,7 @@ export default async function ReviewQueuePage({
                           Completed
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-[#3b8273]/40 text-[#3b8273] font-mono text-[9px] uppercase tracking-widest">
+                        <Badge variant="outline" className="border-teal/40 text-teal font-mono text-[9px] uppercase tracking-widest">
                           Ready for Review
                         </Badge>
                       )}

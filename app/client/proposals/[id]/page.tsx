@@ -86,7 +86,7 @@ export default async function ClientProposalDetailPage({
       {/* Header */}
       <section className="space-y-3">
         <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
-          <span className="text-[#3b8273]">{reference}</span>
+          <span className="text-teal">{reference}</span>
           <span className="opacity-50">·</span>
           <span>Sent {new Date(issuedAt).toLocaleDateString("en-GB", DATE_FMT)}</span>
         </div>
@@ -153,7 +153,7 @@ export default async function ClientProposalDetailPage({
               </button>
             )}
             <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">
-              Status: <span className={isSigned ? "text-[#3b8273]" : "text-[#c0a66d]"}>{proposal.status}</span>
+              Status: <span className={isSigned ? "text-teal" : "text-[#c0a66d]"}>{proposal.status}</span>
             </p>
           </div>
 

@@ -29,9 +29,9 @@ const surfaceTokens = {
   dark: {
     label: "text-white/40",
     headerBorder: "border-white/5",
-    toggleActiveChip: "bg-[#3b8273] text-white",
+    toggleActiveChip: "bg-teal text-white",
     toggleInactiveChip: "bg-white/10 text-white/40",
-    addBtn: "border-dashed border-white/10 text-white/30 hover:text-[#3b8273]",
+    addBtn: "border-dashed border-white/10 text-white/30 hover:text-teal",
   },
   cream: {
     label: "text-[#8a857f]",

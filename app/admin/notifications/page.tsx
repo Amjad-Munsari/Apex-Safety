@@ -1,5 +1,4 @@
-import Link from "next/link"
-import { ArrowLeft, Bell } from "lucide-react"
+import { Bell } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { adminClient } from "@/lib/supabase/admin"
 import { cn } from "@/lib/utils"
@@ -66,12 +65,8 @@ export default async function NotificationsPage() {
       {/* Header */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <Link href="/admin" className="flex items-center gap-2 text-[#666] hover:text-white transition-colors mb-2">
-            <ArrowLeft className="w-4 h-4" />
-            <span className="font-mono text-xs uppercase tracking-widest">Back to Dashboard</span>
-          </Link>
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-white font-semibold">09</span>
+            <span className="text-teal font-semibold">09</span>
             REMINDER LOG
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-white">Notifications.</h2>
@@ -82,7 +77,7 @@ export default async function NotificationsPage() {
 
         <div className="flex flex-col items-end gap-1 font-mono text-[10px] uppercase tracking-[0.25em] text-[#666]">
           <span>Total Sent</span>
-          <span className="font-serif text-[28px] leading-none text-[#3b8273]">{entries.length}</span>
+          <span className="font-serif text-[28px] leading-none text-teal">{entries.length}</span>
         </div>
       </div>
 

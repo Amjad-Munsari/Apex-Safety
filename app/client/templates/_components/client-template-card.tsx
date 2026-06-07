@@ -67,7 +67,7 @@ export function ClientTemplateCard({
             </div>
             <span className={
               isPublished
-                ? "font-mono text-[9px] uppercase tracking-[0.25em] text-[#3b8273] bg-[#3b8273]/10 px-2 py-1 rounded-sm"
+                ? "font-mono text-[9px] uppercase tracking-[0.25em] text-teal bg-teal/10 px-2 py-1 rounded-sm"
                 : "font-mono text-[9px] uppercase tracking-[0.25em] text-[#8a857f] bg-[#f5f3ee] px-2 py-1 rounded-sm"
             }>
               {isPublished ? "Live" : "Draft"}

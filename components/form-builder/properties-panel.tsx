@@ -44,18 +44,18 @@ const surfaceTokens = {
     input:
       "bg-transparent border-white/10 text-white placeholder:text-white/20 focus:border-white/30",
     helpHint: "text-white/20",
-    toggleOn: "bg-[#3b8273]",
+    toggleOn: "bg-teal",
     toggleOff: "bg-white/10",
     toggleKnob: "bg-white",
     optionInput: "bg-transparent border-white/10 text-white focus:border-white/30",
     optionRemove: "text-white/20 hover:text-[#8b2b21]",
     addOptionInput:
       "bg-transparent border-dashed border-white/10 text-white placeholder:text-white/20 focus:border-white/20",
-    addOptionBtn: "text-white/30 hover:text-[#3b8273]",
+    addOptionBtn: "text-white/30 hover:text-teal",
     select: "bg-[#111] border-white/10 text-white focus:border-white/30",
     selectPanelText: "text-white/20",
     typeFooter: "border-white/5 text-white/20",
-    formulaMono: "text-[#3b8273]",
+    formulaMono: "text-teal",
   },
   cream: {
     headerBorder: "border-[#e5e1d8]",
@@ -75,7 +75,7 @@ const surfaceTokens = {
     select: "bg-white border-[#e5e1d8] text-[#1a1a1a] focus:border-[#1a1a1a]/40",
     selectPanelText: "text-[#8a857f]",
     typeFooter: "border-[#e5e1d8] text-[#8a857f]",
-    formulaMono: "text-[#3b8273]",
+    formulaMono: "text-teal",
   },
 } as const;
 

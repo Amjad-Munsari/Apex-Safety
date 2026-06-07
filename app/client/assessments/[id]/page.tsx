@@ -62,7 +62,7 @@ const STATUS_LABEL: Record<AssessmentStatus, string> = {
 }
 
 const STATUS_PILL: Record<AssessmentStatus, { border: string; text: string; dot: string }> = {
-  completed: { border: "border-[#3b8273]", text: "text-[#3b8273]", dot: "bg-[#3b8273]" },
+  completed: { border: "border-teal", text: "text-teal", dot: "bg-teal" },
   in_progress: { border: "border-[#c0a66d]", text: "text-[#c0a66d]", dot: "bg-[#c0a66d]" },
   scheduled: { border: "border-[#8a857f]", text: "text-[#6b6560]", dot: "bg-[#8a857f]" },
 }
