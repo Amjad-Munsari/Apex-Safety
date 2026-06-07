@@ -82,40 +82,38 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e5e1d8]">
-      {/* Primary row */}
-      <div className="max-w-[1320px] mx-auto h-16 lg:h-20 px-4 lg:px-6 xl:px-8 flex items-center justify-between gap-6">
-        {/* Brand */}
-        <div className="flex items-center gap-8 lg:gap-12 min-w-0">
-          <Link href="/client" className="flex flex-col gap-0.5 min-w-0 shrink-0">
-            <span className="font-serif text-[15px] lg:text-[18px] text-[#1a1a1a] font-medium tracking-tight whitespace-nowrap truncate max-w-[200px] lg:max-w-[280px]">
-              {orgName}
-            </span>
-          </Link>
+      {/* Primary row — brand (left) · nav (center) · user (right) */}
+      <div className="max-w-[1320px] mx-auto h-16 lg:h-20 px-4 lg:px-6 xl:px-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+        {/* Brand (left) */}
+        <Link href="/client" className="flex flex-col gap-0.5 min-w-0 shrink-0 justify-self-start">
+          <span className="font-serif text-[15px] lg:text-[18px] text-[#1a1a1a] font-medium tracking-tight whitespace-nowrap truncate max-w-[200px] lg:max-w-[280px]">
+            {orgName}
+          </span>
+        </Link>
 
-          {/* Desktop group nav — 4 items, roomy */}
-          <nav className="hidden md:flex items-center gap-7 lg:gap-9">
-            {NAV_GROUPS.map((group) => {
-              const active = groupActive(group, pathname);
-              return (
-                <Link
-                  key={group.label}
-                  href={group.href}
-                  className={cn(
-                    "text-[13px] lg:text-[14px] font-bold tracking-tight whitespace-nowrap border-b-2 pb-1 transition-all",
-                    active
-                      ? "text-black border-black"
-                      : "text-[#6b6560] border-transparent hover:text-black hover:border-[#ddd]"
-                  )}
-                >
-                  {group.label}
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+        {/* Desktop group nav — centered */}
+        <nav className="hidden md:flex items-center justify-center gap-7 lg:gap-9">
+          {NAV_GROUPS.map((group) => {
+            const active = groupActive(group, pathname);
+            return (
+              <Link
+                key={group.label}
+                href={group.href}
+                className={cn(
+                  "text-[13px] lg:text-[14px] font-bold tracking-tight whitespace-nowrap border-b-2 pb-1 transition-all",
+                  active
+                    ? "text-black border-black"
+                    : "text-[#6b6560] border-transparent hover:text-black hover:border-[#ddd]"
+                )}
+              >
+                {group.label}
+              </Link>
+            );
+          })}
+        </nav>
 
         {/* Right side */}
-        <div className="flex items-center gap-4 lg:gap-6 shrink-0">
+        <div className="flex items-center gap-4 lg:gap-6 shrink-0 justify-self-end">
           <div className="hidden lg:flex flex-col items-end leading-tight">
             <span className="text-[12px] font-bold tracking-tight text-[#1a1a1a] whitespace-nowrap">
               {userName}
@@ -215,7 +213,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
       {/* Secondary row — sub-nav tabs for the active group (desktop) */}
       {subItems && subItems.length > 0 && (
         <div className="hidden md:block border-t border-[#efece5] bg-white/50">
-          <div className="max-w-[1320px] mx-auto px-4 lg:px-6 xl:px-8 h-11 flex items-center gap-7">
+          <div className="max-w-[1320px] mx-auto px-4 lg:px-6 xl:px-8 h-11 flex items-center justify-center gap-7">
             {subItems.map((child) => {
               const childActive = hrefActive(child.href, pathname);
               return (
