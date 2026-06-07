@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext, requireActorUserId } from "@/lib/auth-helpers";
+import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -188,6 +189,15 @@ export async function submitAssignedFillByIdAction(
     throw new Error(updateError?.message ?? "Failed to submit form");
   }
 
+  // Notify n8n of an assignment fill submission (best-effort, non-blocking).
+  await dispatchClientFormEvent({
+    type: "client_form_submitted",
+    client_id: ctx.client_id,
+    submission_id: submissionId,
+    assignment_id: updated.assignment_id,
+    submitted_at: new Date().toISOString(),
+  });
+
   if (updated.assignment_id) {
     await transitionAssignmentStatus(supabase, updated.assignment_id, "completed");
 
@@ -334,6 +344,18 @@ export async function forkAssignedTemplate(
     .eq("id", assignmentId);
 
   if (updateError) throw new Error(updateError.message ?? "Assignment rewire failed");
+
+  // Notify n8n that a client cloned a master template (best-effort, non-blocking).
+  // Fired before the redirect — dispatchClientFormEvent never throws, so it
+  // cannot interpose on the NEXT_REDIRECT below.
+  await dispatchClientFormEvent({
+    type: "client_template_cloned",
+    client_id: ctx.client_id,
+    template_id: fork.id,
+    template_name: master.name,
+    parent_template_id: assignment.template_id,
+    cloned_at: new Date().toISOString(),
+  });
 
   // Step 10: Invalidate both list caches
   revalidatePath("/client/assignments");

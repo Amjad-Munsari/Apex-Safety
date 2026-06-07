@@ -1,0 +1,158 @@
+// Tests for the three two-way-form-builder client events dispatched via
+// lib/notifications/client-form-events.ts → dispatchNotification.
+//
+// Mirrors the fetch-mock + env-stub pattern of n8n-proposal-dispatch.test.ts.
+// dispatchClientFormEvent dynamically imports ./n8n-dispatch (which pulls in
+// "server-only"); we mock server-only to a no-op so the import resolves in jsdom.
+
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+
+vi.mock("server-only", () => ({}))
+
+const FAKE_WEBHOOK_URL = "https://n8n.example.test/webhook/notifications"
+const FAKE_SECRET = "super-secret-token"
+
+const CLIENT_ID = "client-org-0000-4000-8000-000000000001"
+
+describe("dispatchClientFormEvent — two-way form builder events", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllEnvs()
+    vi.stubEnv("N8N_WEBHOOK_URL", FAKE_WEBHOOK_URL)
+    vi.stubEnv("N8N_WEBHOOK_SECRET", FAKE_SECRET)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
+  it("POSTs a client_form_created payload with the org id and template fields", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(null, { status: 200 })
+    )
+    const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
+
+    await dispatchClientFormEvent({
+      type: "client_form_created",
+      client_id: CLIENT_ID,
+      template_id: "tpl-1",
+      template_name: "Site Risk Walkthrough",
+      template_type: "site_risk",
+      created_at: "2026-06-08T10:00:00.000Z",
+    })
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    const [calledUrl, init] = fetchSpy.mock.calls[0] as [string, RequestInit]
+    expect(calledUrl).toBe(FAKE_WEBHOOK_URL)
+    expect(init.method).toBe("POST")
+    const headers = init.headers as Record<string, string>
+    expect(headers["X-Webhook-Secret"]).toBe(FAKE_SECRET)
+
+    const body = JSON.parse(init.body as string) as Record<string, unknown>
+    expect(body).toMatchObject({
+      type: "client_form_created",
+      client_id: CLIENT_ID,
+      template_id: "tpl-1",
+      template_name: "Site Risk Walkthrough",
+      template_type: "site_risk",
+      created_at: "2026-06-08T10:00:00.000Z",
+    })
+  })
+
+  it("POSTs a client_form_submitted payload (assignment_id null for self-fill)", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(null, { status: 200 })
+    )
+    const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
+
+    await dispatchClientFormEvent({
+      type: "client_form_submitted",
+      client_id: CLIENT_ID,
+      submission_id: "sub-9",
+      assignment_id: null,
+      submitted_at: "2026-06-08T11:00:00.000Z",
+    })
+
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(init.body as string) as Record<string, unknown>
+    expect(body).toMatchObject({
+      type: "client_form_submitted",
+      client_id: CLIENT_ID,
+      submission_id: "sub-9",
+      assignment_id: null,
+    })
+  })
+
+  it("POSTs a client_template_cloned payload carrying parent lineage", async () => {
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(null, { status: 200 })
+    )
+    const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
+
+    await dispatchClientFormEvent({
+      type: "client_template_cloned",
+      client_id: CLIENT_ID,
+      template_id: "fork-7",
+      template_name: "FRA Type 3",
+      parent_template_id: "master-1",
+      cloned_at: "2026-06-08T12:00:00.000Z",
+    })
+
+    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit]
+    const body = JSON.parse(init.body as string) as Record<string, unknown>
+    expect(body).toMatchObject({
+      type: "client_template_cloned",
+      template_id: "fork-7",
+      parent_template_id: "master-1",
+    })
+  })
+
+  it("never throws when the webhook returns a non-ok status (flow must not break)", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(new Response(null, { status: 500 }))
+    const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
+
+    await expect(
+      dispatchClientFormEvent({
+        type: "client_form_created",
+        client_id: CLIENT_ID,
+        template_id: "tpl-1",
+        template_name: "X",
+        template_type: "fra",
+        created_at: "2026-06-08T10:00:00.000Z",
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  it("never throws when fetch itself rejects (transport failure)", async () => {
+    vi.spyOn(global, "fetch").mockRejectedValue(new Error("network down"))
+    const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
+
+    await expect(
+      dispatchClientFormEvent({
+        type: "client_template_cloned",
+        client_id: CLIENT_ID,
+        template_id: "fork-7",
+        template_name: "FRA Type 3",
+        parent_template_id: "master-1",
+        cloned_at: "2026-06-08T12:00:00.000Z",
+      })
+    ).resolves.toBeUndefined()
+  })
+
+  it("skips dispatch (no fetch) when the webhook env is unset, without throwing", async () => {
+    vi.unstubAllEnvs()
+    const fetchSpy = vi.spyOn(global, "fetch")
+    const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
+
+    await expect(
+      dispatchClientFormEvent({
+        type: "client_form_submitted",
+        client_id: CLIENT_ID,
+        submission_id: "sub-9",
+        assignment_id: "asg-2",
+        submitted_at: "2026-06-08T11:00:00.000Z",
+      })
+    ).resolves.toBeUndefined()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+})
