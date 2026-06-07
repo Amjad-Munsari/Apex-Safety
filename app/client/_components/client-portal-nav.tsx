@@ -11,21 +11,60 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-const NAV_ITEMS = [
-  { id: "01", label: "Dashboard", href: "/client" },
-  { id: "02", label: "Compliance", href: "/client/compliance" },
-  { id: "03", label: "Reports", href: "/client/reports" },
-  { id: "04", label: "Billing", href: "/client/billing" },
-  { id: "05", label: "Assignments", href: "/client/assignments" },
-  { id: "06", label: "Templates", href: "/client/templates" },
-  { id: "07", label: "Proposals", href: "/client/proposals" },
-  { id: "08", label: "Contracts", href: "/client/contracts" },
-] as const;
+interface NavChild {
+  label: string;
+  href: string;
+}
+interface NavGroup {
+  label: string;
+  /** Where the top-level group link points (its default sub-page). */
+  href: string;
+  children?: NavChild[];
+}
 
-function isActive(href: string, pathname: string | null): boolean {
+// Consolidated 4-group IA. Routes are unchanged — groups simply gather the
+// existing pages and surface them via the secondary tab strip below the header.
+const NAV_GROUPS: NavGroup[] = [
+  { label: "Dashboard", href: "/client" },
+  {
+    label: "Documents",
+    href: "/client/compliance",
+    children: [
+      { label: "Compliance", href: "/client/compliance" },
+      { label: "Reports", href: "/client/reports" },
+    ],
+  },
+  {
+    label: "Forms",
+    href: "/client/assignments",
+    children: [
+      { label: "Assignments", href: "/client/assignments" },
+      { label: "Templates", href: "/client/templates" },
+    ],
+  },
+  {
+    label: "Agreements",
+    href: "/client/proposals",
+    children: [
+      { label: "Proposals", href: "/client/proposals" },
+      { label: "Contracts", href: "/client/contracts" },
+      { label: "Billing", href: "/client/billing" },
+    ],
+  },
+];
+
+function hrefActive(href: string, pathname: string | null): boolean {
   if (!pathname) return false;
   if (href === "/client") return pathname === "/client";
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function groupActive(group: NavGroup, pathname: string | null): boolean {
+  if (!pathname) return false;
+  const hrefs = group.children ? group.children.map((c) => c.href) : [group.href];
+  return hrefs.some((h) =>
+    h === "/client" ? pathname === "/client" : pathname === h || pathname.startsWith(`${h}/`)
+  );
 }
 
 interface ClientPortalNavProps {
@@ -38,55 +77,46 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const activeGroup = NAV_GROUPS.find((g) => groupActive(g, pathname));
+  const subItems = activeGroup?.children;
+
   return (
     <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e5e1d8]">
-      <div className="max-w-[1320px] mx-auto h-16 lg:h-20 px-4 lg:px-6 xl:px-8 flex items-center justify-between gap-4">
+      {/* Primary row */}
+      <div className="max-w-[1320px] mx-auto h-16 lg:h-20 px-4 lg:px-6 xl:px-8 flex items-center justify-between gap-6">
         {/* Brand */}
-        <div className="flex items-center gap-6 lg:gap-8 min-w-0">
+        <div className="flex items-center gap-8 lg:gap-12 min-w-0">
           <Link href="/client" className="flex flex-col gap-0.5 min-w-0 shrink-0">
-            <span className="font-serif text-[15px] lg:text-[17px] text-[#1a1a1a] font-medium tracking-tight whitespace-nowrap truncate max-w-[180px] lg:max-w-[260px]">
+            <span className="font-serif text-[15px] lg:text-[18px] text-[#1a1a1a] font-medium tracking-tight whitespace-nowrap truncate max-w-[200px] lg:max-w-[280px]">
               {orgName}
             </span>
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-3 lg:gap-5 xl:gap-6 min-w-0">
-            {NAV_ITEMS.map((item) => {
-              const active = isActive(item.href, pathname);
+          {/* Desktop group nav — 4 items, roomy */}
+          <nav className="hidden md:flex items-center gap-7 lg:gap-9">
+            {NAV_GROUPS.map((group) => {
+              const active = groupActive(group, pathname);
               return (
                 <Link
-                  key={item.id}
-                  href={item.href}
+                  key={group.label}
+                  href={group.href}
                   className={cn(
-                    "flex items-center gap-1.5 group transition-all whitespace-nowrap shrink-0",
-                    active ? "text-black" : "text-[#6b6560] hover:text-black"
+                    "text-[13px] lg:text-[14px] font-bold tracking-tight whitespace-nowrap border-b-2 pb-1 transition-all",
+                    active
+                      ? "text-black border-black"
+                      : "text-[#6b6560] border-transparent hover:text-black hover:border-[#ddd]"
                   )}
                 >
-                  <span
-                    className={cn(
-                      "hidden xl:inline font-mono text-[9px] tracking-[0.2em] transition-colors",
-                      active ? "text-black" : "text-[#8a857f] group-hover:text-black"
-                    )}
-                  >
-                    {item.id}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-[11px] lg:text-[12px] font-bold tracking-tight border-b-2 transition-all capitalize",
-                      active ? "border-black pb-0.5" : "border-transparent pb-0 hover:border-[#ddd]"
-                    )}
-                  >
-                    {item.label}
-                  </span>
+                  {group.label}
                 </Link>
               );
             })}
           </nav>
         </div>
 
-        {/* Right Side */}
-        <div className="flex items-center gap-3 lg:gap-5 shrink-0">
-          <div className="hidden xl:flex flex-col items-end leading-tight">
+        {/* Right side */}
+        <div className="flex items-center gap-4 lg:gap-6 shrink-0">
+          <div className="hidden lg:flex flex-col items-end leading-tight">
             <span className="text-[12px] font-bold tracking-tight text-[#1a1a1a] whitespace-nowrap">
               {userName}
             </span>
@@ -127,29 +157,44 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                   {userRole}
                 </div>
               </div>
-              <nav className="flex flex-col py-4">
-                {NAV_ITEMS.map((item) => {
-                  const active = isActive(item.href, pathname);
+              <nav className="flex flex-col py-3">
+                {NAV_GROUPS.map((group) => {
+                  const groupIsActive = groupActive(group, pathname);
                   return (
-                    <Link
-                      key={item.id}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        "px-6 py-3 flex items-center gap-3 transition-colors",
-                        active ? "text-black bg-[#faf9f6]" : "text-[#6b6560] hover:text-black hover:bg-[#faf9f6]"
-                      )}
-                    >
-                      <span
+                    <div key={group.label} className="py-1">
+                      <Link
+                        href={group.href}
+                        onClick={() => setMobileOpen(false)}
                         className={cn(
-                          "font-mono text-[9px] tracking-[0.2em]",
-                          active ? "text-black" : "text-[#8a857f]"
+                          "px-6 py-2 block text-[14px] font-bold tracking-tight transition-colors",
+                          groupIsActive ? "text-black" : "text-[#1a1a1a] hover:text-black"
                         )}
                       >
-                        {item.id}
-                      </span>
-                      <span className="text-[13px] font-bold tracking-tight">{item.label}</span>
-                    </Link>
+                        {group.label}
+                      </Link>
+                      {group.children && (
+                        <div className="flex flex-col">
+                          {group.children.map((child) => {
+                            const childActive = hrefActive(child.href, pathname);
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setMobileOpen(false)}
+                                className={cn(
+                                  "pl-10 pr-6 py-2 text-[13px] transition-colors",
+                                  childActive
+                                    ? "text-black font-semibold bg-[#faf9f6]"
+                                    : "text-[#6b6560] hover:text-black hover:bg-[#faf9f6]"
+                                )}
+                              >
+                                {child.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </nav>
@@ -166,6 +211,31 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
           </Sheet>
         </div>
       </div>
+
+      {/* Secondary row — sub-nav tabs for the active group (desktop) */}
+      {subItems && subItems.length > 0 && (
+        <div className="hidden md:block border-t border-[#efece5] bg-white/50">
+          <div className="max-w-[1320px] mx-auto px-4 lg:px-6 xl:px-8 h-11 flex items-center gap-7">
+            {subItems.map((child) => {
+              const childActive = hrefActive(child.href, pathname);
+              return (
+                <Link
+                  key={child.href}
+                  href={child.href}
+                  className={cn(
+                    "font-mono text-[10px] uppercase tracking-[0.2em] border-b-2 pb-0.5 transition-all whitespace-nowrap",
+                    childActive
+                      ? "text-black border-black"
+                      : "text-[#8a857f] border-transparent hover:text-black"
+                  )}
+                >
+                  {child.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
