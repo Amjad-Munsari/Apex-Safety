@@ -274,11 +274,12 @@ describe("forkAssignedTemplate — Phase 16 D-05/D-06/D-08", () => {
     expect(updateEqIdArg).toBe(ASSIGNMENT_ID);
   });
 
-  // ── (e) D-07: redirect to /client/templates/[fork.id]/edit ───────────────
-  it("(e) calls redirect with /client/templates/[fork.id]/edit", async () => {
+  // ── (e) D-07: redirect to the builder at /client/templates/[fork.id] ──────
+  // (There is no /edit route — the builder lives at [id]/page.tsx.)
+  it("(e) calls redirect with /client/templates/[fork.id]", async () => {
     await callFork();
 
-    expect(redirect).toHaveBeenCalledWith(`/client/templates/${FORK_ID}/edit`);
+    expect(redirect).toHaveBeenCalledWith(`/client/templates/${FORK_ID}`);
   });
 
   // ── (f) revalidatePath for both assignment + template lists ──────────────

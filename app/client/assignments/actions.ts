@@ -339,6 +339,8 @@ export async function forkAssignedTemplate(
   revalidatePath("/client/assignments");
   revalidatePath("/client/templates");
 
-  // Step 11: Redirect to builder — LAST statement, outside try/catch (PITFALL 1)
-  redirect(`/client/templates/${fork.id}/edit`);
+  // Step 11: Redirect to builder — LAST statement, outside try/catch (PITFALL 1).
+  // The builder lives at /client/templates/[id] (there is no /edit route); the
+  // old /edit target 404'd, stranding the user with no way back.
+  redirect(`/client/templates/${fork.id}`);
 }
