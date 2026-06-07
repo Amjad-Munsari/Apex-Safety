@@ -76,7 +76,12 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   const proposal = proposalData as ProposalRow
 
-  // 3. PDF must exist before we can hash it
+  // 3. Guard: do not re-send a proposal that is already finalised
+  if (proposal.status === "Signed" || proposal.status === "Contract Issued") {
+    return NextResponse.json({ error: "already_finalised" }, { status: 409 })
+  }
+
+  // 4. PDF must exist before we can hash it
   if (proposal.proposal_pdf_path === null) {
     return NextResponse.json(
       { error: "no_pdf", message: "PDF must be generated before sending for signature." },
@@ -84,7 +89,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     )
   }
 
-  // 4. Load client contact
+  // 5. Load client contact
   const { data: clientData, error: clientError } = await adminClient
     .from("clients")
     .select("name, contact_name, contact_email")
@@ -103,16 +108,16 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
   const clientEmail: string = client.contact_email
 
-  // 5. Generate signing token
+  // 6. Generate signing token
   const { raw, hash } = generateSigningToken()
 
-  // 6. Hash the current PDF
+  // 7. Hash the current PDF
   const documentHash = await hashDocument(proposal.proposal_pdf_path)
 
-  // 7. Compute expiry — 30 days from now
+  // 8. Compute expiry — 30 days from now
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  // 8. Persist signing fields + advance status
+  // 9. Persist signing fields + advance status
   const { error: updateError } = await adminClient
     .from("proposals")
     .update({
@@ -130,14 +135,14 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     return NextResponse.json({ error: "update_failed" }, { status: 500 })
   }
 
-  // 9. Build signing URL using raw token (not hash)
+  // 10. Build signing URL using raw token (not hash)
   const base = getSiteBase()
   const signingUrl = `${base}/sign/${raw}`
 
-  // 10. Derive proposal title from services_json
+  // 11. Derive proposal title from services_json
   const proposalTitle = deriveProposalTitle(proposal.services_json)
 
-  // 11. Dispatch notification — non-fatal: still return success if n8n is down
+  // 12. Dispatch notification — non-fatal: still return success if n8n is down
   const dispatch = await dispatchNotification({
     type: "proposal_signature_request",
     client_name: client.name ?? client.contact_name ?? "Client",
@@ -151,7 +156,7 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
     console.error("[send-for-signature] n8n dispatch failed:", dispatch.error)
   }
 
-  // 12. Revalidate admin kanban views
+  // 13. Revalidate admin kanban views
   revalidatePath("/admin/proposals")
   revalidatePath(`/admin/proposals/${id}`)
 

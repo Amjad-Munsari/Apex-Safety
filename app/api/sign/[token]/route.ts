@@ -207,6 +207,7 @@ export async function POST(
     })
     .eq("signing_token", hash)
     .eq("signing_token_used", false)
+    .gt("signing_token_expires_at", new Date().toISOString())
     .select("id, client_id, signing_document_hash, services_json")
     .maybeSingle<{
       id: string
@@ -224,12 +225,21 @@ export async function POST(
     return NextResponse.json({ error: "already_signed" }, { status: 409 })
   }
 
-  // 5. Capture IP + UA
+  // 5. Guard: document hash must be present — fail loudly if missing
+  if (!consumed.signing_document_hash) {
+    console.error(
+      "[sign/[token]] Proposal consumed but has no stored document hash — manual recovery needed.",
+      { proposalId: consumed.id }
+    )
+    return NextResponse.json({ error: "server_error" }, { status: 500 })
+  }
+
+  // 6. Capture IP + UA
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "0.0.0.0"
   const ua = req.headers.get("user-agent") ?? null
 
-  // 6. Insert signature record
+  // 7. Insert signature record
   const { error: insertError } = await adminClient
     .from("proposal_signatures")
     .insert({
@@ -239,7 +249,7 @@ export async function POST(
       signature_image: signatureImage,
       ip_address: ip,
       user_agent: ua,
-      document_hash: consumed.signing_document_hash ?? "",
+      document_hash: consumed.signing_document_hash,
       signed_at: now,
     })
 
@@ -251,7 +261,7 @@ export async function POST(
     // Do not 500 — proposal is already marked Signed. Log for manual recovery.
   }
 
-  // 7. Load client + dispatch notification
+  // 8. Load client + dispatch notification
   try {
     const { data: clientRow } = await adminClient
       .from("clients")
@@ -273,9 +283,9 @@ export async function POST(
     console.error("[sign/[token]] Notification dispatch failed:", err)
   }
 
-  // 8. Revalidate admin Kanban
+  // 9. Revalidate admin Kanban
   revalidatePath("/admin/proposals")
 
-  // 9. Return success
+  // 10. Return success
   return NextResponse.json({ success: true })
 }

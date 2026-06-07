@@ -149,6 +149,40 @@ describe("POST /api/proposals/[id]/send-for-signature", () => {
     expect(body).toEqual({ error: "not_found" })
   })
 
+  // ── 409 when proposal is already finalised ───────────────────────────────
+
+  it("returns 409 with error 'already_finalised' when proposal.status is 'Signed'", async () => {
+    proposalsMaybeSingleSpy.mockResolvedValueOnce({
+      data: { ...PROPOSAL_ROW, status: "Signed" },
+      error: null,
+    })
+    const [req, ctx] = makeRequest(PROPOSAL_ID)
+
+    const res = await POST(req, ctx)
+
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body).toEqual({ error: "already_finalised" })
+    expect(proposalsUpdateEqSpy).not.toHaveBeenCalled()
+    expect(dispatchNotificationSpy).not.toHaveBeenCalled()
+  })
+
+  it("returns 409 with error 'already_finalised' when proposal.status is 'Contract Issued'", async () => {
+    proposalsMaybeSingleSpy.mockResolvedValueOnce({
+      data: { ...PROPOSAL_ROW, status: "Contract Issued" },
+      error: null,
+    })
+    const [req, ctx] = makeRequest(PROPOSAL_ID)
+
+    const res = await POST(req, ctx)
+
+    expect(res.status).toBe(409)
+    const body = await res.json()
+    expect(body).toEqual({ error: "already_finalised" })
+    expect(proposalsUpdateEqSpy).not.toHaveBeenCalled()
+    expect(dispatchNotificationSpy).not.toHaveBeenCalled()
+  })
+
   // ── 400 when proposal has no PDF ─────────────────────────────────────────
 
   it("returns 400 with error 'no_pdf' when proposal_pdf_path is null", async () => {

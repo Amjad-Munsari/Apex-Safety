@@ -41,8 +41,10 @@ vi.mock("@/lib/supabase/admin", () => ({
           update: () => ({
             eq: () => ({
               eq: () => ({
-                select: () => ({
-                  maybeSingle: () => proposalsUpdateSpy(),
+                gt: () => ({
+                  select: () => ({
+                    maybeSingle: () => proposalsUpdateSpy(),
+                  }),
                 }),
               }),
             }),
@@ -338,7 +340,7 @@ describe("POST /api/sign/[token]", () => {
       data: {
         id: VALID_PROPOSAL_ROW.id,
         client_id: VALID_PROPOSAL_ROW.client_id,
-        signing_document_hash: null,
+        signing_document_hash: "dochashtestvalue",
         services_json: [],
       },
       error: null,
@@ -367,7 +369,7 @@ describe("POST /api/sign/[token]", () => {
       data: {
         id: VALID_PROPOSAL_ROW.id,
         client_id: VALID_PROPOSAL_ROW.client_id,
-        signing_document_hash: null,
+        signing_document_hash: "dochashtestvalue",
         services_json: [],
       },
       error: null,
@@ -390,5 +392,24 @@ describe("POST /api/sign/[token]", () => {
 
     const insertArg = signaturesInsertSpy.mock.calls[0][0] as Record<string, unknown>
     expect(insertArg.ip_address).toBe("0.0.0.0")
+  })
+
+  it("returns 500 and does NOT insert when consume returns a row with null signing_document_hash", async () => {
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({
+      data: {
+        id: VALID_PROPOSAL_ROW.id,
+        client_id: VALID_PROPOSAL_ROW.client_id,
+        signing_document_hash: null,
+        services_json: [],
+      },
+      error: null,
+    })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(500)
+    const json = await res.json()
+    expect(json).toEqual({ error: "server_error" })
+    expect(signaturesInsertSpy).not.toHaveBeenCalled()
   })
 })

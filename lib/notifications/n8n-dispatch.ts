@@ -35,6 +35,21 @@ export type NotificationPayload =
       assessment_date: string    // en-GB formatted, matches PDF header
       report_storage_path: string // for n8n logging / dedup
     }
+  | {
+      type: "proposal_signature_request"
+      client_name: string
+      client_email: string
+      proposal_title: string
+      signing_url: string        // absolute public URL: ${siteUrl}/sign/${rawToken}
+      expiry_date: string        // ISO date the signing link expires
+    }
+  | {
+      type: "proposal_signed"
+      client_name: string
+      client_email: string
+      proposal_title: string
+      signed_at: string          // ISO timestamp the client completed signing
+    }
 
 export interface DispatchResult {
   ok: boolean
@@ -42,7 +57,24 @@ export interface DispatchResult {
   error?: string
 }
 
+function redactSigningUrl(url: string): string {
+  try {
+    const parsed = new URL(url)
+    return `${parsed.origin}/sign/[REDACTED]`
+  } catch {
+    return "[REDACTED]"
+  }
+}
+
 export async function dispatchNotification(payload: NotificationPayload): Promise<DispatchResult> {
+  const safePayload = {
+    ...payload,
+    ...("signing_url" in payload
+      ? { signing_url: redactSigningUrl(payload.signing_url) }
+      : {}),
+  }
+  console.log("[n8n] dispatch", JSON.stringify({ type: payload.type, payload: safePayload }))
+
   const url = process.env.N8N_WEBHOOK_URL
   const secret = process.env.N8N_WEBHOOK_SECRET
 
