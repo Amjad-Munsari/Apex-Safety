@@ -68,7 +68,7 @@ export default async function AssignmentLandingPage({ params }: Props) {
           href="/client/assignments"
           className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8a857f] hover:text-[#1a1a1a] transition-colors"
         >
-          ← Back to Assigned Forms
+          ← Back to Assessments
         </Link>
         <div className="mt-8 space-y-4">
           <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium leading-[1.1]">
@@ -104,7 +104,7 @@ export default async function AssignmentLandingPage({ params }: Props) {
         href="/client/assignments"
         className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8a857f] hover:text-[#1a1a1a] transition-colors"
       >
-        ← Back to Assigned Forms
+        ← Back to Assessments
       </Link>
 
       {/* Top section */}

@@ -52,7 +52,7 @@ export function SubmissionViewerClient({
           href="/client/assignments"
           className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] hover:text-[#1a1a1a] transition-colors"
         >
-          &larr; Back to Assignments
+          &larr; Back to Assessments
         </Link>
 
         <div className="flex items-start justify-between gap-4 flex-wrap">

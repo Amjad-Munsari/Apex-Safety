@@ -31,12 +31,12 @@ export default async function ClientAssignmentsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
-            04 · Assigned Forms
+            04 · Assessments
           </span>
         </div>
         <div className="flex items-end justify-between gap-6 flex-wrap">
           <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">
-            Forms assigned to you.
+            Assessments assigned to you.
           </h2>
         </div>
       </section>
@@ -62,9 +62,9 @@ export default async function ClientAssignmentsPage() {
         <TabsContent value="active" className="pt-6">
           {active.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <h3 className="font-serif text-[20px] text-[#1a1a1a]">No forms assigned yet</h3>
+              <h3 className="font-serif text-[20px] text-[#1a1a1a]">No assessments assigned yet</h3>
               <p className="text-sm font-sans text-[#6b6560]">
-                When Matt assigns a form to your organisation, it&apos;ll appear here.
+                When Matt assigns an assessment to your organisation, it&apos;ll appear here.
               </p>
             </div>
           ) : (
@@ -82,9 +82,9 @@ export default async function ClientAssignmentsPage() {
         <TabsContent value="completed" className="pt-6">
           {completed.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <h3 className="font-serif text-[20px] text-[#1a1a1a]">No completed forms yet</h3>
+              <h3 className="font-serif text-[20px] text-[#1a1a1a]">No completed assessments yet</h3>
               <p className="text-sm font-sans text-[#6b6560]">
-                Submitted assignments will appear here for reference.
+                Submitted assessments will appear here for reference.
               </p>
             </div>
           ) : (

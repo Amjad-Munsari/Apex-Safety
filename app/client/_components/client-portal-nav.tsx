@@ -38,7 +38,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Forms",
     href: "/client/assignments",
     children: [
-      { label: "Assignments", href: "/client/assignments" },
+      { label: "Assessments", href: "/client/assignments" },
       { label: "Templates", href: "/client/templates" },
     ],
   },

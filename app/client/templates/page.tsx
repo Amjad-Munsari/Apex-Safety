@@ -54,7 +54,7 @@ export default async function ClientTemplatesPage() {
         {!mine || mine.length === 0 ? (
           <div className="py-6">
             <h3 className="font-serif text-xl">No templates yet</h3>
-            <p className="text-sm text-[#6b6560] mt-2">Create your own forms or customise an assigned form when it arrives.</p>
+            <p className="text-sm text-[#6b6560] mt-2">Create your own forms or customise an assigned assessment when it arrives.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

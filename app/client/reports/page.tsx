@@ -77,7 +77,7 @@ export default async function ReportsPage() {
            <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">03 Deliverables</span>
         </div>
         <h2 className="font-serif text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
-          Assessments &amp; reports.
+          Reports.
         </h2>
       </section>
 
