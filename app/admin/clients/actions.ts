@@ -1,6 +1,7 @@
 "use server"
 
 import { adminClient } from "@/lib/supabase/admin"
+import { isAdmin } from "@/lib/auth-helpers"
 import { revalidatePath } from "next/cache"
 
 export type NewClientInput = {
@@ -105,9 +106,15 @@ export async function inviteClientUser(
   clientId: string,
   input: InviteClientUserInput
 ): Promise<InviteResult> {
+  // AuthZ: these actions wield the service-role client (creates auth users,
+  // mints login links). There is no route middleware, so this server-trusted
+  // admin_users check is the sole gate. Match the sibling-action convention.
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized" }
+
   const name = input.name.trim()
   const email = input.email.trim().toLowerCase()
-  const role = (input.role || "member").trim()
+  // Constrain role to a known allowlist — never trust the client value.
+  const role = input.role === "owner" ? "owner" : "member"
 
   if (!name) return { ok: false, error: "Name is required." }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Enter a valid email address." }
@@ -181,6 +188,8 @@ export async function revokeClientUser(
   clientId: string,
   userId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!(await isAdmin())) return { ok: false, error: "Unauthorized" }
+
   // Removes the org link → the user can no longer resolve a client context, so
   // the portal shows the "sign in to continue" fallback. The auth account is
   // left intact (no orphaned-data risk); re-inviting re-links it.
