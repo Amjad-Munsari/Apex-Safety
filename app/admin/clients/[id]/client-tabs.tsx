@@ -2,11 +2,12 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardList } from "lucide-react"
+import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardList, Users } from "lucide-react"
 import Link from "next/link"
 import { AssignTemplateModal } from "@/components/admin/assign-template-modal"
 import { RevokeAssignmentButton } from "@/app/admin/assignments/revoke-assignment-button"
 import { daysOverdue } from "@/lib/assignments/is-overdue"
+import { ClientAccessTab, type ClientUserRow } from "./client-access-tab"
 
 type RagStatus = "CURRENT" | "EXPIRING" | "EXPIRED"
 
@@ -67,6 +68,8 @@ export interface ClientTabsProps {
   assignments?: AssignmentRow[]
   /** Published templates — for the Assign template modal. */
   publishedTemplates?: Array<{ id: string; name: string }>
+  /** Portal users with access to this client org. */
+  clientUsers?: ClientUserRow[]
 }
 
 function ragFromDate(expiry: string | null): RagStatus {
@@ -135,6 +138,7 @@ export function ClientTabs({
   hoursLog,
   assignments = [],
   publishedTemplates = [],
+  clientUsers = [],
 }: ClientTabsProps) {
   const compliance = buildComplianceFromDocuments(documents)
   const complianceCategories = Object.keys(compliance)
@@ -210,6 +214,9 @@ export function ClientTabs({
           </TabsTrigger>
           <TabsTrigger value="assignments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
             <ClipboardList className="w-3.5 h-3.5" /> Assigned Forms{activeAssignmentCount > 0 ? ` (${activeAssignmentCount})` : ""}
+          </TabsTrigger>
+          <TabsTrigger value="access" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
+            <Users className="w-3.5 h-3.5" /> Access{clientUsers.length > 0 ? ` (${clientUsers.length})` : ""}
           </TabsTrigger>
         </TabsList>
 
@@ -545,6 +552,11 @@ export function ClientTabs({
               </div>
             )}
           </Card>
+        </TabsContent>
+
+        {/* ACCESS — portal user invites */}
+        <TabsContent value="access" className="pt-6">
+          <ClientAccessTab clientId={clientId} clientName={clientName} users={clientUsers} />
         </TabsContent>
       </Tabs>
     </div>

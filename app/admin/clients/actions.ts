@@ -72,6 +72,126 @@ export async function updateClientHours(clientId: string, adjustment: number) {
 
   revalidatePath(`/admin/clients/${clientId}`)
   revalidatePath("/admin")
-  
+
   return { success: true, newBalance }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Client portal access — invite / resend / revoke
+//
+// Onboarding uses the Supabase Admin API to create the auth user (which sets the
+// auth token columns correctly, unlike a raw SQL insert) and generates an action
+// link. Email automation is deferred (Option C): we return the link so the admin
+// can send it manually. The invitee clicks it → /auth/callback exchanges the code
+// → lands on /auth/set-password to choose a password.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function portalRedirectTo(): string {
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
+  return `${base.replace(/\/$/, "")}/auth/callback?next=/auth/set-password`
+}
+
+export type InviteClientUserInput = {
+  name: string
+  email: string
+  role?: string
+}
+
+export type InviteResult =
+  | { ok: true; link: string; status: "invited" | "resent"; name: string }
+  | { ok: false; error: string }
+
+export async function inviteClientUser(
+  clientId: string,
+  input: InviteClientUserInput
+): Promise<InviteResult> {
+  const name = input.name.trim()
+  const email = input.email.trim().toLowerCase()
+  const role = (input.role || "member").trim()
+
+  if (!name) return { ok: false, error: "Name is required." }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: "Enter a valid email address." }
+
+  const redirectTo = portalRedirectTo()
+
+  // Already linked to a client? Short-circuit with a clear outcome.
+  const { data: existingLink } = await adminClient
+    .from("client_users")
+    .select("id, client_id")
+    .eq("email", email)
+    .maybeSingle()
+
+  if (existingLink) {
+    if (existingLink.client_id !== clientId) {
+      return { ok: false, error: "That email is already linked to another organisation." }
+    }
+    // Same org → issue a fresh set-password link (resend).
+    const { data, error } = await adminClient.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo },
+    })
+    if (error || !data?.properties?.action_link) {
+      return { ok: false, error: error?.message || "Could not generate a link." }
+    }
+    return { ok: true, link: data.properties.action_link, status: "resent", name }
+  }
+
+  // Not linked yet → invite (creates the auth user). If the auth user already
+  // exists (without a client_users link), fall back to a recovery link.
+  let userId: string | undefined
+  let link: string | undefined
+
+  const invite = await adminClient.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { redirectTo, data: { name } },
+  })
+
+  if (invite.error) {
+    const recovery = await adminClient.auth.admin.generateLink({
+      type: "recovery",
+      email,
+      options: { redirectTo },
+    })
+    if (recovery.error) return { ok: false, error: invite.error.message }
+    userId = recovery.data.user?.id
+    link = recovery.data.properties?.action_link
+  } else {
+    userId = invite.data.user?.id
+    link = invite.data.properties?.action_link
+  }
+
+  if (!userId || !link) return { ok: false, error: "Could not create the invite link." }
+
+  const { error: linkErr } = await adminClient.from("client_users").insert({
+    id: userId,
+    client_id: clientId,
+    name,
+    email,
+    role,
+  })
+  if (linkErr) return { ok: false, error: linkErr.message }
+
+  revalidatePath(`/admin/clients/${clientId}`)
+  return { ok: true, link, status: "invited", name }
+}
+
+export async function revokeClientUser(
+  clientId: string,
+  userId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  // Removes the org link → the user can no longer resolve a client context, so
+  // the portal shows the "sign in to continue" fallback. The auth account is
+  // left intact (no orphaned-data risk); re-inviting re-links it.
+  const { error } = await adminClient
+    .from("client_users")
+    .delete()
+    .eq("id", userId)
+    .eq("client_id", clientId)
+
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath(`/admin/clients/${clientId}`)
+  return { ok: true }
 }

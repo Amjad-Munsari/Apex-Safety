@@ -79,6 +79,13 @@ export default async function ClientDetailsPage({
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
 
+  // Portal users with access to this client org (Access tab).
+  const { data: clientUsers } = await adminClient
+    .from("client_users")
+    .select("id, name, email, role, created_at")
+    .eq("client_id", id)
+    .order("created_at", { ascending: true })
+
   // Published templates — for the "Assign template" modal in the Assigned Forms tab.
   const { data: publishedTemplates, error: publishedTemplatesError } = await adminClient
     .from("form_templates")
@@ -218,6 +225,7 @@ export default async function ClientDetailsPage({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         assignments={(assignmentRows ?? []) as any[]}
         publishedTemplates={publishedTemplates ?? []}
+        clientUsers={clientUsers ?? []}
       />
     </div>
   )
