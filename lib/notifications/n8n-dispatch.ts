@@ -50,6 +50,34 @@ export type NotificationPayload =
       proposal_title: string
       signed_at: string          // ISO timestamp the client completed signing
     }
+  // ── Two-way form builder: client-surface events (for Finley's n8n Switch) ──
+  // These are keyed on client_id (the org UUID) rather than client_email/name —
+  // the client surface fires them from RLS-scoped server actions where the org
+  // id is always in context. n8n resolves name/email from client_id via the
+  // service-role connection when composing any downstream email.
+  | {
+      type: "client_form_created"
+      client_id: string          // org UUID (form_templates.owner_id)
+      template_id: string
+      template_name: string
+      template_type: string
+      created_at: string         // ISO timestamp
+    }
+  | {
+      type: "client_form_submitted"
+      client_id: string          // org UUID (form_submissions.client_id)
+      submission_id: string
+      assignment_id: string | null // null = customer-built self-fill (no assignment)
+      submitted_at: string       // ISO timestamp
+    }
+  | {
+      type: "client_template_cloned"
+      client_id: string          // org UUID that now owns the fork
+      template_id: string        // the new forked template
+      template_name: string
+      parent_template_id: string // the master template it was cloned from
+      cloned_at: string          // ISO timestamp
+    }
 
 export interface DispatchResult {
   ok: boolean

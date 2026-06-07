@@ -7,6 +7,7 @@ import Link from "next/link"
 import { AssignTemplateModal } from "@/components/admin/assign-template-modal"
 import { RevokeAssignmentButton } from "@/app/admin/assignments/revoke-assignment-button"
 import { daysOverdue } from "@/lib/assignments/is-overdue"
+import type { ClientBuiltTemplate } from "./client-templates"
 
 type RagStatus = "CURRENT" | "EXPIRING" | "EXPIRED"
 
@@ -67,6 +68,8 @@ export interface ClientTabsProps {
   assignments?: AssignmentRow[]
   /** Published templates — for the Assign template modal. */
   publishedTemplates?: Array<{ id: string; name: string }>
+  /** Templates this client owns (built from scratch or forked) — read-only here. */
+  clientTemplates?: ClientBuiltTemplate[]
 }
 
 function ragFromDate(expiry: string | null): RagStatus {
@@ -135,6 +138,7 @@ export function ClientTabs({
   hoursLog,
   assignments = [],
   publishedTemplates = [],
+  clientTemplates = [],
 }: ClientTabsProps) {
   const compliance = buildComplianceFromDocuments(documents)
   const complianceCategories = Object.keys(compliance)
@@ -540,6 +544,64 @@ export function ClientTabs({
                         <RevokeAssignmentButton assignmentId={assignment.id} />
                       </div>
                     )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* CLIENT-BUILT FORMS — read-only visibility into self-serve templates */}
+          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden mt-6">
+            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <ClipboardList className="w-4 h-4 text-white/40" />
+                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Client-built forms</h3>
+                {clientTemplates.length > 0 && (
+                  <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">
+                    {clientTemplates.length} template{clientTemplates.length === 1 ? "" : "s"}
+                  </span>
+                )}
+              </div>
+              <span className="font-mono text-[9px] uppercase tracking-widest text-white/30">Read only</span>
+            </div>
+
+            {clientTemplates.length === 0 ? (
+              <div className="p-10 text-center flex flex-col items-center justify-center">
+                <ClipboardList className="w-8 h-8 text-white/20 mb-3" />
+                <p className="text-white/50 text-sm">This client hasn&rsquo;t built or forked any templates yet.</p>
+                <p className="text-white/30 text-xs mt-1">Templates they create or clone will appear here.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-white/5">
+                {clientTemplates.map((t) => (
+                  <div key={t.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-base font-medium text-white font-serif truncate">{t.name}</div>
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                          {t.template_type}
+                        </span>
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                          · {formatDueDate(t.created_at)}
+                        </span>
+                        {t.parent_template_id ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#c0a66d] bg-[#c0a66d]/10">
+                            Cloned{t.parentName ? ` from ${t.parentName}` : ""}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-white/50 bg-white/5">
+                            Built from scratch
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] leading-none shrink-0 ${
+                        t.is_published ? "text-[#3b8273] bg-[#3b8273]/10" : "text-[#666] bg-[#555]/10"
+                      }`}
+                    >
+                      {t.is_published ? "Published" : "Draft"}
+                    </span>
                   </div>
                 ))}
               </div>

@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireActorUserId, getClientContext } from "@/lib/auth-helpers";
+import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -55,6 +56,16 @@ export async function createClientTemplate(name: string, templateType: string) {
     version_number: 1,
     schema_json: { entities: {}, root: [] },
     created_by: userId,
+  });
+
+  // Notify n8n that a client built a new template from scratch (best-effort).
+  await dispatchClientFormEvent({
+    type: "client_form_created",
+    client_id: ctx.client_id,
+    template_id: data.id,
+    template_name: name,
+    template_type: templateType,
+    created_at: new Date().toISOString(),
   });
 
   revalidatePath("/client/templates");
@@ -281,6 +292,16 @@ export async function submitCustomerTemplateFillByIdAction(
   if (updateError) {
     throw new Error(updateError.message ?? "Failed to submit form");
   }
+
+  // Notify n8n of a customer-built template self-fill submission (best-effort).
+  // assignment_id is null per the D-16 contract (no assignment row).
+  await dispatchClientFormEvent({
+    type: "client_form_submitted",
+    client_id: ctx.client_id,
+    submission_id: submissionId,
+    assignment_id: null,
+    submitted_at: new Date().toISOString(),
+  });
 
   revalidatePath("/client/templates");
 
