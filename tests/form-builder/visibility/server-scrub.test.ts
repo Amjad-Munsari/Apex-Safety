@@ -22,6 +22,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/auth-helpers", () => ({
   requireActorUserId: vi.fn().mockResolvedValue("admin-user-001"),
   getActorUserId: vi.fn().mockResolvedValue("admin-user-001"),
+  // submitAssessmentAction now gates via authorizeSubmissionAccess (admin OR owner).
+  isAdmin: vi.fn().mockResolvedValue(true),
+  getClientContext: vi.fn().mockResolvedValue({ client_id: "client-org-001" }),
 }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));

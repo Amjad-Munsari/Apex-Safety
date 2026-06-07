@@ -120,6 +120,7 @@ vi.mock("@/lib/auth-helpers", () => ({
     role: "client",
   }),
   requireActorUserId: vi.fn().mockResolvedValue("user-001"),
+  isAdmin: vi.fn().mockResolvedValue(false),
 }));
 
 // Mock the recurrence generator so the inline trigger doesn't execute real DB calls
