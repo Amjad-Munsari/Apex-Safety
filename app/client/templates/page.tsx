@@ -30,7 +30,7 @@ export default async function ClientTemplatesPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
-            06 · My Templates
+            05 · My Templates
           </span>
         </div>
         <div className="flex items-end justify-between gap-6 flex-wrap">

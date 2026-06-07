@@ -78,7 +78,7 @@ export default async function ClientProposalsPage() {
       <section className="space-y-3">
         <div className="flex items-center gap-3">
           <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
-            07 · Proposals
+            06 · Proposals
           </span>
         </div>
         <h2 className="font-serif text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
