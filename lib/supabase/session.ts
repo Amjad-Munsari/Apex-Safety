@@ -33,8 +33,14 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Demo mode: allow unauthenticated access for frictionless demos
-  if ((pathname.startsWith("/client") || pathname.startsWith("/admin")) && request.cookies.get("demo_mode")?.value === "1") {
+  // Demo mode: allow unauthenticated access for frictionless demos.
+  // NEVER honor the client-set demo_mode cookie in production — there it would
+  // wave any request straight past auth into /admin (which renders via the
+  // service-role client = full data disclosure). Gated to non-production only.
+  const demoBypass =
+    process.env.NODE_ENV !== "production" && request.cookies.get("demo_mode")?.value === "1"
+
+  if ((pathname.startsWith("/client") || pathname.startsWith("/admin")) && demoBypass) {
     return supabaseResponse
   }
 
@@ -52,9 +58,8 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/admin") || pathname.startsWith("/client") || pathname.startsWith("/proposals")
 
   if (isProtected && !user) {
-    // Allow demo mode cookie to bypass auth
-    const isDemoMode = request.cookies.get("demo_mode")?.value === "1"
-    if (isDemoMode && (pathname.startsWith("/client") || pathname.startsWith("/admin"))) {
+    // Allow demo mode cookie to bypass auth — non-production only (see above).
+    if (demoBypass && (pathname.startsWith("/client") || pathname.startsWith("/admin"))) {
       return supabaseResponse
     }
 

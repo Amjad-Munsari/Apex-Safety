@@ -1,21 +1,41 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { isAdmin } from "@/lib/auth-helpers"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Server-side upload limits — the client modal's accept="" attribute is not a
+// security control (a direct server-action call bypasses it).
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024 // 25 MB
+const ALLOWED_MIME = new Set([
+  "application/pdf",
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/heic",
+])
+
 export async function uploadClientDocumentAction(formData: FormData) {
   const supabase = await createClient()
 
+  // Demo bypass is dev-only (never honor the client-set cookie in production).
   const cookieStore = await cookies()
-  const isDemoMode = cookieStore.get("demo_mode")?.value === "1"
+  const isDemoMode =
+    process.env.NODE_ENV !== "production" && cookieStore.get("demo_mode")?.value === "1"
 
   let userId: string
 
   if (isDemoMode) {
     userId = "276946f9-0d99-4f55-bba1-8abe1f4f87b7"
   } else {
+    // Admin-only action (uploads a document for any client org). Without this,
+    // any authenticated client user could upload to an arbitrary clientId.
+    if (!(await isAdmin())) throw new Error("Unauthorized")
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) throw new Error("Unauthorized")
     userId = user.id
@@ -28,6 +48,15 @@ export async function uploadClientDocumentAction(formData: FormData) {
 
   if (!clientId || !category || !file) {
     throw new Error("Missing required fields")
+  }
+  if (!UUID_RE.test(clientId)) {
+    throw new Error("Invalid client id")
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new Error("File exceeds the 25 MB limit")
+  }
+  if (file.type && !ALLOWED_MIME.has(file.type)) {
+    throw new Error("Unsupported file type — upload a PDF or image")
   }
 
   const fileExt = file.name.split(".").pop()
