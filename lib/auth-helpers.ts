@@ -62,6 +62,73 @@ export async function getActorUserId(actorType: "admin" | "client"): Promise<str
   return user?.id ?? null
 }
 
+/**
+ * Identity shape returned by getClientContextWithIdentity().
+ * Consumed by the client layout server shell (Plan 02) to populate the portal
+ * header with the real org name and signed-in person.
+ */
+export interface ClientIdentity {
+  client_id: string
+  role: string
+  /** Org name from clients.name, or "—" when the join is null/missing. */
+  orgName: string
+  /** Display name from client_users.name, fallback to email, then "—". */
+  userName: string
+}
+
+/**
+ * Sibling to getClientContext() that additionally resolves the org name and
+ * user display name in a single query join (clients.name via FK).
+ *
+ * Demo-mode contract (T-19-02): guards with isDemoMode() BEFORE calling
+ * getUser() to avoid poisoning the supabase-js Authorization header with a
+ * stale demo-cookie token (same invariant as requireActorUserId / getClientContext).
+ *
+ * Security contract (T-19-01): prod path scopes the client_users lookup by
+ * auth.uid() — never by a user-supplied client_id.
+ */
+export async function getClientContextWithIdentity(): Promise<ClientIdentity | null> {
+  const supabase = await createClient()
+
+  if (await isDemoMode()) {
+    // Skip getUser() in demo mode — stale auth token poisons the client.
+    const { data, error } = await supabase
+      .from("client_users")
+      .select("client_id, role, name, email, client:clients(name)")
+      .limit(1)
+      .single()
+
+    if (error || !data) return null
+
+    const clientRow = Array.isArray(data.client) ? data.client[0] : data.client
+    return {
+      client_id: data.client_id,
+      role: data.role,
+      orgName: (clientRow as { name?: string } | null)?.name ?? "—",
+      userName: (data.name as string) || (data.email as string) || "—",
+    }
+  }
+
+  const user = await getUser()
+  if (!user) return null
+
+  const { data, error } = await supabase
+    .from("client_users")
+    .select("client_id, role, name, email, client:clients(name)")
+    .eq("id", user.id)
+    .single()
+
+  if (error || !data) return null
+
+  const clientRow = Array.isArray(data.client) ? data.client[0] : data.client
+  return {
+    client_id: data.client_id,
+    role: data.role,
+    orgName: (clientRow as { name?: string } | null)?.name ?? "—",
+    userName: (data.name as string) || (data.email as string) || "—",
+  }
+}
+
 export async function getClientContext() {
   const supabase = await createClient()
 
