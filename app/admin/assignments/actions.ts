@@ -2,7 +2,14 @@
 
 import { adminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { requireActorUserId } from "@/lib/auth-helpers";
+import { requireActorUserId, isAdmin } from "@/lib/auth-helpers";
+
+// requireActorUserId only proves authentication (it ignores actorType). For
+// admin-only mutations that also needs an authorization check — isAdmin() against
+// the server-trusted admin_users table — since there is no route middleware.
+async function assertAdmin() {
+  if (!(await isAdmin())) throw new Error("Unauthorized");
+}
 
 export interface CreateAssignmentsInput {
   dueDate?: string;
@@ -19,6 +26,7 @@ export async function createAssignments(
   clientIds: string[],
   opts?: CreateAssignmentsInput
 ): Promise<{ created: number }> {
+  await assertAdmin();
   const adminUserId = await requireActorUserId("admin");
 
   if (clientIds.length === 0) {
@@ -74,6 +82,7 @@ export async function updateAssignment(
   assignmentId: string,
   patch: { dueDate?: string | null; instructions?: string | null }
 ): Promise<void> {
+  await assertAdmin();
   await requireActorUserId("admin");
 
   const { data: current, error: readError } = await adminClient
@@ -111,6 +120,7 @@ export async function updateAssignment(
 // T-16-02, T-16-07: requireActorUserId("admin") is the first statement.
 
 export async function revokeAssignment(assignmentId: string): Promise<void> {
+  await assertAdmin();
   await requireActorUserId("admin");
 
   const { data: current, error: readError } = await adminClient

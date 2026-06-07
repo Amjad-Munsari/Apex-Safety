@@ -18,6 +18,8 @@ export type NewClientInput = {
  * to the next step or revalidate the list.
  */
 export async function createClient(input: NewClientInput): Promise<{ id: string }> {
+  if (!(await isAdmin())) throw new Error("Unauthorized")
+
   const name = input.name.trim()
   if (!name) throw new Error("Business name is required")
 
@@ -48,6 +50,8 @@ export async function createClient(input: NewClientInput): Promise<{ id: string 
 }
 
 export async function updateClientHours(clientId: string, adjustment: number) {
+  if (!(await isAdmin())) throw new Error("Unauthorized")
+
   // 1. Get current balance
   const { data: client, error: fetchError } = await adminClient
     .from("clients")

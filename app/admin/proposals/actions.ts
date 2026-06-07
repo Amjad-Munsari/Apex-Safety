@@ -2,8 +2,16 @@
 
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
+import { isAdmin, getClientContext } from "@/lib/auth-helpers"
 import { generateText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
+
+// Proposal mutations use the service-role client. With no route middleware,
+// this server-trusted check gates the admin-only actions. markProposalViewed is
+// the exception — it's client-callable telemetry and scopes itself by client_id.
+async function assertAdmin() {
+  if (!(await isAdmin())) throw new Error("Unauthorized")
+}
 
 const openrouter = createOpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -15,6 +23,7 @@ const openrouter = createOpenAI({
 })
 
 export async function draftProposalScope(services: any[]) {
+  await assertAdmin()
   if (!process.env.OPENROUTER_API_KEY) {
     // In production the AI draft is non-negotiable per Milestone 2 spec — a
     // silent canned-text fallback shipped real proposals before the gap was
@@ -69,6 +78,7 @@ export async function createProposal(data: {
    */
   saveAsDraft?: boolean
 }) {
+  await assertAdmin()
   // Insert the proposal record first to get an ID
   const { data: proposal, error } = await adminClient
     .from("proposals")
@@ -170,6 +180,7 @@ export async function createProposal(data: {
  * bucket. Confirmation lives in the UI (AlertDialog on the detail page).
  */
 export async function deleteProposal(proposalId: string) {
+  await assertAdmin()
   // Fetch the storage path first so we can delete the PDF too.
   const { data: row } = await adminClient
     .from("proposals")
@@ -206,6 +217,7 @@ export async function updateProposalStatus(
   proposalId: string,
   status: "Draft" | "Sent" | "Signed" | "Contract Issued"
 ) {
+  await assertAdmin()
   const patch: Record<string, unknown> = { status }
   if (status === "Sent") patch.sent_at = new Date().toISOString()
 
@@ -228,10 +240,17 @@ export async function updateProposalStatus(
  * Idempotent: only writes if `viewed_at` is still NULL.
  */
 export async function markProposalViewed(proposalId: string) {
+  // Client-callable telemetry — NOT admin-gated. Scope by the signed-in client's
+  // own org so a caller can only stamp a proposal that belongs to them (prevents
+  // stamping arbitrary proposals by guessing ids).
+  const ctx = await getClientContext()
+  if (!ctx) return
+
   const { error } = await adminClient
     .from("proposals")
     .update({ viewed_at: new Date().toISOString() })
     .eq("id", proposalId)
+    .eq("client_id", ctx.client_id)
     .is("viewed_at", null)
 
   if (error) {

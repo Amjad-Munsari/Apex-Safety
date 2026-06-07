@@ -2,7 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { requireActorUserId } from "@/lib/auth-helpers";
+import { requireActorUserId, isAdmin } from "@/lib/auth-helpers";
+
+// Admin-only template mutations. requireActorUserId only proves authentication;
+// this adds the authorization check against the server-trusted admin_users table
+// (defense-in-depth alongside RLS, since there is no route middleware).
+async function assertAdmin() {
+  if (!(await isAdmin())) throw new Error("Unauthorized");
+}
 
 // Build a readable "attr@entityId: message" summary from a coltorapps
 // SchemaValidationError reason (InvalidEntitiesAttributes), whose error values
@@ -33,6 +40,7 @@ function describeAttributeErrors(reason: unknown): string {
 
 export async function createTemplate(name: string, templateType: string) {
   const supabase = await createClient();
+  await assertAdmin();
   const userId = await requireActorUserId("admin");
 
   const { data, error } = await supabase
@@ -69,6 +77,7 @@ export async function saveDraftAction(
   templateName: string
 ) {
   const supabase = await createClient();
+  await assertAdmin();
   const userId = await requireActorUserId("admin");
 
   // 1. Update template name
@@ -128,6 +137,7 @@ export async function publishTemplateAction(
   templateName: string
 ) {
   const supabase = await createClient();
+  await assertAdmin();
   const userId = await requireActorUserId("admin");
 
   // Update template name
@@ -190,6 +200,7 @@ export async function publishTemplateAction(
 
 export async function deleteTemplate(templateId: string) {
   const supabase = await createClient();
+  await assertAdmin();
   await requireActorUserId("admin");
 
   await supabase.from("form_templates").delete().eq("id", templateId);
