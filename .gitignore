@@ -33,6 +33,8 @@ pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...but the secret-free template SHOULD be tracked
+!.env.example
 
 # vercel
 .vercel
