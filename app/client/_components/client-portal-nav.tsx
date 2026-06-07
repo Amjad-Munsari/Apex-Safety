@@ -48,9 +48,9 @@ const NAV_GROUPS: NavGroup[] = [
     children: [
       { label: "Proposals", href: "/client/proposals" },
       { label: "Contracts", href: "/client/contracts" },
-      { label: "Billing", href: "/client/billing" },
     ],
   },
+  { label: "Billing", href: "/client/billing" },
 ];
 
 function hrefActive(href: string, pathname: string | null): boolean {
