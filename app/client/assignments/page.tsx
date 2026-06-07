@@ -90,10 +90,7 @@ export default async function ClientAssignmentsPage() {
           ) : (
             <div className="flex flex-col gap-3">
               {completed.map((a) => (
-                // Completed tab: link to submission viewer once it exists.
-                // For now, fall back to the assignment landing page.
-                // TODO(plan-future): update to /client/assignments/${a.id}/submission
-                <Link key={a.id} href={`/client/assignments/${a.id}`} className="block">
+                <Link key={a.id} href={`/client/assignments/${a.id}/submission`} className="block">
                   <AssignmentCard assignment={a} variant="completed" />
                 </Link>
               ))}
