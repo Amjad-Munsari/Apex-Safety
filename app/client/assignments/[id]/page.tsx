@@ -54,7 +54,9 @@ export default async function AssignmentLandingPage({ params }: Props) {
   }
 
   // Additional defense-in-depth: verify the assignment belongs to this org.
-  if (ctx && assignment.client_id !== ctx.client_id) {
+  // Hard-fail when there is no client context — never fall through to an
+  // unscoped render (audit M-1).
+  if (!ctx || assignment.client_id !== ctx.client_id) {
     notFound();
   }
 

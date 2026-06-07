@@ -35,6 +35,9 @@ export default async function ClientProposalDetailPage({
     )
     .eq("id", id)
     .eq("client_id", ctx.client_id)
+    // Only surface proposals that have actually been sent to the client — a
+    // guessed id must not expose an internal Draft (matches the list page).
+    .in("status", ["Sent", "Signed", "Contract Issued"])
     .maybeSingle();
 
   if (!proposal) {

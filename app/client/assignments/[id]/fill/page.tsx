@@ -35,8 +35,8 @@ export default async function FillAssignmentPage({ params }: Props) {
     notFound();
   }
 
-  // Defense-in-depth ownership check
-  if (ctx && assignment.client_id !== ctx.client_id) {
+  // Defense-in-depth ownership check — hard-fail on null ctx (audit M-1).
+  if (!ctx || assignment.client_id !== ctx.client_id) {
     notFound();
   }
 
@@ -70,7 +70,7 @@ export default async function FillAssignmentPage({ params }: Props) {
     <FillAssignmentClient
       schemaJson={version.schema_json}
       assignmentId={id}
-      clientId={ctx?.client_id ?? assignment.client_id}
+      clientId={ctx.client_id}
       submissionId={draft.id}
     />
   );
