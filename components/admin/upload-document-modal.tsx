@@ -106,7 +106,7 @@ export function UploadDocumentModal({
                 onValueChange={(v) => setSelectedClientId(v ?? "")}
                 required
               >
-                <SelectTrigger className="w-full bg-black/50 border-white/10 text-white">
+                <SelectTrigger className="w-full data-[size=default]:h-10 text-sm bg-black/50 border-white/10 text-white">
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
@@ -114,7 +114,7 @@ export function UploadDocumentModal({
                     <SelectItem
                       key={c.id}
                       value={c.id}
-                      className="text-white focus:bg-teal/20 focus:text-[#d4af6e]"
+                      className="text-white data-highlighted:bg-white/10 data-highlighted:text-white focus:bg-white/10 focus:text-white"
                     >
                       {c.name}
                     </SelectItem>
@@ -134,7 +134,7 @@ export function UploadDocumentModal({
               required
               accept="application/pdf,image/*"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="bg-black/50 border-white/10 text-white file:text-white file:bg-white/10 file:border-0 file:rounded-sm file:px-3 file:py-1 file:mr-4 file:text-xs file:font-mono file:uppercase file:tracking-widest"
+              className="h-10 text-sm bg-black/50 border-white/10 text-white file:h-8 file:mr-3 file:rounded-sm file:border-0 file:bg-white/10 hover:file:bg-white/20 file:px-4 file:text-xs file:font-mono file:uppercase file:tracking-widest file:text-white file:cursor-pointer"
             />
           </div>
 
@@ -143,7 +143,7 @@ export function UploadDocumentModal({
               Category
             </Label>
             <Select name="category" required defaultValue={CATEGORY_OPTIONS[0]}>
-              <SelectTrigger className="w-full bg-black/50 border-white/10 text-white">
+              <SelectTrigger className="w-full data-[size=default]:h-10 text-sm bg-black/50 border-white/10 text-white">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
@@ -151,7 +151,7 @@ export function UploadDocumentModal({
                   <SelectItem
                     key={cat}
                     value={cat}
-                    className="text-white focus:bg-teal/20 focus:text-[#d4af6e]"
+                    className="text-white data-highlighted:bg-white/10 data-highlighted:text-white focus:bg-white/10 focus:text-white"
                   >
                     {cat}
                   </SelectItem>
@@ -168,7 +168,7 @@ export function UploadDocumentModal({
               id="expiryDate"
               name="expiryDate"
               type="date"
-              className="bg-black/50 border-white/10 text-white css-invert-calendar"
+              className="h-10 text-sm bg-black/50 border-white/10 text-white css-invert-calendar"
               style={{ colorScheme: "dark" }}
             />
           </div>
@@ -177,7 +177,7 @@ export function UploadDocumentModal({
             <div className="text-[#e06050] text-xs font-mono">{error}</div>
           )}
 
-          <div className="pt-4 flex justify-end">
+          <div className="pt-1 flex justify-end">
             <Button
               type="submit"
               disabled={!file || !effectiveClientId || isUploading}

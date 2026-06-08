@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,9 +13,11 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, Minus, Clock } from "lucide-react"
+import { Plus, Minus, Clock, ChevronUp, ChevronDown } from "lucide-react"
 import { updateClientHours } from "@/app/admin/clients/actions"
 import { useRouter } from "next/navigation"
+
+const STEP = 0.5
 
 interface AdjustHoursDialogProps {
   clientId: string
@@ -26,7 +28,23 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
   const [open, setOpen] = useState(false)
   const [amount, setAmount] = useState<string>("0")
   const [loading, setLoading] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
+
+  // Reset to 0 each time the dialog opens, so a reopen never shows a stale value.
+  // The input's autoFocus + onFocus-select then leaves the 0 highlighted, so the
+  // first digit typed replaces it rather than appending.
+  useEffect(() => {
+    if (open) setAmount("0")
+  }, [open])
+
+  // Custom stepper (the native spinner is hidden globally in globals.css).
+  // Rounds to one decimal so 0.5 steps don't accumulate float noise.
+  const step = (dir: 1 | -1) => {
+    const cur = parseFloat(amount) || 0
+    const next = Math.max(0, Math.round((cur + dir * STEP) * 10) / 10)
+    setAmount(String(next))
+  }
 
   async function handleAdjust(type: "add" | "deduct") {
     const val = parseFloat(amount)
@@ -54,7 +72,10 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
           Adjust Balance
         </Button>
       } />
-      <DialogContent className="sm:max-w-[425px] bg-[#1c1c1c] border-white/10 text-white">
+      <DialogContent
+        className="sm:max-w-[425px] bg-[#1c1c1c] border-white/10 text-white"
+        initialFocus={inputRef}
+      >
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Adjust Hours Balance</DialogTitle>
           <DialogDescription className="text-white/40">
@@ -67,15 +88,37 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
             <div className="relative">
               <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
               <Input
+                ref={inputRef}
                 id="amount"
                 type="number"
                 step="0.5"
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="bg-black/40 border-white/10 pl-10 h-12 text-lg focus:ring-white/20"
+                onFocus={(e) => e.target.select()}
+                className="bg-black/40 border-white/10 pl-10 pr-12 h-12 text-lg focus:ring-white/20"
                 placeholder="0.0"
               />
+              {/* Custom stepper — themed to the dark dialog, replacing the hidden native arrows. */}
+              <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex flex-col gap-px">
+                <button
+                  type="button"
+                  aria-label="Increase hours"
+                  onClick={() => step(1)}
+                  className="flex h-[18px] w-7 items-center justify-center rounded-sm border border-white/10 bg-white/5 text-white/50 hover:bg-white/15 hover:text-white transition-colors"
+                >
+                  <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.5} />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Decrease hours"
+                  onClick={() => step(-1)}
+                  className="flex h-[18px] w-7 items-center justify-center rounded-sm border border-white/10 bg-white/5 text-white/50 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:text-white/50"
+                  disabled={(parseFloat(amount) || 0) <= 0}
+                >
+                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} />
+                </button>
+              </div>
             </div>
           </div>
         </div>

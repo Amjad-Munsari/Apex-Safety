@@ -237,6 +237,20 @@
     background: linear-gradient(0deg, #d97706 0%, #d97706 100%);
     color: #000000;
   }
+
+  /* Native <input type="number"> spinner arrows render as a light OS control
+     that clashes with the dark surfaces (e.g. the Adjust Hours dialog) and is
+     redundant — every number field has a typed value and/or its own controls.
+     Hide the spinner everywhere; values are still typed and edited normally. */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
 }
 
 /* The admin shell is a fixed, non-scrolling frame — only the inner <main>
