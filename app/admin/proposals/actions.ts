@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
 import { requireAdmin, getClientContext } from "@/lib/auth-helpers"
+import { assertClientActive } from "@/lib/clients/require-active"
 import { generateSigningToken, hashDocument } from "@/lib/signing"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 import { getSiteUrl } from "@/lib/site-url"
@@ -228,6 +229,8 @@ export async function createProposal(data: {
   // service-role adminClient (RLS bypassed). requireAdmin() enforces admin_users
   // membership and stays demo-compatible.
   await requireAdmin()
+  // Frozen-client guard — no new proposals for a deactivated client.
+  await assertClientActive(data.clientId)
 
   // Insert the proposal record first to get an ID
   const { data: proposal, error } = await adminClient

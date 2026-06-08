@@ -3,6 +3,7 @@
 import { adminClient } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-helpers";
+import { assertClientActive } from "@/lib/clients/require-active";
 
 export interface CreateAssignmentsInput {
   dueDate?: string;
@@ -28,6 +29,9 @@ export async function createAssignments(
   if (clientIds.length === 0) {
     throw new Error("Select at least one client");
   }
+
+  // Frozen-client guard — can't assign templates to a deactivated client.
+  await Promise.all(clientIds.map((id) => assertClientActive(id)));
 
   // Resolve the latest published template_versions row for this template
   const { data: pubVersion, error: versionError } = await adminClient

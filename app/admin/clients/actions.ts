@@ -4,6 +4,7 @@ import { adminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/auth-helpers"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth-helpers"
+import { assertClientActive, clientIsActive, CLIENT_DEACTIVATED_MESSAGE } from "@/lib/clients/require-active"
 
 export type NewClientInput = {
   name: string
@@ -193,6 +194,8 @@ export async function updateClientHours(clientId: string, adjustment: number) {
   // adminClient. Without this any authenticated user could top up / drain any
   // client's hours. requireAdmin() enforces admin_users membership.
   await requireAdmin()
+  // Frozen-client guard — no hours changes on a deactivated client.
+  await assertClientActive(clientId)
 
   // 1. Get current balance
   const { data: client, error: fetchError } = await adminClient
@@ -256,6 +259,11 @@ export async function inviteClientUser(
   // mints login links). There is no route middleware, so this server-trusted
   // admin_users check is the sole gate. Match the sibling-action convention.
   if (!(await isAdmin())) return { ok: false, error: "Unauthorized" }
+
+  // Frozen-client guard — can't invite users to a deactivated client.
+  if (!(await clientIsActive(clientId))) {
+    return { ok: false, error: CLIENT_DEACTIVATED_MESSAGE }
+  }
 
   const name = input.name.trim()
   const email = input.email.trim().toLowerCase()

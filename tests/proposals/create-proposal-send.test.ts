@@ -103,6 +103,8 @@ vi.mock("@/lib/supabase/admin", () => ({
           select: (_cols: string) => ({
             eq: (_col: string, _val: string) => ({
               single: () => clientsSingleSpy(),
+              // assertClientActive (createProposal freeze guard) reads active.
+              maybeSingle: () => Promise.resolve({ data: { active: true }, error: null }),
             }),
           }),
         }

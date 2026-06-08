@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext, requireActorUserId } from "@/lib/auth-helpers";
+import { assertClientActive } from "@/lib/clients/require-active";
 import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -109,6 +110,7 @@ export async function createAssignmentDraftSubmission(
   assignmentId: string
 ): Promise<{ id: string }> {
   const ctx = await requireClientContext();
+  await assertClientActive(ctx.client_id); // frozen-client guard — no new fills
   const supabase = await createClient();
   const assignment = await requireOwnedAssignment(assignmentId, ctx.client_id);
 
@@ -171,6 +173,7 @@ export async function submitAssignedFillByIdAction(
   answers: Record<string, unknown>
 ): Promise<void> {
   const ctx = await requireClientContext();
+  await assertClientActive(ctx.client_id); // frozen-client guard — no submits
   const supabase = await createClient();
 
   const { data: updated, error: updateError } = await supabase
@@ -267,6 +270,7 @@ export async function forkAssignedTemplate(
 ): Promise<never> {
   // Step 1: auth
   const ctx = await requireClientContext();
+  await assertClientActive(ctx.client_id); // frozen-client guard — no forking
   const userId = await requireActorUserId("client");
 
   // Step 3: RLS-aware supabase client (never admin client — T-16-06)

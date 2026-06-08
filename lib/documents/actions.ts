@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { isAdmin } from "@/lib/auth-helpers"
+import { assertClientActive } from "@/lib/clients/require-active"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
@@ -52,6 +53,8 @@ export async function uploadClientDocumentAction(formData: FormData) {
   if (!UUID_RE.test(clientId)) {
     throw new Error("Invalid client id")
   }
+  // Frozen-client guard — no new docs for a deactivated client (existing stay).
+  await assertClientActive(clientId)
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error("File exceeds the 25 MB limit")
   }

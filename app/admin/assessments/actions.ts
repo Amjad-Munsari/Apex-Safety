@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { adminClient } from "@/lib/supabase/admin"
 import { requireActorUserId, isAdmin, getClientContext } from "@/lib/auth-helpers"
+import { assertClientActive } from "@/lib/clients/require-active"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
@@ -41,6 +42,8 @@ export async function startAssessment(clientId: string, templateVersionId: strin
   // Admin-only: spins up an assignment + draft submission for an arbitrary
   // clientId, so it must verify the caller is a real admin (not just logged in).
   if (!(await isAdmin())) throw new Error("Unauthorized")
+  // Frozen-client guard — can't start assessments for a deactivated client.
+  await assertClientActive(clientId)
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 

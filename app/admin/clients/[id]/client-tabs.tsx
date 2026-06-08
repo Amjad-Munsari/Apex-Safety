@@ -73,6 +73,8 @@ export interface ClientTabsProps {
   clientUsers?: ClientUserRow[]
   /** Templates this client owns (built from scratch or forked) — read-only here. */
   clientTemplates?: ClientBuiltTemplate[]
+  /** When false, the client is deactivated — hide create affordances (assign/invite). */
+  active?: boolean
 }
 
 function ragFromDate(expiry: string | null): RagStatus {
@@ -143,6 +145,7 @@ export function ClientTabs({
   publishedTemplates = [],
   clientUsers = [],
   clientTemplates = [],
+  active = true,
 }: ClientTabsProps) {
   const compliance = buildComplianceFromDocuments(documents)
   const complianceCategories = Object.keys(compliance)
@@ -471,12 +474,14 @@ export function ClientTabs({
                   </span>
                 )}
               </div>
-              <AssignTemplateModal
-                preselectClientId={clientId}
-                clients={[{ id: clientId, name: clientName }]}
-                templates={publishedTemplates}
-                triggerLabel="Assign template"
-              />
+              {active && (
+                <AssignTemplateModal
+                  preselectClientId={clientId}
+                  clients={[{ id: clientId, name: clientName }]}
+                  templates={publishedTemplates}
+                  triggerLabel="Assign template"
+                />
+              )}
             </div>
 
             {/* Empty state */}
@@ -618,7 +623,7 @@ export function ClientTabs({
 
         {/* ACCESS — portal user invites */}
         <TabsContent value="access" className="pt-6">
-          <ClientAccessTab clientId={clientId} clientName={clientName} users={clientUsers} />
+          <ClientAccessTab clientId={clientId} clientName={clientName} users={clientUsers} active={active} />
         </TabsContent>
       </Tabs>
     </div>

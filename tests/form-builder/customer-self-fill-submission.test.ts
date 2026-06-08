@@ -86,6 +86,16 @@ vi.mock("@/lib/supabase/server", () => ({
   }),
 }));
 
+// Freeze guard (lib/clients/require-active) reads clients.active via adminClient.
+vi.mock("@/lib/supabase/admin", () => ({
+  adminClient: {
+    from: (table: string) =>
+      table === "clients"
+        ? { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { active: true }, error: null }) }) }) }
+        : {},
+  },
+}));
+
 vi.mock("@/lib/auth-helpers", () => ({
   getClientContext: vi.fn().mockResolvedValue({
     client_id: "client-org-001",

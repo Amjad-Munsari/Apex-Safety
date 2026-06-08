@@ -2,13 +2,18 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireActorUserId, getClientContext } from "@/lib/auth-helpers";
+import { assertClientActive } from "@/lib/clients/require-active";
 import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+// Every export in this file is a WRITE (create/save/publish/delete/fill a
+// customer-owned template), so the deactivated-client freeze belongs here in the
+// shared context resolver — a deactivated client's users can't build or fill.
 async function requireClientContext() {
   const ctx = await getClientContext();
   if (!ctx) throw new Error("Not a client user");
+  await assertClientActive(ctx.client_id);
   return ctx;
 }
 

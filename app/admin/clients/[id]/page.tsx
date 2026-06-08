@@ -196,8 +196,24 @@ export default async function ClientDetailsPage({
     }
   })
 
+  const isInactive = client.active === false
+
   return (
     <div className="flex flex-col gap-10 pt-12 pb-20 max-w-6xl mx-auto w-full">
+      {/* ─── DEACTIVATED BANNER ─── */}
+      {isInactive && (
+        <div className="flex items-center gap-3 rounded-sm border border-gold/30 bg-gold/[0.06] px-5 py-3 text-sm text-gold">
+          <span className="font-mono text-[10px] uppercase tracking-[0.25em] shrink-0">
+            Deactivated
+          </span>
+          <span className="text-white/70">
+            This client is frozen. Uploading documents, creating proposals or
+            assessments, assigning forms, adjusting hours, and inviting users are
+            disabled. Existing records stay intact — reactivate to make changes.
+          </span>
+        </div>
+      )}
+
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
@@ -216,7 +232,7 @@ export default async function ClientDetailsPage({
         </div>
 
         <div className="flex gap-4 items-center">
-          <UploadDocumentModal clientId={client.id} />
+          {!isInactive && <UploadDocumentModal clientId={client.id} />}
         </div>
       </div>
 
@@ -236,7 +252,9 @@ export default async function ClientDetailsPage({
             <div className="flex items-center gap-2">
               <Clock className="w-3 h-3" /> Retained Hours
             </div>
-            <AdjustHoursDialog clientId={client.id} currentBalance={client.hours_balance || 0} />
+            {!isInactive && (
+              <AdjustHoursDialog clientId={client.id} currentBalance={client.hours_balance || 0} />
+            )}
           </div>
           <div className="text-white font-serif text-3xl">
             {client.hours_balance || 0}{" "}
@@ -269,6 +287,7 @@ export default async function ClientDetailsPage({
         publishedTemplates={publishedTemplates ?? []}
         clientUsers={clientUsers ?? []}
         clientTemplates={clientTemplates}
+        active={!isInactive}
       />
 
       <ClientDangerZone

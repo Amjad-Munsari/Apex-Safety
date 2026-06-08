@@ -19,6 +19,8 @@ interface ClientAccessTabProps {
   clientId: string
   clientName: string
   users: ClientUserRow[]
+  /** When false the client is deactivated — inviting new portal users is disabled. */
+  active?: boolean
 }
 
 function CopyLinkBox({ link }: { link: string }) {
@@ -48,7 +50,7 @@ function CopyLinkBox({ link }: { link: string }) {
   )
 }
 
-export function ClientAccessTab({ clientId, clientName, users }: ClientAccessTabProps) {
+export function ClientAccessTab({ clientId, clientName, users, active = true }: ClientAccessTabProps) {
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [role, setRole] = useState("member")
@@ -139,14 +141,19 @@ export function ClientAccessTab({ clientId, clientName, users }: ClientAccessTab
 
           {error && <p className="text-sm text-danger font-medium">{error}</p>}
 
-          <div>
+          <div className="flex items-center gap-3">
             <Button
               type="submit"
-              disabled={loading}
-              className="bg-[#c0a66d] hover:bg-[#c0a66d]/90 text-black font-medium font-mono text-[11px] uppercase tracking-widest h-10 px-5"
+              disabled={loading || !active}
+              className="bg-[#c0a66d] hover:bg-[#c0a66d]/90 text-black font-medium font-mono text-[11px] uppercase tracking-widest h-10 px-5 disabled:opacity-40"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-3.5 h-3.5 mr-2" /> Generate invite link</>}
             </Button>
+            {!active && (
+              <span className="font-mono text-[10px] uppercase tracking-widest text-white/30">
+                Client deactivated
+              </span>
+            )}
           </div>
 
           {result && (
