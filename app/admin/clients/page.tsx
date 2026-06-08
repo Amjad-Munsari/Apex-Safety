@@ -13,6 +13,7 @@ export default async function ClientsPage() {
       id,
       name,
       hours_balance,
+      active,
       documents (
         id,
         expiry_date,
@@ -111,6 +112,7 @@ export default async function ClientsPage() {
                   proposalStatus={proposalStatus ?? null}
                   docCount={(client.documents as { id: string }[] | null)?.length || 0}
                   activeCount={activeCountByClient.get(client.id) ?? 0}
+                  active={(client as { active?: boolean }).active ?? true}
                 />
               );
             })}

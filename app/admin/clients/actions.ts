@@ -53,6 +53,141 @@ export async function createClient(input: NewClientInput): Promise<{ id: string 
   return { id: data.id }
 }
 
+/**
+ * Toggle a client's active flag. Reversible — used by both the Deactivate and
+ * Reactivate controls in the client detail Danger Zone. No data is touched;
+ * inactive clients stay in the list (badged) so reactivation is discoverable.
+ */
+export async function setClientActive(
+  clientId: string,
+  active: boolean
+): Promise<{ ok: true; active: boolean } | { ok: false; error: string }> {
+  // Admin-role gate — writes via the service-role adminClient (RLS bypassed).
+  await requireAdmin()
+
+  const { error } = await adminClient
+    .from("clients")
+    .update({ active })
+    .eq("id", clientId)
+
+  if (error) return { ok: false, error: error.message }
+
+  revalidatePath("/admin/clients")
+  revalidatePath(`/admin/clients/${clientId}`)
+  revalidatePath("/admin")
+  return { ok: true, active }
+}
+
+/**
+ * Permanently delete a client and its entire relational subtree.
+ *
+ * IRREVERSIBLE. Guarded by a server-side name match (the dialog also gates the
+ * button client-side, but that is UX only — this check is the real boundary).
+ *
+ * Order is load-bearing — clientId must stay resolvable through the cleanup, so
+ * the row delete is LAST:
+ *   1. requireAdmin()
+ *   2. re-fetch name; reject if missing or confirmationName !== name
+ *   3. best-effort Storage cleanup (reports + form-media under `${clientId}/`).
+ *      A failure here is logged to workflow_errors and does NOT abort — orphaned
+ *      bucket objects are lower-risk than a half-deleted client (mirrors the
+ *      report-delivery philosophy in assessments/actions.ts).
+ *   4. delete customer-owned form_templates (polymorphic owner_id, no DB FK —
+ *      see AGENTS.md; their template_versions cascade).
+ *   5. delete the clients row — migration 021 cascades assignments, submissions,
+ *      field_media, documents, hours_transactions, proposals, signatures,
+ *      client_users, and notifications_sent atomically.
+ */
+export async function deleteClient(
+  clientId: string,
+  confirmationName: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin()
+
+  // Step 2: re-fetch the authoritative name and verify the confirmation.
+  const { data: client, error: fetchError } = await adminClient
+    .from("clients")
+    .select("name")
+    .eq("id", clientId)
+    .maybeSingle()
+
+  if (fetchError) return { ok: false, error: fetchError.message }
+  if (!client) return { ok: false, error: "Client not found." }
+  if (confirmationName.trim() !== client.name) {
+    return { ok: false, error: "Name does not match." }
+  }
+
+  // Step 3: best-effort Storage cleanup. list() is shallow, so we walk the two
+  // top-level prefixes the app writes under `${clientId}/...`.
+  try {
+    await removeClientStorage(clientId)
+  } catch (err) {
+    console.error("client delete: storage cleanup failed", { clientId, err })
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: "client_delete_storage",
+      error_message: err instanceof Error ? err.message : String(err),
+      payload: { clientId },
+    })
+    // continue — do NOT abort the delete
+  }
+
+  // Step 4: customer-owned templates (no FK to clients; versions cascade).
+  const { error: tplError } = await adminClient
+    .from("form_templates")
+    .delete()
+    .eq("owner_type", "customer")
+    .eq("owner_id", clientId)
+  if (tplError) return { ok: false, error: `Failed to remove client templates: ${tplError.message}` }
+
+  // Step 5: delete the client — DB cascades the relational subtree.
+  const { error: delError } = await adminClient
+    .from("clients")
+    .delete()
+    .eq("id", clientId)
+  if (delError) return { ok: false, error: delError.message }
+
+  revalidatePath("/admin/clients")
+  revalidatePath("/admin")
+  return { ok: true }
+}
+
+/**
+ * Remove all Storage objects written under a client's prefix in the `reports`
+ * and `form-media` buckets. Storage has no FK to the DB, so this is the only
+ * thing that reclaims a deleted client's files. Recurses one level because
+ * form-media nests as `${clientId}/signatures|photos/${submissionId}/...`.
+ */
+async function removeClientStorage(clientId: string): Promise<void> {
+  for (const bucket of ["reports", "form-media"] as const) {
+    const paths = await listAllUnder(bucket, clientId)
+    if (paths.length > 0) {
+      const { error } = await adminClient.storage.from(bucket).remove(paths)
+      if (error) throw new Error(`${bucket}: ${error.message}`)
+    }
+  }
+}
+
+/** Depth-first list of every object path under `prefix` in a bucket. */
+async function listAllUnder(bucket: string, prefix: string): Promise<string[]> {
+  const { data: entries, error } = await adminClient.storage
+    .from(bucket)
+    .list(prefix, { limit: 1000 })
+  if (error) throw new Error(`${bucket} list ${prefix}: ${error.message}`)
+  if (!entries) return []
+
+  const files: string[] = []
+  for (const entry of entries) {
+    const full = `${prefix}/${entry.name}`
+    // Supabase marks true files with a metadata/id; folders come back with id=null.
+    if (entry.id === null) {
+      files.push(...(await listAllUnder(bucket, full)))
+    } else {
+      files.push(full)
+    }
+  }
+  return files
+}
+
 export async function updateClientHours(clientId: string, adjustment: number) {
   // Admin-role gate — adjusts billable hours_balance via the service-role
   // adminClient. Without this any authenticated user could top up / drain any

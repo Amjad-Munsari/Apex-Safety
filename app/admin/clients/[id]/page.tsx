@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Building, Calendar, Clock, MapPin } from "lucide-react"
 import { AdjustHoursDialog } from "@/components/clients/adjust-hours-dialog"
 import { ClientTabs } from "./client-tabs"
+import { ClientDangerZone } from "./client-danger-zone"
 import { normalizeClientTemplateRows } from "./client-templates"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 
@@ -204,8 +205,13 @@ export default async function ClientDetailsPage({
             <Building className="w-3.5 h-3.5" />
             Client Record
           </div>
-          <h2 className="font-serif text-[32px] md:text-[34px] leading-tight text-white whitespace-nowrap">
+          <h2 className="font-serif text-[32px] md:text-[34px] leading-tight text-white whitespace-nowrap flex items-center gap-3">
             {client.name}
+            {client.active === false && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] bg-white/5 border border-white/10 leading-none">
+                Inactive
+              </span>
+            )}
           </h2>
         </div>
 
@@ -263,6 +269,18 @@ export default async function ClientDetailsPage({
         publishedTemplates={publishedTemplates ?? []}
         clientUsers={clientUsers ?? []}
         clientTemplates={clientTemplates}
+      />
+
+      <ClientDangerZone
+        clientId={client.id}
+        clientName={client.name}
+        active={client.active ?? true}
+        counts={{
+          assessments: assessments.length,
+          proposals: proposals.length,
+          documents: documents?.length ?? 0,
+          portalUsers: clientUsers?.length ?? 0,
+        }}
       />
     </div>
   )

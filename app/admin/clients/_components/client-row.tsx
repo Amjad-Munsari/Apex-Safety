@@ -14,6 +14,8 @@ export interface ClientRowProps {
   proposalStatus: string | null;
   docCount: number;
   activeCount: number;
+  /** Client's active flag — inactive clients get a badge but stay listed. */
+  active?: boolean;
 }
 
 export function ClientRow({
@@ -27,6 +29,7 @@ export function ClientRow({
   proposalStatus,
   docCount,
   activeCount,
+  active = true,
 }: ClientRowProps) {
   const router = useRouter();
 
@@ -55,7 +58,12 @@ export function ClientRow({
           <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br />{id.slice(0, 4).toUpperCase()}</span>
           <div>
             <div className="font-medium text-white mb-0.5 flex items-center">
-              {name}
+              <span className={active ? "" : "text-white/40"}>{name}</span>
+              {!active && (
+                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] bg-white/5 border border-white/10 leading-none">
+                  Inactive
+                </span>
+              )}
               <span onClick={(e) => e.stopPropagation()}>
                 <ActivePill count={activeCount} />
               </span>
