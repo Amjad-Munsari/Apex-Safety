@@ -1,28 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { AssessmentsList } from "./assessments-list";
+import { statusForSubmission, type AssessmentRow } from "./status";
 
 export const dynamic = "force-dynamic";
 
-export type AssessmentStatus = "completed" | "in_progress" | "scheduled";
-
-export interface AssessmentRow {
-  id: string;
-  name: string;
-  date: string;
-  status: AssessmentStatus;
-}
-
 const DATE_FMT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", year: "numeric" };
-
-// Map a form_submissions.status lifecycle value onto the three buckets the
-// client surface shows. A submission row only exists once a fill has started,
-// so there is no "scheduled" DB state — that bucket is kept on the type for
-// display completeness but is not produced here.
-export function statusForSubmission(s: string): AssessmentStatus {
-  if (s === "completed" || s === "delivered") return "completed";
-  return "in_progress";
-}
 
 // Supabase nests the template join as either an object or a single-element
 // array depending on cardinality inference; normalise to a name string.
@@ -59,6 +42,7 @@ export default async function AssessmentListPage() {
     .select(`
       id,
       status,
+      assignment_id,
       created_at,
       submitted_at,
       template:template_versions(form_templates(name))
@@ -74,7 +58,7 @@ export default async function AssessmentListPage() {
       id: row.id,
       name: templateName(row.template as TemplateJoin),
       date: new Date(when).toLocaleDateString("en-GB", DATE_FMT),
-      status: statusForSubmission(row.status),
+      status: statusForSubmission(row.status, row.assignment_id),
     };
   });
 

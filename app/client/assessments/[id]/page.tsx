@@ -1,11 +1,11 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ChevronLeft, Calendar, Clock, FileText } from "lucide-react"
+import { ChevronLeft, Calendar, Clock, FileText, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/server"
 import { getClientContext } from "@/lib/auth-helpers"
 import { ReportActions } from "./report-actions"
-import { statusForSubmission, type AssessmentStatus } from "../page"
+import { statusForSubmission, type AssessmentStatus } from "../status"
 
 export const dynamic = "force-dynamic"
 
@@ -16,12 +16,14 @@ const DATE_FMT: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", y
 
 const STATUS_LABEL: Record<AssessmentStatus, string> = {
   completed: "Completed",
+  submitted: "Submitted",
   in_progress: "In Progress",
   scheduled: "Scheduled",
 }
 
 const STATUS_PILL: Record<AssessmentStatus, { border: string; text: string; dot: string }> = {
   completed: { border: "border-[#3b8273]", text: "text-[#3b8273]", dot: "bg-[#3b8273]" },
+  submitted: { border: "border-[#4f6d8f]", text: "text-[#4f6d8f]", dot: "bg-[#4f6d8f]" },
   in_progress: { border: "border-[#c0a66d]", text: "text-[#c0a66d]", dot: "bg-[#c0a66d]" },
   scheduled: { border: "border-[#8a857f]", text: "text-[#6b6560]", dot: "bg-[#8a857f]" },
 }
@@ -61,6 +63,7 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
       id,
       client_id,
       status,
+      assignment_id,
       created_at,
       submitted_at,
       deleted_at,
@@ -78,7 +81,7 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
   }
 
   const name = templateName(submission.template as TemplateJoin)
-  const status = statusForSubmission(submission.status)
+  const status = statusForSubmission(submission.status, submission.assignment_id)
   const when = submission.submitted_at ?? submission.created_at
   const date = new Date(when).toLocaleDateString("en-GB", DATE_FMT)
   const pill = STATUS_PILL[status]
@@ -144,6 +147,23 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
               </div>
             </div>
             <ReportActions title={name} subtitle={subtitle} documentId={submission.id} />
+          </div>
+        )}
+
+        {status === "submitted" && (
+          <div className="flex items-start gap-5">
+            <div className="w-10 h-10 rounded-sm bg-[#eef2f7] text-[#4f6d8f] flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div className="space-y-1.5 max-w-xl">
+              <h4 className="font-serif text-[18px] text-[#1a1a1a] font-medium leading-tight">
+                Assessment submitted.
+              </h4>
+              <p className="text-[#6b6560] text-[13px] font-sans tracking-tight">
+                Your responses have been recorded and saved to your records. Your consultant has
+                been notified and can view this submission.
+              </p>
+            </div>
           </div>
         )}
 

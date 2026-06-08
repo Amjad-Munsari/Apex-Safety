@@ -6,16 +6,18 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ChevronRight, Download, ExternalLink } from "lucide-react";
 import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
-import type { AssessmentRow, AssessmentStatus } from "./page";
+import type { AssessmentRow, AssessmentStatus } from "./status";
 
 const STATUS_LABEL: Record<AssessmentStatus, string> = {
   completed: "Completed",
+  submitted: "Submitted",
   in_progress: "In Progress",
   scheduled: "Scheduled",
 };
 
 const STATUS_PILL: Record<AssessmentStatus, { border: string; text: string; dot: string }> = {
   completed: { border: "border-[#3b8273]", text: "text-[#3b8273]", dot: "bg-[#3b8273]" },
+  submitted: { border: "border-[#4f6d8f]", text: "text-[#4f6d8f]", dot: "bg-[#4f6d8f]" },
   in_progress: { border: "border-[#c0a66d]", text: "text-[#c0a66d]", dot: "bg-[#c0a66d]" },
   scheduled: { border: "border-[#8a857f]", text: "text-[#6b6560]", dot: "bg-[#8a857f]" },
 };
@@ -23,7 +25,8 @@ const STATUS_PILL: Record<AssessmentStatus, { border: string; text: string; dot:
 const STATUS_ORDER: Record<AssessmentStatus, number> = {
   in_progress: 0,
   scheduled: 1,
-  completed: 2,
+  submitted: 2,
+  completed: 3,
 };
 
 interface Props {
