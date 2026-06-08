@@ -14,6 +14,9 @@ export default async function NewProposalPage() {
       .from('clients')
       .select('id, name, site_address, contact_name, contact_email')
       .is('deleted_at', null)
+      // Deactivated clients are frozen — keep them out of the proposal picker
+      // (the createProposal server action also blocks them).
+      .eq('active', true)
       .order('name', { ascending: true }),
     fetchActiveServices(),
   ]);

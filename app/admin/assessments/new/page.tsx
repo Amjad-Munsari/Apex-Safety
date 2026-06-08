@@ -19,6 +19,9 @@ export default async function NewAssessmentPage({
       .from("clients")
       .select("id, name, site_address, contact_name, contact_email")
       .is("deleted_at", null)
+      // Deactivated clients are frozen — keep them out of the picker so an
+      // assessment can't be started for one (the server action also blocks it).
+      .eq("active", true)
       .order("name", { ascending: true }),
     adminClient
       .from("template_versions")

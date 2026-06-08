@@ -43,6 +43,9 @@ export default async function TemplateBuilderPage({ params }: Props) {
     .from("clients")
     .select("id, name")
     .is("deleted_at", null)
+    // Deactivated clients are frozen — keep them out of the assign picker
+    // (createAssignments also blocks them server-side).
+    .eq("active", true)
     .order("name");
 
   return (
