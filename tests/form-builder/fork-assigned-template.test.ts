@@ -274,8 +274,9 @@ describe("forkAssignedTemplate — Phase 16 D-05/D-06/D-08", () => {
     expect(updateEqIdArg).toBe(ASSIGNMENT_ID);
   });
 
-  // ── (e) D-07: redirect to the builder at /client/templates/[fork.id] ──────
-  // (There is no /edit route — the builder lives at [id]/page.tsx.)
+  // ── (e) D-07: redirect to the customer template builder at
+  // /client/templates/[fork.id] — there is no /edit subroute (the old
+  // /edit redirect 404'd; fixed in fix(client): fork-on-fill redirect).
   it("(e) calls redirect with /client/templates/[fork.id]", async () => {
     await callFork();
 

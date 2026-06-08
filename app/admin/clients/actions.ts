@@ -3,6 +3,7 @@
 import { adminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/auth-helpers"
 import { revalidatePath } from "next/cache"
+import { requireAdmin } from "@/lib/auth-helpers"
 
 export type NewClientInput = {
   name: string
@@ -18,7 +19,10 @@ export type NewClientInput = {
  * to the next step or revalidate the list.
  */
 export async function createClient(input: NewClientInput): Promise<{ id: string }> {
-  if (!(await isAdmin())) throw new Error("Unauthorized")
+  // Admin-role gate — inserts via the service-role adminClient (RLS bypassed),
+  // so without this any authenticated user could create client orgs.
+  // requireAdmin() enforces admin_users membership and stays demo-compatible.
+  await requireAdmin()
 
   const name = input.name.trim()
   if (!name) throw new Error("Business name is required")
@@ -50,7 +54,10 @@ export async function createClient(input: NewClientInput): Promise<{ id: string 
 }
 
 export async function updateClientHours(clientId: string, adjustment: number) {
-  if (!(await isAdmin())) throw new Error("Unauthorized")
+  // Admin-role gate — adjusts billable hours_balance via the service-role
+  // adminClient. Without this any authenticated user could top up / drain any
+  // client's hours. requireAdmin() enforces admin_users membership.
+  await requireAdmin()
 
   // 1. Get current balance
   const { data: client, error: fetchError } = await adminClient

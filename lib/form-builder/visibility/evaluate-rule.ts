@@ -41,30 +41,131 @@ function toNumeric(value: unknown): number {
 }
 
 /**
+ * Strict finite-number parse for equality coercion. Unlike toNumeric this does
+ * NOT fall back to Date.parse (which would turn an ISO date string into an epoch
+ * ms number) and rejects empty / whitespace-only strings (Number("") === 0).
+ * Returns null when the value is not an unambiguous finite number — callers then
+ * fall back to string comparison so plain-string equality is unchanged.
+ */
+function asFiniteNumber(value: unknown): number | null {
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "") return null;
+    const n = Number(trimmed);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+// Matches yyyy-mm-dd (the value shape produced by <input type="date"> and the
+// dateField renderer). Used to avoid date-coercing plain string labels.
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}/;
+
+/**
+ * Normalize a value to a yyyy-mm-dd ISO date string for date equality, or null
+ * when it is not a usable date. Only string/number/Date inputs are considered;
+ * plain string labels that don't parse as dates return null so the caller falls
+ * back to string comparison.
+ */
+function toIsoDate(value: unknown): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  if (value instanceof Date) {
+    return isNaN(value.getTime()) ? null : value.toISOString().slice(0, 10);
+  }
+  if (typeof value === "number") {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
+  if (typeof value === "string") {
+    const ms = Date.parse(value);
+    return isNaN(ms) ? null : new Date(ms).toISOString().slice(0, 10);
+  }
+  return null;
+}
+
+/**
+ * Equality with type coercion (Bug fix: numeric/date `equals` silently never
+ * fired because live answers are numbers/Dates while stored rule values are
+ * strings, so strict `===` between string and number is always false).
+ *
+ * Precedence:
+ *  1. Multi-select source (Array sourceValue): array-includes membership.
+ *  2. Numeric: when the source is a numberField, or both sides parse as finite
+ *     numbers, compare numerically.
+ *  3. Date: when the source is a dateField, or both sides normalize to an ISO
+ *     date, compare yyyy-mm-dd strings.
+ *  4. Fallback: strict `===` — preserves existing plain-string / boolean
+ *     semantics exactly (e.g. "Some" !== "Yes", "N/A" === "N/A", true === true).
+ */
+function valuesEqual(
+  sourceValue: unknown,
+  ruleValue: unknown,
+  sourceType?: string
+): boolean {
+  // 1. Multi-select (selectField with allowMultiple) stores an array of selected
+  //    option values; "equals <option>" means the option is among the selected.
+  if (Array.isArray(sourceValue)) {
+    return sourceValue.some((item) => valuesEqual(item, ruleValue, sourceType));
+  }
+
+  // 2. Numeric comparison.
+  const srcNum = asFiniteNumber(sourceValue);
+  const ruleNum = asFiniteNumber(ruleValue);
+  if (sourceType === "numberField" || sourceType === "computedField") {
+    // Authoritative numeric source — compare numerically when both parse.
+    if (srcNum !== null && ruleNum !== null) return srcNum === ruleNum;
+  } else if (srcNum !== null && ruleNum !== null) {
+    // Untyped/other source but both sides are unambiguous finite numbers.
+    return srcNum === ruleNum;
+  }
+
+  // 3. Date comparison (normalize to yyyy-mm-dd).
+  if (
+    sourceType === "dateField" ||
+    (typeof sourceValue === "string" &&
+      typeof ruleValue === "string" &&
+      ISO_DATE_RE.test(sourceValue) &&
+      ISO_DATE_RE.test(ruleValue))
+  ) {
+    const srcDate = toIsoDate(sourceValue);
+    const ruleDate = toIsoDate(ruleValue);
+    if (srcDate !== null && ruleDate !== null) return srcDate === ruleDate;
+  }
+
+  // 4. Fallback — unchanged strict equality for strings/booleans/etc.
+  return sourceValue === ruleValue;
+}
+
+/**
  * Evaluate a single visibility rule operator against a source value.
  *
  * @param operator - One of the 7 D-06 operators.
  * @param sourceValue - The current value of the source entity (from entitiesValues).
  * @param ruleValue - The literal value declared in the rule (string, number, boolean, null).
- * @param sourceType - Optional entity type hint (e.g., "dateField") for disambiguation.
- *   Currently informational — the operator logic handles coercion generically.
+ * @param sourceType - Optional entity type hint (e.g., "dateField", "numberField")
+ *   used by equals/notEquals to coerce number/date sources before comparing.
  * @returns boolean — true when the rule condition is met.
  */
 export function evaluateRule(
   operator: string,
   sourceValue: unknown,
   ruleValue?: unknown,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _sourceType?: string
+  sourceType?: string
 ): boolean {
   switch (operator) {
     case "equals":
-      // Strict triple-equals for select sources; compares string label to ruleValue (D-10).
-      return sourceValue === ruleValue;
+      // Type-coerced equality: numeric/date sources are normalized before
+      // comparing (string-vs-number `===` is always false); multi-select sources
+      // match on array membership. Plain string/boolean labels (D-10: "Some",
+      // "Yes", "N/A") fall through to strict `===` unchanged.
+      return valuesEqual(sourceValue, ruleValue, sourceType);
 
     case "notEquals":
-      // True when not equal; also true when sourceValue is undefined unless ruleValue is also undefined.
-      return sourceValue !== ruleValue;
+      // Inverse of equals. Preserves prior behaviour where an undefined source is
+      // "not equal" to a defined ruleValue (undefined !== "Yes" → true), while
+      // gaining the same number/date/multi-select coercion as equals.
+      return !valuesEqual(sourceValue, ruleValue, sourceType);
 
     case "contains":
       // Text/textarea only; case-sensitive substring; false when source is undefined/null.

@@ -14,6 +14,7 @@ import {
   buildPhotoStoragePath,
 } from "@/lib/form-builder/storage/upload-paths"
 import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections"
+import { extractPAS79Summary } from "@/lib/form-builder/risk/pas79"
 import { YELLOW_BROOM_EXEMPLAR } from "@/lib/ai/exemplars/yellow-broom-fra"
 import { buildReportPrompt } from "@/lib/ai/prompt-builder"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
@@ -212,7 +213,9 @@ export async function autosaveAnswers(submissionId: string, answersJson: Record<
  * Submit a form assessment with server-side validation.
  *
  * Security contract (T-13-09, T-13-10, T-13-11):
- * 1. Auth gate: requireActorUserId — unauthenticated callers are rejected.
+ * 1. Auth + ownership gate: requireActorUserId proves authentication and
+ *    authorizeSubmissionAccess restricts the write to an admin OR the org that
+ *    owns the submission — unauthenticated/cross-org callers are rejected.
  * 2. Pinned version: schema is fetched from template_versions using the
  *    submission's own template_version_id FK — the client cannot supply a
  *    different (weaker) version.
@@ -260,15 +263,25 @@ export async function submitAssessmentAction(
   // Step 3: server-side validation — T-13-09
   const { validateEntitiesValues } = await import("@coltorapps/builder")
   const { formBuilder } = await import("@/lib/form-builder")
+  const { sanitizeSchema } = await import("@/lib/form-builder/sanitize-schema")
   const { pruneSchemaForValidation } = await import("@/lib/form-builder/prune-schema-for-validation")
   const { setCurrentFormSchema } = await import("@/lib/form-builder/visibility/compute-computed-values")
+
+  // The pinned schema_json can contain since-removed entity types (e.g. the
+  // seeded FRA's signatureField, deregistered 2026-06-04). The client renders
+  // AND validates against the sanitized schema (interpreter-renderer.tsx), but
+  // feeding the raw schema into coltorapps here throws
+  // `Unkown entity type "signatureField"` (typo is upstream) and crashes the
+  // whole submit. Sanitize once and use it for every consumer below so the
+  // server validates exactly what the client validated.
+  const schemaJson = sanitizeSchema(version.schema_json as Parameters<typeof sanitizeSchema>[0])
 
   // coltorapps walks entity.children recursively and validates each at the root level,
   // but repeatingSection child values live nested inside instances[] — so any static
   // `required: true` on a template child would always fail at the root. Prune to stop
   // the walk at repeatingSection; the section's own validator still enforces the
   // { instances } shape and min/max counts.
-  const prunedSchema = pruneSchemaForValidation(version.schema_json as Parameters<typeof pruneSchemaForValidation>[0])
+  const prunedSchema = pruneSchemaForValidation(schemaJson)
 
   // Register the schema in the module-level slot so makeShouldBeProcessed's
   // augmentation path can derive computedField values (D-02) during the
@@ -280,7 +293,7 @@ export async function submitAssessmentAction(
   // TODO: under concurrent server actions this slot is racy; the low-traffic
   // admin context makes that acceptable for now. A future hardening could
   // use AsyncLocalStorage or thread the schema through the walker directly.
-  setCurrentFormSchema(version.schema_json as Parameters<typeof setCurrentFormSchema>[0])
+  setCurrentFormSchema(schemaJson as Parameters<typeof setCurrentFormSchema>[0])
   let result: Awaited<ReturnType<typeof validateEntitiesValues>>
   try {
     result = await validateEntitiesValues(rawValues, formBuilder, prunedSchema as Parameters<typeof validateEntitiesValues>[2])
@@ -294,7 +307,7 @@ export async function submitAssessmentAction(
   // Per-instance required enforcement — mirrors the client guard in interpreter-renderer.tsx.
   const { validateInstanceRequired } = await import("@/lib/form-builder/validate-instance-required")
   const instanceFailures = validateInstanceRequired(
-    version.schema_json as Parameters<typeof validateInstanceRequired>[0],
+    schemaJson as Parameters<typeof validateInstanceRequired>[0],
     result.data as Record<string, unknown>
   )
   if (instanceFailures.length > 0) {
@@ -314,8 +327,8 @@ export async function submitAssessmentAction(
   // module-level slot (cleared above).
   const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility")
   const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers")
-  const visibility = evaluateVisibility(version.schema_json as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)
-  const scrubbedAnswers = stripHiddenAnswers(version.schema_json as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility)
+  const visibility = evaluateVisibility(schemaJson as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)
+  const scrubbedAnswers = stripHiddenAnswers(schemaJson as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility)
 
   // Step 4: write validated data — T-13-13 (audit trail); uses SCRUBBED answers (D-01).
   // submitted_by ownership filter matches the legacy submitAssessment + autosaveAnswers
@@ -458,6 +471,20 @@ async function runReportDraftGeneration(submissionId: string) {
     submission.answers_json as Record<string, unknown>
   )
 
+  // Step 3b: Recompute the PAS 79 risk rating from the PINNED schema + raw
+  // answers. The on-screen renderer computes this badge but deliberately never
+  // persists it (computed-field-renderer.tsx ~128-133), so answers_json carries
+  // the likelihood/consequence inputs but not the derived level. We recompute
+  // here — NOT from expandedAnswers (which relabels repeatingSection children),
+  // but from the raw answers_json the renderer/visibility engine also read, so
+  // the dependency entity IDs resolve. Returns null when there is no PAS 79
+  // field or its inputs are missing/out of range — buildReportPrompt then omits
+  // the line entirely (no "undefined" in the prompt).
+  const pas79Summary = extractPAS79Summary(
+    version.schema_json as Parameters<typeof extractPAS79Summary>[0],
+    submission.answers_json as Record<string, unknown>
+  )
+
   // Step 4: Initialize createOpenAI
   const openai = createOpenAI({
     baseURL: "https://openrouter.ai/api/v1",
@@ -485,6 +512,13 @@ async function runReportDraftGeneration(submissionId: string) {
         exemplar: YELLOW_BROOM_EXEMPLAR,
         exemplarLabel: "YELLOW BROOM 2023 FRA, anonymised",
         expandedAnswers,
+        pas79: pas79Summary
+          ? {
+              likelihood: pas79Summary.likelihood,
+              consequence: pas79Summary.consequence,
+              level: pas79Summary.result.level,
+            }
+          : null,
       }),
     })
 

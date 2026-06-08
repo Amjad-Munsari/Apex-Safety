@@ -14,6 +14,7 @@
  * server action (app/admin/assessments/actions.ts) so behaviour is identical.
  */
 import { evaluateVisibilityForInstance } from "./visibility/evaluate-visibility"
+import { isFileFieldType } from "./file-field-types"
 import type { FormBuilderSchema } from "./index"
 
 export type InstanceRequiredFailure = {
@@ -57,6 +58,9 @@ export function validateInstanceRequired(
         const state = instanceVis[childId]
         if (!state || state.visible === false) continue
         if (!state.required) continue
+        // BUG 3: photo/file-upload children are recommended, not required —
+        // never block per-instance submission even when marked required.
+        if (isFileFieldType(schema.entities[childId]?.type)) continue
         if (!isEmpty(instance?.[childId])) continue
 
         const childEntity = schema.entities[childId]

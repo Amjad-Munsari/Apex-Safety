@@ -187,6 +187,13 @@ export function RuleRow({
   // When the source is a select field, offer its options as a dropdown so the
   // rule value matches the option's stored VALUE (not a hand-typed label that
   // would silently never match). null for non-select sources → free-text input.
+  //
+  // Multi-select (allowMultiple) sources are usable here too: the stored answer
+  // is an array of option values, and evaluate-rule's `equals`/`notEquals`
+  // treat an array source as membership (does the picked option appear in the
+  // selection?). The value picker still offers ONE option at a time, so a rule
+  // expresses "selection includes <option>" — picking a single value is the
+  // intended granularity; AND-ing multiple rows covers "includes A and B".
   const sourceOptions =
     sourceType === "selectField"
       ? ((sourceEntity?.attributes?.options as

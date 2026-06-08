@@ -1,92 +1,75 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-current_phase: 19
-current_plan: 1
-status: milestone_complete
-stopped_at: Phase 19 context gathered
-last_updated: "2026-06-07T07:39:13.091Z"
+milestone_name: MVP — 888 Safety Platform
+status: Awaiting next milestone
+stopped_at: v1.0 closed; awaiting /gsd:new-milestone
+last_updated: "2026-06-07T18:31:01.388Z"
+last_activity: 2026-06-07 — Milestone v1.0 completed and archived
 progress:
-  total_phases: 12
-  completed_phases: 11
-  total_plans: 56
+  total_phases: 18
+  completed_phases: 17
+  total_plans: 52
   completed_plans: 52
-  percent: 92
+  percent: 100
 ---
 
 # Project State: 888 Safety & Training Platform
 
-**Last updated:** 2026-05-01
-**Session:** Post-Revert Hardening & Dashboard UAT
+**Last updated:** 2026-06-07
+**Session:** v1.0 milestone close
 
 ---
 
 ## Current Position
 
-Phase: 19 (client-portal-productionization) — EXECUTING
-Plan: 1 of 4
-**Current Phase:** 19
-**Current Plan:** Not started
-**Phase Status:** In Progress (UAT pending — same status as Phase 14)
-**Milestone Status:** In Progress
+**Milestone:** v1.0 MVP — SHIPPED 2026-06-07 (tag `v1.0`)
+**Status:** Milestone complete. No active phase.
+**Next:** `/gsd:new-milestone` to scope v1.1.
 
 ```
-Progress: [██████████] 100%
+v1.0: [██████████] 100% — archived to .planning/milestones/
 ```
 
----
+## Project Reference
 
-## Phase Sequence
+See: .planning/PROJECT.md (updated 2026-06-07)
 
-| # | Phase | Status | Note |
-|---|-------|--------|------|
-| 1 | Scaffolding + Security Foundation | Completed | |
-| 2 | Form Prerequisites | Completed | |
-| 3 | Template System + Schema Versioning | Completed | |
-| 4 | Client Compliance Portal | Completed | |
-| 5 | Document Upload + Expiry Alerts | Completed | |
-| 6 | Assessment Workflow | Completed | Security Hardened |
-| 7 | AI Report Pipeline | Completed | Built 2026-05-02 — Vercel AI SDK, no n8n |
-| 8 | Hours Balance + PayPal Checkout | Deferred | Manual hours mgmt already covers this |
-| 9 | Proposal Pipeline | Completed | Integrated & Seeded |
-| 10 | Admin Dashboard Logic | Completed | Verified via UAT |
-| 11 | Demo Readiness & Polish | Completed | Verified via UAT |
-| 12 | Admin Dashboard UI Fixes | Completed | |
-| 13 | Form Builder Foundation | In Progress | Built + merged; paused at 13-04 Task 4 human-verify |
-| 14 | Custom Field Types | In Progress | All 8 plans shipped; migration 011 applied; manual UAT (14-UAT.md) pending |
-| 15 | Conditional Logic Engine | In Progress | All 9 plans shipped; migration 012 live; gsd-verifier green (5/5 reqs DELIVERED); manual UAT (15-UAT.md) pending |
-| 16 | Multi-Tenancy + Fork-on-Fill | Not planned | Added 2026-05-20 |
-| 17 | Assignment Scheduling + Notifications | Not planned | Added 2026-05-20 |
-| 18 | FRA Seed Template | Not planned | Added 2026-05-20 |
+**Core value:** Matt narrates an assessment on-site and a client-ready branded PDF report lands in minutes, not days.
+**Current focus:** Planning next milestone (v1.1).
 
----
+## Deferred Items
 
-## Current Status
+Items acknowledged and deferred at milestone close on 2026-06-07:
 
-- **Phase 7: AI Report Pipeline** — ✅ Completed (2026-05-02)
-- **Phase 11: Demo Readiness** — ✅ Completed
-- **Phase 12: Admin Dashboard UI Fixes** — ✅ Completed
+| Category | Item | Status |
+|----------|------|--------|
+| uat_gap | 05-UAT.md | testing (0 open scenarios — never marked complete) |
+| uat_gap | 06-UAT.md | testing (0 open scenarios — never marked complete) |
+| uat_gap | 07-HUMAN-UAT.md | partial (5 open scenarios) |
+| uat_gap | 13-UAT.md | partial (16 open scenarios) |
+| uat_gap | 14-UAT.md | pending |
+| uat_gap | 16-UAT.md | unknown status |
+| uat_gap | 17-UAT.md | unknown status |
+| uat_gap | 18-UAT.md | unknown status |
+| uat_gap | 10-UAT.md | completed (flagged by audit; no action) |
+| verification_gap | 07-VERIFICATION.md | human_needed |
+| context_questions | 17-CONTEXT.md | 3 questions — de facto answered by shipped implementation |
+| context_questions | 18-CONTEXT.md | 3 questions — de facto answered by shipped implementation |
 
-## Next Action
+**Mitigating context:** E2E UAT sessions (E2E-UAT.md, through test 24+; 2026-06-07 "Workflow 1 Assessment Pipeline" 12/12 PASS) exercised much of the deferred per-phase UAT surface in practice; the per-phase files were not back-filled.
 
-Phase 15 (Conditional Logic Engine) executed — all 9 plans shipped + merged to `main`. Migration 012 applied to live Supabase (template id `0047e922-d17d-4b32-94a4-f5c075823c6d` — "Phase 15 Conditional Smoke Test"). gsd-verifier reports 5/5 requirements DELIVERED (COND-01..04, BUILDER-02), all 10 locked decisions (D-01..D-10) confirmed in code, 111/111 phase-15 tests green.
+## Open Blockers (carried into v1.1)
 
-**Pending manual UAT (deferred per user, 2026-05-26).** UAT for phases 13, 14, and 15 are all queued for a single dedicated walkthrough session. Use the per-phase UAT files:
-
-- `.planning/phases/13-form-builder-foundation/13-UAT.md`
-- `.planning/phases/14-custom-field-types/14-UAT.md`
-- `.planning/phases/15-conditional-logic-engine/15-UAT.md`
-
-For Phase 15 specifically: `npm run dev` → admin login → open "Phase 15 Conditional Smoke Test" template (id above) → walk 15-UAT.md sections A–H (PAS 79 Mitigation show/hide, fire-doors per-instance require, cycle UX, `answers_json` scrub verification). On approval: `roadmap.update-plan-progress 15 15-08 complete` then phase completion gates.
-
-Next phase candidate: 16 (Multi-Tenancy + Fork-on-Fill) — already partially scaffolded by the migration 003 customer ownership work.
+- **External (Matt):** Site Risk template + completed example; PAS 79 band boundaries sign-off; compliance taxonomy.
+- **External (Finley):** n8n env config (`N8N_*` webhook URLs, `CRON_SECRET`, `OPENROUTER_API_KEY` in Vercel); shared project Gmail.
+- **Code (from AUDIT-2026-06-05):** auth middleware/route gating, client assessments page fixtures, STT proxy route dead, PAS 79 computed value not persisted to AI prompt.
 
 ## Session Continuity
 
-Last session: 2026-06-07T07:02:54.103Z
-Stopped at: Phase 19 context gathered
-Resume file: .planning/phases/19-client-portal-productionization/19-CONTEXT.md
+Last session: 2026-06-07 (milestone close)
+Stopped at: v1.0 archived and tagged
+Resume file: None
 
 ---
 
@@ -94,13 +77,5 @@ Resume file: .planning/phases/19-client-portal-productionization/19-CONTEXT.md
 
 ### Roadmap Evolution
 
-- 2026-05-20: Phases 13–18 added — Form Builder Module (Deliverable 11). Promoted from the v2 backlog (BUILDER / COND / SCHED clusters) per Finley voice note 4/17 and the 2026-04-17 form-template ownership decision. Build prompt of record: `.planning/research/form-builder-build-prompt.md`.
-  - Phase 13: Form Builder Foundation
-  - Phase 14: Custom Field Types
-  - Phase 15: Conditional Logic Engine
-  - Phase 16: Multi-Tenancy + Fork-on-Fill
-  - Phase 17: Assignment Scheduling + Notifications
-  - Phase 18: FRA Seed Template
-- 2026-06-07: Phase 19 added — Client Portal Productionization. Milestone-2 productionization of the client portal: replace mock/stub surfaces with real DB-backed data (identity wiring, Assignments nav consolidation, completed-submission viewer, Contracts from proposals). Billing/PayPal (Phase 8) explicitly excluded.
-
----
+- 2026-05-20: Phases 13–18 added — Form Builder Module (Deliverable 11), promoted from v2 backlog per Finley voice note 4/17.
+- 2026-06-07: v1.0 closed. Full roadmap archived at `.planning/milestones/v1.0-ROADMAP.md`; phase directories at `.planning/milestones/v1.0-phases/`.

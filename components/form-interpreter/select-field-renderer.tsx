@@ -113,10 +113,14 @@ export function SelectFieldRenderer({ entity, setValue, surface = "cream", dynam
         // map; without this the trigger shows the option's value, not its label.
         items={Object.fromEntries(options.map((o) => [o.value, o.label]))}
       >
-        <SelectTrigger className={cn("h-12 rounded-sm", t.trigger)}>
+        <SelectTrigger className={cn("w-full h-12 rounded-sm", t.trigger)}>
           <SelectValue placeholder="Select an option..." />
         </SelectTrigger>
-        <SelectContent className={cn("rounded-sm", t.content)}>
+        <SelectContent
+          align="start"
+          alignItemWithTrigger={false}
+          className={cn("rounded-sm", t.content)}
+        >
           {options.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
               {opt.label}

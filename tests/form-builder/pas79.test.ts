@@ -141,3 +141,77 @@ describe("computePAS79RiskLevel — banding: Intolerable (score 17–25)", () =>
     expect(r.colourClass).toBe("bg-red-100 text-red-900 border border-red-300");
   });
 });
+
+// ── extractPAS79Summary — recompute from schema + raw answers ─────────────────
+// Mirrors the renderer's extraction (attributes.computedInputs → entity IDs →
+// answers lookup). Used by the AI report prompt path, which never sees the
+// persisted level because the renderer deliberately does not store it.
+
+// A minimal schema with one PAS 79 computedField whose inputs point at two
+// number entities by id. Matches the shape buildReportPrompt's caller passes
+// (version.schema_json).
+function pas79Schema(likelihoodId: string, consequenceId: string) {
+  return {
+    entities: {
+      [likelihoodId]: { type: "numberField", attributes: { label: "Likelihood" } },
+      [consequenceId]: { type: "numberField", attributes: { label: "Consequence" } },
+      cf1: {
+        type: "computedField",
+        attributes: {
+          label: "PAS 79 Risk",
+          formula: "pas79",
+          computedInputs: { likelihood: likelihoodId, consequence: consequenceId },
+        },
+      },
+    },
+  };
+}
+
+describe("extractPAS79Summary — happy path", () => {
+  it("recomputes level + echoes likelihood/consequence from raw answers", async () => {
+    const { extractPAS79Summary } = await import("@/lib/form-builder/risk/pas79");
+    const schema = pas79Schema("L", "C");
+    const summary = extractPAS79Summary(schema, { L: 4, C: 5 })!;
+    expect(summary.likelihood).toBe(4);
+    expect(summary.consequence).toBe(5);
+    expect(summary.result.score).toBe(20);
+    expect(summary.result.level).toBe("Intolerable");
+  });
+
+  it("coerces numeric-string answers (number entities can store strings)", async () => {
+    const { extractPAS79Summary } = await import("@/lib/form-builder/risk/pas79");
+    const schema = pas79Schema("L", "C");
+    const summary = extractPAS79Summary(schema, { L: "3", C: "3" })!;
+    expect(summary.likelihood).toBe(3);
+    expect(summary.consequence).toBe(3);
+    expect(summary.result.level).toBe("Moderate");
+  });
+});
+
+describe("extractPAS79Summary — null cases (inject nothing)", () => {
+  it("returns null when the schema has no PAS 79 computedField", async () => {
+    const { extractPAS79Summary } = await import("@/lib/form-builder/risk/pas79");
+    const schema = {
+      entities: { q1: { type: "textField", attributes: { label: "Notes" } } },
+    };
+    expect(extractPAS79Summary(schema, { q1: "anything" })).toBeNull();
+  });
+
+  it("returns null when likelihood/consequence answers are unfilled", async () => {
+    const { extractPAS79Summary } = await import("@/lib/form-builder/risk/pas79");
+    const schema = pas79Schema("L", "C");
+    expect(extractPAS79Summary(schema, {})).toBeNull();
+  });
+
+  it("returns null when an input is out of the [1,5] range", async () => {
+    const { extractPAS79Summary } = await import("@/lib/form-builder/risk/pas79");
+    const schema = pas79Schema("L", "C");
+    expect(extractPAS79Summary(schema, { L: 0, C: 3 })).toBeNull();
+  });
+
+  it("returns null when an input is non-numeric", async () => {
+    const { extractPAS79Summary } = await import("@/lib/form-builder/risk/pas79");
+    const schema = pas79Schema("L", "C");
+    expect(extractPAS79Summary(schema, { L: "n/a", C: 3 })).toBeNull();
+  });
+});

@@ -134,6 +134,38 @@ export async function getClientContextWithIdentity(): Promise<ClientIdentity | n
   }
 }
 
+/**
+ * Admin-role gate for MUTATING server actions that write via the service-role
+ * adminClient (which bypasses RLS). isAdmin() alone is the right *check*, but
+ * many admin actions also have to run under the frictionless demo flow, where
+ * there is NO real Supabase Auth user (getUser() → null, so isAdmin() → false).
+ *
+ * This wrapper mirrors requireActorUserId's contract:
+ *  - Demo mode (dev/preview only — forced off in prod by lib/supabase/server.ts):
+ *    authorized but unattributed. Returns null.
+ *  - Real auth: must be a member of admin_users, else throws "Unauthorized".
+ *    Returns the admin user's id so callers can attribute writes.
+ *
+ * Use this — not a bare isAdmin() — anywhere an admin action also needs to work
+ * in the demo, so the privilege-escalation gate doesn't break the demo gate.
+ */
+export async function requireAdmin(): Promise<string | null> {
+  if (await isDemoMode()) return null
+
+  const user = await getUser()
+  if (!user) throw new Error("Unauthorized")
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("id")
+    .eq("id", user.id)
+    .single()
+
+  if (error || !data) throw new Error("Unauthorized")
+  return user.id
+}
+
 export async function getClientContext() {
   const supabase = await createClient()
 

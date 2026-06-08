@@ -2,14 +2,8 @@
 
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
-import { isAdmin } from "@/lib/auth-helpers"
+import { requireAdmin } from "@/lib/auth-helpers"
 import type { ServiceCategory } from "@/lib/data/services"
-
-// All service-catalog mutations are admin-only and use the service-role client.
-// With no route middleware, this server-trusted check is the sole gate.
-async function assertAdmin() {
-  if (!(await isAdmin())) throw new Error("Unauthorized")
-}
 
 type ServicePayload = {
   name: string
@@ -21,7 +15,9 @@ type ServicePayload = {
 }
 
 export async function addService(data: ServicePayload) {
-  await assertAdmin()
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient.from("services").insert([
     {
       name: data.name,
@@ -43,7 +39,9 @@ export async function addService(data: ServicePayload) {
 }
 
 export async function updateService(id: string, data: ServicePayload) {
-  await assertAdmin()
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient
     .from("services")
     .update({
@@ -66,7 +64,9 @@ export async function updateService(id: string, data: ServicePayload) {
 }
 
 export async function toggleServiceActive(id: string, active: boolean) {
-  await assertAdmin()
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient
     .from("services")
     .update({ active })
@@ -82,7 +82,9 @@ export async function toggleServiceActive(id: string, active: boolean) {
 }
 
 export async function deleteService(id: string) {
-  await assertAdmin()
+  // Admin-role gate — service catalogue writes via the service-role adminClient.
+  await requireAdmin()
+
   const { error } = await adminClient
     .from("services")
     .update({ deleted_at: new Date().toISOString() })

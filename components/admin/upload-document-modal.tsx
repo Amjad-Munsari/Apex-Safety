@@ -106,7 +106,7 @@ export function UploadDocumentModal({
                 onValueChange={(v) => setSelectedClientId(v ?? "")}
                 required
               >
-                <SelectTrigger className="bg-black/50 border-white/10 text-white">
+                <SelectTrigger className="w-full bg-black/50 border-white/10 text-white">
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
@@ -143,7 +143,7 @@ export function UploadDocumentModal({
               Category
             </Label>
             <Select name="category" required defaultValue={CATEGORY_OPTIONS[0]}>
-              <SelectTrigger className="bg-black/50 border-white/10 text-white">
+              <SelectTrigger className="w-full bg-black/50 border-white/10 text-white">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">

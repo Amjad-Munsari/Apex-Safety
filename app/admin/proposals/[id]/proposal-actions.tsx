@@ -13,9 +13,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import { Send, CheckCircle2, FileSignature, Download, Pencil, Trash2 } from "lucide-react"
+import { Send, CheckCircle2, FileSignature, Download, Pencil, Trash2, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { updateProposalStatus, deleteProposal } from "../actions"
+import { updateProposalStatus, deleteProposal, regenerateProposalPdf } from "../actions"
 
 type ProposalStatus = "Draft" | "Sent" | "Signed" | "Contract Issued"
 
@@ -25,6 +25,7 @@ interface ProposalActionsProps {
   clientName: string
   status: ProposalStatus
   documentUrl: string | null
+  hasPdf: boolean
 }
 
 export function ProposalActions({
@@ -33,12 +34,43 @@ export function ProposalActions({
   clientName,
   status,
   documentUrl,
+  hasPdf,
 }: ProposalActionsProps) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [optimisticStatus, setOptimisticStatus] = useState<ProposalStatus>(status)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  function handleSendForSignature() {
+    setOptimisticStatus("Sent")
+    startTransition(async () => {
+      const res = await fetch(`/api/proposals/${proposalId}/send-for-signature`, {
+        method: "POST",
+      })
+      if (!res.ok) {
+        setOptimisticStatus(status)
+        let errorCode: string | undefined
+        try {
+          const body = (await res.json()) as { error?: string }
+          errorCode = body.error
+        } catch {
+          // non-JSON body — fall through to generic message
+        }
+        if (errorCode === "no_pdf") {
+          toast.error("Generate the proposal PDF before sending.")
+        } else if (errorCode === "no_client_email") {
+          toast.error("This client has no contact email on file.")
+        } else {
+          toast.error("Could not send proposal for signature. Please try again.")
+        }
+        return
+      }
+      toast.success(`Proposal sent to ${clientName} for signature`)
+      router.refresh()
+    })
+  }
 
   function advance(next: ProposalStatus, message: string) {
     setOptimisticStatus(next)
@@ -66,6 +98,19 @@ export function ProposalActions({
       return
     }
     toast.info("PDF will be available once the proposal document has been generated.")
+  }
+
+  async function handleGeneratePdf() {
+    setIsGenerating(true)
+    try {
+      await regenerateProposalPdf(proposalId)
+      toast.success("Proposal PDF generated")
+      router.refresh()
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to generate PDF. Please try again.")
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   function handleEdit() {
@@ -96,13 +141,24 @@ export function ProposalActions({
       <div className="flex flex-wrap items-center justify-between gap-6 w-full">
         {/* Left cluster — secondary actions */}
         <div className="flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            onClick={handleDownload}
-            className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
-          >
-            <Download className="w-3.5 h-3.5" /> Download PDF
-          </Button>
+          {hasPdf ? (
+            <Button
+              variant="outline"
+              onClick={handleDownload}
+              className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
+            >
+              <Download className="w-3.5 h-3.5" /> Download PDF
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              onClick={handleGeneratePdf}
+              disabled={isGenerating}
+              className="border-gold/40 text-gold hover:bg-gold/10 hover:text-gold rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
+            >
+              <FileText className="w-3.5 h-3.5" /> {isGenerating ? "Generating…" : "Generate PDF"}
+            </Button>
+          )}
 
           <Button
             variant="outline"
@@ -125,7 +181,7 @@ export function ProposalActions({
         <div className="flex items-center">
           {canSend && (
             <Button
-              onClick={() => advance("Sent", `Proposal sent to ${clientName} for signature`)}
+              onClick={handleSendForSignature}
               disabled={pending}
               className="bg-gold hover:bg-gold/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
             >

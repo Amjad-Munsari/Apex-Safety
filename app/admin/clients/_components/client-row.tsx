@@ -1,0 +1,87 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { ActivePill } from "./active-pill";
+
+export interface ClientRowProps {
+  id: string;
+  name: string;
+  hoursBalance: number | null;
+  ragLabel: string;
+  ragColor: string;
+  nextExpiryLabel: string;
+  nextExpiryCategory: string;
+  proposalStatus: string | null;
+  docCount: number;
+  activeCount: number;
+}
+
+export function ClientRow({
+  id,
+  name,
+  hoursBalance,
+  ragLabel,
+  ragColor,
+  nextExpiryLabel,
+  nextExpiryCategory,
+  proposalStatus,
+  docCount,
+  activeCount,
+}: ClientRowProps) {
+  const router = useRouter();
+
+  const goToClient = () => router.push(`/admin/clients/${id}`);
+
+  // The whole row is the click target (router.push). Inner interactive
+  // elements (the ActivePill tooltip trigger) stop propagation so they keep
+  // their own behaviour without also navigating. This replaces the previous
+  // `absolute inset-0` overlay <Link>, whose stacking against the static
+  // table cells made most of the row dead to real pointer clicks.
+  return (
+    <tr
+      onClick={goToClient}
+      role="link"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          goToClient();
+        }
+      }}
+      className="group hover:bg-white/[0.02] transition-colors cursor-pointer"
+    >
+      <td className="px-6 py-4">
+        <div className="flex items-start gap-4">
+          <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br />{id.slice(0, 4).toUpperCase()}</span>
+          <div>
+            <div className="font-medium text-white mb-0.5 flex items-center">
+              {name}
+              <span onClick={(e) => e.stopPropagation()}>
+                <ActivePill count={activeCount} />
+              </span>
+            </div>
+            <div className="text-xs text-white/40">Client Record</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-4">
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 border border-${ragColor}/40 rounded text-${ragColor} text-[10px] font-mono uppercase tracking-wider bg-${ragColor}/5 leading-none`}>
+          <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor}`} /> {ragLabel}
+        </div>
+      </td>
+      <td className="px-4 py-4 font-mono text-xs text-white/70 text-right">{hoursBalance}h</td>
+      <td className="px-4 py-4">
+        <div className="text-white text-sm mb-0.5">{nextExpiryLabel}</div>
+        <div className="text-xs text-[#666]">{nextExpiryCategory}</div>
+      </td>
+      <td className="px-4 py-4">
+        <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
+          {proposalStatus || "None"}
+        </div>
+      </td>
+      <td className="px-6 py-4 font-mono text-xs text-right text-white/50">
+        {docCount} <span className="ml-2 text-white/20">&gt;</span>
+      </td>
+    </tr>
+  );
+}

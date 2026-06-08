@@ -13,7 +13,11 @@ const SEVERITY_COLORS: Record<string, string> = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    paddingTop: 40,
+    paddingHorizontal: 40,
+    // extra bottom padding reserves room for the fixed per-page footer
+    // so flowing content never overlaps it
+    paddingBottom: 56,
     fontFamily: "Helvetica",
     backgroundColor: "#ffffff",
     color: "#1a1a1a",
@@ -80,15 +84,17 @@ const styles = StyleSheet.create({
 
   footer: {
     position: "absolute",
-    bottom: 28,
+    bottom: 24,
     left: 40,
     right: 40,
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-end",
     borderTop: "1px solid #eeeeee",
     paddingTop: 8,
   },
   footerText: { fontSize: 6, color: "#999999", textTransform: "uppercase", letterSpacing: 0.5 },
+  footerPage: { fontSize: 6, color: "#999999", textTransform: "uppercase", letterSpacing: 0.5 },
 })
 
 export interface ReportDocumentProps {
@@ -120,7 +126,7 @@ export const ReportDocument = ({
   complianceStatus,
 }: ReportDocumentProps) => (
   <Document title={`FRA Report — ${clientName}`}>
-    <Page size="A4" style={styles.page}>
+    <Page size="A4" style={styles.page} wrap>
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.logoBlock}>
@@ -164,24 +170,40 @@ export const ReportDocument = ({
 
       {/* HAZARDS */}
       <Text style={styles.sectionLabel}>HAZARDS &amp; RECOMMENDED ACTIONS ({hazards.length})</Text>
-      {hazards.map((hazard, i) => (
-        <View key={i} style={[styles.hazardCard, { borderLeftColor: SEVERITY_COLORS[hazard.severity] || "#ccc" }]}>
-          <View style={styles.hazardHeader}>
-            <Text style={styles.hazardLocation}>{hazard.location}</Text>
-            <Text style={[styles.severityBadge, { color: SEVERITY_COLORS[hazard.severity] || "#000" }]}>
-              {hazard.severity}
-            </Text>
+      {hazards.map((hazard, i) => {
+        // Keep small/medium hazard blocks intact across the page boundary, but
+        // allow genuinely large blocks to wrap so they can never overflow a page.
+        const blockLength = (hazard.description?.length ?? 0) + (hazard.recommendedAction?.length ?? 0)
+        const isLargeBlock = blockLength > 600
+        return (
+          <View
+            key={i}
+            wrap={isLargeBlock}
+            // nudge a block to the next page rather than orphaning it at the bottom
+            minPresenceAhead={isLargeBlock ? undefined : 60}
+            style={[styles.hazardCard, { borderLeftColor: SEVERITY_COLORS[hazard.severity] || "#ccc" }]}
+          >
+            <View style={styles.hazardHeader}>
+              <Text style={styles.hazardLocation}>{hazard.location}</Text>
+              <Text style={[styles.severityBadge, { color: SEVERITY_COLORS[hazard.severity] || "#000" }]}>
+                {hazard.severity}
+              </Text>
+            </View>
+            <Text style={styles.hazardDesc}>{hazard.description}</Text>
+            <Text style={styles.hazardActionLabel}>Recommended Action</Text>
+            <Text style={styles.hazardAction}>{hazard.recommendedAction}</Text>
           </View>
-          <Text style={styles.hazardDesc}>{hazard.description}</Text>
-          <Text style={styles.hazardActionLabel}>Recommended Action</Text>
-          <Text style={styles.hazardAction}>{hazard.recommendedAction}</Text>
-        </View>
-      ))}
+        )
+      })}
 
-      {/* FOOTER */}
-      <View style={styles.footer}>
+      {/* FOOTER — fixed so it repeats at the bottom of every page */}
+      <View style={styles.footer} fixed>
         <Text style={styles.footerText}>888 SAFETY SOLUTIONS LTD — COMPANY NO. 18552988</Text>
         <Text style={styles.footerText}>CONFIDENTIAL — PREPARED FOR {clientName.toUpperCase()}</Text>
+        <Text
+          style={styles.footerPage}
+          render={({ pageNumber, totalPages }) => `PAGE ${pageNumber} OF ${totalPages}`}
+        />
       </View>
     </Page>
   </Document>

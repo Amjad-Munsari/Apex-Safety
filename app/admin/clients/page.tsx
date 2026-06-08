@@ -2,7 +2,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { NewClientButton } from "@/components/clients/new-client-dialog";
-import { ActivePill } from "./_components/active-pill";
+import { ClientRow } from "./_components/client-row";
 
 export const dynamic = "force-dynamic";
 
@@ -99,41 +99,19 @@ export default async function ClientsPage() {
               }
 
               return (
-                <tr key={client.id} className="group hover:bg-white/[0.02] transition-colors cursor-pointer relative">
-                  <td className="px-6 py-4">
-                    <Link href={`/admin/clients/${client.id}`} className="absolute inset-0 z-0" />
-                    <div className="flex items-start gap-4 relative z-10 pointer-events-none">
-                      <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br />{client.id.slice(0, 4).toUpperCase()}</span>
-                      <div>
-                        <div className="font-medium text-white mb-0.5 flex items-center">
-                          {client.name}
-                          <ActivePill count={activeCountByClient.get(client.id) ?? 0} />
-                        </div>
-                        <div className="text-xs text-white/40">Client Record</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 border border-${ragColor}/40 rounded text-${ragColor} text-[10px] font-mono uppercase tracking-wider bg-${ragColor}/5 leading-none`}>
-                      <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor}`} /> {ragLabel}
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 font-mono text-xs text-white/70 text-right">{client.hours_balance}h</td>
-                  <td className="px-4 py-4">
-                    <div className="text-white text-sm mb-0.5">
-                      {nextExpiry ? nextExpiry.date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
-                    </div>
-                    <div className="text-xs text-[#666]">{nextExpiry?.cat || "No upcoming"}</div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "teal" : "gold") : "white"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "teal" : "gold") : "white"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
-                      {proposalStatus || "None"}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-mono text-xs text-right text-white/50">
-                    {(client.documents as { id: string }[] | null)?.length || 0} <span className="ml-2 text-white/20">&gt;</span>
-                  </td>
-                </tr>
+                <ClientRow
+                  key={client.id}
+                  id={client.id}
+                  name={client.name}
+                  hoursBalance={client.hours_balance}
+                  ragLabel={ragLabel}
+                  ragColor={ragColor}
+                  nextExpiryLabel={nextExpiry ? nextExpiry.date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                  nextExpiryCategory={nextExpiry?.cat || "No upcoming"}
+                  proposalStatus={proposalStatus ?? null}
+                  docCount={(client.documents as { id: string }[] | null)?.length || 0}
+                  activeCount={activeCountByClient.get(client.id) ?? 0}
+                />
               );
             })}
             {(!clients || clients.length === 0) && (
