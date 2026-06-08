@@ -1,4 +1,5 @@
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function sendAssignmentReminder(args: {
   cadence: "7d" | "1d" | "overdue";
@@ -9,11 +10,7 @@ export async function sendAssignmentReminder(args: {
   assignmentId: string;
   instructions: string | null;
 }) {
-  // VERCEL_URL has no protocol, so prepend https:// when falling back to it.
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") ||
-    "https://fire-safety-platform.vercel.app";
+  const base = getSiteUrl();
 
   return dispatchNotification({
     type: "assignment_reminder",

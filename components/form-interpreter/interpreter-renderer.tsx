@@ -1,6 +1,7 @@
 "use client"
 
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react"
+import { unstable_rethrow } from "next/navigation"
 import { useInterpreterStore, InterpreterEntities } from "@coltorapps/builder-react"
 import { validateEntitiesValues } from "@coltorapps/builder"
 import type { EntitiesValues } from "@coltorapps/builder"
@@ -306,6 +307,11 @@ export const InterpreterRenderer = forwardRef<
       }
       return true
     } catch (err) {
+      // Submit actions end in redirect() (e.g. submitCustomerTemplateFillByIdAction,
+      // submitAssignedFillByIdAction), which throws a NEXT_REDIRECT control-flow
+      // signal — NOT a real error. Re-throw framework signals so Next performs the
+      // navigation instead of surfacing "NEXT_REDIRECT" as a toast (Bug #5).
+      unstable_rethrow(err)
       const message = err instanceof Error ? err.message : "Submission failed."
       toast.error(message)
       return false

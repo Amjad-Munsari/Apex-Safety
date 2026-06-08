@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Building, Calendar, Clock, MapPin } from "lucide-react"
 import { AdjustHoursDialog } from "@/components/clients/adjust-hours-dialog"
 import { ClientTabs } from "./client-tabs"
+import { normalizeClientTemplateRows } from "./client-templates"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 
 export default async function ClientDetailsPage({
@@ -113,6 +114,31 @@ export default async function ClientDetailsPage({
       publishedTemplatesError.message
     )
   }
+
+  // Client-built forms — templates this client owns (built from scratch or
+  // forked from a master). The "Assigned forms" tab surfaces them read-only so
+  // Matt has full visibility into self-serve activity (spec 2.6). Admin reads
+  // are permitted by RLS form_templates_admin_all; adminClient bypasses RLS
+  // anyway, so the explicit owner_type/owner_id filter is the scope guard.
+  // parent:form_templates!parent_template_id(name) surfaces fork lineage.
+  const { data: clientTemplateRows, error: clientTemplatesError } = await adminClient
+    .from("form_templates")
+    .select(
+      "id, name, template_type, is_published, created_at, parent_template_id, parent:form_templates!parent_template_id(name)"
+    )
+    .eq("owner_type", "customer")
+    .eq("owner_id", id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+
+  if (clientTemplatesError) {
+    console.error(
+      "[admin/clients/[id]] clientTemplates query failed — Client-built forms panel will be empty:",
+      clientTemplatesError.message
+    )
+  }
+
+  const clientTemplates = normalizeClientTemplateRows(clientTemplateRows)
 
   // Assessments are form_submissions for this client. We join template_versions
   // → form_templates to surface the template name in the UI.
@@ -236,6 +262,7 @@ export default async function ClientDetailsPage({
         assignments={assignments}
         publishedTemplates={publishedTemplates ?? []}
         clientUsers={clientUsers ?? []}
+        clientTemplates={clientTemplates}
       />
     </div>
   )

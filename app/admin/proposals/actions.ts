@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
 import { requireAdmin, getClientContext } from "@/lib/auth-helpers"
+import { generateSigningToken, hashDocument } from "@/lib/signing"
+import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { getSiteUrl } from "@/lib/site-url"
+import { SendProposalError } from "@/lib/proposals/send-errors"
 import { generateText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 
@@ -15,7 +19,7 @@ const openrouter = createOpenAI({
   }
 })
 
-export async function draftProposalScope(services: any[]) {
+export async function draftProposalScope(services: { name: string; description?: string | null }[]) {
   // Admin-role gate — spends an LLM call. Without this any authenticated user
   // could burn AI quota. requireAdmin() enforces admin_users membership and
   // stays demo-compatible.
@@ -70,9 +74,146 @@ export async function draftProposalScope(services: any[]) {
 
 const VAT_RATE = 0.2
 
+// ── Shared send-for-signature logic (wizard + button both route here) ────────
+// SendProposalError is defined in @/lib/proposals/send-errors — it cannot live
+// here because "use server" files may only export async functions.
+
+/**
+ * Mint a signing token, persist it against the proposal, dispatch the
+ * signature-request notification, and advance status to "Sent".
+ *
+ * Throws {@link SendProposalError} for domain errors (not_found,
+ * already_finalised, no_pdf, no_client_email) so callers can map them to
+ * the appropriate HTTP status or toast message.
+ *
+ * Non-fatal: n8n dispatch failure is logged but does NOT throw.
+ */
+export async function sendProposalForSignature(
+  proposalId: string
+): Promise<{ signing_url: string }> {
+  await requireAdmin()
+
+  // 1. Load proposal
+  const { data: proposalData, error: proposalError } = await adminClient
+    .from("proposals")
+    .select("id, client_id, status, proposal_pdf_path, services_json")
+    .eq("id", proposalId)
+    .maybeSingle()
+
+  if (proposalError || proposalData === null) {
+    throw new SendProposalError("not_found", "Proposal not found.")
+  }
+
+  const proposal = proposalData as {
+    id: string
+    client_id: string
+    status: string
+    proposal_pdf_path: string | null
+    services_json: unknown
+  }
+
+  // 2. Guard: already in a terminal signing state
+  if (proposal.status === "Signed" || proposal.status === "Contract Issued") {
+    throw new SendProposalError(
+      "already_finalised",
+      "Proposal has already been signed or issued as a contract."
+    )
+  }
+
+  // 3. PDF must exist to hash
+  if (proposal.proposal_pdf_path === null) {
+    throw new SendProposalError(
+      "no_pdf",
+      "PDF must be generated before sending for signature."
+    )
+  }
+
+  // 4. Load client contact details
+  const { data: clientData, error: clientError } = await adminClient
+    .from("clients")
+    .select("name, contact_name, contact_email")
+    .eq("id", proposal.client_id)
+    .single()
+
+  if (clientError || clientData === null) {
+    throw new SendProposalError("not_found", "Client record not found.")
+  }
+
+  const client = clientData as {
+    name: string | null
+    contact_name: string | null
+    contact_email: string | null
+  }
+
+  if (!client.contact_email) {
+    throw new SendProposalError(
+      "no_client_email",
+      "Client does not have a contact email address."
+    )
+  }
+
+  const contactEmail: string = client.contact_email
+
+  // 5. Mint signing token
+  const { raw, hash } = generateSigningToken()
+
+  // 6. Hash the PDF for document integrity
+  const documentHash = await hashDocument(proposal.proposal_pdf_path)
+
+  // 7. Expiry: 30 days from now
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+
+  // 8. Persist signing fields + advance status to Sent
+  await adminClient
+    .from("proposals")
+    .update({
+      signing_token: hash,
+      signing_token_expires_at: expiresAt,
+      signing_token_used: false,
+      signing_document_hash: documentHash,
+      status: "Sent",
+      sent_at: new Date().toISOString(),
+    })
+    .eq("id", proposalId)
+
+  // 9. Derive proposal title from services_json
+  const services: Array<{ service?: { name?: string }; name?: string }> = Array.isArray(
+    proposal.services_json
+  )
+    ? (proposal.services_json as Array<{ service?: { name?: string }; name?: string }>)
+    : []
+  const proposalTitle =
+    services.length === 1
+      ? services[0]?.service?.name ?? services[0]?.name ?? "Compliance Services"
+      : "Compliance & Training Programme"
+
+  // 10. Build the signing URL using the canonical public site URL
+  const signingUrl = `${getSiteUrl()}/sign/${raw}`
+
+  // 11. Dispatch notification — non-fatal: log failure but do not throw
+  const dispatch = await dispatchNotification({
+    type: "proposal_signature_request",
+    client_name: client.name ?? client.contact_name ?? "Client",
+    client_email: contactEmail,
+    proposal_title: proposalTitle,
+    signing_url: signingUrl,
+    expiry_date: expiresAt,
+  })
+
+  if (!dispatch.ok) {
+    console.error("[sendProposalForSignature] n8n dispatch failed:", dispatch.error)
+  }
+
+  // 12. Revalidate admin views
+  revalidatePath("/admin/proposals")
+  revalidatePath(`/admin/proposals/${proposalId}`)
+
+  return { signing_url: signingUrl }
+}
+
 export async function createProposal(data: {
   clientId: string
-  servicesJson: any
+  servicesJson: Array<{ service: { name: string; description?: string; unit_price: number }; quantity: number }>
   /** Sum of (unit_price × quantity) across all line items, BEFORE VAT. */
   subtotal: number
   scopeText: string
@@ -115,7 +256,7 @@ export async function createProposal(data: {
     const { generateProposalPdfBuffer } = await import("@/lib/pdf/generator")
 
     // Map services to match PDF props
-    const pdfServices = data.servicesJson.map((s: any) => ({
+    const pdfServices = data.servicesJson.map(s => ({
       name: s.service.name,
       description: s.service.description || "",
       quantity: s.quantity,
@@ -154,29 +295,38 @@ export async function createProposal(data: {
       throw new Error("Failed to upload proposal PDF")
     }
 
-    // 4. Update the DB row with the storage path, VAT-inclusive total, and
-    //    (on the Send path) advance status to "Sent" with a sent_at stamp.
+    // 4. Update the DB row with the storage path and VAT-inclusive total.
     //    "Save as draft" callers leave status="Draft" — the row sits in the
     //    pipeline waiting for the admin to finalise it later.
-    const update: Record<string, unknown> = {
-      proposal_pdf_path: fileName,
-      total_price: total,
-    }
-    if (!data.saveAsDraft) {
-      update.status = "Sent"
-      update.sent_at = new Date().toISOString()
-    }
-
+    //    On the "Send" path we do NOT set status here; sendProposalForSignature
+    //    below handles that atomically together with minting the signing token.
     await adminClient
       .from("proposals")
-      .update(update)
+      .update({
+        proposal_pdf_path: fileName,
+        total_price: total,
+      })
       .eq("id", proposal.id)
 
   } catch (pdfError) {
     console.error("Error generating/uploading PDF:", pdfError)
-    // We don't fail the whole creation if PDF fails, but we should log it.
-    // The row remains status=Draft so the admin can retry from the proposal
-    // detail page.
+    // PDF generation / upload failed — swallow the error so the row stays
+    // status=Draft with no PDF. The admin can retry from the proposal detail
+    // page. We return early so sendProposalForSignature is NOT called on a
+    // row that has no PDF (it would throw no_pdf anyway).
+    revalidatePath("/admin/proposals")
+    return proposal.id
+  }
+
+  // 5. On the Send path: mint a signing token + dispatch notification.
+  //    This replaces the old inline status="Sent"/sent_at write so the
+  //    wizard path is identical to the "Send for signature" button on the
+  //    detail page (both go through sendProposalForSignature).
+  //    If this throws (e.g. no_client_email) we let it propagate so the
+  //    wizard toasts the error; the row already has a PDF at status=Draft,
+  //    ready for the admin to retry from the detail page.
+  if (!data.saveAsDraft) {
+    await sendProposalForSignature(proposal.id)
   }
   
   revalidatePath("/admin/proposals")
@@ -271,12 +421,15 @@ export async function regenerateProposalPdf(proposalId: string) {
 
   // Map services to PDF props — tolerate both the `{ service, quantity }` shape
   // used by createProposal and any flattened line items.
-  const pdfServices = servicesJson.map((s: any) => ({
-    name: s?.service?.name || s?.name || "Service",
-    description: s?.service?.description || s?.description || "",
-    quantity: Number(s?.quantity) || 1,
-    unit_price: Number(s?.service?.unit_price ?? s?.unit_price ?? s?.price) || 0,
-  }))
+  const pdfServices = (servicesJson as Record<string, unknown>[]).map((s) => {
+    const svc = s.service as Record<string, unknown> | undefined
+    return {
+      name: (svc?.name ?? s.name ?? "Service") as string,
+      description: (svc?.description ?? s.description ?? "") as string,
+      quantity: Number(s.quantity) || 1,
+      unit_price: Number(svc?.unit_price ?? s.unit_price ?? s.price) || 0,
+    }
+  })
 
   const subtotal = pdfServices.reduce(
     (acc: number, s: { quantity: number; unit_price: number }) => acc + s.quantity * s.unit_price,
