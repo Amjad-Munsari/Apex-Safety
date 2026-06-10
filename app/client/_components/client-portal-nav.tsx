@@ -100,7 +100,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                 key={group.label}
                 href={group.href}
                 className={cn(
-                  "text-[13px] lg:text-[14px] font-bold tracking-tight whitespace-nowrap border-b-2 pb-1 transition-all",
+                  "text-[13px] lg:text-[14px] font-bold tracking-tight whitespace-nowrap border-b-2 pb-1 transition-colors",
                   active
                     ? "text-black border-black"
                     : "text-[#6b6560] border-transparent hover:text-black hover:border-[#ddd]"
@@ -120,7 +120,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
             <span className="text-[12px] font-bold tracking-tight text-[#1a1a1a] whitespace-nowrap">
               {userName}
             </span>
-            <span className="text-[8px] uppercase font-mono tracking-[0.2em] text-[#8a857f] mt-0.5 whitespace-nowrap">
+            <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-[#6b6560] mt-0.5 whitespace-nowrap">
               {userRole}
             </span>
           </div>
@@ -128,7 +128,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
             <Button
               type="submit"
               variant="outline"
-              className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[10px] uppercase tracking-[0.2em] h-8 lg:h-9 px-4 font-bold shadow-none transition-all whitespace-nowrap"
+              className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[10px] uppercase tracking-[0.2em] h-8 lg:h-9 px-4 font-bold shadow-none transition-colors whitespace-nowrap"
             >
               Sign out
             </Button>
@@ -153,7 +153,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
               <div className="px-6 pt-6 pb-4 border-b border-[#e5e1d8]">
                 <div className="font-serif text-[18px] mt-0.5">{orgName}</div>
                 <div className="mt-3 text-[12px] font-bold">{userName}</div>
-                <div className="font-mono text-[8px] uppercase tracking-[0.2em] text-[#8a857f]">
+                <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#6b6560]">
                   {userRole}
                 </div>
               </div>
@@ -223,10 +223,10 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                   key={child.href}
                   href={child.href}
                   className={cn(
-                    "font-mono text-[10px] uppercase tracking-[0.2em] border-b-2 pb-0.5 transition-all whitespace-nowrap",
+                    "font-mono text-[10px] uppercase tracking-[0.2em] border-b-2 pb-0.5 transition-colors whitespace-nowrap",
                     childActive
                       ? "text-black border-black"
-                      : "text-[#8a857f] border-transparent hover:text-black"
+                      : "text-[#6b6560] border-transparent hover:text-black"
                   )}
                 >
                   {child.label}

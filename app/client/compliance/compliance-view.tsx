@@ -81,10 +81,10 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
         {categories.map((category) => (
           <section key={category.name} className="space-y-6">
             <div className="flex items-baseline gap-3 px-1">
-              <h3 className="font-mono text-[9px] tracking-[0.25em] font-medium text-[#8a857f] uppercase">
+              <h3 className="font-mono text-[9px] tracking-[0.25em] font-medium text-[#6b6560] uppercase">
                 {category.name}
               </h3>
-              <span className="font-mono text-[9px] text-[#8a857f] font-normal tracking-[0.05em] lowercase">
+              <span className="font-mono text-[9px] text-[#6b6560] font-normal tracking-[0.05em] lowercase">
                 {category.count} document{category.count === 1 ? "" : "s"}
               </span>
             </div>
@@ -100,7 +100,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                       id={doc.id}
                       ref={isHighlighted ? highlightedRef : undefined}
                       className={cn(
-                        "px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-8 group transition-all scroll-mt-28",
+                        "px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-8 group transition-colors scroll-mt-28",
                         isHighlighted
                           ? "bg-[#fff7d6] ring-1 ring-inset ring-[#c0a66d]/40 animate-in fade-in"
                           : "hover:bg-[#faf9f6]/50"
@@ -110,7 +110,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                         <h4 className="font-sans font-semibold text-[14px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
                           {doc.title}
                         </h4>
-                        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#8a857f] uppercase font-medium mt-1.5">
+                        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#6b6560] uppercase font-medium mt-1.5">
                           <span>{doc.id.slice(0, 8).toUpperCase()}</span>
                           <span className="opacity-60 font-sans">&mdash;</span>
                           <span>{doc.size}</span>
@@ -119,7 +119,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
 
                       <div className="flex items-center gap-12 shrink-0">
                         <div className="space-y-1.5 w-[100px]">
-                          <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#8a857f] block">
+                          <span className="font-mono text-[10px] uppercase tracking-[0.25em] font-medium text-[#6b6560] block">
                             Issued
                           </span>
                           <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">
@@ -127,7 +127,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                           </span>
                         </div>
                         <div className="space-y-1.5 w-[100px]">
-                          <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#8a857f] block">
+                          <span className="font-mono text-[10px] uppercase tracking-[0.25em] font-medium text-[#6b6560] block">
                             Expires
                           </span>
                           <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">
@@ -143,7 +143,7 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                             doc.status === "EXPIRED"
                               ? "border-[#e06050]/40 text-[#e06050]"
                               : doc.status === "EXPIRING"
-                              ? "border-[#c0a66d]/40 text-[#c0a66d]"
+                              ? "border-[#c0a66d]/40 text-[#8a6d24]"
                               : "border-teal/40 text-teal"
                           )}
                         >
@@ -165,16 +165,16 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                         <DropdownMenu>
                           <DropdownMenuTrigger
                             disabled={isPending}
-                            className="flex items-center border border-[#e5e1d8] rounded-sm group/btn cursor-pointer bg-white overflow-hidden h-12 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all p-0 disabled:opacity-50 disabled:cursor-progress"
+                            className="flex items-center border border-[#e5e1d8] rounded-sm group/btn cursor-pointer bg-white overflow-hidden h-12 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-colors p-0 disabled:opacity-50 disabled:cursor-progress"
                           >
                             <div className="w-8 h-full flex items-center justify-center border-r border-[#e5e1d8] group-hover/btn:bg-[#faf9f6] transition-colors">
-                              <ChevronDown className="h-3.5 w-3.5 text-[#8a857f] group-hover/btn:text-[#1a1a1a] transition-colors" />
+                              <ChevronDown className="h-3.5 w-3.5 text-[#6b6560] group-hover/btn:text-[#1a1a1a] transition-colors" />
                             </div>
                             <div className="px-5 h-full flex flex-col items-center justify-center gap-0 group-hover/btn:bg-[#faf9f6] transition-colors">
                               <span className="font-sans text-[11px] font-bold tracking-tight text-[#1a1a1a]">
                                 {isPending ? "Preparing…" : "Download"}
                               </span>
-                              <span className="font-mono text-[9px] font-bold text-[#8a857f] tracking-[0.15em] uppercase -mt-0.5">
+                              <span className="font-mono text-[9px] font-bold text-[#6b6560] tracking-[0.15em] uppercase -mt-0.5">
                                 PDF
                               </span>
                             </div>

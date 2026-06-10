@@ -46,13 +46,13 @@ export default async function ClientAssignmentsPage() {
         <TabsList className="border-b border-[#e5e1d8] w-full justify-start rounded-none bg-transparent gap-6 px-0 h-auto py-0">
           <TabsTrigger
             value="active"
-            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-[#1a1a1a] text-[#8a857f]"
+            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-[#1a1a1a] text-[#6b6560]"
           >
             Active
           </TabsTrigger>
           <TabsTrigger
             value="completed"
-            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-[#1a1a1a] text-[#8a857f]"
+            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-[#1a1a1a] text-[#6b6560]"
           >
             Completed
           </TabsTrigger>

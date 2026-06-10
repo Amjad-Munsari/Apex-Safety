@@ -79,7 +79,7 @@ export default function BillingPage() {
       {/* ─── CURRENT BALANCE CARD ─── */}
       <div className="bg-white border border-[#e5e1d8] rounded-sm p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div className="space-y-4">
-          <span className="font-mono text-[9px] uppercase tracking-[0.4em] font-medium text-[#8a857f]">
+          <span className="font-mono text-[9px] uppercase tracking-[0.4em] font-medium text-[#6b6560]">
             Current Balance
           </span>
           <div className="flex items-baseline gap-4">
@@ -95,7 +95,7 @@ export default function BillingPage() {
               hours remaining
             </span>
           </div>
-          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#8a857f] uppercase font-medium">
+          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#6b6560] uppercase font-medium">
             <span>18.5h used this year</span>
             <span className="opacity-60 font-sans tracking-normal">&middot;</span>
             <span>last top-up {lastTopUp}</span>
@@ -104,7 +104,7 @@ export default function BillingPage() {
 
         <Button
           onClick={openCheckout}
-          className="bg-[#1a1a1a] hover:bg-black text-white rounded-sm h-10 px-6 font-sans text-[11px] font-bold tracking-tight shadow-none flex items-center gap-3 transition-all group"
+          className="bg-[#1a1a1a] hover:bg-black text-white rounded-sm h-10 px-6 font-sans text-[11px] font-bold tracking-tight shadow-none flex items-center gap-3 transition-colors group"
         >
           Buy more hours{" "}
           <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
@@ -113,13 +113,13 @@ export default function BillingPage() {
 
       {/* ─── TRANSACTION HISTORY ─── */}
       <section id="history" className="space-y-6 scroll-mt-24">
-        <h3 className="font-mono text-[9px] tracking-[0.25em] font-bold text-[#8a857f] uppercase px-1">
+        <h3 className="font-mono text-[9px] tracking-[0.25em] font-bold text-[#6b6560] uppercase px-1">
           Transaction History
         </h3>
 
         <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
           <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">Transaction history coming soon.</p>
-          <p className="font-sans text-[13px] text-[#8a857f] max-w-md mx-auto leading-relaxed">
+          <p className="font-sans text-[13px] text-[#6b6560] max-w-md mx-auto leading-relaxed">
             Top-ups and hours drawn down against site visits will be itemised here once billing is
             live. For a statement in the meantime, message your consultant.
           </p>
@@ -147,7 +147,7 @@ export default function BillingPage() {
           ) : (
             <>
               <div className="space-y-2">
-                <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#8a857f] font-bold">
+                <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#6b6560] font-bold">
                   Step 1 of 1 &middot; Top-up
                 </div>
                 <DialogTitle className="font-serif text-[22px] text-[#1a1a1a] font-medium tracking-tight leading-tight">
@@ -167,7 +167,7 @@ export default function BillingPage() {
                       type="button"
                       onClick={() => setSelected(index)}
                       className={cn(
-                        "w-full text-left rounded-sm px-4 py-3.5 flex items-center gap-4 transition-all relative",
+                        "w-full text-left rounded-sm px-4 py-3.5 flex items-center gap-4 transition-colors relative",
                         isSelected
                           ? "ring-2 ring-amber-500 bg-amber-50/60"
                           : "ring-1 ring-[#e5e1d8] bg-white hover:ring-[#cfc8b8] hover:bg-[#faf9f6]"
@@ -187,11 +187,11 @@ export default function BillingPage() {
 
                       <div className="flex-1 flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] uppercase tracking-[0.2em] font-bold text-[#8a857f]">
+                          <span className="font-mono text-[9px] uppercase tracking-[0.2em] font-bold text-[#6b6560]">
                             £{pkg.perHour}/hour
                           </span>
                           {pkg.popular && (
-                            <span className="font-mono text-[8px] uppercase tracking-[0.2em] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-sm">
+                            <span className="font-mono text-[10px] uppercase tracking-[0.2em] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-sm">
                               Most popular
                             </span>
                           )}
@@ -214,7 +214,7 @@ export default function BillingPage() {
                         </span>
                         <div
                           className={cn(
-                            "h-4 w-4 rounded-full flex items-center justify-center transition-all",
+                            "h-4 w-4 rounded-full flex items-center justify-center transition-colors",
                             isSelected ? "bg-amber-500" : "ring-1 ring-[#e5e1d8] bg-white"
                           )}
                         >
@@ -226,7 +226,7 @@ export default function BillingPage() {
                 })}
               </div>
 
-              <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#8a857f] font-bold text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#6b6560] font-bold text-center">
                 Secure checkout via PayPal &middot; VAT included
               </div>
 

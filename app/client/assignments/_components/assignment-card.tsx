@@ -49,7 +49,7 @@ function StatusPill({ status }: { status: string }) {
 
   const colorClass =
     status === "in_progress"
-      ? "text-[#c0a66d] bg-[#c0a66d]/10"
+      ? "text-[#8a6d24] bg-[#c0a66d]/10"
       : status === "completed"
         ? "text-teal bg-teal/10"
         : "text-[#666] bg-[#555]/10";
@@ -69,17 +69,17 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
   const overdueDays = daysOverdue(assignment.due_date);
 
   return (
-    <article className="bg-white border border-[#e5e1d8] rounded-sm p-5 flex flex-col gap-4 hover:border-[#1a1a1a]/30 transition-colors cursor-pointer">
+    <article className="bg-white border border-[#e5e1d8] rounded-sm p-6 flex flex-col gap-4 hover:border-[#1a1a1a]/30 transition-colors cursor-pointer">
       {/* Row 1: Template name */}
-      <h4 className="font-serif text-[18px] text-[#1a1a1a] leading-tight">
+      <h3 className="font-serif text-[18px] text-[#1a1a1a] leading-tight">
         {getTemplateName(assignment.template)}
-      </h4>
+      </h3>
 
       {/* Row 2: Mono metadata + status pill */}
       <div className="flex items-center gap-3 flex-wrap">
         <span
           className={`font-mono text-[9px] uppercase tracking-[0.2em] ${
-            overdue ? "text-[#e55a3a]" : "text-[#8a857f]"
+            overdue ? "text-[#e55a3a]" : "text-[#6b6560]"
           }`}
         >
           DUE · {dueDateText}
@@ -106,7 +106,7 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
 
       {/* Row 3: Instructions clamp (active tab only) */}
       {variant === "active" && assignment.instructions && (
-        <p className="text-sm font-sans text-[#6b6560] italic line-clamp-2 before:content-['—_'] before:text-[#c0a66d]">
+        <p className="text-sm font-sans text-[#6b6560] italic line-clamp-2 max-w-2xl before:content-['—_'] before:text-[#8a6d24]">
           {assignment.instructions}
         </p>
       )}

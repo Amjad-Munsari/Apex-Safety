@@ -106,7 +106,7 @@ function AssessmentsEmpty({ headline, body }: { headline: string; body: string }
   return (
     <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
       <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">{headline}</p>
-      <p className="font-sans text-[13px] text-[#8a857f] max-w-md mx-auto leading-relaxed">{body}</p>
+      <p className="font-sans text-[13px] text-[#6b6560] max-w-md mx-auto leading-relaxed">{body}</p>
     </div>
   );
 }

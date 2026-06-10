@@ -20,14 +20,14 @@ function statusTone(status: Status): { ring: string; dot: string; bg: string; la
     case "Signed":
     case "Contract Issued":
       return {
-        ring: "border-teal/40 text-teal",
+        ring: "border-teal/60 text-[#2c6356]",
         dot: "bg-teal",
         bg: "bg-[#f4f8f6]",
         label: status === "Signed" ? "Signed" : "Contract Issued",
       };
     default:
       return {
-        ring: "border-[#c0a66d] text-[#c0a66d]",
+        ring: "border-[#c0a66d] text-[#8a6d24]",
         dot: "bg-[#c0a66d]",
         bg: "bg-[#fcf9f1]",
         label: "Awaiting Signature",
@@ -39,7 +39,7 @@ export default async function ClientProposalsPage() {
   const ctx = await getClientContext();
   if (!ctx?.client_id) {
     return (
-      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#6b6560]">
         No client context found
       </div>
     );
@@ -105,12 +105,12 @@ export default async function ClientProposalsPage() {
               <Link
                 key={p.id}
                 href={`/client/proposals/${p.id}`}
-                className="block bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-[#d8d3c8] transition-all p-7 group"
+                className="block bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-[#d8d3c8] transition-colors p-7 group"
               >
                 <div className="flex items-start justify-between gap-6">
                   {/* Left */}
                   <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
+                    <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#6b6560] uppercase font-bold">
                       <span>{p.reference}</span>
                       <span className="opacity-50">·</span>
                       <span>Sent {p.issuedAt}</span>
