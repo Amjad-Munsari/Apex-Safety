@@ -48,7 +48,7 @@ export function NewClientButton({
       setOpen(false)
       reset()
       toast.success("Client added", {
-        description: `${form.businessName} is now in the client list.`,
+        description: `${form.businessName} is in the client list — a portal invite has been emailed to ${form.email}.`,
       })
       onCreated?.(id)
     } catch (err: any) {
@@ -104,6 +104,7 @@ export function NewClientButton({
             />
             <Field
               label="Phone"
+              optional
               value={form.phone}
               onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
               placeholder="0161 552 0918"
@@ -140,6 +141,7 @@ function Field({
   placeholder,
   type = "text",
   autoFocus,
+  optional,
 }: {
   label: string
   value: string
@@ -147,10 +149,14 @@ function Field({
   placeholder?: string
   type?: string
   autoFocus?: boolean
+  optional?: boolean
 }) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">{label}</span>
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777] flex items-center gap-2">
+        {label}
+        {optional && <span className="text-[#555]">(optional)</span>}
+      </span>
       <input
         type={type}
         autoFocus={autoFocus}

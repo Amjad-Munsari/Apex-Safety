@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { calculateProposalTotal } from "@/lib/supabase/dashboard";
+import { StatusPill, type StatusTone } from "@/components/client/status-pill";
 
 export const dynamic = "force-dynamic";
 
@@ -15,24 +15,10 @@ function shortRef(uuid: string): string {
   return `PRO-${uuid.slice(0, 6).toUpperCase()}`;
 }
 
-function statusTone(status: Status): { ring: string; dot: string; bg: string; label: string } {
-  switch (status) {
-    case "Signed":
-    case "Contract Issued":
-      return {
-        ring: "border-teal/40 text-teal",
-        dot: "bg-teal",
-        bg: "bg-[#f4f8f6]",
-        label: status === "Signed" ? "Signed" : "Contract Issued",
-      };
-    default:
-      return {
-        ring: "border-[#c0a66d] text-[#c0a66d]",
-        dot: "bg-[#c0a66d]",
-        bg: "bg-[#fcf9f1]",
-        label: "Awaiting Signature",
-      };
-  }
+function statusPill(status: Status): { tone: StatusTone; label: string } {
+  if (status === "Signed") return { tone: "success", label: "Signed" };
+  if (status === "Contract Issued") return { tone: "success", label: "Issued" };
+  return { tone: "warning", label: "Awaiting Signature" };
 }
 
 export default async function ClientProposalsPage() {
@@ -100,7 +86,7 @@ export default async function ClientProposalsPage() {
           </div>
         ) : (
           proposals.map((p) => {
-            const tone = statusTone(p.status);
+            const pill = statusPill(p.status);
             return (
               <Link
                 key={p.id}
@@ -126,16 +112,7 @@ export default async function ClientProposalsPage() {
 
                   {/* Right */}
                   <div className="flex flex-col items-end gap-3 shrink-0">
-                    <div
-                      className={cn(
-                        "px-3 py-1.5 border rounded-full font-mono text-[9px] uppercase tracking-[0.2em] font-bold leading-none flex items-center gap-2",
-                        tone.ring,
-                        tone.bg
-                      )}
-                    >
-                      <div className={cn("w-1.5 h-1.5 rounded-full", tone.dot)} />
-                      {tone.label}
-                    </div>
+                    <StatusPill tone={pill.tone} label={pill.label} />
                     <div className="flex items-center gap-1.5 text-[#6b6560] group-hover:text-black transition-colors font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
                       Open
                       <ChevronRight className="w-3 h-3" />

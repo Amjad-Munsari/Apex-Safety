@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { draftProposalScope, createProposal } from '@/app/admin/proposals/actions';
+import { draftProposalScope, createProposal, deleteProposal } from '@/app/admin/proposals/actions';
 import { Service, groupByCategory } from '@/lib/data/services';
 
 export type Client = {
@@ -69,6 +69,10 @@ export function AdvancedProposalBuilder({
   const [step, setStep] = useState(1);
   const [isDrafting, setIsDrafting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  // Id of the auto-saved draft row. Set the moment the proposal is first
+  // generated (step 3) and reused on every Save-as-draft / Send so one proposal
+  // never spawns duplicate rows. Cleared on Discard.
+  const [proposalId, setProposalId] = useState<string | null>(null);
 
   const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
 
@@ -148,7 +152,31 @@ export function AdvancedProposalBuilder({
       const selectedSvcs = lineItems.map(item => services.find(s => s.id === item.id)!);
       const draft = await draftProposalScope(selectedSvcs);
       setScopeText(draft);
-      toast.success("Draft generated");
+
+      // Auto-save the draft so it persists even if the admin navigates away
+      // without clicking "Save as draft". Reuses proposalId on regeneration so
+      // it never creates duplicate rows. Non-fatal: if the save fails the scope
+      // is still on screen and the admin can save manually.
+      if (selectedClientId) {
+        try {
+          const id = await createProposal({
+            clientId: selectedClientId,
+            servicesJson: buildServicesJson(),
+            scopeText: draft,
+            subtotal,
+            saveAsDraft: true,
+            proposalId: proposalId ?? undefined,
+          });
+          if (id) setProposalId(id);
+          toast.success("Draft saved", {
+            description: "It's in the Draft column of the proposals pipeline.",
+          });
+        } catch (saveErr: any) {
+          toast.error(saveErr?.message || "Drafted, but couldn't auto-save. Use “Save as draft”.");
+        }
+      } else {
+        toast.success("Scope drafted");
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to draft scope");
       setScopeText("We will provide the listed services as agreed. Please review the itemized quote below.");
@@ -182,6 +210,8 @@ export function AdvancedProposalBuilder({
         // Pass the pre-VAT subtotal — createProposal computes VAT and total
         // internally and stores the VAT-inclusive total in total_price.
         subtotal,
+        // Reuse the auto-saved draft so sending doesn't create a duplicate row.
+        proposalId: proposalId ?? undefined,
       });
 
       toast.success("Proposal sent & PDF Generated!");
@@ -206,6 +236,7 @@ export function AdvancedProposalBuilder({
         scopeText,
         subtotal,
         saveAsDraft: true,
+        proposalId: proposalId ?? undefined,
       });
       toast.success("Saved as draft", {
         description: "Find it in the Draft column of the proposals pipeline.",
@@ -242,11 +273,21 @@ export function AdvancedProposalBuilder({
             <button
               className="prop-discard"
               onClick={() => {
+                // Delete the auto-saved draft so discarding doesn't leave an
+                // orphan row in the pipeline. Best-effort — reset the wizard
+                // regardless of whether the delete succeeds.
+                const toRemove = proposalId;
                 setStep(1);
                 setQuantities({});
                 setOverridePrices({});
                 setSelectedClientId(null);
                 setScopeText("");
+                setProposalId(null);
+                if (toRemove) {
+                  deleteProposal(toRemove).catch(() => {
+                    /* best-effort cleanup; ignore */
+                  });
+                }
               }}
             >
               Discard draft

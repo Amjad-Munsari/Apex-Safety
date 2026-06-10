@@ -42,7 +42,11 @@ vi.mock("@/lib/supabase/admin", () => ({
           },
         }
       }
-      return {}
+      // hours_transactions (ledger) and any other table: support the insert the
+      // ledger write performs alongside the balance update.
+      return {
+        insert: () => Promise.resolve({ error: null }),
+      }
     },
   },
 }))

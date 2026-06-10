@@ -1,11 +1,13 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
+import { adminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/auth-helpers"
 import { assertClientActive } from "@/lib/clients/require-active"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { getAppSettings } from "@/lib/settings/app-settings"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -106,7 +108,11 @@ export async function uploadClientDocumentAction(formData: FormData) {
   const contactEmail = contact?.email
   const contactName = contact?.name || "there"
 
-  if (contactEmail) {
+  // Respect the admin "Notify on document upload" setting — when off, the
+  // document is still saved but no client notification is dispatched.
+  const settings = await getAppSettings()
+
+  if (contactEmail && settings.notifyOnUpload) {
     const result = await dispatchNotification({
       type: "document_uploaded",
       client_email: contactEmail,
@@ -123,6 +129,8 @@ export async function uploadClientDocumentAction(formData: FormData) {
         payload: { client_id: clientId, document_id: document?.id, document_name: file.name },
       })
     }
+  } else if (!settings.notifyOnUpload) {
+    console.info(`[upload] upload notifications disabled in settings — skipping for client ${clientId}`)
   } else {
     console.warn(`[upload] no contact email for client ${clientId}, skipping notification`)
   }
@@ -132,4 +140,39 @@ export async function uploadClientDocumentAction(formData: FormData) {
   revalidatePath("/client/compliance")
 
   return { success: true, document }
+}
+
+/**
+ * Permanently delete a client document: removes the DB row and its file in the
+ * `client-documents` bucket. Admin-only. Throws on failure so the calling button
+ * can surface a toast (mirrors deleteProposal / deleteAssessment).
+ */
+export async function deleteDocument(documentId: string) {
+  if (!(await isAdmin())) throw new Error("Unauthorized")
+
+  const { data: doc } = await adminClient
+    .from("documents")
+    .select("storage_path, client_id")
+    .eq("id", documentId)
+    .maybeSingle()
+
+  // Nothing to delete — treat as success so the UI can refresh cleanly.
+  if (!doc) return
+
+  const { error: delErr } = await adminClient.from("documents").delete().eq("id", documentId)
+  if (delErr) throw new Error(delErr.message)
+
+  // Best-effort storage cleanup — the row is already gone; a stranded file is
+  // lower-risk than a half-deleted document.
+  if (doc.storage_path) {
+    const { error: rmErr } = await adminClient.storage
+      .from("client-documents")
+      .remove([doc.storage_path])
+    if (rmErr) console.error("deleteDocument: storage cleanup failed", { documentId, rmErr })
+  }
+
+  if (doc.client_id) revalidatePath(`/admin/clients/${doc.client_id}`)
+  revalidatePath("/admin/compliance")
+  revalidatePath("/client/compliance")
+  revalidatePath("/admin")
 }

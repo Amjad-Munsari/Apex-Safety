@@ -3,12 +3,14 @@ import { AlertTriangle } from "lucide-react"
 import { SettingsForm } from "@/components/admin/settings-form"
 import { Card } from "@/components/ui/card"
 import { getDashboardStats } from "@/lib/supabase/dashboard"
+import { getAppSettings } from "@/lib/settings/app-settings"
 
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
   const stats = await getDashboardStats()
   const errorCount = stats.errorCount ?? 0
+  const settings = await getAppSettings()
 
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -24,7 +26,15 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      <SettingsForm />
+      <SettingsForm
+        initial={{
+          signOffName: settings.signOffName,
+          senderName: settings.senderName,
+          expiryRemindersEnabled: settings.expiryRemindersEnabled,
+          notifyOnUpload: settings.notifyOnUpload,
+          logoUrl: settings.logoUrl,
+        }}
+      />
 
       {/* System diagnostics */}
       <div className="flex flex-col gap-4 pt-6 border-t border-white/5">

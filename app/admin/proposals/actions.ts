@@ -224,6 +224,14 @@ export async function createProposal(data: {
    * promote it via the proposal detail page's "Send for signature" button.
    */
   saveAsDraft?: boolean
+  /**
+   * When set, UPDATE this existing Draft row instead of inserting a new one.
+   * The builder auto-saves a draft the moment a proposal is generated and then
+   * passes that id back on every regenerate / Save-as-draft / Send, so a single
+   * proposal never spawns duplicate rows. Ignored (falls back to insert) if the
+   * row has vanished or already advanced past Draft.
+   */
+  proposalId?: string
 }) {
   // Admin-role gate — inserts proposals + generates/uploads PDFs via the
   // service-role adminClient (RLS bypassed). requireAdmin() enforces admin_users
@@ -232,23 +240,54 @@ export async function createProposal(data: {
   // Frozen-client guard — no new proposals for a deactivated client.
   await assertClientActive(data.clientId)
 
-  // Insert the proposal record first to get an ID
-  const { data: proposal, error } = await adminClient
-    .from("proposals")
-    .insert([
-      {
-        client_id: data.clientId,
-        services_json: data.servicesJson,
-        status: "Draft", // Will update to Sent/Signed later
-      },
-    ])
-    .select()
-    .single()
+  // Resolve the target row: reuse the auto-saved draft when given, else insert.
+  let proposalId: string | null = data.proposalId ?? null
 
-  if (error) {
-    console.error("Error creating proposal:", error)
-    throw new Error(error.message)
+  if (proposalId) {
+    const { data: existing } = await adminClient
+      .from("proposals")
+      .select("id, status")
+      .eq("id", proposalId)
+      .maybeSingle()
+    // Only reuse a row that still exists and is still a Draft — never mutate a
+    // proposal that's already Sent/Signed/Contract Issued.
+    if (!existing || existing.status !== "Draft") {
+      proposalId = null
+    } else {
+      const { error: updErr } = await adminClient
+        .from("proposals")
+        .update({ services_json: data.servicesJson, client_id: data.clientId })
+        .eq("id", proposalId)
+      if (updErr) {
+        console.error("Error updating draft proposal:", updErr)
+        throw new Error(updErr.message)
+      }
+    }
   }
+
+  if (!proposalId) {
+    const { data: proposal, error } = await adminClient
+      .from("proposals")
+      .insert([
+        {
+          client_id: data.clientId,
+          services_json: data.servicesJson,
+          status: "Draft", // Will update to Sent/Signed later
+        },
+      ])
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error creating proposal:", error)
+      throw new Error(error.message)
+    }
+    proposalId = proposal.id as string
+  }
+
+  // proposalId is guaranteed non-null here; capture as a const so the narrowing
+  // survives the try/catch below (a `let` would widen back to string | null).
+  const id: string = proposalId
 
   try {
     // 1. Get Client Name
@@ -283,7 +322,7 @@ export async function createProposal(data: {
     })
 
     // 3. Upload to Supabase Storage
-    const fileName = `${data.clientId}/proposal_${proposal.id}.pdf`
+    const fileName = `${data.clientId}/proposal_${id}.pdf`
 
     const { error: uploadError } = await adminClient
       .storage
@@ -309,7 +348,7 @@ export async function createProposal(data: {
         proposal_pdf_path: fileName,
         total_price: total,
       })
-      .eq("id", proposal.id)
+      .eq("id", id)
 
   } catch (pdfError) {
     console.error("Error generating/uploading PDF:", pdfError)
@@ -318,7 +357,7 @@ export async function createProposal(data: {
     // page. We return early so sendProposalForSignature is NOT called on a
     // row that has no PDF (it would throw no_pdf anyway).
     revalidatePath("/admin/proposals")
-    return proposal.id
+    return id
   }
 
   // 5. On the Send path: mint a signing token + dispatch notification.
@@ -329,11 +368,11 @@ export async function createProposal(data: {
   //    wizard toasts the error; the row already has a PDF at status=Draft,
   //    ready for the admin to retry from the detail page.
   if (!data.saveAsDraft) {
-    await sendProposalForSignature(proposal.id)
+    await sendProposalForSignature(id)
   }
-  
+
   revalidatePath("/admin/proposals")
-  return proposal.id
+  return id
 }
 
 /**
@@ -482,6 +521,260 @@ export async function regenerateProposalPdf(proposalId: string) {
 
   revalidatePath("/admin/proposals")
   revalidatePath(`/admin/proposals/${proposalId}`)
+}
+
+/**
+ * Generate and issue the Service Agreement (contract) for a SIGNED proposal.
+ *
+ * This is the real producer behind the "Issue contract" button. It builds a
+ * counter-signed Service Agreement PDF from the proposal's services, uploads it
+ * to the `proposals` bucket, writes `contract_pdf_path`, flips status to
+ * "Contract Issued", and emails the client a download link. Until this runs the
+ * client's /client/contracts page has nothing to show (it filters on
+ * status='Contract Issued' AND contract_pdf_path IS NOT NULL).
+ *
+ * Guard: only a Signed proposal can be issued — you cannot issue a contract for
+ * something the client hasn't signed.
+ */
+export async function issueContract(
+  proposalId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin()
+
+  // 1. Load proposal
+  const { data: proposal, error: proposalError } = await adminClient
+    .from("proposals")
+    .select("id, client_id, status, services_json, total_price, signed_at")
+    .eq("id", proposalId)
+    .maybeSingle()
+
+  if (proposalError || !proposal) {
+    return { ok: false, error: "Proposal not found." }
+  }
+
+  if (proposal.status === "Contract Issued") {
+    return { ok: false, error: "A contract has already been issued for this proposal." }
+  }
+
+  if (proposal.status !== "Signed") {
+    return { ok: false, error: "The proposal must be signed before a contract can be issued." }
+  }
+
+  const servicesJson = Array.isArray(proposal.services_json) ? proposal.services_json : []
+  if (servicesJson.length === 0) {
+    return { ok: false, error: "This proposal has no services, so a contract cannot be generated." }
+  }
+
+  // 2. Load client details
+  const { data: client } = await adminClient
+    .from("clients")
+    .select("name, site_address, contact_name, contact_email")
+    .eq("id", proposal.client_id)
+    .single()
+
+  // 3. Signature details (who signed for the client, and when) — best-effort.
+  const { data: signature } = await adminClient
+    .from("proposal_signatures")
+    .select("signer_name, signed_at")
+    .eq("proposal_id", proposalId)
+    .order("signed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  // 4. Reconstruct line items — tolerate both the `{ service, quantity }` shape
+  //    and any flattened items (mirrors regenerateProposalPdf).
+  const pdfServices = (servicesJson as Record<string, unknown>[]).map((s) => {
+    const svc = s.service as Record<string, unknown> | undefined
+    return {
+      name: (svc?.name ?? s.name ?? "Service") as string,
+      description: (svc?.description ?? s.description ?? "") as string,
+      quantity: Number(s.quantity) || 1,
+      unit_price: Number(svc?.unit_price ?? s.unit_price ?? s.price) || 0,
+    }
+  })
+
+  const subtotal = pdfServices.reduce((acc, s) => acc + s.quantity * s.unit_price, 0)
+  const vat = subtotal * VAT_RATE
+  const total = subtotal + vat
+
+  const fmtDate = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null
+  const issuedDate = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+
+  // 5. Generate the contract PDF
+  let pdfBuffer: Buffer
+  try {
+    const { generateContractPdfBuffer } = await import("@/lib/pdf/generator")
+    pdfBuffer = await generateContractPdfBuffer({
+      clientName: client?.name || "Client",
+      clientAddress: client?.site_address || "Address on file",
+      contactName: client?.contact_name || "Contact on file",
+      reference: `CON-${proposalId.slice(0, 6).toUpperCase()}`,
+      services: pdfServices,
+      subtotalAmount: subtotal,
+      vatAmount: vat,
+      totalAmount: total,
+      signedDate: fmtDate(signature?.signed_at ?? proposal.signed_at),
+      signedBy: signature?.signer_name ?? null,
+      issuedDate,
+    })
+  } catch (err) {
+    console.error("issueContract: PDF generation failed", { proposalId, err })
+    return { ok: false, error: "Failed to generate the contract PDF. Please try again." }
+  }
+
+  // 6. Upload to storage (proposals bucket — same bucket the client page reads)
+  const fileName = `${proposal.client_id}/contract_${proposalId}.pdf`
+  const { error: uploadError } = await adminClient.storage
+    .from("proposals")
+    .upload(fileName, pdfBuffer, { contentType: "application/pdf", upsert: true })
+
+  if (uploadError) {
+    console.error("issueContract: upload failed", { proposalId, uploadError })
+    return { ok: false, error: "Failed to store the contract PDF. Please try again." }
+  }
+
+  // 7. Persist path + advance status (atomic-ish: both in one update)
+  const { error: updateError } = await adminClient
+    .from("proposals")
+    .update({ contract_pdf_path: fileName, status: "Contract Issued" })
+    .eq("id", proposalId)
+
+  if (updateError) {
+    console.error("issueContract: status/path update failed", { proposalId, updateError })
+    return { ok: false, error: "Contract generated but could not be linked to the proposal." }
+  }
+
+  // 8. Notify the client — non-fatal. Mint a 7-day signed URL for the email only.
+  try {
+    const { data: signed } = await adminClient.storage
+      .from("proposals")
+      .createSignedUrl(fileName, 60 * 60 * 24 * 7)
+
+    const services: Array<{ service?: { name?: string }; name?: string }> = servicesJson as Array<{
+      service?: { name?: string }
+      name?: string
+    }>
+    const proposalTitle =
+      services.length === 1
+        ? services[0]?.service?.name ?? services[0]?.name ?? "Compliance Services"
+        : "Compliance & Training Programme"
+
+    if (client?.contact_email) {
+      const dispatch = await dispatchNotification({
+        type: "contract_issued",
+        client_name: client?.name ?? "there",
+        client_email: client.contact_email,
+        proposal_title: proposalTitle,
+        contract_url: signed?.signedUrl ?? "",
+        issued_at: new Date().toISOString(),
+      })
+      if (!dispatch.ok) {
+        await adminClient.from("workflow_errors").insert({
+          workflow_name: "contract_issued_email",
+          error_message: dispatch.error ?? "unknown dispatch failure",
+          payload: { proposalId, client_id: proposal.client_id },
+        })
+      }
+    }
+  } catch (err) {
+    console.error("issueContract: notification dispatch failed", { proposalId, err })
+  }
+
+  revalidatePath("/admin/proposals")
+  revalidatePath(`/admin/proposals/${proposalId}`)
+  revalidatePath("/client/contracts")
+  return { ok: true }
+}
+
+/**
+ * Admin override: record a proposal as signed offline (client signed on paper or
+ * by email rather than via the online signing link). Mirrors the genuine signing
+ * route's side effects so downstream automation isn't silently skipped:
+ *   - advances status to Signed + stamps signed_at
+ *   - consumes the signing token so the online link can no longer be redeemed
+ *   - writes a proposal_signatures audit row (sentinel values mark it offline)
+ *   - dispatches the proposal_signed notification (non-fatal)
+ */
+export async function markProposalSignedManually(
+  proposalId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin()
+
+  const { data: proposal, error } = await adminClient
+    .from("proposals")
+    .select("id, client_id, status, services_json, signing_document_hash")
+    .eq("id", proposalId)
+    .maybeSingle()
+
+  if (error || !proposal) return { ok: false, error: "Proposal not found." }
+  if (proposal.status === "Signed" || proposal.status === "Contract Issued") {
+    return { ok: false, error: "This proposal is already signed." }
+  }
+
+  const now = new Date().toISOString()
+
+  const { error: updateError } = await adminClient
+    .from("proposals")
+    .update({ status: "Signed", signed_at: now, signing_token_used: true })
+    .eq("id", proposalId)
+
+  if (updateError) return { ok: false, error: updateError.message }
+
+  // Load client for the audit row + notification
+  const { data: client } = await adminClient
+    .from("clients")
+    .select("name, contact_name, contact_email")
+    .eq("id", proposal.client_id)
+    .single()
+
+  // Audit row — columns are NOT NULL, so use explicit offline sentinels.
+  const { error: sigError } = await adminClient.from("proposal_signatures").insert({
+    proposal_id: proposalId,
+    signer_name: client?.contact_name || client?.name || "Signed offline",
+    signer_email: client?.contact_email || "offline@no-email.invalid",
+    signature_image: "RECORDED_OFFLINE_BY_ADMIN",
+    ip_address: "0.0.0.0",
+    document_hash: proposal.signing_document_hash || "manual-offline",
+    signed_at: now,
+  })
+  if (sigError) {
+    console.error("markProposalSignedManually: signature audit insert failed", { proposalId, sigError })
+  }
+
+  // Notify client — non-fatal.
+  try {
+    const services: Array<{ service?: { name?: string }; name?: string }> = Array.isArray(proposal.services_json)
+      ? (proposal.services_json as Array<{ service?: { name?: string }; name?: string }>)
+      : []
+    const title =
+      services.length === 1
+        ? services[0]?.service?.name ?? services[0]?.name ?? "Compliance Services"
+        : "Compliance & Training Programme"
+
+    if (client?.contact_email) {
+      const dispatch = await dispatchNotification({
+        type: "proposal_signed",
+        client_name: client?.name ?? "",
+        client_email: client.contact_email,
+        proposal_title: title,
+        signed_at: now,
+      })
+      if (!dispatch.ok) {
+        await adminClient.from("workflow_errors").insert({
+          workflow_name: "proposal_signed_email",
+          error_message: dispatch.error ?? "unknown dispatch failure",
+          payload: { proposalId, client_id: proposal.client_id },
+        })
+      }
+    }
+  } catch (err) {
+    console.error("markProposalSignedManually: notification dispatch failed", { proposalId, err })
+  }
+
+  revalidatePath("/admin/proposals")
+  revalidatePath(`/admin/proposals/${proposalId}`)
+  return { ok: true }
 }
 
 export async function updateProposalStatus(

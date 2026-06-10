@@ -85,7 +85,6 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
   const when = submission.submitted_at ?? submission.created_at
   const date = new Date(when).toLocaleDateString("en-GB", DATE_FMT)
   const pill = STATUS_PILL[status]
-  const subtitle = date
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -141,12 +140,12 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
                   Report delivered
                 </h4>
                 <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
-                  Matt's signed-off report is attached below. Download the PDF for your records, or
-                  preview it inline.
+                  Matt's signed-off report is ready. Download the PDF for your records, or open it in
+                  a new tab.
                 </p>
               </div>
             </div>
-            <ReportActions title={name} subtitle={subtitle} documentId={submission.id} />
+            <ReportActions documentId={submission.id} />
           </div>
         )}
 

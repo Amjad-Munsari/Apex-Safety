@@ -5,6 +5,7 @@ import { isAdmin } from "@/lib/auth-helpers"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth-helpers"
 import { assertClientActive, clientIsActive, CLIENT_DEACTIVATED_MESSAGE } from "@/lib/clients/require-active"
+import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 
 export type NewClientInput = {
   name: string
@@ -45,6 +46,23 @@ export async function createClient(input: NewClientInput): Promise<{ id: string 
   if (error || !data) {
     console.error("Error creating client:", error)
     throw new Error(error?.message || "Failed to create client")
+  }
+
+  // Onboarding invite — when a contact email is supplied, create the portal user
+  // and email them the set-password link (the New Client dialog promises this).
+  // Best-effort: a failure here must NOT abort client creation — the admin can
+  // still invite manually from the client's Access tab. inviteClientUser logs
+  // its own dispatch failures to workflow_errors.
+  if (input.contactEmail?.trim()) {
+    try {
+      await inviteClientUser(data.id, {
+        name: input.contactName?.trim() || name,
+        email: input.contactEmail.trim(),
+        role: "owner",
+      })
+    } catch (err) {
+      console.error("createClient: portal invite failed", { clientId: data.id, err })
+    }
   }
 
   revalidatePath("/admin/clients")
@@ -208,7 +226,12 @@ export async function updateClientHours(clientId: string, adjustment: number) {
     throw new Error("Client not found")
   }
 
-  const newBalance = Math.max(0, (client.hours_balance || 0) + adjustment)
+  const currentBalance = client.hours_balance || 0
+  const newBalance = Math.max(0, currentBalance + adjustment)
+  // Clamp at zero means the applied delta can differ from the requested one
+  // (e.g. deducting 5h from a 2h balance only removes 2h). Log the actual
+  // movement so the ledger never disagrees with the balance.
+  const appliedDelta = newBalance - currentBalance
 
   // 2. Update balance
   const { error: updateError } = await adminClient
@@ -218,6 +241,22 @@ export async function updateClientHours(clientId: string, adjustment: number) {
 
   if (updateError) {
     throw new Error(`Failed to update hours: ${updateError.message}`)
+  }
+
+  // 3. Ledger entry — the Hours-log tab reads hours_transactions, so every admin
+  // adjustment must leave an audit row (mirrors the PayPal purchase ledger).
+  // Best-effort: the balance is already updated; a ledger failure is logged but
+  // does not throw (the balance write is the source of truth).
+  if (appliedDelta !== 0) {
+    const { error: txError } = await adminClient.from("hours_transactions").insert({
+      client_id: clientId,
+      transaction_type: "manual_adjustment",
+      hours_amount: appliedDelta,
+      notes: appliedDelta > 0 ? "Manual top-up by admin" : "Manual deduction by admin",
+    })
+    if (txError) {
+      console.error("updateClientHours: ledger insert failed", { clientId, appliedDelta, txError })
+    }
   }
 
   revalidatePath(`/admin/clients/${clientId}`)
@@ -248,8 +287,46 @@ export type InviteClientUserInput = {
 }
 
 export type InviteResult =
-  | { ok: true; link: string; status: "invited" | "resent"; name: string }
+  | { ok: true; link: string; status: "invited" | "resent"; name: string; emailed: boolean }
   | { ok: false; error: string }
+
+/**
+ * Email a portal invite link through the n8n bridge. Best-effort: a failure is
+ * logged to workflow_errors and reflected via the returned `emailed` flag so the
+ * admin UI can fall back to showing the copyable link. Never throws.
+ */
+async function emailPortalInvite(args: {
+  clientId: string
+  recipientName: string
+  recipientEmail: string
+  link: string
+  status: "invited" | "resent"
+}): Promise<boolean> {
+  const { data: client } = await adminClient
+    .from("clients")
+    .select("name")
+    .eq("id", args.clientId)
+    .maybeSingle()
+
+  const result = await dispatchNotification({
+    type: "client_portal_invite",
+    client_name: client?.name ?? "your organisation",
+    recipient_name: args.recipientName,
+    recipient_email: args.recipientEmail,
+    invite_url: args.link,
+    status: args.status,
+  })
+
+  if (!result.ok) {
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: "client_portal_invite",
+      error_message: result.error ?? "unknown dispatch failure",
+      payload: { clientId: args.clientId, recipient_email: args.recipientEmail, status: args.status },
+    })
+    return false
+  }
+  return true
+}
 
 export async function inviteClientUser(
   clientId: string,
@@ -295,7 +372,15 @@ export async function inviteClientUser(
     if (error || !data?.properties?.action_link) {
       return { ok: false, error: error?.message || "Could not generate a link." }
     }
-    return { ok: true, link: data.properties.action_link, status: "resent", name }
+    const link = data.properties.action_link
+    const emailed = await emailPortalInvite({
+      clientId,
+      recipientName: name,
+      recipientEmail: email,
+      link,
+      status: "resent",
+    })
+    return { ok: true, link, status: "resent", name, emailed }
   }
 
   // Not linked yet → invite (creates the auth user). If the auth user already
@@ -334,8 +419,16 @@ export async function inviteClientUser(
   })
   if (linkErr) return { ok: false, error: linkErr.message }
 
+  const emailed = await emailPortalInvite({
+    clientId,
+    recipientName: name,
+    recipientEmail: email,
+    link,
+    status: "invited",
+  })
+
   revalidatePath(`/admin/clients/${clientId}`)
-  return { ok: true, link, status: "invited", name }
+  return { ok: true, link, status: "invited", name, emailed }
 }
 
 export async function revokeClientUser(

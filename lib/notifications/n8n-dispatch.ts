@@ -50,6 +50,25 @@ export type NotificationPayload =
       proposal_title: string
       signed_at: string          // ISO timestamp the client completed signing
     }
+  | {
+      type: "contract_issued"
+      client_name: string
+      client_email: string
+      proposal_title: string
+      contract_url: string       // 7-day signed URL to the service-agreement PDF
+      issued_at: string          // ISO timestamp the contract was issued
+    }
+  | {
+      // Portal access invite — sent when an admin grants a contact portal access
+      // (new-client onboarding or the client access tab). Carries the single-use
+      // action link the invitee clicks to set a password and sign in.
+      type: "client_portal_invite"
+      client_name: string        // org name the user is being invited into
+      recipient_name: string
+      recipient_email: string
+      invite_url: string         // single-use set-password/sign-in action link
+      status: "invited" | "resent"
+    }
   // ── Two-way form builder: client-surface events (for Finley's n8n Switch) ──
   // These are keyed on client_id (the org UUID) rather than client_email/name —
   // the client surface fires them from RLS-scoped server actions where the org
@@ -99,6 +118,12 @@ export async function dispatchNotification(payload: NotificationPayload): Promis
     ...payload,
     ...("signing_url" in payload
       ? { signing_url: redactSigningUrl(payload.signing_url) }
+      : {}),
+    ...("invite_url" in payload
+      ? { invite_url: "[REDACTED]" }
+      : {}),
+    ...("contract_url" in payload
+      ? { contract_url: "[REDACTED]" }
       : {}),
   }
   console.log("[n8n] dispatch", JSON.stringify({ type: payload.type, payload: safePayload }))

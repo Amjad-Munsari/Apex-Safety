@@ -56,7 +56,7 @@ export function ClientAccessTab({ clientId, clientName, users, active = true }: 
   const [role, setRole] = useState("member")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [result, setResult] = useState<{ link: string; status: string; name: string } | null>(null)
+  const [result, setResult] = useState<{ link: string; status: string; name: string; emailed: boolean } | null>(null)
   const [busyUser, setBusyUser] = useState<string | null>(null)
 
   async function handleInvite(e: React.FormEvent) {
@@ -67,7 +67,7 @@ export function ClientAccessTab({ clientId, clientName, users, active = true }: 
     const res = await inviteClientUser(clientId, { name, email, role })
     setLoading(false)
     if (res.ok) {
-      setResult({ link: res.link, status: res.status, name: res.name })
+      setResult({ link: res.link, status: res.status, name: res.name, emailed: res.emailed })
       setName("")
       setEmail("")
       setRole("member")
@@ -82,7 +82,7 @@ export function ClientAccessTab({ clientId, clientName, users, active = true }: 
     setResult(null)
     const res = await inviteClientUser(clientId, { name: user.name || user.email, email: user.email, role: user.role })
     setBusyUser(null)
-    if (res.ok) setResult({ link: res.link, status: res.status, name: res.name })
+    if (res.ok) setResult({ link: res.link, status: res.status, name: res.name, emailed: res.emailed })
     else setError(res.error)
   }
 
@@ -147,7 +147,7 @@ export function ClientAccessTab({ clientId, clientName, users, active = true }: 
               disabled={loading || !active}
               className="bg-[#c0a66d] hover:bg-[#c0a66d]/90 text-black font-medium font-mono text-[11px] uppercase tracking-widest h-10 px-5 disabled:opacity-40"
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-3.5 h-3.5 mr-2" /> Generate invite link</>}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UserPlus className="w-3.5 h-3.5 mr-2" /> Send invite</>}
             </Button>
             {!active && (
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/30">
@@ -160,11 +160,16 @@ export function ClientAccessTab({ clientId, clientName, users, active = true }: 
             <div className="flex flex-col gap-2 bg-[#c0a66d]/5 border border-[#c0a66d]/20 rounded-sm p-4 mt-1">
               <div className="flex items-center gap-2 text-[#d8c08a] font-mono text-[10px] uppercase tracking-widest">
                 <KeyRound className="w-3.5 h-3.5" />
-                {result.status === "resent" ? "New set-password link" : `Invite link for ${result.name}`}
+                {result.emailed
+                  ? `Invite emailed to ${result.name}`
+                  : result.status === "resent"
+                    ? "New set-password link"
+                    : `Invite link for ${result.name}`}
               </div>
               <p className="text-white/50 text-xs leading-relaxed">
-                Send this link to the user. It signs them in and lets them set a password. The link is
-                single-use and expires — generate a new one with &ldquo;Resend&rdquo; if it lapses.
+                {result.emailed
+                  ? "We've emailed the user a sign-in link to set their password. The copy below is a backup you can send manually if it doesn't arrive — it's single-use and expires."
+                  : "Email delivery is unavailable right now — send this link to the user manually. It signs them in and lets them set a password. The link is single-use and expires — generate a new one with “Resend” if it lapses."}
               </p>
               <CopyLinkBox link={result.link} />
             </div>

@@ -11,7 +11,8 @@ import {
   getReportsAwaitingReview,
   getUpcomingExpiries,
   getComplianceAggregates,
-  getWorkflowErrors
+  getWorkflowErrors,
+  getMonthlyHeadline
 } from "@/lib/supabase/dashboard";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default async function AdminDashboardPage() {
   const upcomingExpiries = await getUpcomingExpiries(6);
   const compliance = await getComplianceAggregates();
   const recentErrors = await getWorkflowErrors();
+  const monthly = await getMonthlyHeadline();
 
   const { data: clients } = await supabase
     .from("clients")
@@ -103,16 +105,16 @@ export default async function AdminDashboardPage() {
               </Link>
             </div>
 
-            <div className="w-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-              <table className="w-full text-left font-sans text-sm">
+            <div className="w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              <table className="w-full table-fixed text-left font-sans text-sm">
                 <thead className="bg-[#151515]">
                   <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                    <th className="font-normal px-6 py-3 border-b border-white/5">Client</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Rag</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Hours</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Next Expiry</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Proposal</th>
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right text-transparent">Sites</th>
+                    <th className="font-normal px-6 py-3 border-b border-white/5 text-left w-[34%]">Client</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[15%]">Rag</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[9%]">Hours</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-left w-[19%]">Next Expiry</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[14%]">Proposal</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[9%]">Docs</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -417,11 +419,11 @@ export default async function AdminDashboardPage() {
 
           <div className="grid grid-cols-2 gap-y-10 gap-x-6">
             <div>
-              <div className="font-serif text-3xl text-white mb-2">12</div>
+              <div className="font-serif text-3xl text-white mb-2">{monthly.assessmentsCompleted}</div>
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Assessments<br />completed</div>
             </div>
             <div>
-              <div className="font-serif text-3xl text-white mb-2">9</div>
+              <div className="font-serif text-3xl text-white mb-2">{monthly.reportsDelivered}</div>
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Reports<br />delivered</div>
             </div>
             <div>
@@ -429,7 +431,7 @@ export default async function AdminDashboardPage() {
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Current Total<br />Hours</div>
             </div>
             <div>
-              <div className="font-serif text-3xl text-white mb-2">3</div>
+              <div className="font-serif text-3xl text-white mb-2">{monthly.proposalsSigned}</div>
               <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Proposals<br />signed</div>
             </div>
           </div>

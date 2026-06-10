@@ -1,16 +1,11 @@
 "use client";
-import { useState } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Download, ExternalLink, ChevronDown } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { PdfPreviewDialog } from "@/components/client/pdf-preview-dialog";
+import { FileDownloadMenu } from "@/components/client/file-download-menu";
+import { StatusPill } from "@/components/client/status-pill";
+import { getClientComplianceDocSignedUrl } from "./compliance/actions";
 import type { AttentionDoc, DashboardData } from "./page";
 
 interface Props {
@@ -19,7 +14,26 @@ interface Props {
 }
 
 export function ClientDashboard({ data, greeting }: Props) {
-  const [previewDoc, setPreviewDoc] = useState<AttentionDoc | null>(null);
+  // Needs-attention items are compliance documents — serve the real signed URL
+  // from the client-documents bucket (org-scoped), not a demo preview.
+  const docAction = async (doc: AttentionDoc, mode: "view" | "download") => {
+    const { url, filename } = await getClientComplianceDocSignedUrl(doc.id, { mode });
+    if (!url) {
+      toast.error(`Could not prepare ${doc.title}.`);
+      return;
+    }
+    if (mode === "download") {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename ?? doc.title;
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
+  };
 
   const hasAlerts = data.expired > 0 || data.expiring > 0;
   const balanceLow = data.hoursBalance > 0 && data.hoursBalance < 5;
@@ -54,7 +68,7 @@ export function ClientDashboard({ data, greeting }: Props) {
                      ? `${data.expired} document${data.expired === 1 ? "" : "s"} ${data.expired === 1 ? "has" : "have"} expired.`
                      : `${data.expiring} document${data.expiring === 1 ? "" : "s"} expiring soon.`}
                  </h4>
-                 <p className="text-[#8b2b21]/70 text-[12px] font-sans tracking-tight">Review what&rsquo;s due, renew directly, or message Matt.</p>
+                 <p className="text-[#8b2b21]/70 text-[12px] font-sans tracking-tight">Review what&rsquo;s due below, or message Matt to arrange a renewal.</p>
                </div>
             </div>
             <Link href="/client/compliance">
@@ -186,58 +200,20 @@ export function ClientDashboard({ data, greeting }: Props) {
                 </div>
 
                 <div className="flex items-center gap-3.5 shrink-0">
-                   <div className={cn(
-                     "px-3 py-1 border rounded-full font-mono text-[8px] uppercase tracking-[0.16em] font-bold leading-none flex items-center gap-1.5",
-                     doc.type === "expired" ? "border-[#8b2b21] text-[#8b2b21] bg-transparent" : "border-[#c0a66d] text-[#c0a66d] bg-transparent"
-                   )}>
-                     <div className={cn("w-0.5 h-0.5 rounded-full", doc.type === "expired" ? "bg-[#8b2b21]" : "bg-[#c0a66d]")}></div>
-                     {doc.status.split('').join(' ')}
-                   </div>
+                   <StatusPill tone={doc.type === "expired" ? "danger" : "warning"} label={doc.status} />
 
-                   <Link href={`/client/compliance?doc=${doc.id}`}>
-                     <Button variant="outline" className="rounded-sm border-[#1a1a1a] bg-transparent text-[#1a1a1a] hover:bg-[#1a1a1a]! hover:text-white! h-8 px-5 font-bold text-[8.5px] uppercase tracking-[0.25em] transition-all shadow-none">
-                       Renew
-                     </Button>
-                   </Link>
-
-                   <DropdownMenu>
-                      <DropdownMenuTrigger
-                         render={(props) => (
-                           <Button {...props} variant="outline" className="rounded-sm border-[#e5e1d8] bg-transparent text-[#1a1a1a] hover:bg-[#f9f8f6] h-8 px-3.5 flex items-center gap-2 group/btn font-mono text-[8px] font-bold uppercase tracking-[0.2em] shadow-none">
-                             <ChevronDown className="h-2 w-2 opacity-30 group-hover/btn:opacity-100 transition-opacity" />
-                             PDF
-                           </Button>
-                         )}
-                      />
-                      <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1.5">
-                         <DropdownMenuItem
-                           onClick={() => setPreviewDoc(doc)}
-                           className="text-[10px] font-mono font-bold uppercase tracking-widest p-2 cursor-pointer h-10 flex items-center gap-3"
-                         >
-                            <Download className="h-3 w-3" /> Download Result
-                         </DropdownMenuItem>
-                         <DropdownMenuItem
-                           onClick={() => setPreviewDoc(doc)}
-                           className="text-[10px] font-mono font-bold uppercase tracking-widest p-2 cursor-pointer h-10 flex items-center gap-3"
-                         >
-                            <ExternalLink className="h-3 w-3" /> View Online
-                         </DropdownMenuItem>
-                      </DropdownMenuContent>
-                   </DropdownMenu>
+                   <FileDownloadMenu
+                     size="sm"
+                     label="Download"
+                     onDownload={() => docAction(doc, "download")}
+                     onView={() => docAction(doc, "view")}
+                   />
                 </div>
               </div>
             ))}
           </div>
         </section>
       ) : null}
-
-      <PdfPreviewDialog
-        open={previewDoc !== null}
-        onOpenChange={(o) => !o && setPreviewDoc(null)}
-        title={previewDoc?.title || ""}
-        subtitle={previewDoc ? `${previewDoc.status} · ${previewDoc.date}` : undefined}
-        documentId={previewDoc?.id}
-      />
     </div>
   );
 }
