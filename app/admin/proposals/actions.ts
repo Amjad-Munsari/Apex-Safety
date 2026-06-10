@@ -266,7 +266,15 @@ export async function createProposal(data: {
       unit_price: s.service.unit_price,
     }))
 
-    const subtotal = data.subtotal
+    // Recompute the subtotal server-side from the authoritative line items
+    // (the same source the PDF renders) rather than trusting data.subtotal from
+    // the browser. A caller-supplied subtotal can drift from the line items —
+    // by a UI bug or a tampered request — and whatever lands in total_price is
+    // what the client ultimately sees and signs. Mirrors regenerateProposalPdf.
+    const subtotal = pdfServices.reduce(
+      (sum, s) => sum + s.unit_price * s.quantity,
+      0
+    )
     const vat = subtotal * VAT_RATE
     const total = subtotal + vat
 
