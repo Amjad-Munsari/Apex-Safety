@@ -270,7 +270,10 @@ export default async function AdminDashboardPage() {
       {/* ─── ROW 2: 04 COMPLIANCE + 06 PROPOSALS + 05 HOURS ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 04 COMPLIANCE STATUS */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col h-[400px] animate-in-fade [animation-delay:0.5s]">
+        {/* overflow-visible + z-10: the compliance breakdown panel drops below the
+            card and must paint over later sibling cards (each card's retained
+            fade-in animation makes it a stacking context) */}
+        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col h-[400px] overflow-visible relative z-10 animate-in-fade [animation-delay:0.5s]">
           <div className="flex items-center gap-3 mb-6">
             <span className="font-mono text-xs text-white/40">04</span>
             <h3 className="font-sans font-medium text-white tracking-wide text-lg">Compliance status</h3>

@@ -71,7 +71,7 @@ function BreakdownPanel({
     <div
       role="region"
       aria-label={`${status} documents by client`}
-      className="absolute inset-0 z-10 flex flex-col bg-[#161616] border border-white/10 rounded-sm"
+      className="flex flex-col max-h-[320px] bg-[#161616] border border-white/10 rounded-sm shadow-[0_16px_40px_rgba(0,0,0,0.55)]"
     >
       <div className="flex items-center gap-2 px-4 py-3 border-b border-white/5 shrink-0">
         <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: color }} />
@@ -93,7 +93,7 @@ function BreakdownPanel({
 
       <div className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {byClient.length === 0 ? (
-          <div className="h-full flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-white/25">
+          <div className="py-6 text-center font-mono text-[10px] uppercase tracking-widest text-white/25">
             No documents in this bucket
           </div>
         ) : (
@@ -153,7 +153,7 @@ export function ComplianceChart({ data, breakdown }: ComplianceChartProps) {
 
   return (
     <div
-      className="flex-1 flex flex-col min-h-0"
+      className="flex-1 flex flex-col min-h-0 relative"
       onMouseLeave={() => setHovered(null)}
       onKeyDown={(e) => {
         if (e.key === "Escape") clearAll();
@@ -166,15 +166,6 @@ export function ComplianceChart({ data, breakdown }: ComplianceChartProps) {
           activeStatus={active}
           onStatusEnter={handleEnter}
         />
-        {active && breakdown && (
-          <BreakdownPanel
-            status={active}
-            color={data.find((d) => d.name === active)?.color || "#888"}
-            docs={breakdown[active]}
-            pinned={pinned === active}
-            onClose={clearAll}
-          />
-        )}
       </div>
 
       <div className="flex justify-center gap-1 mt-4 font-mono text-[10px]">
@@ -205,6 +196,20 @@ export function ComplianceChart({ data, breakdown }: ComplianceChartProps) {
           );
         })}
       </div>
+
+      {active && breakdown && (
+        // Dropdown anchored under the legend; pt-2 bridges the hover gap so the
+        // pointer can travel from a chip into the panel without it closing.
+        <div className="absolute inset-x-0 top-full z-20 pt-2">
+          <BreakdownPanel
+            status={active}
+            color={data.find((d) => d.name === active)?.color || "#888"}
+            docs={breakdown[active]}
+            pinned={pinned === active}
+            onClose={clearAll}
+          />
+        </div>
+      )}
     </div>
   );
 }
