@@ -13,21 +13,36 @@ export function AdminSearch() {
   const debouncedQuery = useDebounce(query, 300)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
+  const cacheRef = useRef<Map<string, any[]>>(new Map())
 
   useEffect(() => {
-    async function search() {
-      if (debouncedQuery.length < 2) {
-        setResults([])
-        return
-      }
+    if (debouncedQuery.length < 2) {
+      setResults([])
+      return
+    }
 
+    // Return cached result immediately without a network request
+    if (cacheRef.current.has(debouncedQuery)) {
+      setResults(cacheRef.current.get(debouncedQuery)!)
+      setOpen(true)
+      return
+    }
+
+    const controller = new AbortController()
+
+    async function search() {
       setLoading(true)
       try {
-        const res = await fetch(`/api/admin/search?q=${encodeURIComponent(debouncedQuery)}`)
+        const res = await fetch(
+          `/api/admin/search?q=${encodeURIComponent(debouncedQuery)}`,
+          { signal: controller.signal }
+        )
         const data = await res.json()
+        cacheRef.current.set(debouncedQuery, data)
         setResults(data)
         setOpen(true)
       } catch (error) {
+        if ((error as any)?.name === "AbortError") return
         console.error("Search failed:", error)
       } finally {
         setLoading(false)
@@ -35,6 +50,10 @@ export function AdminSearch() {
     }
 
     search()
+
+    return () => {
+      controller.abort()
+    }
   }, [debouncedQuery])
 
   // Close dropdown on click outside
