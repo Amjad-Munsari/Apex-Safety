@@ -96,15 +96,29 @@ export async function transitionAssignmentStatus(
 }
 
 /**
- * Creates a draft form_submissions row for an assignment fill.
+ * Creates (or resumes) a draft form_submissions row for an assignment fill.
  *
  * Called from the RSC (fill/page.tsx) before mounting FillAssignmentClient.
  * The draft row gives Phase 14 specialty renderers (signature, multi-photo,
  * geolocation) a real submissionId for their upload paths at mount time.
  *
+ * IDEMPOTENT (orphan-draft fix): a fresh INSERT on every call leaked a draft row
+ * per /fill render — startAssignmentFill creates one, then fill/page.tsx creates
+ * another, and every refresh added more. Worse, specialty-renderer data (signatures,
+ * photos) is keyed by submissionId, so a new id on resume silently orphaned the
+ * partially-uploaded media. We now SELECT the most recent matching draft first and
+ * reuse it; only INSERT when none exists.
+ *
+ * The reuse query pins template_version_id = assignment.template_version_id: a
+ * fork (forkAssignedTemplate) rewires the assignment to a new version, and a draft
+ * captured against the OLD version must not be resumed against the new schema —
+ * the version mismatch forces a fresh draft.
+ *
  * Security invariants (T-16-04, T-16-08):
  *   - client_id is NEVER accepted from the caller — always from requireClientContext()
  *   - requireOwnedAssignment verifies org ownership and deleted_at before any DB write
+ *   - a completed assignment is rejected outright (fill/page.tsx redirects before
+ *     calling, so this only guards direct server-action invocations)
  */
 export async function createAssignmentDraftSubmission(
   assignmentId: string
@@ -113,6 +127,30 @@ export async function createAssignmentDraftSubmission(
   await assertClientActive(ctx.client_id); // frozen-client guard — no new fills
   const supabase = await createClient();
   const assignment = await requireOwnedAssignment(assignmentId, ctx.client_id);
+
+  if (assignment.status === "completed") {
+    throw new Error("Assignment already completed");
+  }
+
+  // Resume an existing draft if one is already pinned to the current version.
+  // Most-recent-first so a fork's stale draft (older version) is never selected here
+  // anyway — the version filter excludes it — and the freshest valid draft wins.
+  const { data: existing } = await supabase
+    .from("form_submissions")
+    .select("id")
+    .eq("assignment_id", assignmentId)
+    .eq("client_id", ctx.client_id)
+    .eq("status", "draft")
+    .eq("template_version_id", assignment.template_version_id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    // Resume: still nudge the assignment forward in case it lapsed back.
+    await transitionAssignmentStatus(supabase, assignmentId, "in_progress");
+    return { id: existing.id };
+  }
 
   await transitionAssignmentStatus(supabase, assignmentId, "in_progress");
 
@@ -162,11 +200,18 @@ export async function startAssignmentFill(assignmentId: string) {
  *
  * Submit sequence:
  *   1. Auth context + supabase
- *   2. UPDATE form_submissions SET answers_json, status='submitted', submitted_at
- *      WHERE id=submissionId AND client_id=ctx.client_id (defense-in-depth)
- *   3. Read assignment_id from updated row → transitionAssignmentStatus → completed
- *   4. revalidatePaths
- *   5. redirect (LAST, outside try/catch)
+ *   2. Fetch the draft's pinned template_version_id → load schema_json →
+ *      server-side validation pipeline (sanitize → prune → validateEntitiesValues
+ *      → validateInstanceRequired → evaluateVisibility → stripHiddenAnswers) —
+ *      identical to submitCustomerTemplateFillByIdAction / admin path (COND-03
+ *      surface parity). Only SCRUBBED answers are ever written.
+ *   3. UPDATE form_submissions SET answers_json, status='submitted', submitted_at
+ *      WHERE id=submissionId AND client_id=ctx.client_id AND status='draft' —
+ *      the status filter is the double-submit guard: a second submit matches
+ *      zero rows and throws BEFORE the n8n dispatch.
+ *   4. Read assignment_id from updated row → transitionAssignmentStatus → completed
+ *   5. revalidatePaths
+ *   6. redirect (LAST, outside try/catch)
  */
 export async function submitAssignedFillByIdAction(
   submissionId: string,
@@ -176,20 +221,108 @@ export async function submitAssignedFillByIdAction(
   await assertClientActive(ctx.client_id); // frozen-client guard — no submits
   const supabase = await createClient();
 
+  // Step 1: fetch the draft row (client_id-scoped, defense-in-depth alongside
+  // RLS) to read the pinned template_version_id. The client never supplies it.
+  const { data: submission, error: subError } = await supabase
+    .from("form_submissions")
+    .select("template_version_id")
+    .eq("id", submissionId)
+    .eq("client_id", ctx.client_id)
+    .single();
+
+  if (subError || !submission) {
+    throw new Error(subError?.message ?? "Submission not found");
+  }
+
+  // Step 2: fetch the PINNED version schema via the stored FK — never the
+  // template's latest version (mirrors admin T-13-10).
+  const { data: version, error: versionError } = await supabase
+    .from("template_versions")
+    .select("schema_json")
+    .eq("id", submission.template_version_id)
+    .single();
+
+  if (versionError || !version) {
+    throw new Error(versionError?.message ?? "Failed to fetch pinned template version");
+  }
+
+  // Step 3: server-side validation — the IDENTICAL pipeline as
+  // submitCustomerTemplateFillByIdAction and the admin submitAssessmentAction.
+  // Raw client answers were previously written straight to answers_json with no
+  // validation and no hidden-answer scrub; this closes that gap (COND-03).
+  const { validateEntitiesValues } = await import("@coltorapps/builder");
+  const { formBuilder } = await import("@/lib/form-builder");
+  const { sanitizeSchema } = await import("@/lib/form-builder/sanitize-schema");
+  const { pruneSchemaForValidation } = await import("@/lib/form-builder/prune-schema-for-validation");
+  const { setCurrentFormSchema } = await import("@/lib/form-builder/visibility/compute-computed-values");
+
+  const schemaJson = sanitizeSchema(version.schema_json as Parameters<typeof sanitizeSchema>[0]);
+  const prunedSchema = pruneSchemaForValidation(schemaJson);
+
+  // Register the schema in the module-level slot so computedField-sourced
+  // visibility rules can derive their values during the coltorapps eligibility
+  // walk (D-02). Cleared in the finally. Same racy-slot caveat as the admin path.
+  setCurrentFormSchema(schemaJson as Parameters<typeof setCurrentFormSchema>[0]);
+  let result: Awaited<ReturnType<typeof validateEntitiesValues>>;
+  try {
+    result = await validateEntitiesValues(answers, formBuilder, prunedSchema as Parameters<typeof validateEntitiesValues>[2]);
+  } finally {
+    setCurrentFormSchema(null);
+  }
+  if (!result.success) {
+    throw new Error("Form validation failed server-side. Please check your answers and try again.");
+  }
+
+  // Per-instance required enforcement — mirrors the client guard and the admin path.
+  const { validateInstanceRequired } = await import("@/lib/form-builder/validate-instance-required");
+  const instanceFailures = validateInstanceRequired(
+    schemaJson as Parameters<typeof validateInstanceRequired>[0],
+    result.data as Record<string, unknown>
+  );
+  if (instanceFailures.length > 0) {
+    const first = instanceFailures[0];
+    throw new Error(
+      `Missing required field "${first.childLabel}" in ${first.repSectionLabel} #${first.instanceIndex + 1}` +
+        (instanceFailures.length > 1 ? ` (and ${instanceFailures.length - 1} more)` : "")
+    );
+  }
+
+  // Visibility evaluation + hidden-subtree scrub (D-01, COND-01). Order is
+  // load-bearing: validate FIRST (coerced types feed operator semantics), THEN
+  // evaluate visibility against validated values, THEN strip hidden entities.
+  const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility");
+  const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers");
+  const visibility = evaluateVisibility(schemaJson as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>);
+  const scrubbedAnswers = stripHiddenAnswers(schemaJson as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility);
+
+  // Step 4: write SCRUBBED answers. The .eq("status","draft") filter +
+  // .maybeSingle() are the double-submit guard: a second submit of an
+  // already-submitted row matches zero rows (updated = null, NO error) and we
+  // bail BEFORE dispatching the n8n event — the webhook must fire at most once
+  // per submission, or downstream automations (report generation, billing)
+  // double-fire. updateError is checked first so genuine DB failures surface
+  // as themselves rather than masquerading as duplicate submits.
   const { data: updated, error: updateError } = await supabase
     .from("form_submissions")
     .update({
-      answers_json: answers,
+      answers_json: scrubbedAnswers,
       status: "submitted",
       submitted_at: new Date().toISOString(),
     })
     .eq("id", submissionId)
     .eq("client_id", ctx.client_id)
+    .eq("status", "draft")
     .select("assignment_id")
-    .single();
+    .maybeSingle();
 
-  if (updateError || !updated) {
-    throw new Error(updateError?.message ?? "Failed to submit form");
+  if (updateError) {
+    throw new Error(updateError.message ?? "Failed to submit form");
+  }
+
+  if (!updated) {
+    // No draft row matched → already submitted (status flipped) or the row
+    // vanished. Treat as a duplicate submit; do NOT dispatch the webhook.
+    throw new Error("This form has already been submitted");
   }
 
   // Notify n8n of an assignment fill submission (best-effort, non-blocking).
@@ -206,26 +339,34 @@ export async function submitAssignedFillByIdAction(
 
     // Inline recurrence trigger (RESEARCH §Pattern 2). Cron PASS B is the safety net —
     // this path makes recurrence feel instant. Idempotency: recurrence_generated_at column.
-    const { data: completedRow } = await supabase
+    //
+    // CLAIM-FIRST (TOCTOU fix): the old read-check-generate-stamp sequence had a
+    // race — two concurrent submits (or this path racing cron PASS B) could BOTH
+    // read recurrence_generated_at = NULL, both pass the check, and both generate a
+    // duplicate next occurrence. We now atomically claim the row by stamping
+    // recurrence_generated_at in the WHERE-guarded UPDATE: only the writer whose
+    // UPDATE matches a row (recurrence_generated_at still NULL) owns the claim.
+    // If generation then fails, we clear the stamp back to NULL so cron PASS B retries.
+    const { data: claimed } = await supabase
       .from("form_assignments")
-      .select(
-        "id, client_id, template_id, assigned_by, instructions, due_date, recurrence_rule, recurrence_generated_at"
-      )
+      .update({ recurrence_generated_at: new Date().toISOString() })
       .eq("id", updated.assignment_id)
-      .single();
+      .not("recurrence_rule", "is", null)
+      .is("recurrence_generated_at", null)
+      .select(
+        "id, client_id, template_id, assigned_by, instructions, due_date, recurrence_rule"
+      )
+      .maybeSingle();
 
-    if (
-      completedRow &&
-      completedRow.recurrence_rule !== null &&
-      completedRow.recurrence_generated_at === null
-    ) {
-      const res = await generateNextOccurrence(supabase, completedRow);
-      if (res.ok) {
+    if (claimed) {
+      // We own the claim — generate exactly once.
+      const res = await generateNextOccurrence(supabase, claimed);
+      if (!res.ok) {
+        // Roll the stamp back so cron PASS B picks this row up next tick.
         await supabase
           .from("form_assignments")
-          .update({ recurrence_generated_at: new Date().toISOString() })
+          .update({ recurrence_generated_at: null })
           .eq("id", updated.assignment_id);
-      } else {
         console.error("inline recurrence failed", {
           assignmentId: updated.assignment_id,
           reason: res.reason,
