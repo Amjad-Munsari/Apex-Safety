@@ -13,10 +13,16 @@ export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET
 
   if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
+    // Only true local development (NODE_ENV=development, i.e. `next dev`) may run
+    // this unauthenticated for manual curl testing. Vercel sets NODE_ENV=production
+    // for BOTH production and preview deploys, so both correctly 500 here when the
+    // secret is missing. Any other env (CI runners, NODE_ENV unset/"test") must
+    // supply CRON_SECRET — the handler mutates assignment state and emails every
+    // tenant's contacts via the service-role client, so an open endpoint is a
+    // cross-tenant spam/mutation vector.
+    if (process.env.NODE_ENV !== "development") {
       return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 })
     }
-    // dev/preview without a secret: allow unauthenticated curl for manual testing
   } else if (
     authHeader !== `Bearer ${cronSecret}` &&
     // Query-param secret is accepted for manual testing in non-prod only — in
@@ -76,14 +82,20 @@ export async function GET(request: Request) {
 
     if (!cadence) continue
 
-    // Fetch client contact (mirror Phase 5 lines 87-100)
+    // Fetch client contact — DETERMINISTIC recipient (was .limit(1) with no
+    // ordering, which picked an arbitrary org member each tick). Prefer the
+    // org owner, tie-break by oldest membership (created_at asc) so reminders
+    // always land on the same, most-senior contact.
     const { data: clientUsers } = await supabase
       .from("client_users")
-      .select("name, email")
+      .select("name, email, role, created_at")
       .eq("client_id", row.client_id)
-      .limit(1)
+      .order("created_at", { ascending: true })
 
-    const contact = clientUsers?.[0]
+    // role='owner' wins regardless of created_at; among same-priority rows the
+    // created_at-asc order above (stable) decides the tie-break.
+    const contact =
+      clientUsers?.find((u) => u.role === "owner") ?? clientUsers?.[0]
     const contactEmail = contact?.email
 
     if (!contactEmail) {
@@ -147,18 +159,40 @@ export async function GET(request: Request) {
   }
 
   for (const completed of completedRecurring ?? []) {
-    const res = await generateNextOccurrence(supabase, completed)
+    // CLAIM-FIRST (TOCTOU fix): the prior sequence read the row, generated, THEN
+    // stamped recurrence_generated_at. The inline submit path (actions.ts) runs
+    // the same logic, so a completion racing this tick could have both read NULL
+    // and both generate a duplicate occurrence. We now atomically claim the row
+    // by stamping under a still-NULL guard FIRST; only the writer whose UPDATE
+    // matches a row owns the generate. If the claim matches nothing, someone else
+    // (inline path or a concurrent tick) already owns it — skip.
+    const { data: claimed } = await supabase
+      .from("form_assignments")
+      .update({ recurrence_generated_at: new Date().toISOString() })
+      .eq("id", completed.id)
+      .not("recurrence_rule", "is", null)
+      .is("recurrence_generated_at", null)
+      .select(
+        "id, client_id, template_id, assigned_by, instructions, due_date, recurrence_rule"
+      )
+      .maybeSingle()
+
+    if (!claimed) {
+      // Lost the claim race — another writer is handling this row. Skip silently.
+      continue
+    }
+
+    const res = await generateNextOccurrence(supabase, claimed)
 
     if (res.ok) {
-      // Set idempotency guard so next tick skips this row
-      await supabase
-        .from("form_assignments")
-        .update({ recurrence_generated_at: new Date().toISOString() })
-        .eq("id", completed.id)
-
       recurrencesGenerated++
     } else {
-      // Log only — row remains eligible for next tick (safety net pattern)
+      // Clear the stamp so the row stays eligible for the next tick (safety net).
+      await supabase
+        .from("form_assignments")
+        .update({ recurrence_generated_at: null })
+        .eq("id", completed.id)
+
       console.error(
         `[cron/assignment-scheduler] recurrence generation failed for ${completed.id}: ${res.reason}`
       )

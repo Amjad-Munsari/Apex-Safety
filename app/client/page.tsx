@@ -14,6 +14,9 @@ export interface AttentionDoc {
   id: string;
   title: string;
   status: "EXPIRED" | "EXPIRING";
+  /** ISO 8601 date string used for chronological sorting (never displayed). */
+  rawDate: string;
+  /** Pre-formatted display string, e.g. "12 Feb 2025". Never used for sorting. */
   date: string;
   type: "expired" | "expiring";
 }
@@ -103,6 +106,7 @@ export default async function ClientDashboardPage() {
         id: d.id,
         title: d.filename,
         status: "EXPIRED",
+        rawDate: d.expiry_date,
         date: formatDate(d.expiry_date),
         type: "expired",
       });
@@ -112,6 +116,7 @@ export default async function ClientDashboardPage() {
         id: d.id,
         title: d.filename,
         status: "EXPIRING",
+        rawDate: d.expiry_date,
         date: formatDate(d.expiry_date),
         type: "expiring",
       });
@@ -121,9 +126,12 @@ export default async function ClientDashboardPage() {
   }
 
   // Surface up to 6 most urgent — expired first, then expiring soonest.
+  // Sort on rawDate (ISO 8601) so the comparison is chronological, not
+  // alphabetical. The formatted `date` string ("12 Feb 2025") sorts incorrectly
+  // by day-of-month rather than by calendar order.
   attentionDocs.sort((a, b) => {
     if (a.type !== b.type) return a.type === "expired" ? -1 : 1;
-    return a.date.localeCompare(b.date);
+    return a.rawDate < b.rawDate ? -1 : a.rawDate > b.rawDate ? 1 : 0;
   });
   const trimmedAttention = attentionDocs.slice(0, 6);
 

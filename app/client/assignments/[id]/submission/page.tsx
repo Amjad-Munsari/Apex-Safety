@@ -41,16 +41,21 @@ export default async function SubmissionViewerPage({ params }: Props) {
     notFound();
   }
 
-  // Step 1: Fetch the most-recent submitted submission for this assignment.
+  // Step 1: Fetch the most-recent non-draft submission for this assignment.
+  // We exclude only "draft" (in-progress, never submitted) so the viewer keeps
+  // working after admin advances the status to draft_ready_for_review / completed /
+  // delivered — states the client should still be able to read back.
   // Explicitly scoped by client_id (T-19-07) so the IDOR boundary does not depend
   // on RLS alone — correct even under the demo-mode service-role client.
+  // nulls last on submitted_at ensures a row with a null timestamp sorts below any
+  // real submission but is still returned when no better row exists.
   const { data: submission } = await supabase
     .from("form_submissions")
     .select("id, answers_json, template_version_id, client_id, submitted_at")
     .eq("assignment_id", id)
     .eq("client_id", ctx.client_id)
-    .eq("status", "submitted")
-    .order("submitted_at", { ascending: false })
+    .neq("status", "draft")
+    .order("submitted_at", { ascending: false, nullsFirst: false })
     .limit(1)
     .maybeSingle();
 
