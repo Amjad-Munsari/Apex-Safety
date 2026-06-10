@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { MicButton } from "./mic-button"
 import { cn } from "@/lib/utils"
 import type { FormSurface } from "./form-surface"
+import type { DictationContext } from "@/hooks/use-stt"
 
 interface NumberFieldProps {
   value: number | string | undefined
@@ -15,6 +16,8 @@ interface NumberFieldProps {
   max?: number
   step?: number
   surface?: FormSurface
+  /** Mic dictation context — callers with a field label should pass it through. */
+  dictation?: DictationContext
 }
 
 const surfaceTokens = {
@@ -36,6 +39,7 @@ export function NumberField({
   max,
   step = 1,
   surface = "dark",
+  dictation,
 }: NumberFieldProps) {
   const t = surfaceTokens[surface]
 
@@ -126,9 +130,10 @@ export function NumberField({
         {!isNarrowBounded && (
           <MicButton
             surface={surface}
+            dictation={dictation ?? { kind: "number", placeholder, min, max }}
             onTranscript={(text) => {
-              // Pull the first numeric token out of the transcript ("seventy" stays as text;
-              // "70 units" becomes 70). Falls back to the raw transcript if no number is found.
+              // The model is asked for digits only; this regex is the fallback
+              // for transcripts like "70 units". Raw text if no number found.
               const match = text.match(/-?\d+(?:\.\d+)?/)
               if (match) onChange(clamp(Number(match[0])))
               else onChange(text)

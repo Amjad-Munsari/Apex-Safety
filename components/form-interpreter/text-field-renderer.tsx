@@ -65,6 +65,12 @@ export function TextFieldRenderer({ entity, setValue, surface = "cream", dynamic
         <MicButton
           onTranscript={(t) => setValue((value ?? "") + (value ? " " : "") + t)}
           surface={surface}
+          dictation={{
+            label: attrs.label,
+            kind: "text",
+            placeholder: attrs.placeholder,
+            helpText: attrs.helpText,
+          }}
         />
       </div>
       {attrs.helpText && (

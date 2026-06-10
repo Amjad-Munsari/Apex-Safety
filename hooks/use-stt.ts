@@ -9,7 +9,26 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "
 // Web Speech API implementation, which only worked in desktop Chrome/Edge
 // with Google's speech service reachable — everywhere else the mic was dead.
 
+/**
+ * What the speaker is dictating into. Sent alongside the audio so the model
+ * returns a value formatted for the field (digits for numbers, a single line
+ * for text inputs, punctuated sentences for textareas) instead of a raw
+ * verbatim transcript.
+ */
+export interface DictationContext {
+  label?: string
+  kind?: "text" | "textarea" | "number"
+  placeholder?: string
+  helpText?: string
+  min?: number
+  max?: number
+}
+
 const MAX_RECORDING_MS = 120_000 // matches the 2-minute cap enforced by the route
+// Below these, the clip is an accidental tap or a mic that captured nothing —
+// uploading it invites the model to invent content, so we refuse client-side.
+const MIN_RECORDING_SECONDS = 0.5
+const SILENCE_PEAK_THRESHOLD = 0.01
 
 function pickMimeType(): string | undefined {
   if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return undefined
@@ -27,7 +46,7 @@ const subscribeNever = () => () => {}
 const isRecordingSupported = () =>
   typeof MediaRecorder !== "undefined" && !!navigator.mediaDevices?.getUserMedia
 
-export function useSTT() {
+export function useSTT(dictation?: DictationContext) {
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [transcript, setTranscript] = useState("")
@@ -62,13 +81,27 @@ export function useSTT() {
   const transcribe = async (blob: Blob) => {
     setIsTranscribing(true)
     try {
-      const { blobToWav } = await import("@/lib/audio/wav")
-      const wav = await blobToWav(blob)
-      const res = await fetch("/api/transcribe", {
-        method: "POST",
-        headers: { "Content-Type": "audio/wav" },
-        body: wav,
-      })
+      const { encodeRecordingToWav } = await import("@/lib/audio/wav")
+      const { wav, durationSeconds, peak } = await encodeRecordingToWav(blob)
+
+      if (durationSeconds < MIN_RECORDING_SECONDS) {
+        if (mountedRef.current) setError("Recording too short — tap, speak, then tap again to stop.")
+        return
+      }
+      if (peak < SILENCE_PEAK_THRESHOLD) {
+        if (mountedRef.current) setError("No speech detected — the recording was silent.")
+        return
+      }
+
+      // `dictation` is captured from the render that started the recording —
+      // field metadata is static, so the closure value is always current.
+      const form = new FormData()
+      form.append("audio", wav, "dictation.wav")
+      if (dictation) {
+        form.append("context", JSON.stringify(dictation))
+      }
+
+      const res = await fetch("/api/transcribe", { method: "POST", body: form })
       if (!res.ok) {
         const body = (await res.json().catch(() => null)) as { error?: string } | null
         throw new Error(body?.error ?? `Transcription failed (${res.status}).`)

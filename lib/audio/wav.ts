@@ -8,7 +8,14 @@
 
 const TARGET_SAMPLE_RATE = 16_000
 
-export async function blobToWav(blob: Blob): Promise<Blob> {
+export interface EncodedRecording {
+  wav: Blob
+  durationSeconds: number
+  /** Peak absolute sample amplitude (0–1). ~0 means the mic captured silence. */
+  peak: number
+}
+
+export async function encodeRecordingToWav(blob: Blob): Promise<EncodedRecording> {
   const encoded = await blob.arrayBuffer()
 
   const decodeCtx = new AudioContext()
@@ -26,8 +33,19 @@ export async function blobToWav(blob: Blob): Promise<Blob> {
   source.connect(offline.destination)
   source.start()
   const rendered = await offline.startRendering()
+  const samples = rendered.getChannelData(0)
 
-  return encodeWavPcm16(rendered.getChannelData(0), TARGET_SAMPLE_RATE)
+  let peak = 0
+  for (let i = 0; i < samples.length; i++) {
+    const a = Math.abs(samples[i])
+    if (a > peak) peak = a
+  }
+
+  return {
+    wav: encodeWavPcm16(samples, TARGET_SAMPLE_RATE),
+    durationSeconds: samples.length / TARGET_SAMPLE_RATE,
+    peak,
+  }
 }
 
 function encodeWavPcm16(samples: Float32Array, sampleRate: number): Blob {

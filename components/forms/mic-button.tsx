@@ -4,7 +4,7 @@ import React from "react"
 import { Mic, MicOff, Square, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { useSTT } from "@/hooks/use-stt"
+import { useSTT, type DictationContext } from "@/hooks/use-stt"
 import { cn } from "@/lib/utils"
 import type { FormSurface } from "./form-surface"
 
@@ -12,6 +12,8 @@ interface MicButtonProps {
   className?: string
   onTranscript: (text: string) => void
   surface?: FormSurface
+  /** Field metadata sent with the audio so the model formats the value for the field. */
+  dictation?: DictationContext
 }
 
 const idleByForSurface = {
@@ -19,7 +21,7 @@ const idleByForSurface = {
   cream: "text-[#6b6560] hover:text-[#1a1a1a]",
 } as const
 
-export function MicButton({ className, onTranscript, surface = "dark" }: MicButtonProps) {
+export function MicButton({ className, onTranscript, surface = "dark", dictation }: MicButtonProps) {
   const {
     isRecording,
     isTranscribing,
@@ -30,7 +32,7 @@ export function MicButton({ className, onTranscript, surface = "dark" }: MicButt
     setTranscript,
     error,
     clearError,
-  } = useSTT()
+  } = useSTT(dictation)
 
   // The transcript arrives once, after the server round-trip completes.
   const lastCommittedRef = React.useRef("")

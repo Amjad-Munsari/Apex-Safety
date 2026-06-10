@@ -44,6 +44,11 @@ export function AppendixField({
             <MicButton
               className="top-3 translate-y-0"
               onTranscript={(text) => onChangeNotes((notesValue ? notesValue + " " : "") + text)}
+              dictation={{
+                label: "Additional observations — general notes",
+                kind: "textarea",
+                helpText: "Other issues, context, or visual evidence not covered by the form schema.",
+              }}
             />
           </div>
         </div>

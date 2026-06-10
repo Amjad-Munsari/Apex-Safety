@@ -54,6 +54,11 @@ export function TextareaFieldRenderer({ entity, setValue, surface = "cream", dyn
           className="absolute right-2 bottom-2 top-auto translate-y-0"
           onTranscript={(t) => setValue((value ?? "") + (value ? " " : "") + t)}
           surface={surface}
+          dictation={{
+            label: attrs.label,
+            kind: "textarea",
+            placeholder: attrs.placeholder,
+          }}
         />
       </div>
       {/* helpText not available on textareaField entity in Phase 13 */}
