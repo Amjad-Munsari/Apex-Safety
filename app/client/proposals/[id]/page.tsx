@@ -4,6 +4,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { markProposalViewed } from "@/app/admin/proposals/actions";
 import { calculateProposalTotal } from "@/lib/supabase/dashboard";
+import { AcceptSignButton } from "./accept-sign-button";
 
 export const dynamic = "force-dynamic";
 
@@ -133,8 +134,9 @@ export default async function ClientProposalDetailPage({
             <p className="font-sans text-[13px] text-[#1a1a1a]/80 leading-relaxed">
               {isSigned
                 ? "This proposal has been accepted. Download a copy for your records."
-                : "Review the document, download a copy, and Matt will follow up to confirm next steps."}
+                : "Review the document, then accept and sign below. You can download a copy at any time."}
             </p>
+            {!isSigned && <AcceptSignButton proposalId={proposal.id} />}
             {signedPdfUrl ? (
               <a
                 href={signedPdfUrl}
