@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ActivePill } from "./active-pill";
 
 export interface ClientRowProps {
@@ -31,30 +31,21 @@ export function ClientRow({
   activeCount,
   active = true,
 }: ClientRowProps) {
-  const router = useRouter();
-
-  const goToClient = () => router.push(`/admin/clients/${id}`);
-
-  // The whole row is the click target (router.push). Inner interactive
-  // elements (the ActivePill tooltip trigger) stop propagation so they keep
-  // their own behaviour without also navigating. This replaces the previous
-  // `absolute inset-0` overlay <Link>, whose stacking against the static
-  // table cells made most of the row dead to real pointer clicks.
+  // A full-cell <Link> overlay in the first cell carries navigation. Using
+  // next/link gives viewport prefetch + useLinkStatus-eligible pending state.
+  // The link is absolutely positioned to fill its `relative` cell rather than
+  // wrapping the whole <tr>, which previously made cells dead to clicks via a
+  // stacking overlay. Inner interactive elements (the ActivePill tooltip
+  // trigger) stop propagation so they keep their own behaviour.
   return (
-    <tr
-      onClick={goToClient}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          goToClient();
-        }
-      }}
-      className="group hover:bg-white/[0.02] transition-colors cursor-pointer"
-    >
-      <td className="px-6 py-4">
-        <div className="flex items-start gap-4">
+    <tr className="group hover:bg-white/[0.02] transition-colors cursor-pointer">
+      <td className="px-6 py-4 relative">
+        <Link
+          href={`/admin/clients/${id}`}
+          aria-label={`Open ${name}`}
+          className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/20"
+        />
+        <div className="flex items-start gap-4 pointer-events-none relative z-10">
           <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br />{id.slice(0, 4).toUpperCase()}</span>
           <div>
             <div className="font-medium text-white mb-0.5 flex items-center">
@@ -64,7 +55,7 @@ export function ClientRow({
                   Inactive
                 </span>
               )}
-              <span onClick={(e) => e.stopPropagation()}>
+              <span className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <ActivePill count={activeCount} />
               </span>
             </div>

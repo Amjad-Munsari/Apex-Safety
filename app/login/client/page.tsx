@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { ArrowRight, ShieldCheck } from "lucide-react"
@@ -11,26 +11,29 @@ export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [isPending, startTransition] = useTransition()
   const router = useRouter()
   const supabase = createClient()
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    setLoading(true)
+    setSubmitting(true)
 
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError(error.message)
-      setLoading(false)
+      setSubmitting(false)
       return
     }
 
     const destination = ADMIN_EMAILS.includes(email) ? "/admin" : "/client"
-    router.push(destination)
-    router.refresh()
+    startTransition(() => {
+      router.push(destination)
+      router.refresh()
+    })
   }
 
 
@@ -123,10 +126,10 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={submitting || isPending}
               className="w-full h-12 bg-[#1a1a1a] hover:bg-black text-white rounded-sm font-sans text-[13px] font-bold tracking-tight transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {submitting || isPending ? "Signing in…" : "Sign in"}
             </button>
           </form>
 

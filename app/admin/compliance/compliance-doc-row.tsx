@@ -1,6 +1,6 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Building2, Download, Eye, FileText, Send } from "lucide-react"
@@ -24,15 +24,10 @@ interface Props {
 }
 
 export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showReminder }: Props) {
-  const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [viewPending, setViewPending] = useState(false)
   const [reminderPending, setReminderPending] = useState(false)
   const clientId = doc.client?.id
-
-  const goToClient = () => {
-    if (clientId) router.push(`/admin/clients/${clientId}`)
-  }
 
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -86,11 +81,17 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
 
   return (
     <tr
-      onClick={goToClient}
       className={`hover:bg-white/[0.04] transition-colors group ${clientId ? "cursor-pointer" : ""}`}
     >
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
+      <td className="px-6 py-4 relative">
+        {clientId && (
+          <Link
+            href={`/admin/clients/${clientId}`}
+            aria-label={`Open ${doc.client?.name ?? "client"}`}
+            className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/20"
+          />
+        )}
+        <div className="flex items-center gap-3 pointer-events-none relative z-10">
           <FileText className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors" />
           <div>
             <div className="font-medium text-white">{doc.filename}</div>
