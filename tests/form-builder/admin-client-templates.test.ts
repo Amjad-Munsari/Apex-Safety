@@ -1,10 +1,11 @@
 // Unit tests for normalizeClientTemplateRows — the mapping behind the
 // "Client-built forms" read-only panel on the admin client-detail page (spec 2.6).
 //
-// The risk this guards: Supabase returns the self-referential parent embed
-// (parent:form_templates!parent_template_id(name)) as an ARRAY or an OBJECT
-// depending on relationship inference. The normalizer must flatten both without
-// throwing, and correctly distinguish forked vs built-from-scratch templates.
+// History: this used to flatten a PostgREST self-referential embed
+// (parent:form_templates!parent_template_id(name)). Verified against the live
+// DB: PostgREST resolves that embed in the CHILDREN direction, so `parent` was
+// always [] and fork lineage never rendered. The normalizer now takes an
+// explicit parent-id → name map built from a second query instead.
 
 import { describe, it, expect } from "vitest"
 import { normalizeClientTemplateRows } from "@/app/admin/clients/[id]/client-templates"
@@ -16,18 +17,20 @@ describe("normalizeClientTemplateRows", () => {
     expect(normalizeClientTemplateRows([])).toEqual([])
   })
 
-  it("flattens an OBJECT-shaped parent join and reports fork lineage", () => {
-    const out = normalizeClientTemplateRows([
-      {
-        id: "fork-1",
-        name: "Our FRA",
-        template_type: "fra",
-        is_published: true,
-        created_at: "2026-06-01T00:00:00.000Z",
-        parent_template_id: "master-9",
-        parent: { name: "FRA Type 3 (master)" },
-      },
-    ])
+  it("resolves fork lineage from the parentNames map", () => {
+    const out = normalizeClientTemplateRows(
+      [
+        {
+          id: "fork-1",
+          name: "Our FRA",
+          template_type: "fra",
+          is_published: true,
+          created_at: "2026-06-01T00:00:00.000Z",
+          parent_template_id: "master-9",
+        },
+      ],
+      { "master-9": "FRA Type 3 (master)" }
+    )
     expect(out).toHaveLength(1)
     expect(out[0]).toMatchObject({
       id: "fork-1",
@@ -37,51 +40,53 @@ describe("normalizeClientTemplateRows", () => {
     })
   })
 
-  it("flattens an ARRAY-shaped parent join (Supabase relationship-inference variant)", () => {
-    const out = normalizeClientTemplateRows([
-      {
-        id: "fork-2",
-        name: "Cloned form",
-        template_type: "site_risk",
-        is_published: false,
-        created_at: "2026-06-02T00:00:00.000Z",
-        parent_template_id: "master-7",
-        parent: [{ name: "Site Risk (master)" }],
-      },
-    ])
-    expect(out[0].parentName).toBe("Site Risk (master)")
-    expect(out[0].is_published).toBe(false)
-  })
-
   it("treats a template with no parent as built-from-scratch (null lineage)", () => {
-    const out = normalizeClientTemplateRows([
-      {
-        id: "own-1",
-        name: "Bespoke checklist",
-        template_type: "custom",
-        is_published: true,
-        created_at: "2026-06-03T00:00:00.000Z",
-        parent_template_id: null,
-        parent: null,
-      },
-    ])
+    const out = normalizeClientTemplateRows(
+      [
+        {
+          id: "own-1",
+          name: "Bespoke checklist",
+          template_type: "custom",
+          is_published: true,
+          created_at: "2026-06-03T00:00:00.000Z",
+          parent_template_id: null,
+        },
+      ],
+      {}
+    )
     expect(out[0].parent_template_id).toBeNull()
     expect(out[0].parentName).toBeNull()
   })
 
-  it("does not throw when the parent embed is an empty array", () => {
+  it("keeps fork lineage id but null name when the parent is missing from the map (e.g. deleted master)", () => {
+    const out = normalizeClientTemplateRows(
+      [
+        {
+          id: "edge-1",
+          name: "Edge",
+          template_type: "fra",
+          is_published: false,
+          created_at: "2026-06-04T00:00:00.000Z",
+          parent_template_id: "master-3",
+        },
+      ],
+      {}
+    )
+    expect(out[0].parentName).toBeNull()
+    expect(out[0].parent_template_id).toBe("master-3")
+  })
+
+  it("works without a parentNames map at all", () => {
     const out = normalizeClientTemplateRows([
       {
-        id: "edge-1",
-        name: "Edge",
-        template_type: "fra",
+        id: "no-map",
+        name: "No map",
+        template_type: "custom",
         is_published: false,
-        created_at: "2026-06-04T00:00:00.000Z",
-        parent_template_id: "master-3",
-        parent: [],
+        created_at: "2026-06-05T00:00:00.000Z",
+        parent_template_id: "master-1",
       },
     ])
     expect(out[0].parentName).toBeNull()
-    expect(out[0].parent_template_id).toBe("master-3")
   })
 })

@@ -36,6 +36,12 @@ interface Props {
   hasDraft: boolean;
   publishedVersionNumber: number | null;
   surface?: "dark" | "cream";
+  /** Render the builder as a viewer: no save/publish/assign, name locked, palette hidden. */
+  readOnly?: boolean;
+  /** Short label shown in the toolbar badge when readOnly (e.g. "Client-owned template"). */
+  readOnlyNotice?: string;
+  /** Surface-appropriate publish confirm() copy; defaults to the admin wording. */
+  publishConfirmMessage?: string;
   saveDraftAction: (templateId: string, rawSchema: unknown, templateName: string) => Promise<void>;
   publishTemplateAction: (templateId: string, rawSchema: unknown, templateName: string) => Promise<void>;
   backHref?: string;

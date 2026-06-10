@@ -78,12 +78,12 @@ export default async function ClientDetailsPage({
     // Matt has full visibility into self-serve activity (spec 2.6). Admin reads
     // are permitted by RLS form_templates_admin_all; adminClient bypasses RLS
     // anyway, so the explicit owner_type/owner_id filter is the scope guard.
-    // parent:form_templates!parent_template_id(name) surfaces fork lineage.
+    // Fork lineage (parent master name) is resolved by a follow-up query below —
+    // the self-referential PostgREST embed resolves in the children direction
+    // and always returned [], so "Cloned from …" never named the master.
     adminClient
       .from("form_templates")
-      .select(
-        "id, name, template_type, is_published, created_at, parent_template_id, parent:form_templates!parent_template_id(name)"
-      )
+      .select("id, name, template_type, is_published, created_at, parent_template_id")
       .eq("owner_type", "customer")
       .eq("owner_id", id)
       .is("deleted_at", null)
@@ -168,7 +168,27 @@ export default async function ClientDetailsPage({
     )
   }
 
-  const clientTemplates = normalizeClientTemplateRows(clientTemplateRows)
+  // Resolve fork lineage: map parent_template_id → master name for the
+  // "Cloned from …" badge. Soft-deleted masters are intentionally included —
+  // lineage is historical fact, not a live reference.
+  const parentIds = [
+    ...new Set(
+      (clientTemplateRows ?? [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((row: any) => row.parent_template_id)
+        .filter((pid: string | null): pid is string => !!pid)
+    ),
+  ]
+  let parentNames: Record<string, string> = {}
+  if (parentIds.length > 0) {
+    const { data: parentRows } = await adminClient
+      .from("form_templates")
+      .select("id, name")
+      .in("id", parentIds)
+    parentNames = Object.fromEntries((parentRows ?? []).map((p) => [p.id, p.name]))
+  }
+
+  const clientTemplates = normalizeClientTemplateRows(clientTemplateRows, parentNames)
 
   const assessments = (submissionRows ?? []).map((row: any) => {
     const templateName: string =

@@ -47,6 +47,16 @@ interface Props {
   hasDraft: boolean;
   publishedVersionNumber: number | null;
   surface?: "dark" | "cream";
+  /** Render the builder as a viewer: no save/publish/assign, name locked, palette hidden. */
+  readOnly?: boolean;
+  /** Short label shown in the toolbar badge when readOnly (e.g. "Client-owned template"). */
+  readOnlyNotice?: string;
+  /**
+   * Surface-appropriate publish confirm() copy. Defaults to the admin wording
+   * ("…available to assign to clients") — client-portal pages pass their own
+   * since clients don't assign templates to clients.
+   */
+  publishConfirmMessage?: string;
   saveDraftAction: (templateId: string, rawSchema: unknown, templateName: string) => Promise<void>;
   publishTemplateAction: (templateId: string, rawSchema: unknown, templateName: string) => Promise<void>;
   backHref?: string;
@@ -111,6 +121,9 @@ export function TemplateBuilderClient({
   hasDraft,
   publishedVersionNumber,
   surface = "dark",
+  readOnly = false,
+  readOnlyNotice,
+  publishConfirmMessage,
   saveDraftAction,
   publishTemplateAction,
   backHref,
@@ -246,7 +259,8 @@ export function TemplateBuilderClient({
     if (publishBlocked) return; // Guard: blocked by cycle error
     if (
       !confirm(
-        `Publish v${versionNumber}? This version will become immutable and be available to assign to clients.`
+        publishConfirmMessage ??
+          `Publish v${versionNumber}? This version will become immutable and be available to assign to clients.`
       )
     )
       return;
@@ -320,6 +334,7 @@ export function TemplateBuilderClient({
           <input
             type="text"
             value={name}
+            disabled={readOnly}
             onChange={(e) => {
               setName(e.target.value);
               setSavedState(false);
@@ -346,6 +361,11 @@ export function TemplateBuilderClient({
               UNPUBLISHED EDITS
             </Badge>
           )}
+          {readOnly && (
+            <Badge className="bg-white/10 text-white/60 border-white/20 text-[10px] font-mono shrink-0">
+              READ ONLY{readOnlyNotice ? ` · ${readOnlyNotice.toUpperCase()}` : ""}
+            </Badge>
+          )}
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
@@ -360,6 +380,8 @@ export function TemplateBuilderClient({
             </span>
           )}
 
+          {!readOnly && (
+          <>
           <Button
             variant="ghost"
             size="sm"
@@ -397,15 +419,20 @@ export function TemplateBuilderClient({
               )}
             </Tooltip>
           </TooltipProvider>
+          </>
+          )}
         </div>
       </div>
 
       {/* Builder body: three columns */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Field palette — w-56 */}
-        <div className={cn("w-56 border-r overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
-          <FieldPalette onAddEntity={handleAddEntity} surface={surface} />
-        </div>
+        {/* Left: Field palette — w-56. Hidden in read-only mode: a viewer can't
+            add fields, and showing the palette implies the form is editable. */}
+        {!readOnly && (
+          <div className={cn("w-56 border-r overflow-y-auto shrink-0", t.panel, t.columnDivider)}>
+            <FieldPalette onAddEntity={handleAddEntity} surface={surface} />
+          </div>
+        )}
 
         {/* Center: Canvas column */}
         <div className={cn("flex-1 flex flex-col overflow-hidden", t.canvasBg)}>
@@ -430,7 +457,7 @@ export function TemplateBuilderClient({
             <span className="font-mono uppercase tracking-wider">
               {fieldCount} field{fieldCount !== 1 ? "s" : ""}
             </span>
-            {!savedState && (
+            {!savedState && !readOnly && (
               <span
                 className={cn(
                   "font-mono uppercase tracking-wider animate-pulse",

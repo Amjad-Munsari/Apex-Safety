@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardList, Users } from "lucide-react"
+import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardList, Users, Eye } from "lucide-react"
 import Link from "next/link"
 import { AssignTemplateModal } from "@/components/admin/assign-template-modal"
 import { RevokeAssignmentButton } from "@/app/admin/assignments/revoke-assignment-button"
@@ -614,6 +614,15 @@ export function ClientTabs({
                     >
                       {t.is_published ? "Published" : "Draft"}
                     </span>
+                    {/* Read-only structure view — /admin/templates/[id] renders the
+                        builder in read-only mode for customer-owned templates. */}
+                    <Link
+                      href={`/admin/templates/${t.id}`}
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-white/10 hover:border-white/25 text-white/70 hover:text-white font-mono text-[10px] uppercase tracking-widest transition-colors shrink-0"
+                    >
+                      <Eye className="w-3 h-3" />
+                      View
+                    </Link>
                   </div>
                 ))}
               </div>

@@ -18,11 +18,18 @@ export default async function TemplateBuilderPage({ params }: Props) {
 
   const { data: template } = await supabase
     .from("form_templates")
-    .select("id, name, template_type, is_published")
+    .select("id, name, template_type, is_published, owner_type")
     .eq("id", id)
     .single();
 
   if (!template) notFound();
+
+  // Customer-owned templates (built from scratch or forked from a master) are
+  // visible to Matt read-only: viewing the structure is fine, but editing,
+  // publishing, deleting, or assigning a client's own template is not. The
+  // server actions also reject mutations on owner_type='customer' rows — this
+  // flag keeps the UI honest about it.
+  const readOnly = template.owner_type === "customer";
 
   // Load all versions ordered by version_number desc (latest first)
   const { data: versions } = await supabase
@@ -38,15 +45,18 @@ export default async function TemplateBuilderPage({ params }: Props) {
   const currentVersionNumber = latestVersion?.version_number ?? 1;
   const hasDraft = !!(latestVersion && !latestVersion.published_at);
 
-  // Fetch clients for the assign modal (service-role — admin page)
-  const { data: clients } = await adminClient
-    .from("clients")
-    .select("id, name")
-    .is("deleted_at", null)
-    // Deactivated clients are frozen — keep them out of the assign picker
-    // (createAssignments also blocks them server-side).
-    .eq("active", true)
-    .order("name");
+  // Fetch clients for the assign modal (service-role — admin page). Skipped in
+  // read-only mode: admin can't assign a customer's own template.
+  const { data: clients } = readOnly
+    ? { data: null }
+    : await adminClient
+        .from("clients")
+        .select("id, name")
+        .is("deleted_at", null)
+        // Deactivated clients are frozen — keep them out of the assign picker
+        // (createAssignments also blocks them server-side).
+        .eq("active", true)
+        .order("name");
 
   return (
     <BuilderLoader
@@ -59,14 +69,18 @@ export default async function TemplateBuilderPage({ params }: Props) {
       hasDraft={hasDraft}
       publishedVersionNumber={latestPublished?.version_number ?? null}
       surface="dark"
+      readOnly={readOnly}
+      readOnlyNotice="Client-owned template"
       saveDraftAction={saveDraftAction}
       publishTemplateAction={publishTemplateAction}
       assignButton={
-        <AssignTemplateModal
-          templateId={id}
-          clients={clients ?? []}
-          triggerLabel="Assign to clients"
-        />
+        readOnly ? undefined : (
+          <AssignTemplateModal
+            templateId={id}
+            clients={clients ?? []}
+            triggerLabel="Assign to clients"
+          />
+        )
       }
     />
   );

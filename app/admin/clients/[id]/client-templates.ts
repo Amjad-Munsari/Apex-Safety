@@ -4,10 +4,12 @@
 // Matt's masters. Admin sees them read-only (RLS form_templates_admin_all already
 // grants the read; the page uses the service-role adminClient).
 //
-// Supabase can return the self-referential `parent:form_templates!parent_template_id(name)`
-// embed as an ARRAY or an OBJECT depending on how it infers the relationship —
-// the same footgun handled for the assignment/assessment joins in page.tsx.
-// Normalize to a flat, render-safe shape so the panel can't blow up.
+// Fork lineage comes from an explicit parentNames map (parent_template_id →
+// master name) built by a second query in page.tsx. We deliberately do NOT use
+// the PostgREST self-referential embed form_templates!parent_template_id(name):
+// verified against the live DB, PostgREST resolves that embed in the CHILDREN
+// direction, so it always returned [] and the "Cloned from …" badge never named
+// the master.
 
 export interface ClientBuiltTemplate {
   id: string
@@ -17,26 +19,25 @@ export interface ClientBuiltTemplate {
   created_at: string
   /** The master this was forked from, or null if built from scratch. */
   parent_template_id: string | null
-  /** Display name of the parent master, when the join resolved it. */
+  /** Display name of the parent master, when the lookup resolved it. */
   parentName: string | null
 }
 
 export function normalizeClientTemplateRows(
-  rows: unknown[] | null | undefined
+  rows: unknown[] | null | undefined,
+  parentNames: Record<string, string> = {}
 ): ClientBuiltTemplate[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (rows ?? []).map((raw: any) => {
-    const parent = Array.isArray(raw.parent)
-      ? raw.parent[0] ?? null
-      : raw.parent ?? null
+    const parentId: string | null = raw.parent_template_id ?? null
     return {
       id: raw.id,
       name: raw.name,
       template_type: raw.template_type,
       is_published: !!raw.is_published,
       created_at: raw.created_at,
-      parent_template_id: raw.parent_template_id ?? null,
-      parentName: parent?.name ?? null,
+      parent_template_id: parentId,
+      parentName: (parentId && parentNames[parentId]) || null,
     }
   })
 }
