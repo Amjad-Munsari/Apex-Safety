@@ -11,6 +11,7 @@ import {
   getReportsAwaitingReview,
   getUpcomingExpiries,
   getComplianceAggregates,
+  getComplianceBreakdown,
   getWorkflowErrors
 } from "@/lib/supabase/dashboard";
 
@@ -20,11 +21,12 @@ export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
   // Fetch live dashboard metrics — all queries are independent, run in parallel
-  const [stats, reviewQueue, upcomingExpiries, compliance, recentErrors, clientsRes, allProposalsRes] = await Promise.all([
+  const [stats, reviewQueue, upcomingExpiries, compliance, complianceBreakdown, recentErrors, clientsRes, allProposalsRes] = await Promise.all([
     getDashboardStats(),
     getReportsAwaitingReview(),
     getUpcomingExpiries(6),
     getComplianceAggregates(),
+    getComplianceBreakdown(),
     getWorkflowErrors(),
     supabase
       .from("clients")
@@ -275,19 +277,7 @@ export default async function AdminDashboardPage() {
             <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">{compliance.total} Docs</span>
           </div>
 
-          <ComplianceChart data={complianceData} />
-
-          <div className="flex justify-center gap-6 mt-4 font-mono text-[10px] text-white/80">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-teal"></div> Current {compliance.current}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#d4a373]"></div> Expiring {compliance.expiring}
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#e63946]"></div> Expired {compliance.expired}
-            </div>
-          </div>
+          <ComplianceChart data={complianceData} breakdown={complianceBreakdown} />
         </Card>
 
         {/* 05 HOURS BALANCES */}

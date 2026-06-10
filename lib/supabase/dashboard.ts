@@ -183,6 +183,56 @@ export async function getComplianceAggregates() {
   return { current, expiring, expired, undated, total }
 }
 
+export type ComplianceDocSummary = {
+  id: string
+  filename: string
+  expiryDate: string | null
+  clientName: string
+}
+
+export type ComplianceBreakdown = {
+  Current: ComplianceDocSummary[]
+  Expiring: ComplianceDocSummary[]
+  Expired: ComplianceDocSummary[]
+}
+
+/**
+ * Per-document breakdown behind the compliance donut. Buckets use the same
+ * expiry windows as getComplianceAggregates (expired < now <= expiring <
+ * now+30d <= current); undated documents are excluded, matching the chart.
+ */
+export const getComplianceBreakdown = cache(async (): Promise<ComplianceBreakdown> => {
+  const now = Date.now()
+  const thirtyDaysFromNow = now + 30 * 24 * 60 * 60 * 1000
+
+  const { data, error } = await adminClient
+    .from("documents")
+    .select("id, filename, expiry_date, client:clients(name)")
+    .not("expiry_date", "is", null)
+    .order("expiry_date", { ascending: true })
+
+  const breakdown: ComplianceBreakdown = { Current: [], Expiring: [], Expired: [] }
+
+  if (error) {
+    console.error("getComplianceBreakdown error:", { code: error.code, message: error.message })
+    return breakdown
+  }
+
+  for (const row of data ?? []) {
+    const t = new Date(row.expiry_date as string).getTime()
+    if (isNaN(t)) continue
+    const bucket = t < now ? "Expired" : t < thirtyDaysFromNow ? "Expiring" : "Current"
+    breakdown[bucket].push({
+      id: row.id as string,
+      filename: (row.filename as string | null) || "Untitled document",
+      expiryDate: row.expiry_date as string | null,
+      clientName: embedName(row.client) || "Unassigned",
+    })
+  }
+
+  return breakdown
+})
+
 export type WorkflowErrorDetail = { label: string; value: string }
 
 export type WorkflowErrorWithDetails = {
