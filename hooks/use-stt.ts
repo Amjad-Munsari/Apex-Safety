@@ -1,124 +1,160 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react"
 
-type SpeechRecognitionCtor = new () => SpeechRecognitionLike
+// Dictation hook backing components/forms/mic-button.tsx.
+//
+// Records with MediaRecorder, converts to WAV in the browser and sends it to
+// POST /api/transcribe (OpenRouter, server-side key). This replaces the old
+// Web Speech API implementation, which only worked in desktop Chrome/Edge
+// with Google's speech service reachable — everywhere else the mic was dead.
 
-interface SpeechRecognitionLike {
-  continuous: boolean
-  interimResults: boolean
-  lang: string
-  onresult: ((event: SpeechRecognitionResultEvent) => void) | null
-  onend: ((event: Event) => void) | null
-  onerror: ((event: { error: string }) => void) | null
-  start: () => void
-  stop: () => void
-  abort: () => void
-}
+const MAX_RECORDING_MS = 120_000 // matches the 2-minute cap enforced by the route
 
-interface SpeechRecognitionResultEvent {
-  resultIndex: number
-  results: ArrayLike<{
-    isFinal: boolean
-    0: { transcript: string }
-  }>
-}
-
-function getRecognitionCtor(): SpeechRecognitionCtor | null {
-  if (typeof window === "undefined") return null
-  const w = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionCtor
-    webkitSpeechRecognition?: SpeechRecognitionCtor
+function pickMimeType(): string | undefined {
+  if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported) return undefined
+  // Chromium/Firefox record webm/opus; Safari records mp4/AAC. Both decode
+  // fine in lib/audio/wav.ts before upload.
+  for (const type of ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"]) {
+    if (MediaRecorder.isTypeSupported(type)) return type
   }
-  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null
+  return undefined
 }
+
+// Browser capability, read via useSyncExternalStore so SSR renders "supported"
+// and the client corrects it during hydration without a setState-in-effect.
+const subscribeNever = () => () => {}
+const isRecordingSupported = () =>
+  typeof MediaRecorder !== "undefined" && !!navigator.mediaDevices?.getUserMedia
 
 export function useSTT() {
   const [isRecording, setIsRecording] = useState(false)
+  const [isTranscribing, setIsTranscribing] = useState(false)
   const [transcript, setTranscript] = useState("")
-  const [isTranscribing] = useState(false)
-  const [supported, setSupported] = useState(true)
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null)
-  const finalRef = useRef<string>("")
+  const [error, setError] = useState<string | null>(null)
+  const supported = useSyncExternalStore(subscribeNever, isRecordingSupported, () => true)
+
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const streamRef = useRef<MediaStream | null>(null)
+  const stopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mountedRef = useRef(true)
 
   useEffect(() => {
-    setSupported(!!getRecognitionCtor())
+    mountedRef.current = true
     return () => {
-      recognitionRef.current?.abort()
+      mountedRef.current = false
+      if (stopTimerRef.current) clearTimeout(stopTimerRef.current)
+      const recorder = recorderRef.current
+      if (recorder && recorder.state !== "inactive") {
+        recorder.onstop = null // unmounting — discard, don't transcribe
+        recorder.stop()
+      }
+      streamRef.current?.getTracks().forEach((track) => track.stop())
     }
   }, [])
 
+  const releaseStream = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    streamRef.current = null
+  }
+
+  const transcribe = async (blob: Blob) => {
+    setIsTranscribing(true)
+    try {
+      const { blobToWav } = await import("@/lib/audio/wav")
+      const wav = await blobToWav(blob)
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "audio/wav" },
+        body: wav,
+      })
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(body?.error ?? `Transcription failed (${res.status}).`)
+      }
+      const { text } = (await res.json()) as { text: string }
+      if (!mountedRef.current) return
+      if (text) {
+        setTranscript(text)
+      } else {
+        setError("No speech detected — try again, closer to the microphone.")
+      }
+    } catch (err) {
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : "Transcription failed. Please try again.")
+      }
+    } finally {
+      if (mountedRef.current) setIsTranscribing(false)
+    }
+  }
+
   const startRecording = async () => {
-    const Ctor = getRecognitionCtor()
-    if (!Ctor) {
-      setSupported(false)
+    if (isRecording || isTranscribing || !isRecordingSupported()) return
+    setError(null)
+
+    let stream: MediaStream
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      setError("Microphone access was blocked. Allow the microphone for this site and try again.")
       return
     }
 
-    finalRef.current = ""
+    streamRef.current = stream
+    const mimeType = pickMimeType()
+    const recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream)
+    chunksRef.current = []
 
-    const recognition = new Ctor()
-    recognition.continuous = false
-    recognition.interimResults = true
-    recognition.lang = "en-GB"
-
-    recognition.onresult = (event) => {
-      let interim = ""
-      let final = ""
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i]
-        const text = result[0].transcript
-        if (result.isFinal) {
-          final += text
-        } else {
-          interim += text
-        }
-      }
-      if (final) {
-        finalRef.current = (finalRef.current + " " + final).trim()
-      }
-      // Show running text — final words plus interim for live feedback.
-      const live = (finalRef.current + " " + interim).trim()
-      if (live) setTranscript(live)
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) chunksRef.current.push(event.data)
     }
-
-    recognition.onend = () => {
+    recorder.onstop = () => {
+      if (stopTimerRef.current) {
+        clearTimeout(stopTimerRef.current)
+        stopTimerRef.current = null
+      }
+      releaseStream()
+      recorderRef.current = null
+      if (!mountedRef.current) return
       setIsRecording(false)
-      // Commit the final transcript on end so the consumer's effect fires once with stable text.
-      if (finalRef.current) {
-        setTranscript(finalRef.current)
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" })
+      chunksRef.current = []
+      if (blob.size === 0) {
+        setError("No audio was captured. Please try again.")
+        return
       }
-      recognitionRef.current = null
+      void transcribe(blob)
     }
 
-    recognition.onerror = (event) => {
-      setIsRecording(false)
-      recognitionRef.current = null
-      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-        setSupported(false)
+    recorderRef.current = recorder
+    recorder.start()
+    setIsRecording(true)
+    stopTimerRef.current = setTimeout(() => {
+      if (recorderRef.current && recorderRef.current.state !== "inactive") {
+        recorderRef.current.stop()
       }
-    }
-
-    recognitionRef.current = recognition
-    try {
-      recognition.start()
-      setIsRecording(true)
-    } catch {
-      setIsRecording(false)
-    }
+    }, MAX_RECORDING_MS)
   }
 
   const stopRecording = () => {
-    recognitionRef.current?.stop()
+    const recorder = recorderRef.current
+    if (recorder && recorder.state !== "inactive") {
+      recorder.stop()
+    }
   }
+
+  const clearError = useCallback(() => setError(null), [])
 
   return {
     isRecording,
-    transcript,
     isTranscribing,
+    transcript,
+    error,
     supported,
     startRecording,
     stopRecording,
     setTranscript,
+    clearError,
   }
 }

@@ -28,22 +28,30 @@ export function MicButton({ className, onTranscript, surface = "dark" }: MicButt
     stopRecording,
     transcript,
     setTranscript,
+    error,
+    clearError,
   } = useSTT()
 
-  // Only commit when recording has stopped — interim updates would spam the
-  // consumer with partial text.
+  // The transcript arrives once, after the server round-trip completes.
   const lastCommittedRef = React.useRef("")
   React.useEffect(() => {
-    if (!isRecording && transcript && transcript !== lastCommittedRef.current) {
+    if (!isRecording && !isTranscribing && transcript && transcript !== lastCommittedRef.current) {
       lastCommittedRef.current = transcript
       onTranscript(transcript)
       setTranscript("")
     }
-  }, [isRecording, transcript, onTranscript, setTranscript])
+  }, [isRecording, isTranscribing, transcript, onTranscript, setTranscript])
+
+  React.useEffect(() => {
+    if (error) {
+      toast.error(error)
+      clearError()
+    }
+  }, [error, clearError])
 
   const handleClick = () => {
     if (!supported) {
-      toast.error("Speech-to-text isn't available in this browser. Try Chrome or Edge on desktop.")
+      toast.error("Audio recording isn't available in this browser. Update it or check microphone permissions.")
       return
     }
     if (isRecording) {
@@ -58,15 +66,20 @@ export function MicButton({ className, onTranscript, surface = "dark" }: MicButt
     <div className={cn("absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2", className)}>
       {isRecording && (
         <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-amber-500 animate-pulse">
-          Listening…
+          Recording…
+        </span>
+      )}
+      {isTranscribing && (
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-amber-500 animate-pulse">
+          Transcribing…
         </span>
       )}
       <Button
         type="button"
         size="icon"
         variant="ghost"
-        title={supported ? (isRecording ? "Stop recording" : "Speak to dictate") : "Speech-to-text not supported in this browser"}
-        aria-label={supported ? (isRecording ? "Stop recording" : "Speak to dictate") : "Speech-to-text not supported in this browser"}
+        title={supported ? (isRecording ? "Stop recording" : "Speak to dictate") : "Audio recording not supported in this browser"}
+        aria-label={supported ? (isRecording ? "Stop recording" : "Speak to dictate") : "Audio recording not supported in this browser"}
         className={cn(
           "h-8 w-8 rounded-full transition-all duration-300",
           isRecording && "bg-amber-500/20 text-amber-500 animate-pulse scale-110",
