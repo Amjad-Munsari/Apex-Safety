@@ -51,6 +51,9 @@ export default async function ClientTemplateBuilderPage({ params }: Props) {
       hasDraft={hasDraft}
       publishedVersionNumber={latestPublished?.version_number ?? null}
       surface="cream"
+      // Client-facing copy: the default admin wording says "available to assign
+      // to clients", which is meaningless (and confusing) for portal users.
+      publishConfirmMessage={`Publish v${currentVersionNumber}? This will make the template live and available for you to start new assessments.`}
       saveDraftAction={saveClientDraftAction}
       publishTemplateAction={publishClientTemplateAction}
     />
