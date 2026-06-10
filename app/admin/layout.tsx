@@ -1,30 +1,17 @@
+import { Suspense } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { SidebarStats } from "@/components/admin/sidebar-stats";
 import { BrandingProvider } from "@/components/branding-provider";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { getDashboardStats } from "@/lib/supabase/dashboard";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const stats = await getDashboardStats();
-
-  const sidebarStats = {
-    clients: stats.clientCount,
-    expiries: stats.totalExpiries,
-    reports: stats.reviewCount,
-    compliance: stats.totalDocCount,
-    proposals: stats.proposalCount,
-    errors: stats.errorCount,
-  };
-
-  console.log('--- Sidebar Stats Audit ---');
-  console.log(sidebarStats);
-
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
@@ -36,7 +23,9 @@ export default async function AdminLayout({
     <SidebarProvider>
       <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
         <BrandingProvider />
-        <AppSidebar stats={sidebarStats} />
+        <Suspense fallback={<AppSidebar stats={{ clients: 0, expiries: 0, reports: 0, compliance: 0, proposals: 0, errors: 0 }} />}>
+          <SidebarStats />
+        </Suspense>
         <div className="flex-1 flex flex-col h-full max-h-full min-h-0 overflow-hidden">
           {/* Top Bar */}
           <header className="h-[72px] min-h-[72px] flex items-center justify-between px-8 border-b border-white/5 shrink-0 bg-background/50">

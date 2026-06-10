@@ -26,17 +26,93 @@ export default async function ClientDetailsPage({
     notFound()
   }
 
-  const { data: documents } = await adminClient
-    .from("documents")
-    .select("*")
-    .eq("client_id", id)
-    .order("uploaded_at", { ascending: false })
+  const [
+    documentsRes,
+    proposalRes,
+    hoursRes,
+    assignmentRes,
+    clientUsersRes,
+    publishedRes,
+    clientTemplatesRes,
+    submissionRes,
+  ] = await Promise.all([
+    adminClient
+      .from("documents")
+      .select("*")
+      .eq("client_id", id)
+      .order("uploaded_at", { ascending: false }),
+    adminClient
+      .from("proposals")
+      .select("*")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+    // Hours transactions, oldest first so we can compute a running balance.
+    adminClient
+      .from("hours_transactions")
+      .select("id, transaction_type, hours_amount, notes, created_at")
+      .eq("client_id", id)
+      .order("created_at", { ascending: true }),
+    // Assignments for this client — filtered by deleted_at IS NULL (T-16-08).
+    adminClient
+      .from("form_assignments")
+      .select("id, status, due_date, instructions, created_at, template_version_id, template:form_templates(id, name)")
+      .eq("client_id", id)
+      .is("deleted_at", null)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: false }),
+    // Portal users with access to this client org (Access tab).
+    adminClient
+      .from("client_users")
+      .select("id, name, email, role, created_at")
+      .eq("client_id", id)
+      .order("created_at", { ascending: true }),
+    // Published templates — for the "Assign template" modal in the Assigned Forms tab.
+    adminClient
+      .from("form_templates")
+      .select("id, name")
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .order("name"),
+    // Client-built forms — templates this client owns (built from scratch or
+    // forked from a master). The "Assigned forms" tab surfaces them read-only so
+    // Matt has full visibility into self-serve activity (spec 2.6). Admin reads
+    // are permitted by RLS form_templates_admin_all; adminClient bypasses RLS
+    // anyway, so the explicit owner_type/owner_id filter is the scope guard.
+    // parent:form_templates!parent_template_id(name) surfaces fork lineage.
+    adminClient
+      .from("form_templates")
+      .select(
+        "id, name, template_type, is_published, created_at, parent_template_id, parent:form_templates!parent_template_id(name)"
+      )
+      .eq("owner_type", "customer")
+      .eq("owner_id", id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    // Assessments are form_submissions for this client. We join template_versions
+    // → form_templates to surface the template name in the UI.
+    adminClient
+      .from("form_submissions")
+      .select(`
+        id,
+        status,
+        created_at,
+        submitted_at,
+        template:template_versions(
+          form_template:form_templates(name)
+        )
+      `)
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
+  ])
 
-  const { data: proposalRows } = await adminClient
-    .from("proposals")
-    .select("*")
-    .eq("client_id", id)
-    .order("created_at", { ascending: false })
+  const { data: documents } = documentsRes
+  const { data: proposalRows } = proposalRes
+  const { data: hoursRows } = hoursRes
+  const { data: assignmentRows } = assignmentRes
+  const { data: clientUsers } = clientUsersRes
+  const { data: publishedTemplates, error: publishedTemplatesError } = publishedRes
+  const { data: clientTemplateRows, error: clientTemplatesError } = clientTemplatesRes
+  const { data: submissionRows } = submissionRes
 
   // pdfUrl removed — ClientTabs links to /admin/proposals/[id] for the detail
   // view where signed URLs are computed fresh. Computing them here was dead
@@ -49,13 +125,6 @@ export default async function ClientDetailsPage({
     total: (p as { total_price?: number }).total_price || calculateProposalTotal(p.services_json),
     pdfUrl: null as string | null,
   }))
-
-  // Hours transactions, oldest first so we can compute a running balance.
-  const { data: hoursRows } = await adminClient
-    .from("hours_transactions")
-    .select("id, transaction_type, hours_amount, notes, created_at")
-    .eq("client_id", id)
-    .order("created_at", { ascending: true })
 
   let running = 0
   const hoursLogChronological = (hoursRows ?? []).map((row) => {
@@ -72,22 +141,6 @@ export default async function ClientDetailsPage({
   // Newest first for the UI.
   const hoursLog = hoursLogChronological.reverse()
 
-  // Assignments for this client — filtered by deleted_at IS NULL (T-16-08).
-  const { data: assignmentRows } = await adminClient
-    .from("form_assignments")
-    .select("id, status, due_date, instructions, created_at, template_version_id, template:form_templates(id, name)")
-    .eq("client_id", id)
-    .is("deleted_at", null)
-    .order("due_date", { ascending: true, nullsFirst: false })
-    .order("created_at", { ascending: false })
-
-  // Portal users with access to this client org (Access tab).
-  const { data: clientUsers } = await adminClient
-    .from("client_users")
-    .select("id, name, email, role, created_at")
-    .eq("client_id", id)
-    .order("created_at", { ascending: true })
-
   // Supabase can return the `template:form_templates(id, name)` join as an
   // ARRAY instead of an object; normalize to the object-or-null shape the
   // AssignmentRow type expects so `assignment.template?.name` can't blow up
@@ -99,14 +152,6 @@ export default async function ClientDetailsPage({
     template: Array.isArray(row.template) ? row.template[0] ?? null : row.template ?? null,
   }))
 
-  // Published templates — for the "Assign template" modal in the Assigned Forms tab.
-  const { data: publishedTemplates, error: publishedTemplatesError } = await adminClient
-    .from("form_templates")
-    .select("id, name")
-    .eq("is_published", true)
-    .is("deleted_at", null)
-    .order("name")
-
   // Don't fail silently: a query error here (e.g. schema drift) previously
   // emptied the picker with no signal. Surface it in logs so it's diagnosable.
   if (publishedTemplatesError) {
@@ -116,22 +161,6 @@ export default async function ClientDetailsPage({
     )
   }
 
-  // Client-built forms — templates this client owns (built from scratch or
-  // forked from a master). The "Assigned forms" tab surfaces them read-only so
-  // Matt has full visibility into self-serve activity (spec 2.6). Admin reads
-  // are permitted by RLS form_templates_admin_all; adminClient bypasses RLS
-  // anyway, so the explicit owner_type/owner_id filter is the scope guard.
-  // parent:form_templates!parent_template_id(name) surfaces fork lineage.
-  const { data: clientTemplateRows, error: clientTemplatesError } = await adminClient
-    .from("form_templates")
-    .select(
-      "id, name, template_type, is_published, created_at, parent_template_id, parent:form_templates!parent_template_id(name)"
-    )
-    .eq("owner_type", "customer")
-    .eq("owner_id", id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-
   if (clientTemplatesError) {
     console.error(
       "[admin/clients/[id]] clientTemplates query failed — Client-built forms panel will be empty:",
@@ -140,22 +169,6 @@ export default async function ClientDetailsPage({
   }
 
   const clientTemplates = normalizeClientTemplateRows(clientTemplateRows)
-
-  // Assessments are form_submissions for this client. We join template_versions
-  // → form_templates to surface the template name in the UI.
-  const { data: submissionRows } = await adminClient
-    .from("form_submissions")
-    .select(`
-      id,
-      status,
-      created_at,
-      submitted_at,
-      template:template_versions(
-        form_template:form_templates(name)
-      )
-    `)
-    .eq("client_id", id)
-    .order("created_at", { ascending: false })
 
   const assessments = (submissionRows ?? []).map((row: any) => {
     const templateName: string =

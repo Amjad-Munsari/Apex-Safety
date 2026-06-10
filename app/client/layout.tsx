@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import { BrandingProvider } from "@/components/branding-provider";
-import { getClientContextWithIdentity } from "@/lib/auth-helpers";
 import { ClientPortalNav } from "./_components/client-portal-nav";
+import { ClientIdentityNav } from "./_components/client-identity-nav";
 
 export const dynamic = "force-dynamic";
 
@@ -9,16 +10,12 @@ export default async function ClientLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const identity = await getClientContextWithIdentity();
-
   return (
     <div data-surface="client" className="min-h-screen bg-[#fbfaf5] text-[#1a1a1a] font-sans antialiased text-sm">
       <BrandingProvider />
-      <ClientPortalNav
-        orgName={identity?.orgName ?? "—"}
-        userName={identity?.userName ?? "—"}
-        userRole={identity?.role ?? "—"}
-      />
+      <Suspense fallback={<ClientPortalNav orgName="—" userName="—" userRole="—" />}>
+        <ClientIdentityNav />
+      </Suspense>
 
       {/* Main Content */}
       <main className="max-w-[1024px] mx-auto px-6 py-8">

@@ -19,33 +19,35 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
 
-  // Fetch live dashboard metrics
-  const stats = await getDashboardStats();
-  const reviewQueue = await getReportsAwaitingReview();
-  const upcomingExpiries = await getUpcomingExpiries(6);
-  const compliance = await getComplianceAggregates();
-  const recentErrors = await getWorkflowErrors();
+  // Fetch live dashboard metrics — all queries are independent, run in parallel
+  const [stats, reviewQueue, upcomingExpiries, compliance, recentErrors, clientsRes, allProposalsRes] = await Promise.all([
+    getDashboardStats(),
+    getReportsAwaitingReview(),
+    getUpcomingExpiries(6),
+    getComplianceAggregates(),
+    getWorkflowErrors(),
+    supabase
+      .from("clients")
+      .select(`
+        *,
+        documents (
+          expiry_date,
+          document_category,
+          filename
+        ),
+        proposals (
+          status
+        )
+      `)
+      .order("name", { ascending: true })
+      .limit(50),
+    supabase
+      .from("proposals")
+      .select("status"),
+  ]);
 
-  const { data: clients } = await supabase
-    .from("clients")
-    .select(`
-      *,
-      documents (
-        expiry_date,
-        document_category,
-        filename
-      ),
-      proposals (
-        status
-      )
-    `)
-    .order("name", { ascending: true })
-    .limit(50);
-
-  // Fetch ALL proposals for the pipeline summary counts
-  const { data: allProposals } = await supabase
-    .from("proposals")
-    .select("status");
+  const clients = clientsRes.data;
+  const allProposals = allProposalsRes.data;
 
   const complianceData = [
     { name: 'Current', value: compliance.current, color: 'var(--teal)' },

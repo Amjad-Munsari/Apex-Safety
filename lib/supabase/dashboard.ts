@@ -1,56 +1,69 @@
+import { cache } from "react"
 import { adminClient } from "./admin"
 
-export async function getDashboardStats() {
+export const getDashboardStats = cache(async () => {
   const now = new Date().toISOString()
   const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-
-  // 1. Overdue Docs
-  const { count: overdueCount, error: e1 } = await adminClient
-    .from("documents")
-    .select("*", { count: "exact", head: true })
-    .lt("expiry_date", now)
-
-  // 2. Expiring Docs (next 30 days)
-  const { count: expiringCount, error: e2 } = await adminClient
-    .from("documents")
-    .select("*", { count: "exact", head: true })
-    .gte("expiry_date", now)
-    .lt("expiry_date", thirtyDaysFromNow)
-
-  // 3. Drafts to Review
-  const { count: reviewCount, error: e3 } = await adminClient
-    .from("form_submissions")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "draft_ready_for_review")
-
-  // 4. Workflow Errors (last 24h)
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
-  const { count: errorCount, error: e4 } = await adminClient
-    .from("workflow_errors")
-    .select("*", { count: "exact", head: true })
-    .gte("created_at", yesterday)
 
-  // 5. Total Clients
-  const { count: clientCount, error: e5 } = await adminClient
-    .from("clients")
-    .select("*", { count: "exact", head: true })
+  const [
+    overdueRes,
+    expiringRes,
+    reviewRes,
+    errorRes,
+    clientRes,
+    proposalRes,
+    totalDocRes,
+  ] = await Promise.all([
+    // 1. Overdue Docs
+    adminClient
+      .from("documents")
+      .select("*", { count: "exact", head: true })
+      .lt("expiry_date", now),
+    // 2. Expiring Docs (next 30 days)
+    adminClient
+      .from("documents")
+      .select("*", { count: "exact", head: true })
+      .gte("expiry_date", now)
+      .lt("expiry_date", thirtyDaysFromNow),
+    // 3. Drafts to Review
+    adminClient
+      .from("form_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "draft_ready_for_review"),
+    // 4. Workflow Errors (last 24h)
+    adminClient
+      .from("workflow_errors")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", yesterday),
+    // 5. Total Clients
+    adminClient
+      .from("clients")
+      .select("*", { count: "exact", head: true }),
+    // 6. Total Proposals
+    adminClient
+      .from("proposals")
+      .select("*", { count: "exact", head: true }),
+    // 7. Total Documents (for compliance badge)
+    adminClient
+      .from("documents")
+      .select("*", { count: "exact", head: true }),
+  ])
 
-  // 6. Total Proposals
-  const { count: proposalCount, error: e6 } = await adminClient
-    .from("proposals")
-    .select("*", { count: "exact", head: true })
+  const overdueCount = overdueRes.count
+  const expiringCount = expiringRes.count
+  const reviewCount = reviewRes.count
+  const errorCount = errorRes.count
+  const clientCount = clientRes.count
+  const proposalCount = proposalRes.count
+  const totalDocCount = totalDocRes.count
 
-  if (e1) console.error(`Dashboard stats error (overdue): ${e1.message}`)
-  if (e2) console.error(`Dashboard stats error (expiring): ${e2.message}`)
-  if (e3) console.error(`Dashboard stats error (review): ${e3.message}`)
-  if (e4) console.error(`Dashboard stats error (errors): ${e4.message}`)
-  if (e5) console.error(`Dashboard stats error (clients): ${e5.message}`)
-  if (e6) console.error(`Dashboard stats error (proposals): ${e6.message}`)
-
-  // 7. Total Documents (for compliance badge)
-  const { count: totalDocCount } = await adminClient
-    .from("documents")
-    .select("*", { count: "exact", head: true })
+  if (overdueRes.error) console.error(`Dashboard stats error (overdue): ${overdueRes.error.message}`)
+  if (expiringRes.error) console.error(`Dashboard stats error (expiring): ${expiringRes.error.message}`)
+  if (reviewRes.error) console.error(`Dashboard stats error (review): ${reviewRes.error.message}`)
+  if (errorRes.error) console.error(`Dashboard stats error (errors): ${errorRes.error.message}`)
+  if (clientRes.error) console.error(`Dashboard stats error (clients): ${clientRes.error.message}`)
+  if (proposalRes.error) console.error(`Dashboard stats error (proposals): ${proposalRes.error.message}`)
 
   return {
     overdueCount: overdueCount || 0,
@@ -63,7 +76,7 @@ export async function getDashboardStats() {
     totalDocCount: totalDocCount || 0,
     totalItemsNeeded: (overdueCount || 0) + (reviewCount || 0)
   }
-}
+})
 
 export async function getReportsAwaitingReview(limit: number = 3) {
   const { data, error } = await adminClient

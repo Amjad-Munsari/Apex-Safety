@@ -1,3 +1,4 @@
+import { cache } from "react"
 import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 
@@ -9,13 +10,13 @@ export async function getSession() {
   return session
 }
 
-export async function getUser() {
+export const getUser = cache(async () => {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
   return user
-}
+})
 
 export async function isDemoMode() {
   // Never honor the demo cookie in production. Demo mode synthesizes a client
@@ -92,7 +93,7 @@ export interface ClientIdentity {
  * Security contract (T-19-01): prod path scopes the client_users lookup by
  * auth.uid() — never by a user-supplied client_id.
  */
-export async function getClientContextWithIdentity(): Promise<ClientIdentity | null> {
+export const getClientContextWithIdentity = cache(async (): Promise<ClientIdentity | null> => {
   const supabase = await createClient()
 
   if (await isDemoMode()) {
@@ -132,7 +133,7 @@ export async function getClientContextWithIdentity(): Promise<ClientIdentity | n
     orgName: (clientRow as { name?: string } | null)?.name ?? "—",
     userName: (data.name as string) || (data.email as string) || "—",
   }
-}
+})
 
 /**
  * Admin-role gate for MUTATING server actions that write via the service-role
@@ -166,7 +167,7 @@ export async function requireAdmin(): Promise<string | null> {
   return user.id
 }
 
-export async function getClientContext() {
+export const getClientContext = cache(async () => {
   const supabase = await createClient()
 
   if (await isDemoMode()) {
@@ -195,4 +196,4 @@ export async function getClientContext() {
 
   if (error || !data) return null
   return data
-}
+})
