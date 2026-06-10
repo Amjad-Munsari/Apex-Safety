@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { draftProposalScope, createProposal } from '@/app/admin/proposals/actions';
@@ -77,6 +77,18 @@ export function AdvancedProposalBuilder({
   // (quote-on-request). Stored as raw string so partial input ("3.5") works.
   const [overridePrices, setOverridePrices] = useState<Record<string, string>>({});
   const [scopeText, setScopeText] = useState("");
+  const scopeTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow the scope textarea to fit its content. Textareas don't size to
+  // content natively, so without this the AI draft arrives clipped behind a
+  // manual resize handle. Runs on every scopeText change (AI draft + typing)
+  // and on step change, since the textarea only mounts visibly on step 3.
+  useEffect(() => {
+    const el = scopeTextareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+  }, [scopeText, step]);
 
   // When step changes to 3, trigger AI drafting if scopeText is empty
   useEffect(() => {
@@ -592,10 +604,11 @@ export function AdvancedProposalBuilder({
                     {/* EDITABLE SCOPE TEXTAREA */}
                     <div className="prop-paper-text">
                       <textarea
+                        ref={scopeTextareaRef}
                         value={scopeText}
                         onChange={(e) => setScopeText(e.target.value)}
                         placeholder="Scope text will appear here once drafted..."
-                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-y min-h-[120px] outline-none text-[#1a1a1a] caret-[#1a1a1a] placeholder:text-[#a8a39d]"
+                        className="w-full bg-transparent border border-transparent hover:border-gray-200 focus:border-gray-300 focus:bg-[#fafafa] rounded transition-all resize-none overflow-hidden min-h-[120px] outline-none text-[#1a1a1a] caret-[#1a1a1a] placeholder:text-[#a8a39d]"
                         style={{
                           fontFamily: 'var(--font-serif)',
                           fontSize: '17px',
