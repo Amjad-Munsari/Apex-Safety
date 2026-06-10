@@ -29,7 +29,7 @@ export default async function NewAssessmentPage({
         id,
         version_number,
         published_at,
-        template:form_templates!inner(id, name, owner_type)
+        template:form_templates!inner(id, name, owner_type, owner_id, deleted_at)
       `)
       .not("published_at", "is", null)
       .order("published_at", { ascending: false }),
@@ -50,20 +50,23 @@ export default async function NewAssessmentPage({
     contactEmail: row.contact_email ?? undefined,
   }));
 
-  // Dedupe to the latest version per template, and only surface admin-owned
-  // masters in the assessment wizard (customer-owned templates aren't run
-  // through admin's assessment builder).
+  // Dedupe to the latest published version per template. Admin masters are
+  // always offered; customer-owned templates carry ownerClientId so the wizard
+  // can offer them ONLY when their owning client is the one selected — Matt
+  // can run an assessment on a client's own form, but one client's template
+  // must never be offered for another client.
   const latestPerTemplate = new Map<string, {
     id: string;
     name: string;
     version: number;
     publishedAt: string | null;
+    ownerClientId: string | null;
   }>();
 
   for (const row of templatesResult.data ?? []) {
     const tpl: any = Array.isArray(row.template) ? row.template[0] : row.template;
     if (!tpl) continue;
-    if (tpl.owner_type && tpl.owner_type !== "admin") continue;
+    if (tpl.deleted_at) continue;
 
     const templateId: string = tpl.id;
     const existing = latestPerTemplate.get(templateId);
@@ -73,6 +76,7 @@ export default async function NewAssessmentPage({
         name: tpl.name,
         version: row.version_number,
         publishedAt: row.published_at ?? null,
+        ownerClientId: tpl.owner_type === "customer" ? tpl.owner_id : null,
       });
     }
   }

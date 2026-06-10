@@ -22,6 +22,12 @@ export type AssessmentTemplate = {
   version: number;
   /** template_versions.published_at — for display */
   publishedAt: string | null;
+  /**
+   * clients.id when the template is customer-owned (built/forked by that org),
+   * null for Matt's masters. Customer templates are only offered when their
+   * owning client is the selected client.
+   */
+  ownerClientId?: string | null;
 };
 
 const STEPS = [
@@ -73,6 +79,21 @@ export function AdvancedAssessmentBuilder({
   const selectedClient = clients.find(c => c.id === selectedClientId) ?? null;
   const selectedTemplate = templates.find(t => t.id === selectedTemplateId) ?? null;
   const clientName = selectedClient?.name ?? 'Client';
+
+  // Admin masters always; a client's own templates only for that client.
+  const visibleTemplates = templates.filter(
+    t => !t.ownerClientId || t.ownerClientId === selectedClientId
+  );
+
+  // Switching client must drop a previously-picked template that belongs to a
+  // different client — otherwise Review could start client A's assessment on
+  // client B's form.
+  useEffect(() => {
+    if (selectedTemplate?.ownerClientId && selectedTemplate.ownerClientId !== selectedClientId) {
+      setSelectedTemplateId(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedClientId]);
 
   const canContinueFromClient = selectedClientId !== null;
   const canContinueFromTemplate = selectedTemplateId !== null;
@@ -231,13 +252,33 @@ export function AdvancedAssessmentBuilder({
             <div className="prop-existing-clients">
               <div className="prop-label" style={{ marginBottom: '16px' }}>SELECT TEMPLATE</div>
               <div className="prop-client-grid">
-                {templates.map(t => (
+                {visibleTemplates.map(t => (
                   <button
                     key={t.id}
                     className={`prop-client-card ${selectedTemplateId === t.id ? 'selected' : ''}`}
                     onClick={() => setSelectedTemplateId(t.id)}
                   >
-                    <div className="prop-client-card-name">{t.name}</div>
+                    <div className="prop-client-card-name">
+                      {t.name}
+                      {t.ownerClientId && (
+                        <span
+                          style={{
+                            marginLeft: '10px',
+                            padding: '2px 8px',
+                            borderRadius: '2px',
+                            fontFamily: 'var(--font-mono, monospace)',
+                            fontSize: '9px',
+                            letterSpacing: '0.2em',
+                            textTransform: 'uppercase',
+                            color: 'var(--p-gold)',
+                            background: 'rgba(192, 166, 109, 0.12)',
+                            verticalAlign: 'middle',
+                          }}
+                        >
+                          Client-built
+                        </span>
+                      )}
+                    </div>
                     <div className="prop-client-card-address">
                       Version {t.version}
                       {t.publishedAt && (
@@ -246,7 +287,7 @@ export function AdvancedAssessmentBuilder({
                     </div>
                   </button>
                 ))}
-                {templates.length === 0 && (
+                {visibleTemplates.length === 0 && (
                   <div className="text-white/50 text-sm" style={{ gridColumn: '1 / -1' }}>
                     No published templates yet.{' '}
                     <a href="/admin/templates" style={{ color: 'var(--p-gold)' }}>

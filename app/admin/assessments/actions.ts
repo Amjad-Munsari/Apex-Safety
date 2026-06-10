@@ -52,15 +52,25 @@ export async function startAssessment(clientId: string, templateVersionId: strin
   }
   const userId = user.id
 
-  // 1. Fetch template_id
+  // 1. Fetch template_id + ownership
   const { data: templateVersion, error: tvError } = await adminClient
     .from("template_versions")
-    .select("template_id")
+    .select("template_id, template:form_templates!inner(owner_type, owner_id)")
     .eq("id", templateVersionId)
     .single()
 
   if (tvError || !templateVersion) {
     throw new Error("Failed to fetch template version")
+  }
+
+  // Customer-owned templates can only be run for the client that owns them —
+  // one org's form must never back another org's assessment. (The wizard
+  // filters the picker the same way; this is the server-side guarantee.)
+  const owner = Array.isArray(templateVersion.template)
+    ? templateVersion.template[0]
+    : templateVersion.template
+  if (owner?.owner_type === "customer" && owner.owner_id !== clientId) {
+    throw new Error("This template belongs to a different client")
   }
 
   // 2. Insert form_assignment
