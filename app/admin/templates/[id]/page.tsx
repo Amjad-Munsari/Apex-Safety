@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
-import { TemplateBuilderClient } from "./builder-client";
+import { BuilderLoader } from "./builder-loader";
 import { saveDraftAction, publishTemplateAction } from "../actions";
 import { adminClient } from "@/lib/supabase/admin";
 import { AssignTemplateModal } from "@/components/admin/assign-template-modal";
@@ -49,7 +49,7 @@ export default async function TemplateBuilderPage({ params }: Props) {
     .order("name");
 
   return (
-    <TemplateBuilderClient
+    <BuilderLoader
       templateId={template.id}
       initialName={template.name}
       templateType={template.template_type}

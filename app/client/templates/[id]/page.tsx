@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { notFound, redirect } from "next/navigation";
-import { TemplateBuilderClient } from "@/app/admin/templates/[id]/builder-client";
+import { BuilderLoader } from "@/app/admin/templates/[id]/builder-loader";
 import { saveClientDraftAction, publishClientTemplateAction } from "../actions";
 
 interface Props {
@@ -41,7 +41,7 @@ export default async function ClientTemplateBuilderPage({ params }: Props) {
   const hasDraft = !!(latestVersion && !latestVersion.published_at);
 
   return (
-    <TemplateBuilderClient
+    <BuilderLoader
       templateId={template.id}
       initialName={template.name}
       templateType={template.template_type}

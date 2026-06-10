@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useRef, useState } from "react"
-import SignaturePad from "signature_pad"
+import type SignaturePadType from "signature_pad"
 import { Eraser, Check, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -41,7 +41,7 @@ const CANVAS_HEIGHT = 180
 export function SignatureField({ value, onChange, surface = "dark" }: SignatureFieldProps) {
   const t = surfaceTokens[surface]
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const padRef = useRef<SignaturePad | null>(null)
+  const padRef = useRef<SignaturePadType | null>(null)
   const [isDrawing, setIsDrawing] = useState(false)
   const [hasStrokes, setHasStrokes] = useState(false)
   const [editing, setEditing] = useState(!value)
@@ -51,60 +51,69 @@ export function SignatureField({ value, onChange, surface = "dark" }: SignatureF
     const canvas = canvasRef.current
     if (!canvas) return
 
-    // backgroundColor transparent so toDataURL produces a PNG with a transparent
-    // background (matching original behaviour).
-    const pad = new SignaturePad(canvas, {
-      penColor: t.inkColor,
-      backgroundColor: "rgba(0,0,0,0)",
+    let observer: ResizeObserver | null = null
+    let cancelled = false
+
+    import("signature_pad").then((mod) => {
+      if (cancelled) return
+      const SignaturePad = mod.default
+
+      // backgroundColor transparent so toDataURL produces a PNG with a transparent
+      // background (matching original behaviour).
+      const pad = new SignaturePad(canvas, {
+        penColor: t.inkColor,
+        backgroundColor: "rgba(0,0,0,0)",
+      })
+
+      // Sync the canvas bitmap resolution to its displayed CSS size and scale the
+      // drawing context by devicePixelRatio. signature_pad reports stroke points in
+      // CSS pixels (via getBoundingClientRect), so if the HiDPI bitmap isn't matched
+      // by a corresponding context transform, strokes render at 1/dpr of the cursor
+      // position — offset toward the top-left, proportional to distance and worse on
+      // high-dpr devices (Surface Pro / iPad). Setting width/height also resets the
+      // context transform, so the scale must be re-applied on every resize.
+      const resizeCanvas = () => {
+        const width = canvas.offsetWidth
+        const height = canvas.offsetHeight
+        if (!width || !height) return // not laid out / hidden — skip degenerate sizing
+        const dpr = Math.max(window.devicePixelRatio || 1, 1)
+        const data = pad.toData() // preserve any in-progress strokes across the resize
+        canvas.width = width * dpr
+        canvas.height = height * dpr
+        const ctx = canvas.getContext("2d")
+        if (ctx) ctx.scale(dpr, dpr)
+        pad.clear() // assigning width/height wiped the bitmap; reset pad state...
+        if (data.length) pad.fromData(data) // ...then restore strokes under the new transform
+      }
+
+      resizeCanvas()
+
+      // Re-sync on container / orientation / viewport changes. Observing the canvas
+      // is safe: resizeCanvas changes the bitmap (width/height attributes), not the
+      // CSS box the observer measures, so it cannot loop.
+      observer = new ResizeObserver(() => resizeCanvas())
+      observer.observe(canvas)
+
+      // Track active stroke for the border highlight.
+      const onBegin = () => setIsDrawing(true)
+      const onEnd = () => {
+        setIsDrawing(false)
+        setHasStrokes(!pad.isEmpty())
+      }
+
+      pad.addEventListener("beginStroke", onBegin)
+      pad.addEventListener("endStroke", onEnd)
+
+      padRef.current = pad
     })
 
-    // Sync the canvas bitmap resolution to its displayed CSS size and scale the
-    // drawing context by devicePixelRatio. signature_pad reports stroke points in
-    // CSS pixels (via getBoundingClientRect), so if the HiDPI bitmap isn't matched
-    // by a corresponding context transform, strokes render at 1/dpr of the cursor
-    // position — offset toward the top-left, proportional to distance and worse on
-    // high-dpr devices (Surface Pro / iPad). Setting width/height also resets the
-    // context transform, so the scale must be re-applied on every resize.
-    const resizeCanvas = () => {
-      const width = canvas.offsetWidth
-      const height = canvas.offsetHeight
-      if (!width || !height) return // not laid out / hidden — skip degenerate sizing
-      const dpr = Math.max(window.devicePixelRatio || 1, 1)
-      const data = pad.toData() // preserve any in-progress strokes across the resize
-      canvas.width = width * dpr
-      canvas.height = height * dpr
-      const ctx = canvas.getContext("2d")
-      if (ctx) ctx.scale(dpr, dpr)
-      pad.clear() // assigning width/height wiped the bitmap; reset pad state...
-      if (data.length) pad.fromData(data) // ...then restore strokes under the new transform
-    }
-
-    resizeCanvas()
-
-    // Re-sync on container / orientation / viewport changes. Observing the canvas
-    // is safe: resizeCanvas changes the bitmap (width/height attributes), not the
-    // CSS box the observer measures, so it cannot loop.
-    const observer = new ResizeObserver(() => resizeCanvas())
-    observer.observe(canvas)
-
-    // Track active stroke for the border highlight.
-    const onBegin = () => setIsDrawing(true)
-    const onEnd = () => {
-      setIsDrawing(false)
-      setHasStrokes(!pad.isEmpty())
-    }
-
-    pad.addEventListener("beginStroke", onBegin)
-    pad.addEventListener("endStroke", onEnd)
-
-    padRef.current = pad
-
     return () => {
-      observer.disconnect()
-      pad.removeEventListener("beginStroke", onBegin)
-      pad.removeEventListener("endStroke", onEnd)
-      pad.off()
-      padRef.current = null
+      cancelled = true
+      observer?.disconnect()
+      if (padRef.current) {
+        padRef.current.off()
+        padRef.current = null
+      }
     }
   }, [editing, t.inkColor])
 
