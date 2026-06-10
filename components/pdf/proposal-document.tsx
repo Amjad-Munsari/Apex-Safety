@@ -1,12 +1,24 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer"
+import {
+  PAGE_MARGIN_X,
+  PAGE_BOTTOM_RESERVED,
+  SIG_GAP,
+  SIG_BLOCK_BOTTOM,
+  SIG_SPACE_HEIGHT,
+  SIG_SPACE_PADDING_LEFT,
+  SIG_META_MARGIN_TOP,
+} from "@/lib/pdf/signature-layout"
 
 // Since we are generating PDFs on the server, we rely on standard fonts built into react-pdf (Helvetica, Times-Roman) 
 // for simplicity, or we can register network fonts. We'll use Helvetica for a clean modern look.
 
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: PAGE_MARGIN_X,
+    // Reserve the bottom strip for the pinned signature block + footer so
+    // flowing content can never overlap them.
+    paddingBottom: PAGE_BOTTOM_RESERVED,
     fontFamily: "Helvetica",
     backgroundColor: "#ffffff",
     color: "#1a1a1a",
@@ -161,19 +173,25 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
   signatures: {
+    // Pinned to a fixed spot on the last page so the e-sign stamper
+    // (lib/pdf/embed-signature.ts) can place the captured signature exactly
+    // on the client rule. Geometry lives in lib/pdf/signature-layout.ts.
+    position: "absolute",
+    left: PAGE_MARGIN_X,
+    right: PAGE_MARGIN_X,
+    bottom: SIG_BLOCK_BOTTOM,
     flexDirection: "row",
-    gap: 40,
-    marginTop: 40,
+    gap: SIG_GAP,
   },
   sigBlock: {
     flex: 1,
   },
   sigSpace: {
-    height: 40,
+    height: SIG_SPACE_HEIGHT,
     borderBottom: "1px solid #eeeeee",
-    marginBottom: 10,
+    marginBottom: SIG_META_MARGIN_TOP,
     justifyContent: "center",
-    paddingLeft: 10,
+    paddingLeft: SIG_SPACE_PADDING_LEFT,
   },
   sigImg: {
     fontFamily: "Times-Roman",
