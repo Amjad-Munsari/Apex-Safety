@@ -22,20 +22,38 @@ export type GenerateResult =
 
 const VALID_FREQUENCIES: Frequency[] = ["weekly", "monthly", "quarterly", "annually"];
 
+// Add whole months in UTC with end-of-month clamping. A naive
+// `d.setMonth(d.getMonth() + 1)` on a 31st rolls OVER a short month — Jan 31
+// + 1 month yields Mar 3 (Feb has no 31st), silently SKIPPING February's
+// occurrence. Clamping to the target month's last valid day keeps the cadence
+// on the intended month (Jan 31 → Feb 28/29). Also used for annually (+12) so a
+// Feb-29 due date lands on Feb 28 in common years instead of rolling to Mar 1.
+function addMonthsClamped(d: Date, months: number): void {
+  const day = d.getUTCDate();
+  d.setUTCDate(1); // avoid mid-change overflow while we shift the month
+  d.setUTCMonth(d.getUTCMonth() + months);
+  const daysInTargetMonth = new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)
+  ).getUTCDate();
+  d.setUTCDate(Math.min(day, daysInTargetMonth));
+}
+
+// All date math is UTC so the computed due_date does not drift by a day on a
+// non-UTC host (matches the cron scheduler's UTC iso() helper).
 function addFrequency(date: Date, freq: Frequency): Date {
   const d = new Date(date);
   switch (freq) {
     case "weekly":
-      d.setDate(d.getDate() + 7);
+      d.setUTCDate(d.getUTCDate() + 7);
       break;
     case "monthly":
-      d.setMonth(d.getMonth() + 1);
+      addMonthsClamped(d, 1);
       break;
     case "quarterly":
-      d.setMonth(d.getMonth() + 3);
+      addMonthsClamped(d, 3);
       break;
     case "annually":
-      d.setFullYear(d.getFullYear() + 1);
+      addMonthsClamped(d, 12);
       break;
   }
   return d;

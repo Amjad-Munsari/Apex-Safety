@@ -34,11 +34,15 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Calculate the target dates for our alerts (30, 14, 7 days from now)
+  // Calculate the target dates for our alerts (30, 14, 7 days from now).
+  // UTC math: setUTCDate + toISOString agree on the same calendar day. The old
+  // setDate/getDate (LOCAL) followed by toISOString (UTC) could shift the target
+  // by a day near midnight on a non-UTC host, diverging from the assignment
+  // scheduler's UTC iso() helper and matching the wrong documents.
   const today = new Date()
   const addDays = (d: Date, days: number) => {
     const nd = new Date(d)
-    nd.setDate(nd.getDate() + days)
+    nd.setUTCDate(nd.getUTCDate() + days)
     return nd.toISOString().split('T')[0]
   }
 
@@ -59,6 +63,11 @@ export async function GET(request: Request) {
     `)
     .in("expiry_date", [day30, day14, day7])
     .eq("active", true)
+    // Exclude soft-deleted documents — `active` and `deleted_at` are independent
+    // columns, so an archived doc (deleted_at set, active still true) would
+    // otherwise still trigger an expiry alert for a document the client can no
+    // longer see in the portal.
+    .is("deleted_at", null)
 
   if (docsError || !documents) {
     console.error("Cron fetch documents error:", docsError)
