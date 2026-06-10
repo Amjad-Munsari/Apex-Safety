@@ -115,23 +115,70 @@ export async function saveClientDraftAction(
     }));
   }
 
-  // Insert new immutable version row (owner_type = "customer", owner_id = org UUID — T-13-06)
-  const { data: max } = await supabase
-    .from("template_versions")
-    .select("version_number")
-    .eq("template_id", templateId)
-    .order("version_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  await supabase.from("template_versions").insert({
-    template_id: templateId,
-    version_number: (max?.version_number ?? 0) + 1,
-    schema_json: result.data,
-    created_by: userId,
+  // Insert new immutable version row (owner_type = "customer", owner_id = org UUID — T-13-06).
+  // UNIQUE(template_id, version_number) means two concurrent saves both reading the
+  // same max(version_number) collide on insert — the loser gets a 23505. Retry by
+  // re-reading max and bumping again. Previously the insert error was silently
+  // ignored, so a collided save returned "success" having written nothing; a failed
+  // insert MUST now throw.
+  await insertTemplateVersionWithRetry(supabase, {
+    templateId,
+    schemaJson: result.data,
+    createdBy: userId,
   });
 
   revalidatePath(`/client/templates/${templateId}`);
+}
+
+/**
+ * Insert the next template_versions row for a template, retrying on the
+ * UNIQUE(template_id, version_number) violation that two concurrent saves race
+ * into. Up to 3 attempts: on a 23505 we re-read max(version_number) and bump.
+ * Any other error, or exhausting the retries, throws — a failed version insert
+ * must never silently succeed.
+ *
+ * Shared by saveClientDraftAction (no publish) and publishClientTemplateAction
+ * (sets published_at) — opts.publishedAt distinguishes the two.
+ */
+async function insertTemplateVersionWithRetry(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  opts: {
+    templateId: string;
+    schemaJson: unknown;
+    createdBy: string | null;
+    publishedAt?: string;
+  }
+): Promise<void> {
+  let lastError: { message?: string } | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data: max } = await supabase
+      .from("template_versions")
+      .select("version_number")
+      .eq("template_id", opts.templateId)
+      .order("version_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const row: Record<string, unknown> = {
+      template_id: opts.templateId,
+      version_number: (max?.version_number ?? 0) + 1,
+      schema_json: opts.schemaJson,
+      created_by: opts.createdBy,
+    };
+    if (opts.publishedAt) row.published_at = opts.publishedAt;
+
+    const { error } = await supabase.from("template_versions").insert(row);
+    if (!error) return;
+
+    lastError = error;
+    // 23505 = unique_violation: another save took our version_number. Re-read + retry.
+    if (error.code !== "23505") {
+      throw new Error(error.message ?? "Failed to insert template version");
+    }
+  }
+  throw new Error(
+    lastError?.message ?? "Failed to insert template version after 3 attempts (version-number race)"
+  );
 }
 
 // ── publishClientTemplateAction ──────────────────────────────────────────────
@@ -171,20 +218,13 @@ export async function publishClientTemplateAction(
     }));
   }
 
-  const { data: max } = await supabase
-    .from("template_versions")
-    .select("version_number")
-    .eq("template_id", templateId)
-    .order("version_number", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  await supabase.from("template_versions").insert({
-    template_id: templateId,
-    version_number: (max?.version_number ?? 0) + 1,
-    schema_json: result.data,
-    published_at: new Date().toISOString(),
-    created_by: userId,
+  // Same UNIQUE(template_id, version_number) race as saveClientDraftAction —
+  // retry on 23505, throw on any other error or exhaustion (was silently ignored).
+  await insertTemplateVersionWithRetry(supabase, {
+    templateId,
+    schemaJson: result.data,
+    createdBy: userId,
+    publishedAt: new Date().toISOString(),
   });
 
   await supabase
@@ -238,6 +278,26 @@ export async function createCustomerTemplateDraftSubmission(
     throw new Error("Template has no published version");
   }
 
+  // Idempotency guard — orphan-draft prevention. The RSC pre-creates a draft on
+  // every fill/page.tsx render; without this, a customer re-opening (or refreshing)
+  // the fill route would spawn a fresh orphan draft each time. Reuse the most
+  // recent open draft for this (client, version) self-fill — assignment_id IS NULL
+  // distinguishes customer self-fills from admin-assigned drafts on the same version.
+  const { data: existingDraft } = await supabase
+    .from("form_submissions")
+    .select("id")
+    .eq("client_id", ctx.client_id)
+    .eq("template_version_id", latestVersion.id)
+    .eq("status", "draft")
+    .is("assignment_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingDraft) {
+    return { id: existingDraft.id, versionId: latestVersion.id };
+  }
+
   // INSERT draft form_submissions with assignment_id=NULL (D-16 contract).
   // client_id: ctx.client_id — taken from server context, NEVER from function parameter (T-16-04).
   const { data: draft, error } = await supabase
@@ -272,10 +332,19 @@ export async function createCustomerTemplateDraftSubmission(
  *
  * Submit sequence:
  *   1. Auth context + supabase
- *   2. UPDATE form_submissions SET answers_json, status='submitted', submitted_at
- *      WHERE id=submissionId AND client_id=ctx.client_id (defense-in-depth)
- *   3. revalidatePath /client/templates
- *   4. redirect /client/templates (LAST, outside try/catch)
+ *   2. Fetch the submission row (id + client_id scoped) to read its PINNED
+ *      template_version_id — the client cannot supply a weaker version.
+ *   3. Load that version's schema_json and run the IDENTICAL server-side
+ *      validation pipeline the admin path uses (submitAssessmentAction):
+ *      sanitize → prune → validateEntitiesValues → per-instance required →
+ *      evaluate visibility → strip hidden answers. Customer surfaces MUST get
+ *      the same guard as admin — asymmetry is an exploit class (COND-03).
+ *   4. UPDATE form_submissions SET answers_json (SCRUBBED), status='submitted',
+ *      submitted_at WHERE id=submissionId AND client_id=ctx.client_id
+ *      AND status='draft' — the status filter + .select() double-submit guard
+ *      makes a second concurrent submit match zero rows (NOT silent success).
+ *   5. revalidatePath /client/templates
+ *   6. redirect /client/templates (LAST, outside try/catch)
  */
 export async function submitCustomerTemplateFillByIdAction(
   submissionId: string,
@@ -284,18 +353,109 @@ export async function submitCustomerTemplateFillByIdAction(
   const ctx = await requireClientContext();
   const supabase = await createClient();
 
-  const { error: updateError } = await supabase
+  // Step 1: fetch the submission row (client_id-scoped, defense-in-depth alongside
+  // RLS) to read the pinned template_version_id. The client never supplies it.
+  const { data: submission, error: subError } = await supabase
+    .from("form_submissions")
+    .select("template_version_id")
+    .eq("id", submissionId)
+    .eq("client_id", ctx.client_id)
+    .single();
+
+  if (subError || !submission) {
+    throw new Error(subError?.message ?? "Submission not found");
+  }
+
+  // Step 2: fetch the PINNED version schema via the stored FK — never the
+  // template's latest version (mirrors admin T-13-10).
+  const { data: version, error: versionError } = await supabase
+    .from("template_versions")
+    .select("schema_json")
+    .eq("id", submission.template_version_id)
+    .single();
+
+  if (versionError || !version) {
+    throw new Error(versionError?.message ?? "Failed to fetch pinned template version");
+  }
+
+  // Step 3: server-side validation — the IDENTICAL pipeline as the admin
+  // submitAssessmentAction (app/admin/assessments/actions.ts). Until now the raw
+  // client answers were written straight to answers_json with no validation and
+  // no hidden-answer scrub; this closes that gap (COND-03 — surface parity).
+  const { validateEntitiesValues } = await import("@coltorapps/builder");
+  const { formBuilder } = await import("@/lib/form-builder");
+  const { sanitizeSchema } = await import("@/lib/form-builder/sanitize-schema");
+  const { pruneSchemaForValidation } = await import("@/lib/form-builder/prune-schema-for-validation");
+  const { setCurrentFormSchema } = await import("@/lib/form-builder/visibility/compute-computed-values");
+
+  // Sanitize once and reuse for every consumer below so the server validates
+  // exactly what the client validated — feeding the raw schema into coltorapps
+  // throws on since-removed entity types (admin path comment for detail).
+  const schemaJson = sanitizeSchema(version.schema_json as Parameters<typeof sanitizeSchema>[0]);
+
+  // Prune to stop the coltorapps walk at repeatingSection — nested instance child
+  // values would otherwise fail a root-level `required: true` check.
+  const prunedSchema = pruneSchemaForValidation(schemaJson);
+
+  // Register the schema in the module-level slot so computedField-sourced
+  // visibility rules can derive their values during the coltorapps eligibility
+  // walk (D-02). Cleared in the finally. Same racy-slot caveat as the admin path.
+  setCurrentFormSchema(schemaJson as Parameters<typeof setCurrentFormSchema>[0]);
+  let result: Awaited<ReturnType<typeof validateEntitiesValues>>;
+  try {
+    result = await validateEntitiesValues(answers, formBuilder, prunedSchema as Parameters<typeof validateEntitiesValues>[2]);
+  } finally {
+    setCurrentFormSchema(null);
+  }
+  if (!result.success) {
+    throw new Error("Form validation failed server-side. Please check your answers and try again.");
+  }
+
+  // Per-instance required enforcement — mirrors the client guard and the admin path.
+  const { validateInstanceRequired } = await import("@/lib/form-builder/validate-instance-required");
+  const instanceFailures = validateInstanceRequired(
+    schemaJson as Parameters<typeof validateInstanceRequired>[0],
+    result.data as Record<string, unknown>
+  );
+  if (instanceFailures.length > 0) {
+    const first = instanceFailures[0];
+    throw new Error(
+      `Missing required field "${first.childLabel}" in ${first.repSectionLabel} #${first.instanceIndex + 1}` +
+        (instanceFailures.length > 1 ? ` (and ${instanceFailures.length - 1} more)` : "")
+    );
+  }
+
+  // Visibility evaluation + hidden-subtree scrub (D-01, COND-01). Order is
+  // load-bearing: validate FIRST (coerced types feed operator semantics), THEN
+  // evaluate visibility against validated values, THEN strip hidden entities.
+  const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility");
+  const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers");
+  const visibility = evaluateVisibility(schemaJson as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>);
+  const scrubbedAnswers = stripHiddenAnswers(schemaJson as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility);
+
+  // Step 4: write SCRUBBED answers. The .eq("status","draft") filter +
+  // .select("id").maybeSingle() are the double-submit guard: a second concurrent
+  // submit (the draft already flipped to 'submitted') matches zero rows, so we
+  // throw BEFORE dispatching the n8n event. Previously a 0-row update was treated
+  // as success and the webhook fired — that is now impossible.
+  const { data: updatedRow, error: updateError } = await supabase
     .from("form_submissions")
     .update({
-      answers_json: answers,
+      answers_json: scrubbedAnswers,
       status: "submitted",
       submitted_at: new Date().toISOString(),
     })
     .eq("id", submissionId)
-    .eq("client_id", ctx.client_id);
+    .eq("client_id", ctx.client_id)
+    .eq("status", "draft")
+    .select("id")
+    .maybeSingle();
 
   if (updateError) {
     throw new Error(updateError.message ?? "Failed to submit form");
+  }
+  if (!updatedRow) {
+    throw new Error("This form has already been submitted");
   }
 
   // Notify n8n of a customer-built template self-fill submission (best-effort).
