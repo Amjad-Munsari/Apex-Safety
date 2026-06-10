@@ -37,6 +37,14 @@ import {
   getCurrentFormSchema,
   augmentAnswersWithComputedValues,
 } from "./compute-computed-values";
+// Bug fix: the render gate MUST share the SAME comparison helpers as the
+// submit/scrub gate (evaluate-rule.ts). Previously this file used strict `===`
+// for equals/notEquals and a bare `Number()` for greaterThan/lessThan, while
+// evaluate-rule.ts used coerced `valuesEqual` / `toNumeric`. The divergence let
+// a field be rendered-as-visible by one gate yet scrubbed-as-hidden by the
+// other, silently dropping the user's answer on submit. Importing the helpers
+// guarantees both gates agree on every operator.
+import { valuesEqual, toNumeric } from "./evaluate-rule";
 
 // ── Inline evaluation helpers (Wave-0 self-contained) ────────────────────────
 // These mirror the contracts in evaluate-rule.ts and combine-rules.ts (Wave 1).
@@ -71,19 +79,31 @@ function evaluateRuleInline(
 ): boolean {
   switch (operator as VisibilityRuleOperator) {
     case "equals":
-      // Strict equality — matches evaluate-rule.ts:63 so the render-gate path
-      // (shouldBeProcessed) and the dynamicRequired/progress/scrub path
-      // (evaluateVisibility) agree for numeric-source rules.
-      return sourceValue === ruleValue;
+      // Coerced equality — shares evaluate-rule.ts's `valuesEqual` so the
+      // render-gate path (shouldBeProcessed) and the dynamicRequired/progress/
+      // scrub path (evaluateVisibility) agree for numeric/date/multi-select
+      // sources (string-vs-number `===` was always false before).
+      return valuesEqual(sourceValue, ruleValue);
     case "notEquals":
-      return sourceValue !== ruleValue;
+      return !valuesEqual(sourceValue, ruleValue);
     case "contains":
       if (typeof sourceValue !== "string" || typeof ruleValue !== "string") return false;
       return sourceValue.includes(ruleValue);
-    case "greaterThan":
-      return Number(sourceValue) > Number(ruleValue);
-    case "lessThan":
-      return Number(sourceValue) < Number(ruleValue);
+    case "greaterThan": {
+      // Shared `toNumeric` (Number-first, Date.parse fallback, NaN-on-blank) so
+      // numeric operands like "6" / "12" compare as numbers, not Date epochs,
+      // and the two gates never disagree. false when either side is NaN.
+      const src = toNumeric(sourceValue);
+      const rule = toNumeric(ruleValue);
+      if (isNaN(src) || isNaN(rule)) return false;
+      return src > rule;
+    }
+    case "lessThan": {
+      const src = toNumeric(sourceValue);
+      const rule = toNumeric(ruleValue);
+      if (isNaN(src) || isNaN(rule)) return false;
+      return src < rule;
+    }
     case "isEmpty":
       if (sourceValue === undefined || sourceValue === null || sourceValue === "") return true;
       if (Array.isArray(sourceValue)) return sourceValue.length === 0;

@@ -50,6 +50,18 @@ describe("evaluateRule — operator matrix", () => {
     expect(evaluateRule("greaterThan", 5, 5)).toBe(false);
     // Coerce numeric strings
     expect(evaluateRule("greaterThan", "10", "5")).toBe(true);
+    // Bug fix: numeric string operands must compare as NUMBERS, not Date epochs.
+    // Date.parse-first turned "6"/"12" into a timestamp vs a small number.
+    expect(evaluateRule("greaterThan", "6", "5")).toBe(true);
+    expect(evaluateRule("greaterThan", "12", "2")).toBe(true);
+    expect(evaluateRule("greaterThan", "2", "12")).toBe(false);
+    // Blank/whitespace strings must NOT coerce to 0 (Number("") === 0) and pass.
+    expect(evaluateRule("greaterThan", "", 5)).toBe(false);
+    expect(evaluateRule("greaterThan", "   ", 5)).toBe(false);
+    expect(evaluateRule("greaterThan", 5, "")).toBe(false);
+    // ISO date strings still compare as dates via Date.parse fallback.
+    expect(evaluateRule("greaterThan", "2026-06-01", "2026-01-01")).toBe(true);
+    expect(evaluateRule("greaterThan", "2026-01-01", "2026-06-01")).toBe(false);
     // Returns false when either side is NaN or undefined
     expect(evaluateRule("greaterThan", undefined, 5)).toBe(false);
     expect(evaluateRule("greaterThan", 5, undefined)).toBe(false);
@@ -63,6 +75,11 @@ describe("evaluateRule — operator matrix", () => {
     expect(evaluateRule("lessThan", 5, 5)).toBe(false);
     // Coerce numeric strings
     expect(evaluateRule("lessThan", "2", "10")).toBe(true);
+    // Bug fix: numeric string operands compare as numbers, not Date epochs.
+    expect(evaluateRule("lessThan", "2", "12")).toBe(true);
+    expect(evaluateRule("lessThan", "12", "2")).toBe(false);
+    // ISO date strings still compare as dates.
+    expect(evaluateRule("lessThan", "2026-01-01", "2026-06-01")).toBe(true);
     // Returns false when either side is NaN or undefined
     expect(evaluateRule("lessThan", undefined, 5)).toBe(false);
     expect(evaluateRule("lessThan", 5, undefined)).toBe(false);

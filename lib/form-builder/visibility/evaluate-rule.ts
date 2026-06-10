@@ -27,14 +27,30 @@ function isEmptyValue(value: unknown): boolean {
   return false;
 }
 
-function toNumeric(value: unknown): number {
+/**
+ * Exported (bug fix): the render gate `shouldBeProcessed` must use the EXACT
+ * same numeric coercion as this submit/scrub gate. Previously it used a bare
+ * `Number()` for greaterThan/lessThan, so the two gates could disagree and an
+ * answer rendered-as-visible would be scrubbed-as-hidden on submit.
+ */
+export function toNumeric(value: unknown): number {
   if (value === undefined || value === null) return NaN;
-  // Date string: parse via Date.parse; timestamp is numeric
   if (typeof value === "string") {
+    // Number FIRST (bug fix): a numeric operand like "6" / "12" must compare as a
+    // number, not as a Date epoch. Date.parse("12") yields a bogus timestamp on
+    // some engines, so a Date-first order made greaterThan/lessThan compare
+    // epoch-ms against a small number — always wrong. Guard empty/whitespace
+    // strings to NaN because Number("") === 0 / Number(" ") === 0 would otherwise
+    // coerce blanks to 0 and spuriously pass a > comparison.
+    const trimmed = value.trim();
+    if (trimmed === "") return NaN;
+    const asNum = Number(trimmed);
+    if (!isNaN(asNum)) return asNum;
+    // Genuine non-numeric string → fall back to Date.parse for ISO date operands
+    // (e.g. "2026-01-01"), whose epoch-ms ordering is the intended comparison.
     const asDate = Date.parse(value);
     if (!isNaN(asDate)) return asDate;
-    const asNum = Number(value);
-    return asNum;
+    return NaN;
   }
   if (typeof value === "number") return value;
   return NaN;
@@ -98,7 +114,7 @@ function toIsoDate(value: unknown): string | null {
  *  4. Fallback: strict `===` — preserves existing plain-string / boolean
  *     semantics exactly (e.g. "Some" !== "Yes", "N/A" === "N/A", true === true).
  */
-function valuesEqual(
+export function valuesEqual(
   sourceValue: unknown,
   ruleValue: unknown,
   sourceType?: string
