@@ -54,17 +54,17 @@ export function ClientRow({
       className="group hover:bg-white/[0.02] transition-colors cursor-pointer"
     >
       <td className="px-6 py-4">
-        <div className="flex items-start gap-4">
-          <span className="font-mono text-[10px] text-[#555] mt-1 w-10">CL-<br />{id.slice(0, 4).toUpperCase()}</span>
-          <div>
-            <div className="font-medium text-white mb-0.5 flex items-center">
-              <span className={active ? "" : "text-white/40"}>{name}</span>
+        <div className="flex items-start gap-4 min-w-0">
+          <span className="font-mono text-[10px] text-[#555] mt-1 w-10 shrink-0">CL-<br />{id.slice(0, 4).toUpperCase()}</span>
+          <div className="min-w-0">
+            <div className="font-medium text-white mb-0.5 flex items-center min-w-0">
+              <span className={`truncate ${active ? "" : "text-white/40"}`}>{name}</span>
               {!active && (
-                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] bg-white/5 border border-white/10 leading-none">
+                <span className="ml-2 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] bg-white/5 border border-white/10 leading-none">
                   Inactive
                 </span>
               )}
-              <span onClick={(e) => e.stopPropagation()}>
+              <span className="shrink-0" onClick={(e) => e.stopPropagation()}>
                 <ActivePill count={activeCount} />
               </span>
             </div>
@@ -72,23 +72,23 @@ export function ClientRow({
           </div>
         </div>
       </td>
-      <td className="px-4 py-4">
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 border border-${ragColor}/40 rounded text-${ragColor} text-[10px] font-mono uppercase tracking-wider bg-${ragColor}/5 leading-none`}>
-          <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor}`} /> {ragLabel}
+      <td className="px-4 py-4 text-center">
+        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 border border-${ragColor}/40 rounded text-${ragColor} text-[10px] font-mono uppercase tracking-wider bg-${ragColor}/5 leading-none whitespace-nowrap`}>
+          <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor} shrink-0`} /> {ragLabel}
         </div>
       </td>
-      <td className="px-4 py-4 font-mono text-xs text-white/70 text-right">{hoursBalance}h</td>
+      <td className="px-4 py-4 font-mono text-xs text-white/70 text-center">{hoursBalance}h</td>
       <td className="px-4 py-4">
-        <div className="text-white text-sm mb-0.5">{nextExpiryLabel}</div>
-        <div className="text-xs text-[#666]">{nextExpiryCategory}</div>
+        <div className="text-white text-sm mb-0.5 truncate">{nextExpiryLabel}</div>
+        <div className="text-xs text-[#666] truncate">{nextExpiryCategory}</div>
       </td>
-      <td className="px-4 py-4">
-        <div className={`inline-flex px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
-          {proposalStatus || "None"}
+      <td className="px-4 py-4 text-center">
+        <div className={`inline-flex whitespace-nowrap px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
+          {proposalStatus ? (proposalStatus === "Contract Issued" ? "Issued" : proposalStatus) : "None"}
         </div>
       </td>
-      <td className="px-6 py-4 font-mono text-xs text-right text-white/50">
-        {docCount} <span className="ml-2 text-white/20">&gt;</span>
+      <td className="px-4 py-4 font-mono text-xs text-center text-white/50">
+        {docCount}
       </td>
     </tr>
   );

@@ -137,9 +137,6 @@ export default async function MonthSummaryPage() {
         ))}
       </div>
 
-      {/* ─── WORKFLOW ERRORS (row-level, D-11(c) acceptance surface) ─── */}
-      <WorkflowErrorsTable rows={recentErrors} />
-
       {/* ─── RECENT ASSESSMENTS ─── */}
       <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
         <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
@@ -201,6 +198,9 @@ export default async function MonthSummaryPage() {
           </div>
         )}
       </Card>
+
+      {/* ─── WORKFLOW ERRORS (row-level, D-11(c) acceptance surface) ─── */}
+      <WorkflowErrorsTable rows={recentErrors} />
     </div>
   );
 }

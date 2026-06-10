@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { BrandingProvider } from "@/components/branding-provider";
@@ -22,9 +23,6 @@ export default async function AdminLayout({
     errors: stats.errorCount,
   };
 
-  console.log('--- Sidebar Stats Audit ---');
-  console.log(sidebarStats);
-
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",
@@ -33,7 +31,11 @@ export default async function AdminLayout({
   });
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      // Slim the admin nav rail so the main content (esp. the Clients table) gets
+      // more horizontal room. Overrides the shared 16rem default for this surface.
+      style={{ "--sidebar-width": "13rem" } as CSSProperties}
+    >
       <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
         <BrandingProvider />
         <AppSidebar stats={sidebarStats} />
