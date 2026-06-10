@@ -13,10 +13,16 @@ export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET
 
   if (!cronSecret) {
-    if (process.env.NODE_ENV === "production") {
+    // Only true local development (NODE_ENV=development, i.e. `next dev`) may run
+    // this unauthenticated for manual curl testing. Vercel sets NODE_ENV=production
+    // for BOTH production and preview deploys, so both correctly 500 here when the
+    // secret is missing. Any other env (CI runners, NODE_ENV unset/"test") must
+    // supply CRON_SECRET — the handler mutates assignment state and emails every
+    // tenant's contacts via the service-role client, so an open endpoint is a
+    // cross-tenant spam/mutation vector.
+    if (process.env.NODE_ENV !== "development") {
       return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 })
     }
-    // dev/preview without a secret: allow unauthenticated curl for manual testing
   } else if (
     authHeader !== `Bearer ${cronSecret}` &&
     // Query-param secret is accepted for manual testing in non-prod only — in
