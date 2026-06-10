@@ -14,6 +14,18 @@ interface FillCustomerTemplateClientProps {
   schemaJson: FormBuilderSchema;
   submissionId: string;
   clientId: string;
+  /**
+   * Previously-saved draft answers (form_submissions.answers_json) for the
+   * resumed draft this submissionId points at. Threaded into InterpreterRenderer's
+   * initialValues so a resumed draft rehydrates every field — including
+   * repeatingSection rows ({ instances: [...] }). Without this the store mounts
+   * empty and a user who filled a section, left, and returned sees their rows
+   * gone (the post-idempotency-fix draft reuse made this a data-loss bug).
+   *
+   * Optional: if the RSC does not yet thread answers_json the store simply
+   * mounts empty (prior behaviour) — no regression.
+   */
+  initialValues?: Record<string, unknown>;
 }
 
 /**
@@ -37,6 +49,7 @@ export function FillCustomerTemplateClient({
   schemaJson,
   submissionId,
   clientId,
+  initialValues,
 }: FillCustomerTemplateClientProps) {
   const interpreterRef = useRef<InterpreterRendererHandle>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +84,7 @@ export function FillCustomerTemplateClient({
         submissionId={submissionId}
         clientId={clientId}
         surface="cream"
+        initialValues={initialValues}
         onProgressChange={setProgress}
         onSubmittingChange={setIsSubmitting}
         onSubmit={async (values) => {

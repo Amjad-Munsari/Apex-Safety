@@ -331,6 +331,26 @@ export async function submitAssessmentAction(
   const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility")
   const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers")
   const visibility = evaluateVisibility(schemaJson as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>)
+
+  // BUG A — root-level DYNAMIC required enforcement. validateEntitiesValues only
+  // catches STATIC required and validateInstanceRequired only walks repeatingSection
+  // children, so a top-level field made required ONLY by a fired `require` rule could
+  // be submitted empty. Run against the SAME visibility map computed above, before
+  // the scrub/DB write.
+  const { validateRootRequired } = await import("@/lib/form-builder/validate-instance-required")
+  const rootFailures = validateRootRequired(
+    schemaJson as Parameters<typeof validateRootRequired>[0],
+    result.data as Record<string, unknown>,
+    visibility
+  )
+  if (rootFailures.length > 0) {
+    const first = rootFailures[0]
+    throw new Error(
+      `Missing required field "${first.label}"` +
+        (rootFailures.length > 1 ? ` (and ${rootFailures.length - 1} more)` : "")
+    )
+  }
+
   const scrubbedAnswers = stripHiddenAnswers(schemaJson as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility)
 
   // Step 4: write validated data — T-13-13 (audit trail); uses SCRUBBED answers (D-01).

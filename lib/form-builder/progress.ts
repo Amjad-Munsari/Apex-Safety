@@ -22,6 +22,7 @@
 
 import type { VisibilityState } from "./visibility/types";
 import { isFileFieldType } from "./file-field-types";
+import { evaluateVisibilityForInstance } from "./visibility/evaluate-visibility";
 
 /** Minimal structural shape — FormBuilderSchema satisfies this. */
 type ProgressSchema = {
@@ -65,11 +66,19 @@ function isFilled(value: unknown): boolean {
  *   - value.instances.length >= minInstances (quantity gate)
  *   - Every required child entity is filled in every instance (quality gate)
  *
- * The `instances` array is `Array<Record<entityId, value>>`. Required children are those
- * whose `schema.entities[childId].attributes.required === true`.
+ * The `instances` array is `Array<Record<entityId, value>>`.
  *
- * Per-instance child validation against non-shape constraints (e.g., rating bounds) is
- * deferred to the renderer and submitAssessmentAction (RESEARCH Open Question #1 / T-14-02-03).
+ * BUG B fix — the quality gate now folds STATIC + DYNAMIC required exactly like
+ * validateInstanceRequired does: for each instance it calls
+ * `evaluateVisibilityForInstance(schema, values, entityId, idx)` and counts a
+ * child as required iff `state.visible && state.required`. The old gate keyed
+ * solely on `attributes.required === true`, so a child required ONLY by a fired
+ * `action: "require"` rule was never counted — progress hit 100% while
+ * validateInstanceRequired still blocked submit. Now progress reaches 100%
+ * exactly when validateInstanceRequired passes.
+ *
+ * File/photo children are skipped (isFileFieldType) — required is "recommended",
+ * never blocking (BUG 3), matching validateInstanceRequired.
  */
 function isRepeatingSectionFilled(
   entityId: string,
@@ -96,20 +105,26 @@ function isRepeatingSectionFilled(
   // Quantity gate
   if (repValue.instances.length < minInstances) return false;
 
-  // Quality gate — check required children in each instance
-  const children = entity.children ?? [];
-  const requiredChildren = children.filter(
-    (childId) =>
-      schema.entities[childId]?.attributes?.required === true &&
+  // Quality gate — per-instance required, folding static + dynamic require rules.
+  // evaluateVisibilityForInstance wants the FULL root values map (it builds a
+  // synthetic per-instance answers view internally), so pass `values`, not the
+  // per-instance object.
+  const instances = repValue.instances as Array<Record<string, unknown>>;
+  for (let idx = 0; idx < instances.length; idx++) {
+    const instanceVis = evaluateVisibilityForInstance(
+      schema as Parameters<typeof evaluateVisibilityForInstance>[0],
+      values,
+      entityId,
+      idx
+    );
+    const instance = instances[idx];
+
+    for (const [childId, state] of Object.entries(instanceVis)) {
+      if (!state || state.visible === false) continue;
+      if (!state.required) continue;
       // BUG 3: photo/file-upload children are recommended, not required — never gate progress.
-      !isFileFieldType(schema.entities[childId]?.type)
-  );
-
-  if (requiredChildren.length === 0) return true;
-
-  for (const instance of repValue.instances as Array<Record<string, unknown>>) {
-    for (const childId of requiredChildren) {
-      if (!isFilled(instance[childId])) return false;
+      if (isFileFieldType(schema.entities[childId]?.type)) continue;
+      if (!isFilled(instance?.[childId])) return false;
     }
   }
 

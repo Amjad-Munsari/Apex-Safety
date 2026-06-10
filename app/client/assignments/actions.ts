@@ -122,7 +122,7 @@ export async function transitionAssignmentStatus(
  */
 export async function createAssignmentDraftSubmission(
   assignmentId: string
-): Promise<{ id: string }> {
+): Promise<{ id: string; answersJson: Record<string, unknown> }> {
   const ctx = await requireClientContext();
   await assertClientActive(ctx.client_id); // frozen-client guard — no new fills
   const supabase = await createClient();
@@ -135,9 +135,11 @@ export async function createAssignmentDraftSubmission(
   // Resume an existing draft if one is already pinned to the current version.
   // Most-recent-first so a fork's stale draft (older version) is never selected here
   // anyway — the version filter excludes it — and the freshest valid draft wins.
+  // answers_json is returned so the RSC can seed InterpreterRenderer.initialValues
+  // and a resumed draft rehydrates every field (incl. repeating-section rows).
   const { data: existing } = await supabase
     .from("form_submissions")
-    .select("id")
+    .select("id, answers_json")
     .eq("assignment_id", assignmentId)
     .eq("client_id", ctx.client_id)
     .eq("status", "draft")
@@ -149,7 +151,10 @@ export async function createAssignmentDraftSubmission(
   if (existing) {
     // Resume: still nudge the assignment forward in case it lapsed back.
     await transitionAssignmentStatus(supabase, assignmentId, "in_progress");
-    return { id: existing.id };
+    return {
+      id: existing.id,
+      answersJson: (existing.answers_json as Record<string, unknown>) ?? {},
+    };
   }
 
   await transitionAssignmentStatus(supabase, assignmentId, "in_progress");
@@ -170,7 +175,7 @@ export async function createAssignmentDraftSubmission(
     throw new Error(error?.message ?? "Failed to create draft submission");
   }
 
-  return { id: draft.id };
+  return { id: draft.id, answersJson: {} };
 }
 
 /**
@@ -293,6 +298,26 @@ export async function submitAssignedFillByIdAction(
   const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility");
   const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers");
   const visibility = evaluateVisibility(schemaJson as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>);
+
+  // BUG A — root-level DYNAMIC required enforcement. validateEntitiesValues only
+  // catches STATIC required and validateInstanceRequired only walks repeatingSection
+  // children, so a top-level field made required ONLY by a fired `require` rule could
+  // be submitted empty. Run against the SAME visibility map computed above, before
+  // the scrub/DB write.
+  const { validateRootRequired } = await import("@/lib/form-builder/validate-instance-required");
+  const rootFailures = validateRootRequired(
+    schemaJson as Parameters<typeof validateRootRequired>[0],
+    result.data as Record<string, unknown>,
+    visibility
+  );
+  if (rootFailures.length > 0) {
+    const first = rootFailures[0];
+    throw new Error(
+      `Missing required field "${first.label}"` +
+        (rootFailures.length > 1 ? ` (and ${rootFailures.length - 1} more)` : "")
+    );
+  }
+
   const scrubbedAnswers = stripHiddenAnswers(schemaJson as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility);
 
   // Step 4: write SCRUBBED answers. The .eq("status","draft") filter +

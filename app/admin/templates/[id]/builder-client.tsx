@@ -136,16 +136,26 @@ export function TemplateBuilderClient({
     initialData: initialSchema ? { schema: sanitizeSchema(initialSchema) } : undefined,
   });
 
-  // Phase 15 — clear cycleState when admin edits a visibilityRules attribute
-  // Uses builderStore.subscribe with the EntityAttributeUpdated event (coltorapps API).
-  // The listener receives (data, events[]) — filter for attributeName === "visibilityRules".
+  // Phase 15 — clear cycleState when admin edits a visibilityRules attribute, or makes
+  // any structural change that could resolve the cycle (field deleted, added, or cloned).
+  // Uses builderStore.subscribe with coltorapps events (exact names from BuilderStoreEvent).
+  // The listener receives (data, events[]).
+  //   • EntityAttributeUpdated + attributeName === "visibilityRules" — rule edited directly
+  //   • EntityDeleted — offending field removed (fires instead of "EntityRemoved")
+  //   • EntityAdded / EntityCloned — new field added; rule graph changes shape
+  // Clearing is safe: the next Publish attempt re-runs validateRuleGraph server-side and
+  // will reject a still-cyclic schema — this only unsticks the Publish button.
   useEffect(() => {
     const unsub = builderStore.subscribe((_data, events) => {
       for (const e of events) {
-        if (
+        const isRuleEdit =
           e.name === "EntityAttributeUpdated" &&
-          (e.payload as { attributeName: string }).attributeName === "visibilityRules"
-        ) {
+          (e.payload as { attributeName: string }).attributeName === "visibilityRules";
+        const isStructural =
+          e.name === "EntityDeleted" ||
+          e.name === "EntityAdded" ||
+          e.name === "EntityCloned";
+        if (isRuleEdit || isStructural) {
           setCycleState(null);
           setPublishBlocked(false);
           return;

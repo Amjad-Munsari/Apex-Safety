@@ -43,7 +43,7 @@
  */
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { repeatingSectionEntity } from "@/lib/form-builder/entities/repeating-section"
@@ -306,11 +306,35 @@ export function RepeatingSectionRenderer({
   // post-mount) the local `instances` would otherwise stay at its initial
   // empty array. Sync down only when local state is empty — guard against
   // overwriting in-progress edits.
+  //
+  // Data-loss fix (resumed draft): the sync MUST also push the hydrated
+  // instances back into the interpreter store via setValue({ instances }).
+  // Local `instances` and the store's `entity.value` are two copies of the
+  // same data; previously this effect updated only local state, so if the
+  // store's copy ever diverged (or was never seeded with the repeatingSection
+  // value while local caught up from a stale snapshot) the submit-time
+  // validateInstanceRequired / stripHiddenAnswers walk — which reads the STORE,
+  // not local state — would see an empty instances[] and the rows would vanish
+  // on submit. Re-asserting setValue here guarantees store == local == stored.
+  //
+  // Loop guard (hydratedRef): setValue mutates the store, which can update
+  // `entity.value` → re-render → this effect could re-run. We hydrate exactly
+  // ONCE. After the first sync, hydratedRef is set and the effect short-circuits,
+  // so subsequent renders (including ones caused by our own setValue) never
+  // re-sync. This also means we never clobber in-progress user edits: once the
+  // user adds/edits/removes an instance the mutators own the state, and this
+  // effect has already locked itself out via the ref.
   const storedInstances =
     (entity.value as { instances?: InstanceValues[] } | undefined)?.instances
+  const hydratedRef = useRef(false)
   useEffect(() => {
+    if (hydratedRef.current) return
     if (instances.length === 0 && storedInstances && storedInstances.length > 0) {
+      hydratedRef.current = true
       setInstances(storedInstances)
+      // Re-assert the stored value into the store so downstream submit-time
+      // validation/scrub (which reads the store, not local state) agrees.
+      setValue({ instances: storedInstances })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storedInstances])

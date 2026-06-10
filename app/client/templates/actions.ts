@@ -258,7 +258,7 @@ export async function deleteClientTemplate(templateId: string) {
  */
 export async function createCustomerTemplateDraftSubmission(
   templateId: string
-): Promise<{ id: string; versionId: string }> {
+): Promise<{ id: string; versionId: string; answersJson: Record<string, unknown> }> {
   const ctx = await requireClientContext();
   const supabase = await createClient();
 
@@ -283,9 +283,11 @@ export async function createCustomerTemplateDraftSubmission(
   // the fill route would spawn a fresh orphan draft each time. Reuse the most
   // recent open draft for this (client, version) self-fill — assignment_id IS NULL
   // distinguishes customer self-fills from admin-assigned drafts on the same version.
+  // answers_json is returned so the RSC can seed InterpreterRenderer.initialValues
+  // and a resumed self-fill draft rehydrates every field (incl. repeating-section rows).
   const { data: existingDraft } = await supabase
     .from("form_submissions")
-    .select("id")
+    .select("id, answers_json")
     .eq("client_id", ctx.client_id)
     .eq("template_version_id", latestVersion.id)
     .eq("status", "draft")
@@ -295,7 +297,11 @@ export async function createCustomerTemplateDraftSubmission(
     .maybeSingle();
 
   if (existingDraft) {
-    return { id: existingDraft.id, versionId: latestVersion.id };
+    return {
+      id: existingDraft.id,
+      versionId: latestVersion.id,
+      answersJson: (existingDraft.answers_json as Record<string, unknown>) ?? {},
+    };
   }
 
   // INSERT draft form_submissions with assignment_id=NULL (D-16 contract).
@@ -316,7 +322,7 @@ export async function createCustomerTemplateDraftSubmission(
     throw new Error(error?.message ?? "Failed to create draft submission");
   }
 
-  return { id: draft.id, versionId: latestVersion.id };
+  return { id: draft.id, versionId: latestVersion.id, answersJson: {} };
 }
 
 /**
@@ -431,6 +437,26 @@ export async function submitCustomerTemplateFillByIdAction(
   const { evaluateVisibility } = await import("@/lib/form-builder/visibility/evaluate-visibility");
   const { stripHiddenAnswers } = await import("@/lib/form-builder/visibility/strip-hidden-answers");
   const visibility = evaluateVisibility(schemaJson as Parameters<typeof evaluateVisibility>[0], result.data as Record<string, unknown>);
+
+  // BUG A — root-level DYNAMIC required enforcement. validateEntitiesValues only
+  // catches STATIC required and validateInstanceRequired only walks repeatingSection
+  // children, so a top-level field made required ONLY by a fired `require` rule could
+  // be submitted empty. Run against the SAME visibility map computed above, before
+  // the scrub/DB write. Surface parity with admin + assignment paths (COND-03).
+  const { validateRootRequired } = await import("@/lib/form-builder/validate-instance-required");
+  const rootFailures = validateRootRequired(
+    schemaJson as Parameters<typeof validateRootRequired>[0],
+    result.data as Record<string, unknown>,
+    visibility
+  );
+  if (rootFailures.length > 0) {
+    const first = rootFailures[0];
+    throw new Error(
+      `Missing required field "${first.label}"` +
+        (rootFailures.length > 1 ? ` (and ${rootFailures.length - 1} more)` : "")
+    );
+  }
+
   const scrubbedAnswers = stripHiddenAnswers(schemaJson as Parameters<typeof stripHiddenAnswers>[0], result.data as Record<string, unknown>, visibility);
 
   // Step 4: write SCRUBBED answers. The .eq("status","draft") filter +

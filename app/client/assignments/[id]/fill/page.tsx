@@ -72,6 +72,7 @@ export default async function FillAssignmentPage({ params }: Props) {
       assignmentId={id}
       clientId={ctx.client_id}
       submissionId={draft.id}
+      initialValues={draft.answersJson}
     />
   );
 }

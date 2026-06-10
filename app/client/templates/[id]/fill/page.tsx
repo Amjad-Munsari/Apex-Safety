@@ -88,6 +88,7 @@ export default async function FillCustomerTemplatePage({ params }: Props) {
         schemaJson={version.schema_json as FormBuilderSchema}
         submissionId={draft.id}
         clientId={ctx.client_id}
+        initialValues={draft.answersJson}
       />
     </div>
   );

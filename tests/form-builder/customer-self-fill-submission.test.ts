@@ -17,10 +17,25 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // Tracks the payload passed to form_submissions INSERT (createCustomerTemplateDraftSubmission)
 const insertSpy = vi.fn();
 
-// Tracks the UPDATE call (submitCustomerTemplateFillByIdAction)
+// Tracks the UPDATE call (submitCustomerTemplateFillByIdAction):
+//   .update(...).eq("id").eq("client_id").eq("status","draft").select("id").maybeSingle()
 const updateSubmissionSpy = vi.fn();
 const eqSubmissionIdSpy = vi.fn();
 const eqSubmissionClientSpy = vi.fn();
+const eqSubmissionStatusSpy = vi.fn();
+const selectAfterUpdateSpy = vi.fn();
+const maybeSingleAfterUpdateSpy = vi.fn();
+
+// Draft-reuse SELECT (createCustomerTemplateDraftSubmission) — {data:null} default so
+// the INSERT path is exercised; a dedicated test overrides it to a row.
+const draftReuseMaybeSingleSpy = vi.fn();
+
+// Submission-fetch SELECT in submitCustomerTemplateFillByIdAction
+// (.select("template_version_id").eq("id").eq("client_id").single())
+const submissionFetchSingleSpy = vi.fn();
+
+// schema_json fetch in the submit path (.select("schema_json").eq("id").single())
+const versionSchemaSingleSpy = vi.fn();
 
 // Tracks the maybySingle result for template_versions (latest published version)
 const versionMaybeSingleSpy = vi.fn();
@@ -48,30 +63,71 @@ function makeFromMock(table: string) {
   }
 
   if (table === "template_versions") {
-    // createCustomerTemplateDraftSubmission:
-    //   .select("id").eq("template_id", ...).not("published_at", "is", null)
-    //   .order(...).limit(1).maybeSingle()
     versionMaybeSingleSpy.mockResolvedValue({ data: { id: "ver-1" }, error: null });
-    const limitSpy = vi.fn().mockReturnValue({ maybeSingle: versionMaybeSingleSpy });
-    const orderSpy = vi.fn().mockReturnValue({ limit: limitSpy });
-    const notSpy = vi.fn().mockReturnValue({ order: orderSpy });
-    const eqSpy = vi.fn().mockReturnValue({ not: notSpy });
-    const selectSpy = vi.fn().mockReturnValue({ eq: eqSpy });
+    versionSchemaSingleSpy.mockResolvedValue({
+      data: { schema_json: { entities: {}, root: [] } },
+      error: null,
+    });
+    const selectSpy = vi.fn().mockImplementation((cols?: string) => {
+      if (cols === "schema_json") {
+        // submit path: .select("schema_json").eq("id").single()
+        const eq = vi.fn().mockReturnValue({ single: versionSchemaSingleSpy });
+        return { eq };
+      }
+      // latest-published-version path:
+      //   .select("id").eq("template_id").not("published_at","is",null)
+      //   .order().limit(1).maybeSingle()
+      const limitSpy = vi.fn().mockReturnValue({ maybeSingle: versionMaybeSingleSpy });
+      const orderSpy = vi.fn().mockReturnValue({ limit: limitSpy });
+      const notSpy = vi.fn().mockReturnValue({ order: orderSpy });
+      const eqSpy = vi.fn().mockReturnValue({ not: notSpy });
+      return { eq: eqSpy };
+    });
     return { select: selectSpy };
   }
 
   if (table === "form_submissions") {
-    // INSERT (createCustomerTemplateDraftSubmission)
+    // INSERT (createCustomerTemplateDraftSubmission): .insert(...).select("id").single()
     const singleAfterInsert = vi.fn().mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
     const selectAfterInsert = vi.fn().mockReturnValue({ single: singleAfterInsert });
     insertSpy.mockReturnValue({ select: selectAfterInsert });
 
-    // UPDATE (submitCustomerTemplateFillByIdAction)
-    eqSubmissionClientSpy.mockResolvedValue({ error: null });
+    // UPDATE (submitCustomerTemplateFillByIdAction):
+    //   .update(...).eq("id").eq("client_id").eq("status","draft").select("id").maybeSingle()
+    maybeSingleAfterUpdateSpy.mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
+    selectAfterUpdateSpy.mockReturnValue({ maybeSingle: maybeSingleAfterUpdateSpy });
+    eqSubmissionStatusSpy.mockReturnValue({ select: selectAfterUpdateSpy });
+    eqSubmissionClientSpy.mockReturnValue({ eq: eqSubmissionStatusSpy });
     eqSubmissionIdSpy.mockReturnValue({ eq: eqSubmissionClientSpy });
     updateSubmissionSpy.mockReturnValue({ eq: eqSubmissionIdSpy });
 
+    // SELECT — disambiguated by selected columns:
+    //   draft-reuse (create): .select("id, answers_json").eq("client_id").eq("template_version_id")
+    //     .eq("status").is("assignment_id",null).order().limit().maybeSingle() → {data:null}
+    //   submission-fetch (submit): .select("template_version_id").eq("id").eq("client_id").single()
+    draftReuseMaybeSingleSpy.mockResolvedValue({ data: null });
+    submissionFetchSingleSpy.mockResolvedValue({
+      data: { template_version_id: "ver-1" },
+      error: null,
+    });
+    const selectSpy = vi.fn().mockImplementation((cols?: string) => {
+      if (cols === "template_version_id") {
+        const eqClient = vi.fn().mockReturnValue({ single: submissionFetchSingleSpy });
+        const eqId = vi.fn().mockReturnValue({ eq: eqClient });
+        return { eq: eqId };
+      }
+      // draft-reuse chain
+      const limit = vi.fn().mockReturnValue({ maybeSingle: draftReuseMaybeSingleSpy });
+      const order = vi.fn().mockReturnValue({ limit });
+      const isAssignment = vi.fn().mockReturnValue({ order });
+      const eqStatus = vi.fn().mockReturnValue({ is: isAssignment });
+      const eqVersion = vi.fn().mockReturnValue({ eq: eqStatus });
+      const eqClient = vi.fn().mockReturnValue({ eq: eqVersion });
+      return { eq: eqClient };
+    });
+
     return {
+      select: selectSpy,
       insert: insertSpy,
       update: updateSubmissionSpy,
     };
@@ -116,6 +172,39 @@ vi.mock("next/navigation", () => ({
   notFound: vi.fn(),
 }));
 
+// n8n dispatch — spy so the double-submit-guard test can assert it never fires.
+vi.mock("@/lib/notifications/client-form-events", () => ({
+  dispatchClientFormEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+// ── Server-side validation pipeline mocks ─────────────────────────────────────
+// submitCustomerTemplateFillByIdAction dynamically imports these. validateEntitiesValues
+// echoes the input answers as result.data; the visibility / required helpers are
+// identity/no-op so the SCRUBBED answers == the input answers.
+vi.mock("@coltorapps/builder", () => ({
+  validateEntitiesValues: vi.fn(async (answers: unknown) => ({ success: true, data: answers })),
+}));
+vi.mock("@/lib/form-builder", () => ({ formBuilder: {} }));
+vi.mock("@/lib/form-builder/sanitize-schema", () => ({
+  sanitizeSchema: vi.fn((schema: unknown) => schema),
+}));
+vi.mock("@/lib/form-builder/prune-schema-for-validation", () => ({
+  pruneSchemaForValidation: vi.fn((schema: unknown) => schema),
+}));
+vi.mock("@/lib/form-builder/visibility/compute-computed-values", () => ({
+  setCurrentFormSchema: vi.fn(),
+}));
+vi.mock("@/lib/form-builder/validate-instance-required", () => ({
+  validateInstanceRequired: vi.fn(() => []),
+  validateRootRequired: vi.fn(() => []),
+}));
+vi.mock("@/lib/form-builder/visibility/evaluate-visibility", () => ({
+  evaluateVisibility: vi.fn(() => ({})),
+}));
+vi.mock("@/lib/form-builder/visibility/strip-hidden-answers", () => ({
+  stripHiddenAnswers: vi.fn((_schema: unknown, answers: unknown) => answers),
+}));
+
 // ── Import the actions under test ──────────────────────────────────────────────
 
 import {
@@ -124,6 +213,7 @@ import {
 } from "@/app/client/templates/actions";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events";
 
 // ── Helper: reset the from mock so each test gets fresh spies ────────────────
 
@@ -152,12 +242,24 @@ describe("customer self-fill submission — Phase 16 D-16 (Plan 16-08 UPDATE arc
       error: null,
     });
     versionMaybeSingleSpy.mockResolvedValue({ data: { id: "ver-1" }, error: null });
+    versionSchemaSingleSpy.mockResolvedValue({
+      data: { schema_json: { entities: {}, root: [] } },
+      error: null,
+    });
+    draftReuseMaybeSingleSpy.mockResolvedValue({ data: null });
+    submissionFetchSingleSpy.mockResolvedValue({
+      data: { template_version_id: "ver-1" },
+      error: null,
+    });
 
     const singleAfterInsert = vi.fn().mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
     const selectAfterInsert = vi.fn().mockReturnValue({ single: singleAfterInsert });
     insertSpy.mockReturnValue({ select: selectAfterInsert });
 
-    eqSubmissionClientSpy.mockResolvedValue({ error: null });
+    maybeSingleAfterUpdateSpy.mockResolvedValue({ data: { id: "sub-draft-1" }, error: null });
+    selectAfterUpdateSpy.mockReturnValue({ maybeSingle: maybeSingleAfterUpdateSpy });
+    eqSubmissionStatusSpy.mockReturnValue({ select: selectAfterUpdateSpy });
+    eqSubmissionClientSpy.mockReturnValue({ eq: eqSubmissionStatusSpy });
     eqSubmissionIdSpy.mockReturnValue({ eq: eqSubmissionClientSpy });
     updateSubmissionSpy.mockReturnValue({ eq: eqSubmissionIdSpy });
 
@@ -243,7 +345,10 @@ describe("customer self-fill submission — Phase 16 D-16 (Plan 16-08 UPDATE arc
       }
     }
 
-    // Assert the UPDATE payload
+    // Assert the UPDATE payload — answers_json is now the SCRUBBED answers from the
+    // validation pipeline. With stripHiddenAnswers mocked to identity, the scrubbed
+    // answers equal the input answers (still meaningful: the action wrote what the
+    // pipeline returned, not raw client input).
     expect(updateSubmissionSpy).toHaveBeenCalledWith(
       expect.objectContaining({
         answers_json: answers,
@@ -254,7 +359,48 @@ describe("customer self-fill submission — Phase 16 D-16 (Plan 16-08 UPDATE arc
     // Assert client_id defense-in-depth filter (T-16-04, T-16-09)
     expect(eqSubmissionClientSpy).toHaveBeenCalledWith("client_id", "client-org-001");
 
+    // Assert the double-submit guard filter on the UPDATE (.eq("status","draft"))
+    expect(eqSubmissionStatusSpy).toHaveBeenCalledWith("status", "draft");
+
+    // n8n event dispatched exactly once on the success path
+    expect(dispatchClientFormEvent).toHaveBeenCalledTimes(1);
+
     // Assert redirect to templates list
     expect(redirect).toHaveBeenCalledWith("/client/templates");
+  });
+
+  // ── Test (f): draft-reuse idempotency ────────────────────────────────────────
+  it("createCustomerTemplateDraftSubmission: REUSES an existing self-fill draft (returns its id, versionId, answersJson) and does NOT insert", async () => {
+    rewireFromMock();
+    // Override the draft-reuse SELECT to return an existing draft row.
+    draftReuseMaybeSingleSpy.mockResolvedValueOnce({
+      data: { id: "existing-draft-9", answers_json: { q1: "saved" } },
+    });
+
+    const result = await createCustomerTemplateDraftSubmission("tmpl-1");
+
+    expect(result).toEqual({
+      id: "existing-draft-9",
+      versionId: "ver-1",
+      answersJson: { q1: "saved" },
+    });
+    expect(insertSpy).not.toHaveBeenCalled();
+  });
+
+  // ── Test (g): double-submit guard ────────────────────────────────────────────
+  it("submitCustomerTemplateFillByIdAction: throws 'already been submitted' and does NOT dispatch n8n when the UPDATE matches zero rows", async () => {
+    rewireFromMock();
+    // The draft already flipped to 'submitted' → the status-guarded UPDATE matches
+    // zero rows (maybeSingle → {data:null}).
+    maybeSingleAfterUpdateSpy.mockResolvedValueOnce({ data: null, error: null });
+
+    await expect(
+      submitCustomerTemplateFillByIdAction("sub-draft-1", { q1: "answer" })
+    ).rejects.toThrow("already been submitted");
+
+    // The webhook must NOT fire for a duplicate submit.
+    expect(dispatchClientFormEvent).not.toHaveBeenCalled();
+    // And no redirect on the failure path.
+    expect(redirect).not.toHaveBeenCalled();
   });
 });
