@@ -2,7 +2,6 @@ import { createEntity } from "@coltorapps/builder";
 import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { optionsAttribute } from "../attributes/options";
-import { allowMultipleAttribute } from "../attributes/allow-multiple";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
 import { visibilityRulesAttribute } from "../attributes/visibility-rules";
 import { makeShouldBeProcessed } from "../visibility/should-be-processed";
@@ -13,34 +12,30 @@ export const selectFieldEntity = createEntity({
     labelAttribute,
     requiredAttribute,
     optionsAttribute,
-    allowMultipleAttribute,
     attachPhotosAttribute,
     visibilityRulesAttribute,
   ],
+  // Single-select only — the `allowMultiple` mode was removed (audit #5).
   validate(value, context) {
     const isRequired = context.entity.attributes.required ?? false;
     const label = context.entity.attributes.label ?? "This field";
-    const allowMultiple = context.entity.attributes.allowMultiple ?? false;
     const options = context.entity.attributes.options ?? [];
 
-    if (isRequired && (value === undefined || value === null || value === "")) {
+    // Treat an empty array the same as empty/undefined so a stray `[]` can't
+    // satisfy a required select (audit #4).
+    const isEmpty =
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0);
+
+    if (isRequired && isEmpty) {
       throw new Error(`${label} is required.`);
     }
-    if (value !== undefined && value !== null && value !== "") {
+    if (!isEmpty) {
       const validValues = options.map((o: { value: string; label: string }) => o.value);
-      if (allowMultiple) {
-        if (!Array.isArray(value)) {
-          throw new Error(`${label} must be an array of selected values.`);
-        }
-        for (const v of value as string[]) {
-          if (!validValues.includes(v)) {
-            throw new Error(`"${v}" is not a valid option for ${label}.`);
-          }
-        }
-      } else {
-        if (!validValues.includes(value as string)) {
-          throw new Error(`"${value}" is not a valid option for ${label}.`);
-        }
+      if (!validValues.includes(value as string)) {
+        throw new Error(`"${value}" is not a valid option for ${label}.`);
       }
     }
     return value;
