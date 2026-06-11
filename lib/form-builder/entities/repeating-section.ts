@@ -47,24 +47,59 @@ export const repeatingSectionEntity = createEntity({
     // NO attachPhotosAttribute — repeatingSection is a container (D-05: "every non-section entity")
     visibilityRulesAttribute,
   ],
-  validate(value) {
-    // Safe default: undefined/null → empty instances
+  validate(value, context) {
+    // Resolve the coerced instances array first, then enforce business bounds.
+    // context may be absent in unit tests that only exercise shape coercion —
+    // guard accordingly.
+    const attrs = (context?.entity?.attributes ?? {}) as {
+      minInstances?: number;
+      maxInstances?: number;
+      title?: string;
+    };
+
+    let instances: Array<Record<string, unknown>>;
+    let coerced: { instances: Array<Record<string, unknown>> };
+
     if (value === undefined || value === null) {
-      return { instances: [] };
+      coerced = { instances: [] };
+      instances = coerced.instances;
+    } else {
+      const v = value as Record<string, unknown>;
+      // Pitfall 3 safe coercion: object without instances key → treat as empty
+      if (!("instances" in v)) {
+        coerced = { instances: [] };
+        instances = coerced.instances;
+      } else if (!Array.isArray(v.instances)) {
+        // instances key present — verify it is an array
+        throw new Error("Repeating section value must have an instances array.");
+      } else {
+        coerced = v as { instances: Array<Record<string, unknown>> };
+        instances = coerced.instances;
+      }
     }
-    const v = value as Record<string, unknown>;
 
-    // Pitfall 3 safe coercion: object without instances key → treat as empty
-    if (!("instances" in v)) {
-      return { instances: [] };
+    // D-03 bounds enforcement (audit #3). Previously min/max were never enforced
+    // anywhere — the renderer hint was display-only and the server added nothing,
+    // so an empty repeating section always passed. Enforcing here covers BOTH the
+    // client (validateEntitiesValues) and the server submit path in one place, and
+    // makes the "the section's own validator still enforces min/max counts"
+    // comments in prune-schema-for-validation.ts / actions.ts finally true.
+    const label = attrs.title || "This section";
+    const min = typeof attrs.minInstances === "number" ? attrs.minInstances : 0;
+    const max = typeof attrs.maxInstances === "number" ? attrs.maxInstances : undefined;
+
+    if (min > 0 && instances.length < min) {
+      throw new Error(
+        `${label} requires at least ${min} ${min === 1 ? "entry" : "entries"}.`
+      );
+    }
+    if (max !== undefined && instances.length > max) {
+      throw new Error(
+        `${label} allows at most ${max} ${max === 1 ? "entry" : "entries"}.`
+      );
     }
 
-    // instances key present — verify it is an array
-    if (!Array.isArray(v.instances)) {
-      throw new Error("Repeating section value must have an instances array.");
-    }
-
-    return v as { instances: Array<Record<string, unknown>> };
+    return coerced;
   },
   shouldBeProcessed: makeShouldBeProcessed(),
 });

@@ -235,22 +235,54 @@ describe("per-instance validation gap — documented", () => {
 });
 
 // ============================================================
-// D-03 min/max bounds — schema-level documentation
+// D-03 min/max bounds — enforced in validate() (audit #3)
 // ============================================================
+//
+// Previously entity.validate() deliberately did NOT enforce minInstances — the
+// renderer hint was display-only and the server added nothing, so an empty
+// repeating section always passed (confirmed bug). Enforcement now lives in
+// validate(), so it covers BOTH client (validateEntitiesValues) and the server
+// submit path in one place.
 
-describe("D-03 min/max bounds — schema-level note", () => {
-  it("entity.validate() returns OK for instances below minInstances (bounds enforced by renderer)", async () => {
+describe("D-03 min/max bounds — enforced in validate()", () => {
+  async function entity() {
     const { repeatingSectionEntity } = await import(
       "@/lib/form-builder/entities/repeating-section"
     );
-    // Set minInstances = 2 in the attrs; validation with only 1 instance should still pass
-    // at the entity level. The renderer enforces min/max before calling setEntityValue().
-    // This is intentional: entity.validate() checks SHAPE, not BUSINESS RULES.
-    const val = { instances: [{}] }; // length 1, below minInstances = 2
-    const result = repeatingSectionEntity.validate(val, {
-      entity: { attributes: { minInstances: 2 } },
-    } as never);
-    // Should return the value unchanged — bounds are renderer-enforced
-    expect(result).toEqual(val);
+    return repeatingSectionEntity;
+  }
+  const ctx = (attributes: Record<string, unknown>) => ({ entity: { attributes } } as never);
+
+  it("throws when instances are below minInstances", async () => {
+    const e = await entity();
+    expect(() => e.validate({ instances: [{}] }, ctx({ minInstances: 2, title: "Doors" }))).toThrow(
+      /at least 2/
+    );
+  });
+
+  it("throws when an empty section is required (minInstances >= 1)", async () => {
+    const e = await entity();
+    expect(() => e.validate({ instances: [] }, ctx({ minInstances: 1 }))).toThrow();
+    // undefined coerces to { instances: [] } and is likewise rejected
+    expect(() => e.validate(undefined as never, ctx({ minInstances: 1 }))).toThrow();
+  });
+
+  it("passes when instance count meets minInstances", async () => {
+    const e = await entity();
+    const val = { instances: [{}, {}] };
+    expect(e.validate(val, ctx({ minInstances: 2 }))).toEqual(val);
+  });
+
+  it("throws when instances exceed maxInstances", async () => {
+    const e = await entity();
+    expect(() =>
+      e.validate({ instances: [{}, {}, {}] }, ctx({ maxInstances: 2, title: "Doors" }))
+    ).toThrow(/at most 2/);
+  });
+
+  it("ignores bounds when minInstances is 0 / unset", async () => {
+    const e = await entity();
+    expect(e.validate({ instances: [] }, ctx({ minInstances: 0 }))).toEqual({ instances: [] });
+    expect(e.validate({ instances: [] }, ctx({}))).toEqual({ instances: [] });
   });
 });
