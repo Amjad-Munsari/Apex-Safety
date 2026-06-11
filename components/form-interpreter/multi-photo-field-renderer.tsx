@@ -226,8 +226,15 @@ export function MultiPhotoFieldRenderer({
 
           committedPaths.push(storagePath)
           setValue(committedPaths)
-        } catch {
-          toast.error("Photo could not be processed. Try a different image.")
+        } catch (err) {
+          // Surface the real failure (server action errors carry the cause,
+          // e.g. storage/DB failures) instead of swallowing it.
+          console.error("Photo upload failed:", err)
+          toast.error(
+            err instanceof Error && err.message
+              ? `Photo upload failed: ${err.message}`
+              : "Photo could not be processed. Try a different image."
+          )
           // Mark pending item as errored (shows AlertCircle overlay in cell)
           setPendingItems((prev) =>
             prev.map((item) =>
