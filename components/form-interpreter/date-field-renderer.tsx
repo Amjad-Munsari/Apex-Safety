@@ -52,6 +52,8 @@ export function DateFieldRenderer({ entity, setValue, surface = "cream", dynamic
       <DateField
         surface={surface}
         value={value || undefined}
+        min={attrs.minDate}
+        max={attrs.maxDate}
         onChange={(v) => setValue(v)}
       />
       {/* helpText not available on dateField entity in Phase 13 */}

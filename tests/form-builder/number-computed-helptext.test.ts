@@ -27,7 +27,6 @@ describe("numberField / computedField accept a helpText attribute (FRA seed regr
               required: true,
               min: 1,
               max: 5,
-              unit: "",
               helpText: "1 = Very Low, 2 = Low, 3 = Medium, 4 = High, 5 = Very High",
             },
           },

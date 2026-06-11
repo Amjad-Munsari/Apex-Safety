@@ -51,6 +51,7 @@ import type { FormBuilderSchema, formBuilder } from "@/lib/form-builder"
 import type { InterpreterStore } from "@coltorapps/builder"
 import { ChevronDown, ChevronUp, Plus, X } from "lucide-react"
 import { evaluateVisibilityForInstance } from "@/lib/form-builder/visibility/evaluate-visibility"
+import { DISALLOWED_IN_REPEATING_SECTION } from "@/lib/form-builder/repeating-section-constraints"
 
 type InstanceValues = Record<string, unknown>
 
@@ -109,13 +110,9 @@ const surfaceTokens = {
   },
 } as const
 
-/** Specialty entity types not supported inside repeating sections in Phase 14. */
-const SPECIALTY_TYPES = new Set([
-  "multiPhotoField",
-  "geolocationField",
-  "computedField",
-  "repeatingSection",
-])
+/** Specialty entity types not supported inside repeating sections.
+ *  Single source of truth shared with the builder guard + publish validator. */
+const SPECIALTY_TYPES = DISALLOWED_IN_REPEATING_SECTION
 
 /**
  * Renders a single child entity as a controlled inline input.

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import { useBuilderStore, useBuilderStoreData } from "@coltorapps/builder-react";
 import { formBuilder } from "@/lib/form-builder";
-import { sanitizeSchema } from "@/lib/form-builder/sanitize-schema";
+import { sanitizeSchemaWithReport } from "@/lib/form-builder/sanitize-schema";
 import { defaultEntityAttributes } from "@/lib/form-builder/default-entity-attributes";
 import { FieldPalette } from "@/components/form-builder/field-palette";
 import { BuilderCanvas } from "@/components/form-builder/builder-canvas";
@@ -145,8 +145,16 @@ export function TemplateBuilderClient({
   // Hydrate builder store from persisted schema (already coltorapps { entities, root } shape).
   // sanitizeSchema drops entities of any since-removed type (e.g. signatureField)
   // so older templates load instead of throwing "entity type is unknown".
+  // The report surfaces WHAT was dropped so we can warn the admin (audit #1)
+  // instead of losing those fields silently.
+  const sanitizeReport = useMemo(
+    () => (initialSchema ? sanitizeSchemaWithReport(initialSchema) : null),
+    [initialSchema]
+  );
+  const [removalDismissed, setRemovalDismissed] = useState(false);
+  const removedEntities = sanitizeReport?.removedEntities ?? [];
   const builderStore = useBuilderStore(formBuilder, {
-    initialData: initialSchema ? { schema: sanitizeSchema(initialSchema) } : undefined,
+    initialData: sanitizeReport ? { schema: sanitizeReport.schema } : undefined,
   });
 
   // Phase 15 — clear cycleState when admin edits a visibilityRules attribute, or makes
@@ -436,6 +444,26 @@ export function TemplateBuilderClient({
 
         {/* Center: Canvas column */}
         <div className={cn("flex-1 flex flex-col overflow-hidden", t.canvasBg)}>
+          {removedEntities.length > 0 && !removalDismissed && (
+            <div className="shrink-0 px-6 py-3 bg-[#8b2b21]/10 border-b border-[#8b2b21]/30 flex items-start gap-3">
+              <div className="flex-1 text-xs text-[#8b2b21]">
+                <span className="font-semibold">
+                  {removedEntities.length} field{removedEntities.length === 1 ? "" : "s"} removed.
+                </span>{" "}
+                {removedEntities.length === 1 ? "A field" : "These fields"} used a type that is no
+                longer supported ({Array.from(new Set(removedEntities.map((e) => e.type))).join(", ")})
+                and {removedEntities.length === 1 ? "was" : "were"} dropped from this template. Any
+                saved answers for {removedEntities.length === 1 ? "it" : "them"} are lost. Saving or
+                publishing will persist this removal.
+              </div>
+              <button
+                onClick={() => setRemovalDismissed(true)}
+                className="text-[#8b2b21]/60 hover:text-[#8b2b21] text-xs font-mono shrink-0"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <BuilderCanvas
               builderStore={builderStore}

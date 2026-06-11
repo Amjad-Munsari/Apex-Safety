@@ -2,7 +2,6 @@ import { createEntity } from "@coltorapps/builder";
 import { labelAttribute } from "../attributes/label";
 import { requiredAttribute } from "../attributes/required";
 import { minAttribute, maxAttribute } from "../attributes/number-bounds";
-import { unitAttribute } from "../attributes/unit";
 import { helpTextAttribute } from "../attributes/help-text";
 import { attachPhotosAttribute } from "../attributes/attach-photos";
 import { visibilityRulesAttribute } from "../attributes/visibility-rules";
@@ -15,7 +14,6 @@ export const numberFieldEntity = createEntity({
     requiredAttribute,
     minAttribute,
     maxAttribute,
-    unitAttribute,
     helpTextAttribute,
     attachPhotosAttribute,
     visibilityRulesAttribute,

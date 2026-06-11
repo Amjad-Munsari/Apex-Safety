@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { CheckboxField } from "@/components/forms/checkbox-field"
 import { cn } from "@/lib/utils"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
@@ -32,6 +33,16 @@ export function CheckboxFieldRenderer({ entity, setValue, surface = "cream", dyn
   const value = entity.value as boolean | string[] | undefined
   const error = entity.error ? String(entity.error) : undefined
   const label = (attrs.label ?? "") as string
+
+  // Seed the "checked by default" state on first mount when no answer exists yet
+  // (audit #6). Guarded on `value === undefined` so a saved submission that
+  // unchecked the box (value === false) is never re-checked on reload.
+  useEffect(() => {
+    if (value === undefined && attrs.defaultChecked) {
+      setValue(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entity.id])
 
   return (
     <div className="flex flex-col gap-1.5">

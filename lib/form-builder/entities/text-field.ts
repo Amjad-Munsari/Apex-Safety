@@ -30,6 +30,10 @@ export const textFieldEntity = createEntity({
     if (value !== undefined && value !== null && typeof value !== "string") {
       throw new Error(`${label} must be text.`);
     }
+    const maxLength = context.entity.attributes.maxLength;
+    if (typeof maxLength === "number" && typeof value === "string" && value.length > maxLength) {
+      throw new Error(`${label} must be ${maxLength} characters or fewer.`);
+    }
     return value;
   },
   shouldBeProcessed: makeShouldBeProcessed(),

@@ -187,8 +187,14 @@ describe("backcompat — pre-Phase-15 schema validation (Pitfall 1)", () => {
     async () => {
       const { validateSchema } = await import("@coltorapps/builder");
       const { formBuilder } = await import("@/lib/form-builder");
+      const { sanitizeSchema } = await import("@/lib/form-builder/sanitize-schema");
 
-      const result = await validateSchema(MIGRATION_011_SEED_SCHEMA, formBuilder);
+      // The seed carries attributes since removed from the entity definitions
+      // (selectField.allowMultiple, numberField.unit). sanitizeSchema strips these
+      // dead keys on load — the real pipeline (builder hydrate / submit) runs it
+      // before validateSchema, which would otherwise reject UnknownEntityAttributeType.
+      const sanitized = sanitizeSchema(MIGRATION_011_SEED_SCHEMA as never);
+      const result = await validateSchema(sanitized, formBuilder);
 
       // Schema validates cleanly despite having no visibilityRules on any entity
       expect(result.success).toBe(true);

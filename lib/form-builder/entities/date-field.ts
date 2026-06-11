@@ -29,6 +29,18 @@ export const dateFieldEntity = createEntity({
       if (isNaN(date.getTime())) {
         throw new Error(`${label} must be a valid date.`);
       }
+      // Bounds are stored and compared as YYYY-MM-DD strings, which sort
+      // lexicographically the same as chronologically — no timezone drift
+      // (audit #8).
+      const minDate = context.entity.attributes.minDate;
+      const maxDate = context.entity.attributes.maxDate;
+      const iso = String(value);
+      if (typeof minDate === "string" && minDate && iso < minDate) {
+        throw new Error(`${label} must be on or after ${minDate}.`);
+      }
+      if (typeof maxDate === "string" && maxDate && iso > maxDate) {
+        throw new Error(`${label} must be on or before ${maxDate}.`);
+      }
     }
     return value;
   },

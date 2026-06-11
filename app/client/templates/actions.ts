@@ -39,7 +39,14 @@ async function requireOwnedTemplate(templateId: string, clientId: string) {
   return data;
 }
 
-export async function createClientTemplate(name: string, templateType: string) {
+// Client-built templates default to a single "custom" type. The type dropdown was
+// removed from the client New Template dialog (Bug #6): the category never changed
+// builder behaviour — every type shares one field palette and canvas — so it was
+// pure cognitive load at the handful-of-templates scale clients operate at. Admin
+// template creation keeps its own type selector (Matt may want categories later).
+const CLIENT_TEMPLATE_TYPE = "custom";
+
+export async function createClientTemplate(name: string) {
   const supabase = await createClient();
   const ctx = await requireClientContext();
   const userId = await requireActorUserId("client");
@@ -48,7 +55,7 @@ export async function createClientTemplate(name: string, templateType: string) {
     .from("form_templates")
     .insert({
       name,
-      template_type: templateType,
+      template_type: CLIENT_TEMPLATE_TYPE,
       owner_id: ctx.client_id,
       owner_type: "customer",
     })
@@ -69,7 +76,7 @@ export async function createClientTemplate(name: string, templateType: string) {
     client_id: ctx.client_id,
     template_id: data.id,
     template_name: name,
-    template_type: templateType,
+    template_type: CLIENT_TEMPLATE_TYPE,
     created_at: new Date().toISOString(),
   });
 
