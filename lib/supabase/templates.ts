@@ -31,7 +31,14 @@ export async function getFormTemplate(id: string) {
 }
 
 /**
- * Get the latest version of a template (published or draft).
+ * Get the latest PUBLISHED version of a template.
+ *
+ * Filters to rows with a non-null `published_at` so an unpublished draft is
+ * never served to assessors — the name promises "published", and earlier this
+ * function ordered by version_number alone and could return the latest draft
+ * (audit finding #12). Use a separate helper if you ever need "latest of any
+ * status".
+ *
  * schema_json is a coltorapps FormBuilderSchema ({ entities, root }).
  */
 export async function getLatestPublishedVersion(templateId: string): Promise<{
@@ -47,6 +54,7 @@ export async function getLatestPublishedVersion(templateId: string): Promise<{
     .from("template_versions")
     .select("*")
     .eq("template_id", templateId)
+    .not("published_at", "is", null)
     .order("version_number", { ascending: false })
     .limit(1)
     .maybeSingle()
