@@ -10,12 +10,11 @@ export function NewClientTemplateButton() {
   const [isPending, startTransition] = useTransition();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
-  const [type, setType] = useState("custom");
 
   async function handleCreate() {
     if (!name.trim()) return;
     startTransition(async () => {
-      const id = await createClientTemplate(name.trim(), type);
+      const id = await createClientTemplate(name.trim());
       setShowModal(false);
       router.push(`/client/templates/${id}`);
     });
@@ -46,19 +45,6 @@ export function NewClientTemplateButton() {
                 className="bg-white border border-[#e5e1d8] rounded-sm px-4 py-3 text-[#1a1a1a] text-sm placeholder:text-[#a8a39d] outline-none focus:border-[#1a1a1a]/40 transition-colors"
                 autoFocus
               />
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-[#8a857f]">Type</label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value)}
-                className="bg-white border border-[#e5e1d8] rounded-sm px-4 py-3 text-[#1a1a1a] text-sm outline-none focus:border-[#1a1a1a]/40 transition-colors"
-              >
-                <option value="custom">Custom</option>
-                <option value="checklist">Checklist</option>
-                <option value="incident">Incident Report</option>
-              </select>
             </div>
 
             <div className="flex gap-3 justify-end">
