@@ -197,7 +197,7 @@ export function SectionCard({
         {childEntities.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[48px]">
             <p className={cn("text-xs font-mono transition-colors", isOverInner ? t.dropZoneTextActive : t.dropZoneText)}>
-              Drop fields here
+              No fields in this section yet
             </p>
           </div>
         ) : (

@@ -394,8 +394,8 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
   if (root.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
-        <p className={cn("text-sm font-mono", t.emptyText)}>Drag fields from the left panel</p>
-        <p className={cn("text-xs", t.emptySubtext)}>or click a field type to add it</p>
+        <p className={cn("text-sm font-mono", t.emptyText)}>Click a field type to add it</p>
+        <p className={cn("text-xs", t.emptySubtext)}>choose from the left panel</p>
       </div>
     );
   }
