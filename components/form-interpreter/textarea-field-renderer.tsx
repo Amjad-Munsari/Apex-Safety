@@ -46,6 +46,7 @@ export function TextareaFieldRenderer({ entity, setValue, surface = "cream", dyn
         <Textarea
           className={cn("min-h-[140px] rounded-sm pr-12 pb-8", t.input)}
           placeholder={attrs.placeholder ?? ""}
+          maxLength={attrs.maxLength}
           value={value}
           onChange={(e) => setValue(e.target.value)}
         />

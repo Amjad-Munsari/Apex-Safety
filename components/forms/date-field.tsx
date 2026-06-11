@@ -9,6 +9,10 @@ interface DateFieldProps {
   value: string | undefined
   onChange: (value: string) => void
   surface?: FormSurface
+  /** YYYY-MM-DD lower bound, passed to the native date input (audit #8). */
+  min?: string
+  /** YYYY-MM-DD upper bound, passed to the native date input (audit #8). */
+  max?: string
 }
 
 const surfaceTokens = {
@@ -34,7 +38,7 @@ function format(value: string | undefined) {
   return `${String(d).padStart(2, "0")} ${MONTHS[m - 1]} ${y}`
 }
 
-export function DateField({ value, onChange, surface = "dark" }: DateFieldProps) {
+export function DateField({ value, onChange, surface = "dark", min, max }: DateFieldProps) {
   const t = surfaceTokens[surface]
   const formatted = format(value)
 
@@ -44,6 +48,8 @@ export function DateField({ value, onChange, surface = "dark" }: DateFieldProps)
         type="date"
         className={cn("h-12 rounded-sm", t.input)}
         value={value ?? ""}
+        min={min}
+        max={max}
         onChange={(e) => onChange(e.target.value)}
       />
       {formatted && (

@@ -250,13 +250,12 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
 
   const options = (attrs.options as SelectOption[]) ?? [];
 
-  // For computedField entity-ID dropdowns: filter out current entity, sections, computed
+  // For computedField likelihood/consequence dropdowns: only numberField sources
+  // are valid. PAS 79 expects an integer 1–5; a Date/Text/Checkbox source coerces
+  // to NaN and leaves the risk badge permanently "pending" (audit finding #2).
+  // Restricting the candidates here makes that misconfiguration unrepresentable.
   const candidateEntities = Object.entries(entities).filter(
-    ([id, e]) =>
-      id !== selectedId &&
-      e.type !== "sectionGroup" &&
-      e.type !== "repeatingSection" &&
-      e.type !== "computedField"
+    ([id, e]) => id !== selectedId && e.type === "numberField"
   );
 
   const computedInputs = (attrs.computedInputs as { likelihood?: string; consequence?: string }) ?? {};
@@ -418,8 +417,9 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
               />
             </AttributeRow>
 
-            {/* Placeholder (for text, textarea, number) */}
-            {(isTextField || isTextarea || isNumber) && (
+            {/* Placeholder — only text + textarea declare placeholderAttribute.
+                numberField does not (audit #11), so it's excluded. */}
+            {(isTextField || isTextarea) && (
               <AttributeRow id={`${selectedId}-placeholder`} labelText="Placeholder" t={t}>
                 <input
                   id={`${selectedId}-placeholder`}
@@ -434,20 +434,141 @@ export function PropertiesPanel({ builderStore, selectedId, entities, surface = 
               </AttributeRow>
             )}
 
-            {/* Help text */}
-            <AttributeRow id={`${selectedId}-help-text`} labelText="Help Text" t={t}>
-              <input
-                id={`${selectedId}-help-text`}
-                type="text"
-                value={(attrs.helpText as string) ?? ""}
-                onChange={(e) => setAttr("helpText", e.target.value)}
-                placeholder="Shown below the field"
-                className={cn(
-                  "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
-                  t.input
-                )}
-              />
-            </AttributeRow>
+            {/* Max Length — text + textarea only (audit #7). Empty clears the cap. */}
+            {(isTextField || isTextarea) && (
+              <AttributeRow
+                id={`${selectedId}-max-length`}
+                labelText="Max Length"
+                hint="Maximum characters allowed (blank = no limit)"
+                t={t}
+              >
+                <input
+                  id={`${selectedId}-max-length`}
+                  type="number"
+                  min={1}
+                  value={(attrs.maxLength as number | undefined) ?? ""}
+                  placeholder="no limit"
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? undefined : parseInt(e.target.value, 10);
+                    setAttr("maxLength", val !== undefined && !isNaN(val) ? val : undefined);
+                  }}
+                  className={cn(
+                    "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                    t.input
+                  )}
+                />
+              </AttributeRow>
+            )}
+
+            {/* Number bounds — only numberField declares min/max (audit #9).
+                Drives both the fill-mode clamp and server validate(). */}
+            {isNumber && (
+              <div className="flex gap-3">
+                <AttributeRow
+                  id={`${selectedId}-min`}
+                  labelText="Min"
+                  hint="Lowest accepted value"
+                  t={t}
+                >
+                  <input
+                    id={`${selectedId}-min`}
+                    type="number"
+                    value={(attrs.min as number | undefined) ?? ""}
+                    placeholder="none"
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? undefined : Number(e.target.value);
+                      setAttr("min", val !== undefined && !isNaN(val) ? val : undefined);
+                    }}
+                    className={cn(
+                      "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors w-full",
+                      t.input
+                    )}
+                  />
+                </AttributeRow>
+                <AttributeRow
+                  id={`${selectedId}-max`}
+                  labelText="Max"
+                  hint="Highest accepted value"
+                  t={t}
+                >
+                  <input
+                    id={`${selectedId}-max`}
+                    type="number"
+                    value={(attrs.max as number | undefined) ?? ""}
+                    placeholder="none"
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? undefined : Number(e.target.value);
+                      setAttr("max", val !== undefined && !isNaN(val) ? val : undefined);
+                    }}
+                    className={cn(
+                      "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors w-full",
+                      t.input
+                    )}
+                  />
+                </AttributeRow>
+              </div>
+            )}
+
+            {/* Date bounds — only dateField declares minDate/maxDate (audit #8).
+                Stored as YYYY-MM-DD strings; enforced in validate() + the picker. */}
+            {isDate && (
+              <div className="flex gap-3">
+                <AttributeRow
+                  id={`${selectedId}-min-date`}
+                  labelText="Earliest Date"
+                  hint="Blank = no lower bound"
+                  t={t}
+                >
+                  <input
+                    id={`${selectedId}-min-date`}
+                    type="date"
+                    value={(attrs.minDate as string) ?? ""}
+                    onChange={(e) => setAttr("minDate", e.target.value || undefined)}
+                    className={cn(
+                      "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors w-full",
+                      t.input
+                    )}
+                  />
+                </AttributeRow>
+                <AttributeRow
+                  id={`${selectedId}-max-date`}
+                  labelText="Latest Date"
+                  hint="Blank = no upper bound"
+                  t={t}
+                >
+                  <input
+                    id={`${selectedId}-max-date`}
+                    type="date"
+                    value={(attrs.maxDate as string) ?? ""}
+                    onChange={(e) => setAttr("maxDate", e.target.value || undefined)}
+                    className={cn(
+                      "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors w-full",
+                      t.input
+                    )}
+                  />
+                </AttributeRow>
+              </div>
+            )}
+
+            {/* Help text — only entities that declare helpTextAttribute
+                (text, number, photos, location, computed). Showing it for
+                textarea/select/checkbox/date wrote to a non-existent attribute
+                (audit #11), risking a save-time InvalidEntitiesAttributes. */}
+            {(isTextField || isNumber || isMultiPhoto || isComputed || entity.type === "geolocationField") && (
+              <AttributeRow id={`${selectedId}-help-text`} labelText="Help Text" t={t}>
+                <input
+                  id={`${selectedId}-help-text`}
+                  type="text"
+                  value={(attrs.helpText as string) ?? ""}
+                  onChange={(e) => setAttr("helpText", e.target.value)}
+                  placeholder="Shown below the field"
+                  className={cn(
+                    "border rounded-[3px] px-3 py-2 text-sm outline-none transition-colors",
+                    t.input
+                  )}
+                />
+              </AttributeRow>
+            )}
 
             {/* Required toggle — not shown for computedField (no requiredAttribute) */}
             {hasRequired && (
