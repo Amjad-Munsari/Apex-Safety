@@ -3,7 +3,7 @@ import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ArrowLeft, Building, Calendar, FileText } from "lucide-react"
+import { ArrowLeft, Building, Calendar, FileText, Download } from "lucide-react"
 import { ProposalActions } from "./proposal-actions"
 
 export const dynamic = "force-dynamic"
@@ -17,7 +17,7 @@ const STATUS_TONE: Record<ProposalStatus, { ring: string; dot: string; label: st
   "Contract Issued": {
     ring: "border-success/40 text-success",
     dot: "bg-success",
-    label: "CONTRACT ISSUED",
+    label: "ISSUED",
   },
 }
 
@@ -52,6 +52,17 @@ export default async function ProposalDetailPage({
     } else {
       documentUrl = signed?.signedUrl ?? null
     }
+  }
+
+  // Issued contract PDF (set by issueContract). Shown alongside the proposal so
+  // the admin can download the counter-signed Service Agreement without a
+  // separate Contracts section — a contract is just this proposal, issued.
+  let contractUrl: string | null = null
+  if (proposal.contract_pdf_path) {
+    const { data: signed } = await adminClient.storage
+      .from("proposals")
+      .createSignedUrl(proposal.contract_pdf_path, 60 * 60)
+    contractUrl = signed?.signedUrl ?? null
   }
   const clientRecord = proposal.client as { id?: string; name?: string; contact_name?: string } | null
   const clientName = clientRecord?.name ?? "Unknown client"
@@ -166,6 +177,34 @@ export default async function ProposalDetailPage({
           </div>
         )}
       </Card>
+
+      {/* ─── SERVICE AGREEMENT (contract) — only once issued ─── */}
+      {contractUrl && (
+        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden flex flex-col">
+          <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+            <div className="flex items-center gap-3">
+              <FileText className="w-4 h-4 text-gold" />
+              <h3 className="font-sans font-medium text-white tracking-wide text-lg">
+                Service agreement
+              </h3>
+            </div>
+            <a
+              href={contractUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download={`CON-${proposal.id.slice(0, 6).toUpperCase()}.pdf`}
+              className="inline-flex items-center gap-2 h-8 px-3 rounded-sm bg-white/5 hover:bg-white/10 text-white/80 font-mono text-[10px] uppercase tracking-widest transition-colors"
+            >
+              <Download className="w-3 h-3" /> Download contract
+            </a>
+          </div>
+          <iframe
+            src={contractUrl}
+            title={`Service agreement for ${clientName}`}
+            className="w-full h-[720px] bg-[#0d0d0d]"
+          />
+        </Card>
+      )}
 
       {/* ─── SERVICES BREAKDOWN ─── */}
       {services.length > 0 && (

@@ -1,8 +1,7 @@
 import { getWorkflowErrors } from "@/lib/supabase/dashboard"
 import { describeWorkflowError } from "@/lib/workflow-errors"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { AlertCircle, RefreshCw, Terminal } from "lucide-react"
+import { AlertCircle, Terminal } from "lucide-react"
 
 export const dynamic = "force-dynamic"
 
@@ -37,38 +36,32 @@ export default async function ErrorsPage() {
             const friendly = describeWorkflowError(error.workflow_name)
             return (
               <div key={error.id} className="p-8 flex flex-col gap-4 group">
-                <div className="flex justify-between items-start">
-                  <div className="flex gap-5 items-start">
-                    <div className="mt-0.5">
-                      <AlertCircle className="w-5 h-5 text-danger/60" />
+                <div className="flex gap-5 items-start">
+                  <div className="mt-0.5">
+                    <AlertCircle className="w-5 h-5 text-danger/60" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="font-sans font-medium text-sm text-white">{friendly.title}</h3>
+                      <span className="text-[10px] font-mono text-danger border border-danger/20 px-2 py-0.5 rounded-[2px] bg-danger/5">FAILED</span>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="font-sans font-medium text-sm text-white">{friendly.title}</h3>
-                        <span className="text-[10px] font-mono text-danger border border-danger/20 px-2 py-0.5 rounded-[2px] bg-danger/5">FAILED</span>
+                    <p className="text-sm text-white/70 font-sans leading-relaxed mb-5 max-w-xl">
+                      {friendly.message}
+                    </p>
+                    {error.details.length > 0 && (
+                      <div className="flex flex-wrap gap-x-12 gap-y-2 mb-5">
+                        {error.details.map((d) => (
+                          <div key={d.label} className="flex items-baseline gap-2">
+                            <span className="text-[10px] font-mono uppercase tracking-widest text-[#555]">{d.label}</span>
+                            <span className="text-xs font-sans text-white/85">{d.value}</span>
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-sm text-white/70 font-sans leading-relaxed mb-5 max-w-xl">
-                        {friendly.message}
-                      </p>
-                      {error.details.length > 0 && (
-                        <div className="flex flex-wrap gap-x-12 gap-y-2 mb-5">
-                          {error.details.map((d) => (
-                            <div key={d.label} className="flex items-baseline gap-2">
-                              <span className="text-[10px] font-mono uppercase tracking-widest text-[#555]">{d.label}</span>
-                              <span className="text-xs font-sans text-white/85">{d.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <div className="text-[10px] font-mono uppercase tracking-widest text-[#555]">
-                        {new Date(error.created_at).toLocaleString('en-GB')}
-                      </div>
+                    )}
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-[#555]">
+                      {new Date(error.created_at).toLocaleString('en-GB')}
                     </div>
                   </div>
-                  <Button variant="outline" className="border-white/5 hover:bg-white/5 h-9 gap-2 text-xs font-mono uppercase tracking-widest" disabled>
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    RETRY
-                  </Button>
                 </div>
               </div>
             )

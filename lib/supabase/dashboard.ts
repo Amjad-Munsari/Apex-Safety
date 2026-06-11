@@ -436,3 +436,43 @@ export function calculateProposalTotal(servicesJson: any): number {
   }, 0)
   return subtotal * (1 + VAT_RATE)
 }
+
+export interface MonthlyHeadline {
+  assessmentsCompleted: number
+  reportsDelivered: number
+  proposalsSigned: number
+}
+
+/**
+ * Headline activity counts for the current calendar month, used by the admin
+ * dashboard "This month" card. Replaces hardcoded demo literals — every figure
+ * is a live DB count.
+ */
+export async function getMonthlyHeadline(): Promise<MonthlyHeadline> {
+  const now = new Date()
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+
+  const [completedRes, reportsRes, signedRes] = await Promise.all([
+    adminClient
+      .from("form_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "completed")
+      .gte("created_at", startOfMonth),
+    adminClient
+      .from("form_submissions")
+      .select("*", { count: "exact", head: true })
+      .not("report_storage_path", "is", null)
+      .gte("created_at", startOfMonth),
+    adminClient
+      .from("proposals")
+      .select("*", { count: "exact", head: true })
+      .in("status", ["Signed", "Contract Issued"])
+      .gte("signed_at", startOfMonth),
+  ])
+
+  return {
+    assessmentsCompleted: completedRes.count || 0,
+    reportsDelivered: reportsRes.count || 0,
+    proposalsSigned: signedRes.count || 0,
+  }
+}

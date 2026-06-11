@@ -1,24 +1,37 @@
 "use client"
 
 import * as React from "react"
-import { Upload, Save } from "lucide-react"
+import Image from "next/image"
+import { Upload, Save, X } from "lucide-react"
 import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { DEFAULT_BRANDING, applyBranding, loadBranding, saveBranding } from "@/lib/branding"
+import { saveNotificationSettings, uploadBrandingLogo, removeBrandingLogo } from "@/app/admin/settings/actions"
 
-export function SettingsForm() {
+export interface SettingsFormInitial {
+  signOffName: string
+  senderName: string
+  expiryRemindersEnabled: boolean
+  notifyOnUpload: boolean
+  logoUrl: string | null
+}
+
+export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
   const [primary, setPrimary] = React.useState(DEFAULT_BRANDING.primary)
   const [secondary, setSecondary] = React.useState(DEFAULT_BRANDING.secondary)
-  const [signOff, setSignOff] = React.useState("Matt Robinson")
-  const [senderName, setSenderName] = React.useState("888 Safety & Training")
-  const [logoName, setLogoName] = React.useState<string | null>(null)
+  const [signOff, setSignOff] = React.useState(initial.signOffName)
+  const [senderName, setSenderName] = React.useState(initial.senderName)
+  const [expiryReminders, setExpiryReminders] = React.useState(initial.expiryRemindersEnabled)
+  const [notifyUpload, setNotifyUpload] = React.useState(initial.notifyOnUpload)
+  const [logoUrl, setLogoUrl] = React.useState<string | null>(initial.logoUrl)
+  const [uploadingLogo, setUploadingLogo] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  // Hydrate the pickers from any previously-saved palette so they reflect the
-  // colours currently live on the app.
+  // Hydrate the colour pickers from any previously-saved palette so they reflect
+  // the colours currently live on the app.
   React.useEffect(() => {
     const saved = loadBranding()
     if (saved) {
@@ -27,15 +40,33 @@ export function SettingsForm() {
     }
   }, [])
 
-  // NOTE: picking a colour only updates local state (and the in-card Preview
-  // swatches below). Nothing is applied to the rest of the app until Save —
-  // see handleSave. This keeps unsaved edits from leaking onto the live UI.
-
-  function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
-    if (file) {
-      setLogoName(file.name)
-      toast.success("Logo staged", { description: `${file.name} will replace the current mark on save.` })
+    if (!file) return
+    setUploadingLogo(true)
+    const fd = new FormData()
+    fd.append("logo", file)
+    const res = await uploadBrandingLogo(fd)
+    setUploadingLogo(false)
+    // Reset the input so re-selecting the same file fires onChange again.
+    if (fileInputRef.current) fileInputRef.current.value = ""
+    if (res.ok && res.logoUrl) {
+      setLogoUrl(res.logoUrl)
+      toast.success("Logo updated", { description: "Your new mark is live on the client portal." })
+    } else {
+      toast.error(res.error || "Could not upload the logo.")
+    }
+  }
+
+  async function handleRemoveLogo() {
+    setUploadingLogo(true)
+    const res = await removeBrandingLogo()
+    setUploadingLogo(false)
+    if (res.ok) {
+      setLogoUrl(null)
+      toast.success("Logo removed", { description: "The client portal no longer shows a logo." })
+    } else {
+      toast.error(res.error || "Could not remove the logo.")
     }
   }
 
@@ -45,9 +76,20 @@ export function SettingsForm() {
     // re-applies it on every load).
     saveBranding({ primary, secondary })
     applyBranding({ primary, secondary })
-    await new Promise((r) => setTimeout(r, 400))
+
+    const res = await saveNotificationSettings({
+      signOffName: signOff,
+      senderName,
+      expiryRemindersEnabled: expiryReminders,
+      notifyOnUpload: notifyUpload,
+    })
     setSaving(false)
-    toast.success("Settings saved", { description: "Brand colours now apply across the app." })
+
+    if (res.ok) {
+      toast.success("Settings saved", { description: "Brand colours and notification defaults applied." })
+    } else {
+      toast.error(res.error || "Could not save settings.")
+    }
   }
 
   return (
@@ -59,21 +101,44 @@ export function SettingsForm() {
             <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#666] mb-2">01</div>
             <h3 className="font-serif text-[22px] text-white leading-tight">Branding</h3>
             <p className="text-[#888] text-xs mt-2 leading-relaxed">
-              Used on proposals, contracts, reports, and the client portal.
+              Used on the client portal, proposals, contracts, and reports.
             </p>
           </div>
 
           <div className="flex flex-col gap-6">
             {/* Logo */}
             <div className="flex flex-col gap-2">
-              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">Logo</span>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">Logo</span>
+                {logoUrl && (
+                  <button
+                    type="button"
+                    onClick={handleRemoveLogo}
+                    disabled={uploadingLogo}
+                    className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-danger transition-colors disabled:opacity-50"
+                  >
+                    <X className="w-3 h-3" /> Remove logo
+                  </button>
+                )}
+              </div>
               <div
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => !uploadingLogo && fileInputRef.current?.click()}
                 className="border border-dashed border-white/15 rounded-sm h-32 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-amber-500/40 hover:bg-white/[0.02] transition-all"
               >
-                <Upload className="w-5 h-5 text-white/40" />
+                {logoUrl ? (
+                  <Image
+                    src={logoUrl}
+                    alt="Current logo"
+                    width={180}
+                    height={48}
+                    unoptimized
+                    className="max-h-16 w-auto object-contain"
+                  />
+                ) : (
+                  <Upload className="w-5 h-5 text-white/40" />
+                )}
                 <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">
-                  {logoName ?? "Click to upload SVG or PNG"}
+                  {uploadingLogo ? "Uploading…" : logoUrl ? "Click to replace" : "Click to upload SVG or PNG"}
                 </span>
                 <span className="font-mono text-[9px] text-white/30 tracking-[0.2em]">
                   Recommended 240×60 · max 2MB
@@ -82,7 +147,7 @@ export function SettingsForm() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/png,image/svg+xml,image/jpeg,image/webp"
                 className="hidden"
                 onChange={handleLogoSelect}
               />
@@ -117,7 +182,7 @@ export function SettingsForm() {
             <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#666] mb-2">02</div>
             <h3 className="font-serif text-[22px] text-white leading-tight">Notifications</h3>
             <p className="text-[#888] text-xs mt-2 leading-relaxed">
-              Defaults applied to every email and SMS the platform sends on your behalf.
+              Defaults applied to every email the platform sends on your behalf.
             </p>
           </div>
 
@@ -126,17 +191,17 @@ export function SettingsForm() {
             <TextField label="Default Sender Name" value={senderName} onChange={setSenderName} hint="Appears as the From: name in client inboxes." />
             <div className="flex items-center justify-between bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
               <div>
-                <div className="text-sm text-white">Send 30-day expiry reminders</div>
-                <div className="text-[#888] text-xs mt-1">Email + SMS to the primary contact 30 days before expiry.</div>
+                <div className="text-sm text-white">Send expiry reminders</div>
+                <div className="text-[#888] text-xs mt-1">Email the primary contact as their documents approach expiry.</div>
               </div>
-              <Toggle defaultOn />
+              <Toggle on={expiryReminders} onChange={setExpiryReminders} />
             </div>
             <div className="flex items-center justify-between bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
               <div>
                 <div className="text-sm text-white">Notify on document upload</div>
                 <div className="text-[#888] text-xs mt-1">Tell the client whenever a new document lands in their portal.</div>
               </div>
-              <Toggle defaultOn />
+              <Toggle on={notifyUpload} onChange={setNotifyUpload} />
             </div>
           </div>
         </div>
@@ -194,12 +259,11 @@ function TextField({ label, value, onChange, hint }: { label: string; value: str
   )
 }
 
-function Toggle({ defaultOn }: { defaultOn?: boolean }) {
-  const [on, setOn] = React.useState(!!defaultOn)
+function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
     <button
       type="button"
-      onClick={() => setOn((v) => !v)}
+      onClick={() => onChange(!on)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
         on ? "bg-gold" : "bg-white/20"
       }`}

@@ -74,7 +74,7 @@ export default async function ExpiriesPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <RemindButton clientName={(doc.client as { name?: string } | null)?.name || "client"} />
+                    <RemindButton docId={doc.id} clientName={(doc.client as { name?: string } | null)?.name || "client"} />
                   </td>
                 </tr>
               )

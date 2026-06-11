@@ -1,7 +1,7 @@
-import { Download } from "lucide-react";
 import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { calculateProposalTotal } from "@/lib/supabase/dashboard";
+import { FileDownloadUrl } from "@/components/client/file-download-url";
 
 export const dynamic = "force-dynamic";
 
@@ -48,22 +48,23 @@ export default async function ClientContractsPage() {
     .map((c) => c.contract_pdf_path)
     .filter((p): p is string => typeof p === "string");
 
-  const signedUrlMap = new Map<string, string>();
+  // Sign two URLs per contract: a view URL (opens inline) and a download URL
+  // (download transform → force-save). Never expose the raw storage path (T-19-12).
+  const viewUrlMap = new Map<string, string>();
+  const downloadUrlMap = new Map<string, string>();
   if (paths.length > 0) {
-    const { data: signedItems, error: signError } = await adminClient.storage
-      .from("proposals")
-      .createSignedUrls(paths, 60 * 60);
-    if (signError) {
-      // Don't swallow storage failures — a silent disabled Download button is
-      // otherwise indistinguishable from "no contract" (code review WR-02).
-      console.error("[contracts] createSignedUrls failed:", signError.message);
+    const [viewRes, downloadRes] = await Promise.all([
+      adminClient.storage.from("proposals").createSignedUrls(paths, 60 * 60),
+      adminClient.storage.from("proposals").createSignedUrls(paths, 60 * 60, { download: true }),
+    ]);
+    if (viewRes.error) {
+      console.error("[contracts] createSignedUrls failed:", viewRes.error.message);
     }
-    if (signedItems) {
-      for (const item of signedItems) {
-        if (item.path && item.signedUrl) {
-          signedUrlMap.set(item.path, item.signedUrl);
-        }
-      }
+    for (const item of viewRes.data ?? []) {
+      if (item.path && item.signedUrl) viewUrlMap.set(item.path, item.signedUrl);
+    }
+    for (const item of downloadRes.data ?? []) {
+      if (item.path && item.signedUrl) downloadUrlMap.set(item.path, item.signedUrl);
     }
   }
 
@@ -79,9 +80,8 @@ export default async function ClientContractsPage() {
       services[0]?.service?.name ?? services[0]?.name ?? "Compliance Services";
     const title =
       services.length === 1 ? firstName : "Compliance & Training Programme";
-    const signedUrl = c.contract_pdf_path
-      ? (signedUrlMap.get(c.contract_pdf_path) ?? null)
-      : null;
+    const viewUrl = c.contract_pdf_path ? (viewUrlMap.get(c.contract_pdf_path) ?? null) : null;
+    const downloadUrl = c.contract_pdf_path ? (downloadUrlMap.get(c.contract_pdf_path) ?? null) : null;
     return {
       id: c.id as string,
       reference: shortRef(c.id as string),
@@ -89,7 +89,8 @@ export default async function ClientContractsPage() {
       issuedAt: new Date(issuedAt).toLocaleDateString("en-GB", DATE_FMT),
       total,
       serviceCount: services.length,
-      signedUrl,
+      viewUrl,
+      downloadUrl,
     };
   });
 
@@ -143,26 +144,11 @@ export default async function ClientContractsPage() {
 
                 {/* Right — download affordance */}
                 <div className="shrink-0 flex items-center">
-                  {c.signedUrl ? (
-                    <a
-                      href={c.signedUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      download={`${c.reference}.pdf`}
-                      className="bg-[#1a1a1a] hover:bg-black text-white text-[10px] uppercase tracking-[0.25em] font-bold h-10 px-5 rounded-sm flex items-center gap-2 transition-colors"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Download
-                    </a>
-                  ) : (
-                    <button
-                      disabled
-                      className="bg-[#1a1a1a]/40 text-white text-[10px] uppercase tracking-[0.25em] font-bold h-10 px-5 rounded-sm flex items-center gap-2 cursor-not-allowed"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Download
-                    </button>
-                  )}
+                  <FileDownloadUrl
+                    label="Download contract"
+                    downloadUrl={c.downloadUrl}
+                    viewUrl={c.viewUrl}
+                  />
                 </div>
               </div>
             </div>

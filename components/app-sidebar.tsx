@@ -58,7 +58,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
 
   return (
     <Sidebar className="border-none bg-black">
-      <SidebarHeader className="pt-10 px-8 pb-8 border-b border-white/5">
+      <SidebarHeader className="pt-10 px-6 pb-8 border-b border-white/5">
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase font-mono mb-2 opacity-50">Practice</span>
           <h1 className="font-serif text-[28px] leading-[0.9] text-white font-medium tracking-tight">
@@ -68,7 +68,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-5 py-8">
+      <SidebarContent className="px-3 py-8">
         <SidebarMenu className="gap-1">
           {mainNav.map((item) => {
             const active = isItemActive(item);
@@ -117,7 +117,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="px-8 py-6 border-t border-white/5">
+      <SidebarFooter className="px-6 py-6 border-t border-white/5">
         <div className="flex flex-col gap-2.5 font-mono text-[12px]">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>

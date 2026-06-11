@@ -70,7 +70,7 @@ export default async function ProposalsPage() {
           return (
             <div key={status} className="flex flex-col gap-4">
               <div className="flex justify-between items-center px-1">
-                <h3 className="font-mono text-[10px] uppercase tracking-widest text-[#555]">{status}</h3>
+                <h3 className="font-mono text-[10px] uppercase tracking-widest text-[#555]">{status === 'Contract Issued' ? 'Issued' : status}</h3>
                 <span className="font-mono text-[10px] text-white/20">{filtered.length}</span>
               </div>
               

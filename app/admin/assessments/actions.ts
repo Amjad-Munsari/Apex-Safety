@@ -179,7 +179,10 @@ export async function deleteAssessment(submissionId: string) {
   return { clientId: sub.client_id ?? null }
 }
 
-export async function autosaveAnswers(submissionId: string, answersJson: Record<string, unknown>) {
+export async function autosaveAnswers(
+  submissionId: string,
+  answersJson: Record<string, unknown>
+): Promise<{ saved: boolean }> {
   // Auth gate via SSR client so unauthenticated callers can't trigger writes.
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -188,16 +191,30 @@ export async function autosaveAnswers(submissionId: string, answersJson: Record<
     throw new Error("Unauthorized: Authentication required for autosave")
   }
 
-  // Org-ownership gate (admin, or the client org that owns this submission) —
-  // defense-in-depth alongside the submitted_by filter below.
-  await authorizeSubmissionAccess(submissionId)
+  // Autosave is best-effort background work: the fill page debounces saves and
+  // flushes on tab-hide/unmount, so a save can land AFTER the draft was deleted
+  // or submitted. Resolve the submission tolerantly — if it's gone, no-op
+  // silently instead of throwing a console error + toast at the user. A genuine
+  // cross-tenant attempt (submission exists but belongs to another org) is still
+  // rejected below.
+  const { data: sub } = await adminClient
+    .from("form_submissions")
+    .select("client_id")
+    .eq("id", submissionId)
+    .maybeSingle()
+
+  if (!sub) return { saved: false }
+
+  if (!(await isAdmin())) {
+    const ctx = await getClientContext()
+    if (!ctx || ctx.client_id !== sub.client_id) throw new Error("Unauthorized")
+  }
 
   // Write via adminClient (service-role) so RLS can't silently null out the
   // update when the admin's JWT lacks `app_metadata.role = 'admin'`. The
   // `submitted_by` filter keeps the defense-in-depth that only the admin who
   // started the draft can edit it. `.select("id")` lets us verify the row
-  // actually matched — without it, a stale id or status mismatch would still
-  // silently succeed.
+  // actually matched.
   const { data: rows, error } = await adminClient
     .from("form_submissions")
     .update({ answers_json: answersJson })
@@ -209,11 +226,13 @@ export async function autosaveAnswers(submissionId: string, answersJson: Record<
   if (error) {
     throw new Error(`Failed to autosave: ${error.message}`)
   }
+  // Zero rows = the draft was submitted/deleted (or is owned by someone else)
+  // since this autosave was scheduled. Nothing to save — treat as a no-op, not
+  // an error, so a stale pending save never blows up the UI.
   if (!rows || rows.length === 0) {
-    throw new Error(
-      "Autosave matched zero rows — submission may have been submitted, deleted, or belongs to a different user."
-    )
+    return { saved: false }
   }
+  return { saved: true }
 }
 
 // Legacy `submitAssessment` removed 2026-05-29 — superseded by the validated

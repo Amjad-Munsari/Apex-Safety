@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { getAppSettings } from "@/lib/settings/app-settings"
 
 export async function GET(request: Request) {
   // Simple cron secret protection (Header or Query Param for manual testing)
@@ -27,6 +28,13 @@ export async function GET(request: Request) {
     !(process.env.NODE_ENV !== "production" && querySecret === cronSecret)
   ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  }
+
+  // Respect the admin "Send expiry reminders" toggle — when off, the cron is a
+  // no-op (documents are untouched; nothing is emailed).
+  const settings = await getAppSettings()
+  if (!settings.expiryRemindersEnabled) {
+    return NextResponse.json({ success: true, message: "Expiry reminders are disabled in settings." })
   }
 
   const supabase = createSupabaseClient(

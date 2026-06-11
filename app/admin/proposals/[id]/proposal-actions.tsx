@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner"
 import { Send, CheckCircle2, FileSignature, Download, Pencil, Trash2, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { updateProposalStatus, deleteProposal, regenerateProposalPdf } from "../actions"
+import { deleteProposal, regenerateProposalPdf, markProposalSignedManually, issueContract } from "../actions"
 
 type ProposalStatus = "Draft" | "Sent" | "Signed" | "Contract Issued"
 
@@ -72,16 +72,30 @@ export function ProposalActions({
     })
   }
 
-  function advance(next: ProposalStatus, message: string) {
-    setOptimisticStatus(next)
+  function handleMarkSigned() {
+    setOptimisticStatus("Signed")
     startTransition(async () => {
-      try {
-        await updateProposalStatus(proposalId, next)
-        toast.success(message)
+      const res = await markProposalSignedManually(proposalId)
+      if (res.ok) {
+        toast.success("Proposal marked as signed")
         router.refresh()
-      } catch (err) {
+      } else {
         setOptimisticStatus(status)
-        toast.error("Could not update proposal status. Please try again.")
+        toast.error(res.error || "Could not mark the proposal as signed.")
+      }
+    })
+  }
+
+  function handleIssueContract() {
+    setOptimisticStatus("Contract Issued")
+    startTransition(async () => {
+      const res = await issueContract(proposalId)
+      if (res.ok) {
+        toast.success(`Contract issued to ${clientName}`)
+        router.refresh()
+      } else {
+        setOptimisticStatus(status)
+        toast.error(res.error || "Could not issue the contract.")
       }
     })
   }
@@ -191,7 +205,7 @@ export function ProposalActions({
 
           {canSign && (
             <Button
-              onClick={() => advance("Signed", `Proposal marked as signed`)}
+              onClick={handleMarkSigned}
               disabled={pending}
               className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
             >
@@ -201,7 +215,7 @@ export function ProposalActions({
 
           {canIssue && (
             <Button
-              onClick={() => advance("Contract Issued", `Contract issued to ${clientName}`)}
+              onClick={handleIssueContract}
               disabled={pending}
               className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
             >
