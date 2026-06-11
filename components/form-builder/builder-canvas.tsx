@@ -23,6 +23,7 @@ import { useBuilderStoreData } from "@coltorapps/builder-react";
 import type { BuilderStore } from "@coltorapps/builder";
 import type { formBuilder } from "@/lib/form-builder";
 import { cn } from "@/lib/utils";
+import { DISALLOWED_IN_REPEATING_SECTION } from "@/lib/form-builder/repeating-section-constraints";
 import { FieldCard } from "./field-card";
 import { SectionCard, SECTION_INNER_DROPPABLE_PREFIX } from "./section-card";
 
@@ -211,6 +212,15 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
     const nestInto = (childId: string, parentId: string) => {
       if (!entities[childId] || !entities[parentId]) return;
       if (childId === parentId) return;
+      // Reject specialty/container types into a repeatingSection — fill mode can't
+      // render them there, so the schema would silently break (audit #10). Bail
+      // quietly, consistent with the other guards in this helper.
+      if (
+        entities[parentId]?.type === "repeatingSection" &&
+        DISALLOWED_IN_REPEATING_SECTION.has(entities[childId]!.type)
+      ) {
+        return;
+      }
       const currentParent = entities[childId]?.parentId;
       if (currentParent === parentId) return;
       try {
@@ -343,6 +353,32 @@ export function BuilderCanvas({ builderStore, selectedId, onSelect, surface = "d
           builderStore.setEntityAttribute(clonedId, "visibilityRules" as any, remapped as any);
         } catch {
           /* attribute set rejected — leave the cloned rule as-is */
+        }
+      }
+    }
+
+    // Remap computedField input sources the same way (audit #13). Without this a
+    // duplicated section's computed field keeps pointing at the ORIGINAL section's
+    // likelihood/consequence fields, so both copies share one risk score.
+    for (const [oldId, clonedId] of idMap) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const inputs = (entities[oldId]?.attributes as any)?.computedInputs;
+      if (!inputs || typeof inputs !== "object") continue;
+      let changed = false;
+      const remapped: Record<string, unknown> = { ...inputs };
+      for (const key of Object.keys(remapped)) {
+        const ref = remapped[key];
+        if (typeof ref === "string" && idMap.has(ref)) {
+          remapped[key] = idMap.get(ref);
+          changed = true;
+        }
+      }
+      if (changed) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          builderStore.setEntityAttribute(clonedId, "computedInputs" as any, remapped as any);
+        } catch {
+          /* attribute set rejected — leave the cloned inputs as-is */
         }
       }
     }

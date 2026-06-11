@@ -190,6 +190,17 @@ export async function saveDraftAction(
     }));
   }
 
+  // Reject specialty/container fields nested inside a repeatingSection. The
+  // builder now prevents creating these; this is the server backstop for any
+  // schema that slips through (audit #10).
+  const { findRepeatingNestingViolations } = await import("@/lib/form-builder/repeating-section-constraints");
+  const nestingViolations = findRepeatingNestingViolations(
+    result.data as Parameters<typeof findRepeatingNestingViolations>[0]
+  );
+  if (nestingViolations.length > 0) {
+    throw new Error(JSON.stringify({ kind: "RepeatingNestingInvalid", violations: nestingViolations }));
+  }
+
   // 3. Insert a new immutable version row with retry on UNIQUE(template_id,
   // version_number) collision (two concurrent saves race). Previously the insert
   // result was unchecked — a collision was silently swallowed and the caller
@@ -246,6 +257,15 @@ export async function publishTemplateAction(
       cycles: graphResult.cycles.map(c => ({ entityIds: c.path, labels: c.labels })),
       scopeErrors: graphResult.scopeErrors,
     }));
+  }
+
+  // Reject specialty/container fields nested inside a repeatingSection (audit #10).
+  const { findRepeatingNestingViolations } = await import("@/lib/form-builder/repeating-section-constraints");
+  const nestingViolations = findRepeatingNestingViolations(
+    result.data as Parameters<typeof findRepeatingNestingViolations>[0]
+  );
+  if (nestingViolations.length > 0) {
+    throw new Error(JSON.stringify({ kind: "RepeatingNestingInvalid", violations: nestingViolations }));
   }
 
   // Insert new immutable published version row with retry on UNIQUE(template_id,
