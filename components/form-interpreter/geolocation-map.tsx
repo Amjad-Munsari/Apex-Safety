@@ -70,7 +70,10 @@ export default function GeoMap({ lat, lng, onClickPin, readOnly = false }: GeoMa
     <div
       role="application"
       aria-label="Location map — click to adjust pin position"
-      style={{ height: 200, width: "100%" }}
+      // isolation + z-0: Leaflet's internal panes/controls use z-index up to
+      // ~1000, which would otherwise escape and paint over the sticky form
+      // header (z-30). A dedicated stacking context keeps them contained.
+      style={{ height: 200, width: "100%", position: "relative", zIndex: 0, isolation: "isolate" }}
     >
       <MapContainer
         center={[lat, lng]}
