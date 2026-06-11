@@ -2,12 +2,14 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
-import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardList, Users, Eye } from "lucide-react"
+import { FileText, ClipboardCheck, FileSignature, Clock, ShieldCheck, ClipboardList, Users, Eye, FileCheck } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { AssignTemplateModal } from "@/components/admin/assign-template-modal"
 import { RevokeAssignmentButton } from "@/app/admin/assignments/revoke-assignment-button"
 import { daysOverdue } from "@/lib/assignments/is-overdue"
 import { ClientAccessTab, type ClientUserRow } from "./client-access-tab"
+import { DeleteEntityButton } from "./delete-entity-button"
 import type { ClientBuiltTemplate } from "./client-templates"
 
 type RagStatus = "CURRENT" | "EXPIRING" | "EXPIRED"
@@ -29,11 +31,27 @@ interface ProposalRow {
 }
 
 export interface AssessmentRow {
+  /** Display reference, e.g. ASMT-AB12CD. */
   id: string
+  /** Real form_submissions.id — used for deletion. */
+  submissionId: string
   date: string
   type: string
   status: "Delivered" | "Draft" | "In review"
-  reportHref: string
+  /** Where clicking the row goes — fill page (draft) or read-only answers (submitted+). */
+  viewHref: string
+}
+
+export interface ReportRow {
+  id: string
+  submissionId: string
+  date: string
+  type: string
+  status: "Draft" | "Failed" | "Delivered"
+  /** Review workspace where the draft is reviewed / approved / generated. */
+  reviewHref: string
+  /** Signed URL to the delivered report PDF (Delivered reports only). */
+  pdfUrl?: string | null
 }
 
 export interface HoursTxn {
@@ -64,6 +82,7 @@ export interface ClientTabsProps {
   documents: DocumentRow[]
   proposals: ProposalRow[]
   assessments: AssessmentRow[]
+  reports?: ReportRow[]
   hoursLog: HoursTxn[]
   /** Assignments for this client — filtered by deleted_at IS NULL. */
   assignments?: AssignmentRow[]
@@ -75,6 +94,8 @@ export interface ClientTabsProps {
   clientTemplates?: ClientBuiltTemplate[]
   /** When false, the client is deactivated — hide create affordances (assign/invite). */
   active?: boolean
+  /** Danger Zone (deactivate / delete) — rendered inside the Access tab. */
+  dangerZone?: React.ReactNode
 }
 
 function ragFromDate(expiry: string | null): RagStatus {
@@ -140,15 +161,53 @@ export function ClientTabs({
   documents,
   proposals,
   assessments,
+  reports = [],
   hoursLog,
   assignments = [],
   publishedTemplates = [],
   clientUsers = [],
   clientTemplates = [],
   active = true,
+  dangerZone,
 }: ClientTabsProps) {
+  const router = useRouter()
   const compliance = buildComplianceFromDocuments(documents)
   const complianceCategories = Object.keys(compliance)
+
+  // Shared handler: make a table row behave as a link (click or Enter/Space).
+  function rowNav(href: string) {
+    return {
+      role: "link" as const,
+      tabIndex: 0,
+      onClick: () => router.push(href),
+      onKeyDown: (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          router.push(href)
+        }
+      },
+    }
+  }
+
+  // Report rows: a delivered report opens its PDF in a new tab; a draft/failed
+  // one navigates to the review workspace.
+  function reportRowProps(r: ReportRow) {
+    const go = () => {
+      if (r.pdfUrl) window.open(r.pdfUrl, "_blank", "noopener,noreferrer")
+      else router.push(r.reviewHref)
+    }
+    return {
+      role: "link" as const,
+      tabIndex: 0,
+      onClick: go,
+      onKeyDown: (e: React.KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          go()
+        }
+      },
+    }
+  }
 
   // Active count = assignments that are not completed
   const activeAssignmentCount = assignments.filter(
@@ -213,6 +272,9 @@ export function ClientTabs({
           <TabsTrigger value="assessments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
             <ClipboardCheck className="w-3.5 h-3.5" /> Assessments <span className="text-white/30">{assessments.length}</span>
           </TabsTrigger>
+          <TabsTrigger value="reports" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
+            <FileCheck className="w-3.5 h-3.5" /> Reports <span className="text-white/30">{reports.length}</span>
+          </TabsTrigger>
           <TabsTrigger value="proposals" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
             <FileSignature className="w-3.5 h-3.5" /> Proposals <span className="text-white/30">{proposals.length}</span>
           </TabsTrigger>
@@ -253,22 +315,28 @@ export function ClientTabs({
                       <th className="font-normal px-4 py-3 border-b border-white/5">Category</th>
                       <th className="font-normal px-4 py-3 border-b border-white/5">Expiry</th>
                       <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
-                      <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Uploaded</th>
+                      <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Uploaded</th>
+                      <th className="font-normal px-6 py-3 border-b border-white/5 text-right"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {documents.map((doc) => {
                       const status = ragFromDate(doc.expiry_date)
                       return (
-                        <tr key={doc.id} className="hover:bg-white/[0.02] transition-colors">
+                        <tr key={doc.id} className="hover:bg-white/[0.02] transition-colors group">
                           <td className="px-6 py-4 text-white">{doc.filename}</td>
                           <td className="px-4 py-4 text-white/70">{doc.document_category}</td>
                           <td className="px-4 py-4 text-white/70">
                             {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString("en-GB") : "—"}
                           </td>
                           <td className="px-4 py-4"><RagPill status={status} /></td>
-                          <td className="px-6 py-4 font-mono text-xs text-right text-white/50">
+                          <td className="px-4 py-4 font-mono text-xs text-right text-white/50">
                             {new Date(doc.uploaded_at).toLocaleDateString("en-GB")}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <div className="flex justify-end">
+                              <DeleteEntityButton kind="document" id={doc.id} />
+                            </div>
                           </td>
                         </tr>
                       )
@@ -333,19 +401,23 @@ export function ClientTabs({
                     <th className="font-normal px-6 py-3 border-b border-white/5">Reference</th>
                     <th className="font-normal px-4 py-3 border-b border-white/5">Date</th>
                     <th className="font-normal px-4 py-3 border-b border-white/5">Type</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Report</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center">Status</th>
+                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right w-px" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {assessments.map((a) => (
-                    <tr key={a.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr
+                      key={a.id}
+                      {...rowNav(a.viewHref)}
+                      className="group hover:bg-white/[0.02] transition-colors cursor-pointer focus:outline-none focus:bg-white/[0.03]"
+                    >
                       <td className="px-6 py-4 font-mono text-xs text-white/60">{a.id}</td>
                       <td className="px-4 py-4 text-white/80">
                         {new Date(a.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
                       <td className="px-4 py-4 text-white">{a.type}</td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 text-center">
                         <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 font-mono text-[10px] uppercase tracking-widest leading-none
                           ${a.status === "Delivered" ? "ring-success/40 text-success" :
                             a.status === "In review" ? "ring-gold/40 text-gold" :
@@ -358,10 +430,67 @@ export function ClientTabs({
                           {a.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <Link href={a.reportHref} className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
-                          View report
-                        </Link>
+                      <td className="pl-8 pr-6 py-4 text-right">
+                        <span
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex justify-end"
+                        >
+                          <DeleteEntityButton kind="assessment" id={a.submissionId} />
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* REPORTS — report drafts + delivered reports for this client */}
+        <TabsContent value="reports" className="pt-6">
+          {reports.length === 0 ? (
+            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-10 text-center flex flex-col items-center justify-center">
+              <FileCheck className="w-8 h-8 text-white/20 mb-3" />
+              <p className="text-white/50 text-sm">No reports yet.</p>
+              <p className="text-white/30 text-xs mt-1">
+                When an assessment is submitted, its report draft appears here to review and approve.
+              </p>
+            </Card>
+          ) : (
+            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+              <table className="w-full text-left font-sans text-sm">
+                <thead className="bg-[#151515]">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
+                    <th className="font-normal px-6 py-3 border-b border-white/5">Reference</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5">Date</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5">Type</th>
+                    <th className="font-normal px-6 py-3 border-b border-white/5 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {reports.map((r) => (
+                    <tr
+                      key={r.id}
+                      {...reportRowProps(r)}
+                      className="group hover:bg-white/[0.02] transition-colors cursor-pointer focus:outline-none focus:bg-white/[0.03]"
+                    >
+                      <td className="px-6 py-4 font-mono text-xs text-white/60">{r.id}</td>
+                      <td className="px-4 py-4 text-white/80">
+                        {new Date(r.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="px-4 py-4 text-white">{r.type}</td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 font-mono text-[10px] uppercase tracking-widest leading-none
+                          ${r.status === "Delivered" ? "ring-success/40 text-success" :
+                            r.status === "Failed" ? "ring-danger/40 text-danger" :
+                            "ring-gold/40 text-gold"}`}>
+                          <span className={`size-1.5 rounded-full ${
+                            r.status === "Delivered" ? "bg-success" :
+                            r.status === "Failed" ? "bg-danger" :
+                            "bg-gold"
+                          }`} />
+                          {r.status === "Draft" ? "In review" : r.status}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -381,29 +510,36 @@ export function ClientTabs({
                 <thead className="bg-[#151515]">
                   <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
                     <th className="font-normal px-6 py-3 border-b border-white/5">Date</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Amount</th>
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Open</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center">Status</th>
+                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center">Amount</th>
+                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right w-px" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {proposals.map((p) => (
-                    <tr key={p.id} className="hover:bg-white/[0.02] transition-colors">
+                    <tr
+                      key={p.id}
+                      {...rowNav(`/admin/proposals/${p.id}`)}
+                      className="group hover:bg-white/[0.02] transition-colors cursor-pointer focus:outline-none focus:bg-white/[0.03]"
+                    >
                       <td className="px-6 py-4 text-white/80">
                         {new Date(p.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4 text-center">
                         <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 ring-white/15 text-white/70 font-mono text-[10px] uppercase tracking-widest leading-none">
-                          {p.status || "Draft"}
+                          {p.status === "Contract Issued" ? "Issued" : (p.status || "Draft")}
                         </span>
                       </td>
-                      <td className="px-4 py-4 font-mono text-xs text-right text-white">
+                      <td className="px-4 py-4 font-mono text-xs text-center text-white">
                         £{p.total.toLocaleString()}
                       </td>
-                      <td className="px-6 py-4 text-right">
-                        <Link href={`/admin/proposals/${p.id}`} className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
-                          Open
-                        </Link>
+                      <td className="pl-8 pr-6 py-4 text-right">
+                        <span
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex justify-end"
+                        >
+                          <DeleteEntityButton kind="proposal" id={p.id} />
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -630,9 +766,12 @@ export function ClientTabs({
           </Card>
         </TabsContent>
 
-        {/* ACCESS — portal user invites */}
+        {/* ACCESS — portal user invites + danger zone */}
         <TabsContent value="access" className="pt-6">
-          <ClientAccessTab clientId={clientId} clientName={clientName} users={clientUsers} active={active} />
+          <div className="flex flex-col gap-10">
+            <ClientAccessTab clientId={clientId} clientName={clientName} users={clientUsers} active={active} />
+            {dangerZone}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

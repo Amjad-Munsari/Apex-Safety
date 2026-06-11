@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import Image from "next/image";
 import { BrandingProvider } from "@/components/branding-provider";
+import { getAppSettings } from "@/lib/settings/app-settings";
 import { ClientPortalNav } from "./_components/client-portal-nav";
 import { ClientIdentityNav } from "./_components/client-identity-nav";
 
@@ -10,6 +12,8 @@ export default async function ClientLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { logoUrl } = await getAppSettings();
+
   return (
     <div data-surface="client" className="min-h-screen bg-[#fbfaf5] text-[#1a1a1a] font-sans antialiased text-sm">
       <BrandingProvider />
@@ -24,7 +28,19 @@ export default async function ClientLayout({
 
       {/* Portal Footer */}
       <footer className="max-w-[1024px] mx-auto px-6 py-8 mt-6 border-t border-[#e5e1d8]">
-        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 font-mono text-[10px] tracking-[0.2em] text-[#6b6560] uppercase">
+        {logoUrl && (
+          <div className="flex justify-center mb-5">
+            <Image
+              src={logoUrl}
+              alt="Provider logo"
+              width={160}
+              height={40}
+              unoptimized
+              className="h-10 w-auto object-contain opacity-80"
+            />
+          </div>
+        )}
+        <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 font-mono text-[8.5px] tracking-[0.2em] text-[#8a857f] uppercase">
           <span>Your Consultant</span>
           <span className="text-[#6b6560] font-bold">&middot;</span>
           <span className="text-[#6b6560] font-bold">Matt Robinson</span>

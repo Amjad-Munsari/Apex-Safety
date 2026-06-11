@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarStats } from "@/components/admin/sidebar-stats";
@@ -20,7 +20,11 @@ export default async function AdminLayout({
   });
 
   return (
-    <SidebarProvider>
+    <SidebarProvider
+      // Slim the admin nav rail so the main content (esp. the Clients table) gets
+      // more horizontal room. Overrides the shared 16rem default for this surface.
+      style={{ "--sidebar-width": "13rem" } as CSSProperties}
+    >
       <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
         <BrandingProvider />
         <Suspense fallback={<AppSidebar stats={{ clients: 0, expiries: 0, reports: 0, compliance: 0, proposals: 0, errors: 0 }} />}>

@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ArrowLeft, Download, FileText } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { markProposalViewed } from "@/app/admin/proposals/actions";
 import { calculateProposalTotal } from "@/lib/supabase/dashboard";
 import { AcceptSignButton } from "./accept-sign-button";
+import { FileDownloadUrl } from "@/components/client/file-download-url";
 
 export const dynamic = "force-dynamic";
 
@@ -65,11 +66,14 @@ export default async function ClientProposalDetailPage({
       : "Compliance & Training Programme";
 
   let signedPdfUrl: string | null = null;
+  let signedPdfDownloadUrl: string | null = null;
   if (proposal.proposal_pdf_path) {
-    const { data: signed } = await adminClient.storage
-      .from("proposals")
-      .createSignedUrl(proposal.proposal_pdf_path, 60 * 60);
-    signedPdfUrl = signed?.signedUrl ?? null;
+    const [view, download] = await Promise.all([
+      adminClient.storage.from("proposals").createSignedUrl(proposal.proposal_pdf_path, 60 * 60),
+      adminClient.storage.from("proposals").createSignedUrl(proposal.proposal_pdf_path, 60 * 60, { download: true }),
+    ]);
+    signedPdfUrl = view.data?.signedUrl ?? null;
+    signedPdfDownloadUrl = download.data?.signedUrl ?? null;
   }
 
   const isSigned = proposal.status === "Signed" || proposal.status === "Contract Issued";
@@ -137,26 +141,7 @@ export default async function ClientProposalDetailPage({
                 : "Review the document, then accept and sign below. You can download a copy at any time."}
             </p>
             {!isSigned && <AcceptSignButton proposalId={proposal.id} />}
-            {signedPdfUrl ? (
-              <a
-                href={signedPdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download={`${reference}.pdf`}
-                className="bg-[#1a1a1a] hover:bg-black text-white text-[10px] uppercase tracking-[0.25em] font-bold h-12 rounded-sm shadow-none flex items-center gap-2 justify-center transition-colors"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Download Proposal
-              </a>
-            ) : (
-              <button
-                disabled
-                className="bg-[#1a1a1a]/40 text-white text-[10px] uppercase tracking-[0.25em] font-bold h-12 rounded-sm shadow-none flex items-center gap-2 justify-center cursor-not-allowed w-full"
-              >
-                <Download className="w-3.5 h-3.5" />
-                Download Proposal
-              </button>
-            )}
+            <FileDownloadUrl label="Download proposal" downloadUrl={signedPdfDownloadUrl} />
             <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">
               Status: <span className={isSigned ? "text-teal" : "text-[#c0a66d]"}>{proposal.status}</span>
             </p>

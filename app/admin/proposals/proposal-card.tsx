@@ -1,12 +1,17 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { Eye, FileSignature, Send } from "lucide-react"
+import { FileSignature, Send } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 import { toast } from "sonner"
-import { updateProposalStatus } from "./actions"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface ProposalCardProps {
   id: string
@@ -33,13 +38,29 @@ export function ProposalCard({
   function send(e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
+    // Route through the same send-for-signature flow as the detail page: this
+    // mints a signing token, hashes the PDF, and emails the client a signing
+    // link. A bare status flip would mark it "Sent" while the client got nothing.
     startTransition(async () => {
-      try {
-        await updateProposalStatus(id, "Sent")
-        toast.success(`Proposal sent to ${clientName}`)
+      const res = await fetch(`/api/proposals/${id}/send-for-signature`, { method: "POST" })
+      if (res.ok) {
+        toast.success(`Proposal sent to ${clientName} for signature`)
         router.refresh()
+        return
+      }
+      let errorCode: string | undefined
+      try {
+        const body = (await res.json()) as { error?: string }
+        errorCode = body.error
       } catch {
-        toast.error("Could not send proposal. Please try again.")
+        /* non-JSON body */
+      }
+      if (errorCode === "no_pdf") {
+        toast.error("Generate the proposal PDF before sending.")
+      } else if (errorCode === "no_client_email") {
+        toast.error("This client has no contact email on file.")
+      } else {
+        toast.error("Could not send proposal for signature. Please try again.")
       }
     })
   }
@@ -66,40 +87,48 @@ export function ProposalCard({
         <div className="font-mono text-[9px] uppercase tracking-widest text-[#555] pointer-events-none">
           {new Date(createdAt).toLocaleDateString("en-GB")}
         </div>
-        <div className="flex items-center gap-1">
-          {documentUrl && (
-            <a
-              href={documentUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              aria-label="Open proposal PDF"
-              className="text-white/40 hover:text-white transition-colors p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-            >
-              <FileSignature className="w-3.5 h-3.5" />
-            </a>
-          )}
+        <TooltipProvider delay={150}>
+          <div className="flex items-center gap-1">
+            {documentUrl && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <a
+                      href={documentUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label="Open proposal PDF"
+                      className="text-white/40 hover:text-white transition-colors p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
+                    >
+                      <FileSignature className="w-3.5 h-3.5" />
+                    </a>
+                  }
+                />
+                <TooltipContent>Open PDF</TooltipContent>
+              </Tooltip>
+            )}
 
-          {status === "Draft" && (
-            <button
-              type="button"
-              onClick={send}
-              disabled={pending}
-              aria-label="Send proposal"
-              className="text-white/40 hover:text-gold transition-colors p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:opacity-50"
-            >
-              <Send className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          <Link
-            href={detailHref}
-            aria-label="View proposal detail"
-            className="text-white/40 hover:text-white transition-colors p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-gold/40"
-          >
-            <Eye className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+            {status === "Draft" && (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      type="button"
+                      onClick={send}
+                      disabled={pending}
+                      aria-label="Send proposal"
+                      className="text-white/40 hover:text-gold transition-colors p-1 rounded-sm focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:opacity-50"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  }
+                />
+                <TooltipContent>Send for signature</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
+        </TooltipProvider>
       </div>
     </Card>
   )

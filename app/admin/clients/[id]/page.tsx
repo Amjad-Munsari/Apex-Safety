@@ -97,6 +97,7 @@ export default async function ClientDetailsPage({
         status,
         created_at,
         submitted_at,
+        report_storage_path,
         template:template_versions(
           form_template:form_templates(name)
         )
@@ -212,20 +213,66 @@ export default async function ClientDetailsPage({
         uiStatus = "Draft"
     }
 
-    // Drafts (incomplete forms) link back to the fill page; anything that's
-    // been submitted goes to /review — that's where the AI draft is generated,
-    // reviewed, and the final PDF is downloaded.
-    const reportHref =
+    // Clicking an assessment shows the ASSESSMENT itself: in-progress drafts open
+    // the editable fill page; submitted+ open the read-only answers view. The
+    // report draft lives separately in the Reports tab.
+    const viewHref =
       uiStatus === "Draft"
         ? `/admin/assessments/${row.id}`
-        : `/admin/assessments/${row.id}/review`
+        : `/admin/assessments/${row.id}/view`
 
     return {
       id: `ASMT-${row.id.slice(0, 6).toUpperCase()}`,
+      submissionId: row.id,
       date: row.submitted_at ?? row.created_at,
       type: templateName,
       status: uiStatus,
-      reportHref,
+      viewHref,
+    }
+  })
+
+  // Reports = assessments that have reached the report stage (an AI draft exists,
+  // failed, or a final PDF was delivered). These live in the Reports tab. A
+  // delivered report opens its PDF directly; a draft/failed one opens the review
+  // workspace where it's reviewed / approved / generated.
+  const reportRows = (submissionRows ?? []).filter((row: any) =>
+    ["draft_ready_for_review", "ai_draft_failed", "completed"].includes(row.status)
+  )
+
+  // Pre-sign delivered report PDFs (1h TTL) so clicking a Delivered row opens the
+  // actual PDF rather than the generate/review page.
+  const deliveredPaths = reportRows
+    .filter((row: any) => row.status === "completed" && row.report_storage_path)
+    .map((row: any) => row.report_storage_path as string)
+  const reportSignedMap = new Map<string, string>()
+  if (deliveredPaths.length > 0) {
+    const { data: signed } = await adminClient.storage
+      .from("reports")
+      .createSignedUrls(deliveredPaths, 60 * 60)
+    for (const item of signed ?? []) {
+      if (item.path && item.signedUrl) reportSignedMap.set(item.path, item.signedUrl)
+    }
+  }
+
+  const reports = reportRows.map((row: any) => {
+    const templateName: string =
+      row.template?.form_template?.name ??
+      (Array.isArray(row.template) ? row.template[0]?.form_template?.name : null) ??
+      "Assessment"
+    const reportStatus: "Draft" | "Failed" | "Delivered" =
+      row.status === "completed"
+        ? "Delivered"
+        : row.status === "ai_draft_failed"
+          ? "Failed"
+          : "Draft"
+    return {
+      id: `RPT-${row.id.slice(0, 6).toUpperCase()}`,
+      submissionId: row.id,
+      date: row.submitted_at ?? row.created_at,
+      type: templateName,
+      status: reportStatus,
+      reviewHref: `/admin/assessments/${row.id}/review`,
+      pdfUrl: row.report_storage_path ? reportSignedMap.get(row.report_storage_path) ?? null : null,
     }
   })
 
@@ -315,24 +362,26 @@ export default async function ClientDetailsPage({
         documents={documents ?? []}
         proposals={proposals}
         assessments={assessments}
+        reports={reports}
         hoursLog={hoursLog}
         assignments={assignments}
         publishedTemplates={publishedTemplates ?? []}
         clientUsers={clientUsers ?? []}
         clientTemplates={clientTemplates}
         active={!isInactive}
-      />
-
-      <ClientDangerZone
-        clientId={client.id}
-        clientName={client.name}
-        active={client.active ?? true}
-        counts={{
-          assessments: assessments.length,
-          proposals: proposals.length,
-          documents: documents?.length ?? 0,
-          portalUsers: clientUsers?.length ?? 0,
-        }}
+        dangerZone={
+          <ClientDangerZone
+            clientId={client.id}
+            clientName={client.name}
+            active={client.active ?? true}
+            counts={{
+              assessments: assessments.length,
+              proposals: proposals.length,
+              documents: documents?.length ?? 0,
+              portalUsers: clientUsers?.length ?? 0,
+            }}
+          />
+        }
       />
     </div>
   )
