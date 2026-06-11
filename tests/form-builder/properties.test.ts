@@ -84,7 +84,7 @@ describe("Properties Panel (BUILDER-02)", () => {
       store.setEntityAttribute(sectionGroup.id, "description", "A description")
     ).not.toThrow();
 
-    // selectField has label, required, options, allowMultiple
+    // selectField has label, required, options (allowMultiple removed — audit #5)
     expect(() => store.setEntityAttribute(selectField.id, "label", "Category")).not.toThrow();
     expect(() =>
       store.setEntityAttribute(selectField.id, "options", [{ label: "A", value: "a" }])
