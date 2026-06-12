@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils";
 
 const ThemeSwitch = ({
   className,
+  size = "default",
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => {
+}: React.HTMLAttributes<HTMLDivElement> & { size?: "default" | "sm" }) => {
+  const sm = size === "sm";
   const { resolvedTheme, setTheme } = useTheme();
   const [checked, setChecked] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -31,7 +33,7 @@ const ThemeSwitch = ({
     <div
       className={cn(
         "relative flex items-center justify-center", // center the whole control
-        "h-9 w-20", // track sized to hug the icons
+        sm ? "h-7 w-14" : "h-9 w-20", // track sized to hug the icons
         className
       )}
       {...props}
@@ -45,22 +47,26 @@ const ThemeSwitch = ({
           "peer absolute inset-0 h-full w-full rounded-full bg-input/50 transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           // tune the default thumb size & z-index so it slides over icons
-          "[&>span]:h-7 [&>span]:w-7 [&>span]:rounded-full [&>span]:bg-background [&>span]:shadow [&>span]:z-10",
-          // override default translate distances so the thumb moves across 20px track padding + icon spacing
+          sm ? "[&>span]:h-5 [&>span]:w-5" : "[&>span]:h-7 [&>span]:w-7",
+          "[&>span]:rounded-full [&>span]:bg-background [&>span]:shadow [&>span]:z-10",
+          // override default translate distances so the thumb moves across track padding + icon spacing
           "data-[state=unchecked]:[&>span]:translate-x-1",
-          "data-[state=checked]:[&>span]:translate-x-[44px]" // 44 ≈ w-20(80) - padding - thumb(28)
+          sm
+            ? "data-[state=checked]:[&>span]:translate-x-[32px]" // 32 ≈ w-14(56) - padding - thumb(20)
+            : "data-[state=checked]:[&>span]:translate-x-[44px]" // 44 ≈ w-20(80) - padding - thumb(28)
         )}
       />
 
       {/* Icons overlaid inside the track, perfectly centered left/right */}
       <span
         className={cn(
-          "pointer-events-none absolute left-2 inset-y-0 z-0",
+          "pointer-events-none absolute inset-y-0 z-0",
+          sm ? "left-1.5" : "left-2",
           "flex items-center justify-center"
         )}
       >
         <SunIcon
-          size={16}
+          size={sm ? 12 : 16}
           className={cn(
             "transition-all duration-200 ease-out",
             checked ? "text-muted-foreground/70" : "text-foreground scale-110"
@@ -70,12 +76,13 @@ const ThemeSwitch = ({
 
       <span
         className={cn(
-          "pointer-events-none absolute right-2 inset-y-0 z-0",
+          "pointer-events-none absolute inset-y-0 z-0",
+          sm ? "right-1.5" : "right-2",
           "flex items-center justify-center"
         )}
       >
         <MoonIcon
-          size={16}
+          size={sm ? 12 : 16}
           className={cn(
             "transition-all duration-200 ease-out",
             checked ? "text-foreground scale-110" : "text-muted-foreground/70"
