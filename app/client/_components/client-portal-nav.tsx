@@ -51,6 +51,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Contracts", href: "/client/contracts" },
     ],
   },
+  { label: "Directory", href: "/client/directory" },
   { label: "Billing", href: "/client/billing" },
 ];
 
