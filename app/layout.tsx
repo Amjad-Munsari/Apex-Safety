@@ -4,6 +4,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -35,11 +36,10 @@ export default function RootLayout({
     >
 
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
-        {/* No next-themes provider: theming is per-surface via data-surface.
-            next-themes injected an inline <script> that React 19 warns about and
-            that did nothing here (useTheme is unused). */}
-        <TooltipProvider>{children}</TooltipProvider>
-        <Toaster position="top-right" richColors />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <TooltipProvider>{children}</TooltipProvider>
+          <Toaster position="top-right" richColors />
+        </ThemeProvider>
       </body>
 
     </html>

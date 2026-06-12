@@ -25,7 +25,7 @@ export default async function AdminLayout({
       // more horizontal room. Overrides the shared 16rem default for this surface.
       style={{ "--sidebar-width": "13rem" } as CSSProperties}
     >
-      <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
+      <div data-surface="admin" className="dark fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
         <BrandingProvider />
         <Suspense fallback={<AppSidebar stats={{ clients: 0, expiries: 0, reports: 0, compliance: 0, proposals: 0, errors: 0 }} />}>
           <SidebarStats />
