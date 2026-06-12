@@ -269,15 +269,31 @@ export async function updateClientHours(clientId: string, adjustment: number) {
 // Client portal access — invite / resend / revoke
 //
 // Onboarding uses the Supabase Admin API to create the auth user (which sets the
-// auth token columns correctly, unlike a raw SQL insert) and generates an action
-// link. Email automation is deferred (Option C): we return the link so the admin
-// can send it manually. The invitee clicks it → /auth/callback exchanges the code
-// → lands on /auth/set-password to choose a password.
+// auth token columns correctly, unlike a raw SQL insert) and generates a link.
+// We do NOT email the raw generateLink `action_link`: that points at Supabase's
+// /auth/v1/verify endpoint, which returns the session in the URL *fragment* —
+// unreadable by our server callback, so the link appeared broken. Instead we
+// take the `hashed_token` from the same response and build our own
+// /auth/confirm link (verifyOtp pattern, see app/auth/confirm/route.ts). The
+// invitee clicks it → /auth/confirm verifies + sets cookies → lands on
+// /auth/set-password to choose a password.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function portalRedirectTo(): string {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
-  return `${base.replace(/\/$/, "")}/auth/callback?next=/auth/set-password`
+  return `${base.replace(/\/$/, "")}/auth/confirm?next=/auth/set-password`
+}
+
+// Build the emailed confirmation link from a generateLink hashed_token. This is
+// what the invitee actually clicks — NOT the raw action_link.
+function portalConfirmLink(hashedToken: string, type: "invite" | "recovery"): string {
+  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "")
+  const params = new URLSearchParams({
+    token_hash: hashedToken,
+    type,
+    next: "/auth/set-password",
+  })
+  return `${base}/auth/confirm?${params.toString()}`
 }
 
 export type InviteClientUserInput = {
@@ -369,10 +385,10 @@ export async function inviteClientUser(
       email,
       options: { redirectTo },
     })
-    if (error || !data?.properties?.action_link) {
+    if (error || !data?.properties?.hashed_token) {
       return { ok: false, error: error?.message || "Could not generate a link." }
     }
-    const link = data.properties.action_link
+    const link = portalConfirmLink(data.properties.hashed_token, "recovery")
     const emailed = await emailPortalInvite({
       clientId,
       recipientName: name,
@@ -402,10 +418,14 @@ export async function inviteClientUser(
     })
     if (recovery.error) return { ok: false, error: invite.error.message }
     userId = recovery.data.user?.id
-    link = recovery.data.properties?.action_link
+    link = recovery.data.properties?.hashed_token
+      ? portalConfirmLink(recovery.data.properties.hashed_token, "recovery")
+      : undefined
   } else {
     userId = invite.data.user?.id
-    link = invite.data.properties?.action_link
+    link = invite.data.properties?.hashed_token
+      ? portalConfirmLink(invite.data.properties.hashed_token, "invite")
+      : undefined
   }
 
   if (!userId || !link) return { ok: false, error: "Could not create the invite link." }
