@@ -65,65 +65,65 @@ export default async function NotificationsPage() {
       {/* Header */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
             <span className="text-teal font-semibold">09</span>
             REMINDER LOG
           </div>
-          <h2 className="font-serif text-[34px] leading-tight text-white">Notifications.</h2>
-          <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+          <h2 className="font-serif text-[34px] leading-tight text-foreground">Notifications.</h2>
+          <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
             Every expiry reminder the cron job has dispatched on Matt&apos;s behalf — newest first.
           </p>
         </div>
 
-        <div className="flex flex-col items-end gap-1 font-mono text-[10px] uppercase tracking-[0.25em] text-[#666]">
+        <div className="flex flex-col items-end gap-1 font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
           <span>Total Sent</span>
           <span className="font-serif text-[28px] leading-none text-teal">{entries.length}</span>
         </div>
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden p-0">
+      <Card className="bg-card border-border rounded-sm overflow-hidden p-0">
         {entries.length === 0 ? (
           <div className="p-16 text-center flex flex-col items-center justify-center">
-            <Bell className="w-8 h-8 text-white/20 mb-4" />
-            <p className="text-white/60 text-base font-serif">No reminders sent yet.</p>
-            <p className="text-white/30 text-xs mt-2 max-w-md">
+            <Bell className="w-8 h-8 text-muted-foreground/50 mb-4" />
+            <p className="text-foreground/60 text-base font-serif">No reminders sent yet.</p>
+            <p className="text-muted-foreground/70 text-xs mt-2 max-w-md">
               When the daily cron job dispatches an expiry reminder, it logs the send here so we
               don&apos;t double-notify on the same document and window.
             </p>
           </div>
         ) : (
           <table className="w-full text-left font-sans text-sm">
-            <thead className="bg-[#151515]">
-              <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                <th className="font-normal px-6 py-4 border-b border-white/5">Sent</th>
-                <th className="font-normal px-4 py-4 border-b border-white/5">Client</th>
-                <th className="font-normal px-4 py-4 border-b border-white/5">Document</th>
-                <th className="font-normal px-4 py-4 border-b border-white/5">Type</th>
-                <th className="font-normal px-6 py-4 border-b border-white/5 text-right">Window</th>
+            <thead className="bg-muted">
+              <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                <th className="font-normal px-6 py-4 border-b border-border">Sent</th>
+                <th className="font-normal px-4 py-4 border-b border-border">Client</th>
+                <th className="font-normal px-4 py-4 border-b border-border">Document</th>
+                <th className="font-normal px-4 py-4 border-b border-border">Type</th>
+                <th className="font-normal px-6 py-4 border-b border-border text-right">Window</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-border">
               {entries.map((e) => (
-                <tr key={e.id} className="hover:bg-white/[0.02] transition-colors">
+                <tr key={e.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="font-mono text-xs text-white/80">
+                    <div className="font-mono text-xs text-foreground/80">
                       {new Date(e.sentAt).toLocaleString("en-GB", DATE_FMT)}
                     </div>
-                    <div className="font-mono text-[10px] text-[#555] uppercase tracking-[0.2em] mt-0.5">
+                    <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-[0.2em] mt-0.5">
                       {e.id.slice(0, 8).toUpperCase()}
                     </div>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="text-white text-sm">{e.clientName}</div>
-                    <div className="text-[#888] text-xs mt-0.5">{e.clientEmail ?? "—"}</div>
+                    <div className="text-foreground text-sm">{e.clientName}</div>
+                    <div className="text-muted-foreground text-xs mt-0.5">{e.clientEmail ?? "—"}</div>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="text-white/80 text-sm">{e.documentName ?? "—"}</div>
-                    <div className="text-[#888] text-xs mt-0.5">{e.documentCategory ?? ""}</div>
+                    <div className="text-foreground/80 text-sm">{e.documentName ?? "—"}</div>
+                    <div className="text-muted-foreground text-xs mt-0.5">{e.documentCategory ?? ""}</div>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="inline-flex items-center gap-2 border border-white/10 rounded-sm px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-white/70">
+                    <span className="inline-flex items-center gap-2 border border-border rounded-sm px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.2em] text-foreground/70">
                       {formatType(e.type)}
                     </span>
                   </td>
@@ -131,7 +131,7 @@ export default async function NotificationsPage() {
                     "px-6 py-4 text-right font-mono text-xs",
                     e.window !== null && e.window < 0 ? "text-[#e06050]" :
                     e.window !== null && e.window <= 7 ? "text-amber-500" :
-                    "text-white/70"
+                    "text-foreground/70"
                   )}>
                     {formatWindow(e.window)}
                   </td>

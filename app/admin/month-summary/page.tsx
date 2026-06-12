@@ -81,7 +81,7 @@ export default async function MonthSummaryPage() {
       num: "04",
       label: "Workflow Errors",
       count: errorsRes.count || 0,
-      color: errorsRes.count && errorsRes.count > 0 ? "danger" : "[#555]",
+      color: errorsRes.count && errorsRes.count > 0 ? "danger" : "muted-foreground",
       sub: "n8n errors",
     },
   ];
@@ -100,13 +100,13 @@ export default async function MonthSummaryPage() {
 
   const statusColor: Record<string, string> = {
     // D-09 canonical taxonomy
-    in_progress: "text-white/40",
-    submitted: "text-white/60",
+    in_progress: "text-muted-foreground",
+    submitted: "text-foreground/60",
     draft_ready_for_review: "text-gold",
     completed: "text-teal",
     ai_draft_failed: "text-danger",
     // Legacy
-    draft: "text-[#555]",
+    draft: "text-muted-foreground",
     delivered: "text-teal",
   };
 
@@ -114,12 +114,12 @@ export default async function MonthSummaryPage() {
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+        <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
           <span className="text-teal font-semibold">06</span>
           MONTHLY REPORT
         </div>
-        <h2 className="font-serif text-[34px] leading-tight text-white">Month Summary</h2>
-        <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+        <h2 className="font-serif text-[34px] leading-tight text-foreground">Month Summary</h2>
+        <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
           Activity overview for {monthName}.
         </p>
       </div>
@@ -127,33 +127,33 @@ export default async function MonthSummaryPage() {
       {/* ─── STAT CARDS ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <Card key={stat.num} className="bg-[#1c1c1c] border-white/5 rounded-sm p-6">
-            <div className="font-mono text-[10px] uppercase tracking-widest text-[#555] mb-3 flex items-center gap-2">
-              <span className="text-white/20">{stat.num}</span> {stat.label}
+          <Card key={stat.num} className="bg-card border-border rounded-sm p-6">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+              <span className="text-muted-foreground/50">{stat.num}</span> {stat.label}
             </div>
             <div className={`font-serif text-5xl text-${stat.color} mb-1`}>{stat.count}</div>
-            <div className="text-xs text-[#444] font-mono">{stat.sub}</div>
+            <div className="text-xs text-muted-foreground font-mono">{stat.sub}</div>
           </Card>
         ))}
       </div>
 
       {/* ─── RECENT ASSESSMENTS ─── */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-[#555]">Assessments This Month</span>
-          <span className="font-mono text-[10px] text-white/20 ml-auto">{recentAssessments?.length || 0} records</span>
+      <Card className="bg-card border-border rounded-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Assessments This Month</span>
+          <span className="font-mono text-[10px] text-muted-foreground/50 ml-auto">{recentAssessments?.length || 0} records</span>
         </div>
         {recentAssessments && recentAssessments.length > 0 ? (
           <table className="w-full text-left font-sans text-sm">
-            <thead className="bg-[#151515]">
-              <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                <th className="font-normal px-6 py-3 border-b border-white/5">Client</th>
-                <th className="font-normal px-4 py-3 border-b border-white/5">Template</th>
-                <th className="font-normal px-4 py-3 border-b border-white/5">Date</th>
-                <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
+            <thead className="bg-muted">
+              <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                <th className="font-normal px-6 py-3 border-b border-border">Client</th>
+                <th className="font-normal px-4 py-3 border-b border-border">Template</th>
+                <th className="font-normal px-4 py-3 border-b border-border">Date</th>
+                <th className="font-normal px-4 py-3 border-b border-border">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-border">
               {recentAssessments.map((a) => {
                 // Editable drafts open the fill page; everything else opens the
                 // read-only review surface. The fill page autosaves on mount
@@ -164,8 +164,8 @@ export default async function MonthSummaryPage() {
                   ? `/admin/assessments/${a.id}`
                   : `/admin/assessments/${a.id}/review`;
                 return (
-                <tr key={a.id} className="group relative hover:bg-white/[0.02] transition-colors cursor-pointer">
-                  <td className="px-6 py-4 text-white font-medium">
+                <tr key={a.id} className="group relative hover:bg-muted/50 transition-colors cursor-pointer">
+                  <td className="px-6 py-4 text-foreground font-medium">
                     <Link
                       href={href}
                       className="absolute inset-0 z-0"
@@ -173,18 +173,18 @@ export default async function MonthSummaryPage() {
                     />
                     <span className="relative z-10 pointer-events-none">{a.client?.name || "—"}</span>
                   </td>
-                  <td className="px-4 py-4 text-white/60 text-xs">
+                  <td className="px-4 py-4 text-foreground/60 text-xs">
                     <span className="relative z-10 pointer-events-none">{a.template?.form_templates?.name || "—"}</span>
                   </td>
-                  <td className="px-4 py-4 text-white/50 font-mono text-xs">
+                  <td className="px-4 py-4 text-muted-foreground font-mono text-xs">
                     <span className="relative z-10 pointer-events-none">
                       {new Date(a.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                     </span>
                   </td>
                   <td className="px-4 py-4">
-                    <span className={`relative z-10 pointer-events-none inline-flex items-center justify-between gap-3 w-full font-mono text-[10px] uppercase tracking-widest ${statusColor[a.status] || "text-white/40"}`}>
+                    <span className={`relative z-10 pointer-events-none inline-flex items-center justify-between gap-3 w-full font-mono text-[10px] uppercase tracking-widest ${statusColor[a.status] || "text-muted-foreground"}`}>
                       {statusLabel[a.status] || a.status}
-                      <span className="text-white/20">&rarr;</span>
+                      <span className="text-muted-foreground/50">&rarr;</span>
                     </span>
                   </td>
                 </tr>
@@ -193,7 +193,7 @@ export default async function MonthSummaryPage() {
             </tbody>
           </table>
         ) : (
-          <div className="px-6 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+          <div className="px-6 py-12 text-center text-muted-foreground/50 font-mono text-xs uppercase tracking-widest">
             No assessments this month
           </div>
         )}

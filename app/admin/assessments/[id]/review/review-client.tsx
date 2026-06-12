@@ -221,10 +221,10 @@ export function ReviewClient({
     const failed = submission.status === "ai_draft_failed"
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <h2 className="font-serif text-2xl text-white">
+        <h2 className="font-serif text-2xl text-foreground">
           {failed ? "AI Draft Failed" : "No AI Draft Yet"}
         </h2>
-        <p className="text-white/50 text-sm max-w-md text-center">
+        <p className="text-foreground/70 text-sm max-w-md text-center">
           {failed
             ? "The previous AI generation failed. See /admin/month-summary for the logged error, then retry."
             : "The assessment has been submitted. Click below to generate an AI draft from the raw answers."}
@@ -233,7 +233,7 @@ export function ReviewClient({
           id="generate-draft-btn"
           onClick={handleGenerate}
           disabled={generating}
-          className="bg-white text-black hover:bg-white/90 mt-4"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 mt-4"
         >
           {generating ? "Generating..." : failed ? "Retry Draft" : "Generate AI Draft"}
         </Button>
@@ -246,31 +246,31 @@ export function ReviewClient({
     <div className="max-w-4xl mx-auto py-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-300">
       {/* Header */}
       <div className="space-y-1">
-        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40">Phase 7 · AI Report Pipeline</p>
-        <h1 className="font-serif text-3xl text-white">Review Report Draft</h1>
-        <p className="text-white/40 text-sm">Edit the AI-generated content below before generating the final PDF.</p>
+        <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Phase 7 · AI Report Pipeline</p>
+        <h1 className="font-serif text-3xl text-foreground">Review Report Draft</h1>
+        <p className="text-muted-foreground text-sm">Edit the AI-generated content below before generating the final PDF.</p>
       </div>
 
       {/* Raw Answers & STT panel (D-04) — collapsible source-of-truth view, ABOVE the editable draft */}
       <details
         {...(panelDefaultOpen ? { open: true } : {})}
-        className="group border border-white/10 rounded-md bg-white/[0.02]"
+        className="group border border-border rounded-md bg-muted/30"
       >
-        <summary className="font-mono uppercase tracking-[0.2em] text-[10px] text-white/40 cursor-pointer hover:text-white/60 px-4 py-3 list-none flex items-center justify-between">
+        <summary className="font-mono uppercase tracking-[0.2em] text-[10px] text-muted-foreground cursor-pointer hover:text-foreground/60 px-4 py-3 list-none flex items-center justify-between">
           <span>Raw Answers &amp; STT</span>
-          <span className="text-white/30 group-open:rotate-90 transition-transform">›</span>
+          <span className="text-muted-foreground group-open:rotate-90 transition-transform">›</span>
         </summary>
-        <div className="px-4 pb-4 pt-1 border-t border-white/5">
+        <div className="px-4 pb-4 pt-1 border-t border-border">
           {rawRows.length === 0 ? (
-            <p className="text-white/40 text-xs py-2">
+            <p className="text-muted-foreground text-xs py-2">
               No pinned schema available for this submission — raw answers cannot be rendered.
             </p>
           ) : (
             <div>
               {rawRows.map((row) => (
-                <div key={row.id} className="flex gap-2 py-1.5 border-b border-white/5">
-                  <span className="text-white/40 text-xs font-mono w-1/3">{row.label}</span>
-                  <span className="text-white/70 text-sm flex-1 whitespace-pre-wrap break-words">{row.value || "—"}</span>
+                <div key={row.id} className="flex gap-2 py-1.5 border-b border-border">
+                  <span className="text-muted-foreground text-xs font-mono w-1/3">{row.label}</span>
+                  <span className="text-foreground/70 text-sm flex-1 whitespace-pre-wrap break-words">{row.value || "—"}</span>
                 </div>
               ))}
             </div>
@@ -280,11 +280,11 @@ export function ReviewClient({
 
       {/* Executive Summary */}
       <div className="space-y-2">
-        <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Executive Summary</label>
+        <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Executive Summary</label>
         <textarea
           id="executive-summary"
           rows={5}
-          className="w-full bg-white/[0.03] border border-white/10 rounded-md p-4 text-white/80 focus:ring-1 focus:ring-white/20 focus:outline-none text-sm resize-none"
+          className="w-full bg-muted/30 border border-border rounded-md p-4 text-foreground/80 focus:ring-1 focus:ring-border focus:outline-none text-sm resize-none"
           value={draft.executiveSummary}
           onChange={(e) => setDraft({ ...draft, executiveSummary: e.target.value })}
         />
@@ -292,35 +292,35 @@ export function ReviewClient({
 
       {/* Compliance Status */}
       <div className="space-y-2">
-        <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">Overall Compliance Status</label>
+        <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">Overall Compliance Status</label>
         <select
           id="compliance-status"
-          className="w-full bg-white/[0.03] border border-white/10 rounded-md px-4 py-3 text-white/80 focus:ring-1 focus:ring-white/20 focus:outline-none text-sm"
+          className="w-full bg-muted/30 border border-border rounded-md px-4 py-3 text-foreground/80 focus:ring-1 focus:ring-border focus:outline-none text-sm"
           value={draft.complianceStatus}
           onChange={(e) => setDraft({ ...draft, complianceStatus: e.target.value as ComplianceStatus })}
         >
-          <option value="Pass" className="bg-black">Pass</option>
-          <option value="Action Required" className="bg-black">Action Required</option>
-          <option value="Fail" className="bg-black">Fail</option>
+          <option value="Pass">Pass</option>
+          <option value="Action Required">Action Required</option>
+          <option value="Fail">Fail</option>
         </select>
       </div>
 
       {/* Hazards */}
       <div className="space-y-3">
-        <label className="text-[10px] uppercase tracking-widest text-white/40 font-mono">
+        <label className="text-[10px] uppercase tracking-widest text-muted-foreground font-mono">
           Hazards Detected ({draft.hazards.length})
         </label>
         {draft.hazards.map((hazard, i) => (
           <div
             key={i}
-            className="p-5 border border-white/10 rounded-md space-y-4 bg-white/[0.02]"
+            className="p-5 border border-border rounded-md space-y-4 bg-muted/20"
             style={{ borderLeftColor: SEVERITY_COLORS[hazard.severity], borderLeftWidth: 3 }}
           >
             <div className="flex gap-4 items-end">
               <div className="flex-1 space-y-1">
-                <span className="text-[9px] text-white/30 uppercase font-mono tracking-widest">Location</span>
+                <span className="text-[9px] text-muted-foreground uppercase font-mono tracking-widest">Location</span>
                 <input
-                  className="w-full bg-transparent border-b border-white/10 text-white text-sm py-1 focus:outline-none focus:border-white/30"
+                  className="w-full bg-transparent border-b border-border text-foreground text-sm py-1 focus:outline-none focus:border-border/60"
                   value={hazard.location}
                   onChange={(e) => {
                     const updated = [...draft.hazards]
@@ -330,9 +330,9 @@ export function ReviewClient({
                 />
               </div>
               <div className="w-36 space-y-1">
-                <span className="text-[9px] text-white/30 uppercase font-mono tracking-widest">Severity</span>
+                <span className="text-[9px] text-muted-foreground uppercase font-mono tracking-widest">Severity</span>
                 <select
-                  className="w-full bg-transparent border-b border-white/10 text-white text-sm py-1 focus:outline-none focus:border-white/30"
+                  className="w-full bg-transparent border-b border-border text-foreground text-sm py-1 focus:outline-none focus:border-border/60"
                   value={hazard.severity}
                   onChange={(e) => {
                     const updated = [...draft.hazards]
@@ -341,16 +341,16 @@ export function ReviewClient({
                   }}
                 >
                   {(["Low", "Medium", "High", "Critical"] as Severity[]).map((s) => (
-                    <option key={s} value={s} className="bg-black" style={{ color: SEVERITY_COLORS[s] }}>{s}</option>
+                    <option key={s} value={s} style={{ color: SEVERITY_COLORS[s] }}>{s}</option>
                   ))}
                 </select>
               </div>
             </div>
             <div className="space-y-1">
-              <span className="text-[9px] text-white/30 uppercase font-mono tracking-widest">Description</span>
+              <span className="text-[9px] text-muted-foreground uppercase font-mono tracking-widest">Description</span>
               <textarea
                 rows={2}
-                className="w-full bg-transparent border border-white/10 rounded px-3 py-2 text-white/80 text-sm focus:outline-none focus:border-white/30 resize-none"
+                className="w-full bg-transparent border border-border rounded px-3 py-2 text-foreground/80 text-sm focus:outline-none focus:border-border/60 resize-none"
                 value={hazard.description}
                 onChange={(e) => {
                   const updated = [...draft.hazards]
@@ -360,10 +360,10 @@ export function ReviewClient({
               />
             </div>
             <div className="space-y-1">
-              <span className="text-[9px] text-white/30 uppercase font-mono tracking-widest">Recommended Action</span>
+              <span className="text-[9px] text-muted-foreground uppercase font-mono tracking-widest">Recommended Action</span>
               <textarea
                 rows={2}
-                className="w-full bg-transparent border border-white/10 rounded px-3 py-2 text-white/80 text-sm focus:outline-none focus:border-white/30 resize-none"
+                className="w-full bg-transparent border border-border rounded px-3 py-2 text-foreground/80 text-sm focus:outline-none focus:border-border/60 resize-none"
                 value={hazard.recommendedAction}
                 onChange={(e) => {
                   const updated = [...draft.hazards]
@@ -377,12 +377,12 @@ export function ReviewClient({
       </div>
 
       {/* Action Bar */}
-      <div className="flex justify-between items-center pt-6 border-t border-white/10">
+      <div className="flex justify-between items-center pt-6 border-t border-border">
         <Button
           variant="outline"
           onClick={handleGenerate}
           disabled={generating || approving}
-          className="border-white/10 text-white/50 hover:text-white hover:bg-white/5 text-sm"
+          className="border-border text-muted-foreground hover:text-foreground hover:bg-muted text-sm"
         >
           {generating ? "Regenerating..." : "↺ Regenerate Draft"}
         </Button>
@@ -390,7 +390,7 @@ export function ReviewClient({
           id="approve-generate-btn"
           onClick={handleApprove}
           disabled={approving || generating}
-          className="bg-white text-black hover:bg-white/90 text-sm px-6 h-10"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 text-sm px-6 h-10"
         >
           {approving ? "Generating PDF..." : "Approve & Generate PDF →"}
         </Button>

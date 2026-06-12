@@ -54,8 +54,8 @@ export function ComplianceChartImpl({
           </Pie>
         </PieChart>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="font-serif text-4xl text-white">{percentage}%</div>
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[#888] mt-1">Current</div>
+          <div className="font-serif text-4xl text-foreground">{percentage}%</div>
+          <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mt-1">Current</div>
         </div>
       </div>
     </div>

@@ -64,30 +64,30 @@ export default async function AdminDashboardPage() {
       {/* ─── GREETING & STATS HEADER ─── */}
       <div className="flex justify-between items-end gap-8 min-w-0 animate-in-fade [animation-delay:0.1s]">
         <div className="flex flex-col gap-2 min-w-0">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
             <span className="text-teal font-semibold">01</span>
             SINGLE PANE OF GLASS
           </div>
-          <h2 className="font-serif text-[26px] md:text-[30px] leading-tight text-[#aaa]">
-            <span className="text-white">Welcome back, Matt.</span> {stats.totalItemsNeeded} {stats.totalItemsNeeded === 1 ? 'item needs' : 'items need'} you today.
+          <h2 className="font-serif text-[26px] md:text-[30px] leading-tight text-muted-foreground">
+            <span className="text-foreground">Welcome back, Matt.</span> {stats.totalItemsNeeded} {stats.totalItemsNeeded === 1 ? 'item needs' : 'items need'} you today.
           </h2>
         </div>
 
         <div className="flex gap-6 lg:gap-8 text-right shrink-0">
           <div className="flex flex-col items-end gap-1">
-            <div className="font-mono text-[10px] tracking-widest uppercase text-[#555]">Drafts to review</div>
+            <div className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Drafts to review</div>
             <div className="font-serif text-3xl text-gold">{stats.reviewCount}</div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="font-mono text-[10px] tracking-widest uppercase text-[#555]">Overdue docs</div>
+            <div className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Overdue docs</div>
             <div className="font-serif text-3xl text-danger">{stats.overdueCount}</div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="font-mono text-[10px] tracking-widest uppercase text-[#555]">Expiring (30d)</div>
+            <div className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Expiring (30d)</div>
             <div className="font-serif text-3xl text-gold">{stats.expiringCount}</div>
           </div>
           <div className="flex flex-col items-end gap-1">
-            <div className="font-mono text-[10px] tracking-widest uppercase text-[#555]">Workflow errors</div>
+            <div className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Workflow errors</div>
             <div className="font-serif text-3xl text-danger">{stats.errorCount}</div>
           </div>
         </div>
@@ -97,31 +97,31 @@ export default async function AdminDashboardPage() {
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
         <div className="flex flex-col gap-6">
           {/* 01 CLIENTS */}
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden flex flex-col max-h-[420px] animate-in-fade [animation-delay:0.2s]">
-            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5 shrink-0">
+          <Card className="bg-card border-border rounded-sm overflow-hidden flex flex-col max-h-[420px] animate-in-fade [animation-delay:0.2s]">
+            <div className="px-6 py-4 flex justify-between items-center border-b border-border shrink-0">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-white/40">01</span>
-                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Clients</h3>
-                <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">{clients?.length || 0} Active</span>
+                <span className="font-mono text-xs text-muted-foreground">01</span>
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Clients</h3>
+                <span className="px-2.5 py-1 bg-muted border border-border rounded-full text-[9px] font-mono uppercase tracking-widest text-muted-foreground ml-3 leading-none">{clients?.length || 0} Active</span>
               </div>
-              <Link href="/admin/clients" className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
+              <Link href="/admin/clients" className="font-mono text-[10px] uppercase tracking-widest text-foreground/70 hover:text-foreground underline underline-offset-4 decoration-foreground/20">
                 View all
               </Link>
             </div>
 
-            <div className="w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            <div className="w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
               <table className="w-full table-fixed text-left font-sans text-sm">
-                <thead className="bg-[#151515]">
-                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-left w-[34%]">Client</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[15%]">Rag</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[9%]">Hours</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-left w-[19%]">Next Expiry</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[14%]">Proposal</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center w-[9%]">Docs</th>
+                <thead className="bg-muted">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                    <th className="font-normal px-6 py-3 border-b border-border text-left w-[34%]">Client</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center w-[15%]">Rag</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center w-[9%]">Hours</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-left w-[19%]">Next Expiry</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center w-[14%]">Proposal</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center w-[9%]">Docs</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-border">
                   {clients?.map((client) => {
                     // Calculate next expiry
                     type DocRow = { expiry_date: string | null; document_category: string | null };
@@ -172,7 +172,7 @@ export default async function AdminDashboardPage() {
                   })}
                   {!clients || clients.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-10 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+                      <td colSpan={6} className="px-6 py-10 text-center text-muted-foreground/50 font-mono text-xs uppercase tracking-widest">
                         No clients found in database
                       </td>
                     </tr>
@@ -183,36 +183,36 @@ export default async function AdminDashboardPage() {
           </Card>
 
           {/* 03 REPORTS AWAITING REVIEW */}
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden flex flex-col pb-4 animate-in-fade [animation-delay:0.3s]">
-            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+          <Card className="bg-card border-border rounded-sm overflow-hidden flex flex-col pb-4 animate-in-fade [animation-delay:0.3s]">
+            <div className="px-6 py-4 flex justify-between items-center border-b border-border">
               <div className="flex items-center gap-3">
-                <span className="font-mono text-xs text-white/40">03</span>
-                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Reports awaiting review</h3>
-                <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">{reviewQueue.length} Drafts</span>
+                <span className="font-mono text-xs text-muted-foreground">03</span>
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Reports awaiting review</h3>
+                <span className="px-2.5 py-1 bg-muted border border-border rounded-full text-[9px] font-mono uppercase tracking-widest text-muted-foreground ml-3 leading-none">{reviewQueue.length} Drafts</span>
               </div>
-              <Link href="/admin/review-queue" className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">View queue</Link>
+              <Link href="/admin/review-queue" className="font-mono text-[10px] uppercase tracking-widest text-foreground/70 hover:text-foreground underline underline-offset-4 decoration-foreground/20">View queue</Link>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-white/5 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 divide-x divide-border mt-2">
               {reviewQueue.map((item) => (
                 <div key={item.id} className="p-6 flex flex-col gap-3 group relative">
-                  <div className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                     {new Date(item.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} &middot; {new Date(item.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                   <div>
-                    <div className="font-medium text-white mb-1">{(item.client as { name?: string } | null)?.name}</div>
-                    <div className="text-xs text-[#888] leading-relaxed">
+                    <div className="font-medium text-foreground mb-1">{(item.client as { name?: string } | null)?.name}</div>
+                    <div className="text-xs text-muted-foreground leading-relaxed">
                       {(item.template as { form_template?: { name?: string } | null } | null)?.form_template?.name}<br />
                       Draft assessment
                     </div>
                   </div>
                   <Link href={`/admin/assessments/${item.id}`}>
-                    <Button variant="secondary" className="bg-white text-black text-xs font-medium w-fit mt-2 rounded-[2px] h-8 px-4">Review &rarr;</Button>
+                    <Button variant="secondary" className="bg-primary text-primary-foreground text-xs font-medium w-fit mt-2 rounded-[2px] h-8 px-4">Review &rarr;</Button>
                   </Link>
                 </div>
               ))}
               {reviewQueue.length === 0 && (
-                <div className="col-span-3 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+                <div className="col-span-3 py-12 text-center text-muted-foreground/50 font-mono text-xs uppercase tracking-widest">
                   No reports awaiting review
                 </div>
               )}
@@ -221,30 +221,30 @@ export default async function AdminDashboardPage() {
         </div>
 
         {/* 02 UPCOMING EXPIRIES */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col h-full animate-in-fade [animation-delay:0.4s]">
-          <div className="flex justify-between items-center mb-6 pb-6 border-b border-white/5">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col h-full animate-in-fade [animation-delay:0.4s]">
+          <div className="flex justify-between items-center mb-6 pb-6 border-b border-border">
             <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-white/40">02</span>
-              <h3 className="font-sans font-medium text-white tracking-wide text-lg">Upcoming expiries</h3>
+              <span className="font-mono text-xs text-muted-foreground">02</span>
+              <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Upcoming expiries</h3>
             </div>
-            <Link href="/admin/expiries" className="font-mono text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white border-b border-[#aaa] pb-0.5">View all</Link>
+            <Link href="/admin/expiries" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground border-b border-muted-foreground pb-0.5">View all</Link>
           </div>
 
           <div className="flex flex-col gap-6">
             {upcomingExpiries.length > 0 ? (
               <div>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="px-3 py-1 bg-white/5 border-l-2 border-danger/60 text-white/80 font-mono text-[10px] uppercase tracking-widest leading-none">Attention Required</div>
-                  <div className="font-mono text-[10px] text-white/20 uppercase tracking-widest">{stats.totalExpiries} Items</div>
+                  <div className="px-3 py-1 bg-muted border-l-2 border-danger/60 text-foreground/80 font-mono text-[10px] uppercase tracking-widest leading-none">Attention Required</div>
+                  <div className="font-mono text-[10px] text-muted-foreground/50 uppercase tracking-widest">{stats.totalExpiries} Items</div>
                 </div>
                 <div className="flex flex-col gap-5">
                   {upcomingExpiries.map((doc) => {
                     const daysLeft = Math.ceil((new Date(doc.expiry_date || "").getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                     return (
-                      <div key={doc.id} className="flex justify-between items-start gap-4 border-b border-white/5 pb-5 last:border-0 last:pb-0">
+                      <div key={doc.id} className="flex justify-between items-start gap-4 border-b border-border pb-5 last:border-0 last:pb-0">
                         <div>
-                          <div className="text-white text-sm font-medium mb-1">{doc.filename}</div>
-                          <div className="text-xs text-[#888]">{(doc.client as { name?: string } | null)?.name} <span className="font-mono ml-1 uppercase">{new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
+                          <div className="text-foreground text-sm font-medium mb-1">{doc.filename}</div>
+                          <div className="text-xs text-muted-foreground">{(doc.client as { name?: string } | null)?.name} <span className="font-mono ml-1 uppercase">{new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                         </div>
                         {daysLeft < 0 ? (
                           <div className="inline-flex items-center px-2.5 py-1 text-danger border border-danger/40 text-[10px] font-mono uppercase tracking-wider rounded-sm shrink-0 mt-0.5 leading-none">
@@ -261,7 +261,7 @@ export default async function AdminDashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+              <div className="py-12 text-center text-muted-foreground/50 font-mono text-xs uppercase tracking-widest">
                 No upcoming expiries
               </div>
             )}
@@ -275,24 +275,24 @@ export default async function AdminDashboardPage() {
         {/* overflow-visible + z-10: the compliance breakdown panel drops below the
             card and must paint over later sibling cards (each card's retained
             fade-in animation makes it a stacking context) */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col h-[400px] overflow-visible relative z-10 animate-in-fade [animation-delay:0.5s]">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col h-[400px] overflow-visible relative z-10 animate-in-fade [animation-delay:0.5s]">
           <div className="flex items-center gap-3 mb-6">
-            <span className="font-mono text-xs text-white/40">04</span>
-            <h3 className="font-sans font-medium text-white tracking-wide text-lg">Compliance status</h3>
-            <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">{compliance.total} Docs</span>
+            <span className="font-mono text-xs text-muted-foreground">04</span>
+            <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Compliance status</h3>
+            <span className="px-2.5 py-1 bg-muted border border-border rounded-full text-[9px] font-mono uppercase tracking-widest text-muted-foreground ml-3 leading-none">{compliance.total} Docs</span>
           </div>
 
           <ComplianceChart data={complianceData} breakdown={complianceBreakdown} />
         </Card>
 
         {/* 05 HOURS BALANCES */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden p-6 flex flex-col animate-in-fade [animation-delay:0.6s]">
+        <Card className="bg-card border-border rounded-sm overflow-hidden p-6 flex flex-col animate-in-fade [animation-delay:0.6s]">
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-white/40">05</span>
-              <h3 className="font-sans font-medium text-white tracking-wide text-lg">Hours balances</h3>
+              <span className="font-mono text-xs text-muted-foreground">05</span>
+              <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Hours balances</h3>
             </div>
-            <Link href="/admin/hours" className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">See all</Link>
+            <Link href="/admin/hours" className="font-mono text-[10px] uppercase tracking-widest text-foreground/70 hover:text-foreground underline underline-offset-4 decoration-foreground/20">See all</Link>
           </div>
 
           <div className="flex flex-col gap-3 mb-4">
@@ -300,14 +300,14 @@ export default async function AdminDashboardPage() {
               const balance = client.hours_balance || 0;
               const isDanger = balance < 3;
               const isWarning = balance < 10;
-              const barColor = isDanger ? "bg-danger" : isWarning ? "bg-gold" : "bg-[#555]";
-              const textColor = isDanger ? "text-danger" : isWarning ? "text-gold" : "text-white/50";
+              const barColor = isDanger ? "bg-danger" : isWarning ? "bg-gold" : "bg-muted-foreground";
+              const textColor = isDanger ? "text-danger" : isWarning ? "text-gold" : "text-muted-foreground";
               const progressWidth = Math.min(100, (balance / 20) * 100);
 
               return (
                 <div key={client.id} className="flex items-center text-xs">
-                  <span className="w-1/3 truncate text-white/80">{client.name}</span>
-                  <div className="flex-1 h-1.5 bg-[#222] rounded-full mx-3 overflow-hidden">
+                  <span className="w-1/3 truncate text-foreground/80">{client.name}</span>
+                  <div className="flex-1 h-1.5 bg-muted rounded-full mx-3 overflow-hidden">
                     <div className={`h-full ${barColor}`} style={{ width: `${progressWidth}%` }}></div>
                   </div>
                   <span className={`font-mono ${textColor} w-8 text-right`}>{balance}h</span>
@@ -316,28 +316,28 @@ export default async function AdminDashboardPage() {
             })}
           </div>
 
-          <div className="flex gap-4 items-center mt-auto text-[10px] font-mono text-[#555] pt-4">
+          <div className="flex gap-4 items-center mt-auto text-[10px] font-mono text-muted-foreground pt-4">
             <div className="flex items-center gap-2"><div className="w-2 h-2 bg-gold"></div> &lt;10h</div>
             <div className="flex items-center gap-2"><div className="w-2 h-2 bg-danger"></div> &lt;3h</div>
           </div>
         </Card>
 
         {/* 06 ACTIVE PROPOSALS */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col animate-in-fade [animation-delay:0.7s]">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col animate-in-fade [animation-delay:0.7s]">
           <div className="flex justify-between items-start mb-8">
             <div className="flex items-start gap-3">
-              <span className="font-mono text-xs text-white/40">06</span>
+              <span className="font-mono text-xs text-muted-foreground">06</span>
               <div>
-                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Active proposals</h3>
-                <div className="font-mono text-[10px] text-[#666] uppercase tracking-widest mt-1.5 leading-relaxed">
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Active proposals</h3>
+                <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mt-1.5 leading-relaxed">
                   In Pipeline
                 </div>
               </div>
             </div>
-            <Link href="/admin/proposals" className="font-mono text-[10px] uppercase tracking-widest text-white/70 hover:text-white border-b border-white/20 pb-0.5">Open Pipeline</Link>
+            <Link href="/admin/proposals" className="font-mono text-[10px] uppercase tracking-widest text-foreground/70 hover:text-foreground border-b border-foreground/20 pb-0.5">Open Pipeline</Link>
           </div>
 
-          <div className="flex flex-col relative before:absolute before:left-3.5 before:top-4 before:bottom-6 before:w-[1px] before:bg-white/10 gap-8 ml-2">
+          <div className="flex flex-col relative before:absolute before:left-3.5 before:top-4 before:bottom-6 before:w-[1px] before:bg-border gap-8 ml-2">
             {['draft', 'sent', 'signed', 'contract_sent'].map((statusKey, idx) => {
               // Normalize status for matching (handle spaces, underscores, and casing)
               const count = allProposals?.filter(p => {
@@ -350,11 +350,11 @@ export default async function AdminDashboardPage() {
 
               return (
                 <div key={statusKey} className="relative flex items-center gap-6">
-                  <div className="w-7 h-7 rounded-full border border-white/20 bg-[#1c1c1c] flex items-center justify-center font-mono text-xs text-white z-10 shrink-0">{count}</div>
+                  <div className="w-7 h-7 rounded-full border border-border bg-card flex items-center justify-center font-mono text-xs text-foreground z-10 shrink-0">{count}</div>
                   <div className="flex-1">
-                    <div className="font-mono text-[10px] tracking-widest text-[#888] uppercase">{statusKey.replace('_', ' ')}</div>
+                    <div className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">{statusKey.replace('_', ' ')}</div>
                   </div>
-                  <span className="text-white/20 font-mono text-sm">&gt;</span>
+                  <span className="text-muted-foreground/50 font-mono text-sm">&gt;</span>
                 </div>
               );
             })}
@@ -365,37 +365,37 @@ export default async function AdminDashboardPage() {
       {/* ─── ROW 3: 07 WORKFLOW ERRORS (Left) & 08 THIS MONTH (Right) ─── */}
       <div className="grid grid-cols-1 xl:grid-cols-[2fr_1fr] gap-6">
         {/* 07 WORKFLOW ERRORS */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col animate-in-fade [animation-delay:0.8s]">
-          <div className="flex justify-between items-start mb-6 border-b border-white/5 pb-4">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col animate-in-fade [animation-delay:0.8s]">
+          <div className="flex justify-between items-start mb-6 border-b border-border pb-4">
             <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-white/40">07</span>
-              <h3 className="font-sans font-medium text-white tracking-wide text-lg">Workflow errors</h3>
-              <span className={`font-mono text-[10px] ${stats.errorCount > 0 ? 'text-danger' : 'text-success'} border border-current/20 rounded-full text-[9px] font-mono uppercase tracking-widest ml-3 bg-white/5 px-2.5 py-1 leading-none`}>
+              <span className="font-mono text-xs text-muted-foreground">07</span>
+              <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Workflow errors</h3>
+              <span className={`font-mono text-[10px] ${stats.errorCount > 0 ? 'text-danger' : 'text-success'} border border-current/20 rounded-full text-[9px] font-mono uppercase tracking-widest ml-3 bg-muted px-2.5 py-1 leading-none`}>
                 {stats.errorCount} {stats.errorCount === 1 ? 'Failing' : 'Failing'}
               </span>
             </div>
-            <Link href="/admin/errors" className="font-mono text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white inline-flex items-center gap-1 px-3 py-1 border border-white/15 rounded-[2px] hover:bg-white/5 transition-colors">View Log &rarr;</Link>
+            <Link href="/admin/errors" className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-3 py-1 border border-border rounded-[2px] hover:bg-muted transition-colors">View Log &rarr;</Link>
           </div>
 
-          <div className="flex flex-col text-xs divide-y divide-white/5">
+          <div className="flex flex-col text-xs divide-y divide-border">
             {recentErrors.map((error) => {
               const friendly = describeWorkflowError(error.workflow_name);
               const who = error.details.find((d) => d.label === "Client")?.value;
               return (
                 <div key={error.id} className="flex items-start md:items-center gap-4 py-4 first:pt-0 last:pb-0">
-                  <span className="w-24 shrink-0 text-[#666] font-mono">
+                  <span className="w-24 shrink-0 text-muted-foreground font-mono">
                     {Math.floor((Date.now() - new Date(error.created_at).getTime()) / (1000 * 60 * 60))} h ago
                   </span>
                   <div className="w-12 shrink-0 px-2 py-0.5 border border-danger/20 rounded-[2px] text-danger text-[10px] text-center font-bold font-mono">ERR</div>
-                  <span className="flex-1 truncate text-white/90 font-sans">
+                  <span className="flex-1 truncate text-foreground/90 font-sans">
                     {friendly.title}
-                    {who && <span className="text-white/40 ml-2">— {who}</span>}
+                    {who && <span className="text-muted-foreground ml-2">— {who}</span>}
                   </span>
                 </div>
               );
             })}
             {recentErrors.length === 0 && (
-              <div className="py-8 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+              <div className="py-8 text-center text-muted-foreground/50 font-mono text-xs uppercase tracking-widest">
                 No active workflow errors
               </div>
             )}
@@ -403,35 +403,35 @@ export default async function AdminDashboardPage() {
         </Card>
 
         {/* 08 THIS MONTH */}
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col animate-in-fade [animation-delay:0.9s]">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col animate-in-fade [animation-delay:0.9s]">
           <div className="flex items-center gap-3 mb-8">
-            <span className="font-mono text-xs text-white/40">08</span>
-            <h3 className="font-sans font-medium text-white tracking-wide text-lg whitespace-nowrap">This month</h3>
-            <span className="font-mono text-[10px] text-white/50 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest ml-3 bg-white/5 px-2.5 py-1 leading-none">
+            <span className="font-mono text-xs text-muted-foreground">08</span>
+            <h3 className="font-sans font-medium text-foreground tracking-wide text-lg whitespace-nowrap">This month</h3>
+            <span className="font-mono text-[10px] text-muted-foreground border border-border rounded-full text-[9px] font-mono uppercase tracking-widest ml-3 bg-muted px-2.5 py-1 leading-none">
               {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
             </span>
           </div>
 
           <div className="grid grid-cols-2 gap-y-10 gap-x-6">
             <div>
-              <div className="font-serif text-3xl text-white mb-2">{monthly.assessmentsCompleted}</div>
-              <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Assessments<br />completed</div>
+              <div className="font-serif text-3xl text-foreground mb-2">{monthly.assessmentsCompleted}</div>
+              <div className="font-mono text-[10px] uppercase text-muted-foreground tracking-widest leading-relaxed">Assessments<br />completed</div>
             </div>
             <div>
-              <div className="font-serif text-3xl text-white mb-2">{monthly.reportsDelivered}</div>
-              <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Reports<br />delivered</div>
+              <div className="font-serif text-3xl text-foreground mb-2">{monthly.reportsDelivered}</div>
+              <div className="font-mono text-[10px] uppercase text-muted-foreground tracking-widest leading-relaxed">Reports<br />delivered</div>
             </div>
             <div>
-              <div className="font-serif text-3xl text-white mb-2">{clients?.reduce((acc, c) => acc + (c.hours_balance || 0), 0).toFixed(0)}</div>
-              <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Current Total<br />Hours</div>
+              <div className="font-serif text-3xl text-foreground mb-2">{clients?.reduce((acc, c) => acc + (c.hours_balance || 0), 0).toFixed(0)}</div>
+              <div className="font-mono text-[10px] uppercase text-muted-foreground tracking-widest leading-relaxed">Current Total<br />Hours</div>
             </div>
             <div>
-              <div className="font-serif text-3xl text-white mb-2">{monthly.proposalsSigned}</div>
-              <div className="font-mono text-[10px] uppercase text-[#666] tracking-widest leading-relaxed">Proposals<br />signed</div>
+              <div className="font-serif text-3xl text-foreground mb-2">{monthly.proposalsSigned}</div>
+              <div className="font-mono text-[10px] uppercase text-muted-foreground tracking-widest leading-relaxed">Proposals<br />signed</div>
             </div>
           </div>
 
-          <Link href="/admin/month-summary" className="mt-8 self-start font-mono text-[10px] uppercase tracking-widest text-[#aaa] hover:text-white border-b border-[#aaa] pb-0.5">
+          <Link href="/admin/month-summary" className="mt-8 self-start font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground border-b border-muted-foreground pb-0.5">
             View full summary &rarr;
           </Link>
         </Card>

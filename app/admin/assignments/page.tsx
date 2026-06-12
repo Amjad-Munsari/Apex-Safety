@@ -9,10 +9,10 @@ export const dynamic = "force-dynamic";
 function StatusPill({ status }: { status: string }) {
   const classes =
     status === "in_progress"
-      ? "text-[#c0a66d] bg-[#c0a66d]/10"
+      ? "text-gold bg-gold/10"
       : status === "completed"
         ? "text-teal bg-teal/10"
-        : "text-[#666] bg-[#555]/10";
+        : "text-muted-foreground bg-muted/40";
 
   const label =
     status === "in_progress"
@@ -32,14 +32,14 @@ function StatusPill({ status }: { status: string }) {
 
 // Due-date colour-coding per UI-SPEC
 function dueDateClass(dueDate: string | null): string {
-  if (!dueDate) return "text-[#666]";
+  if (!dueDate) return "text-muted-foreground";
   const d = new Date(dueDate);
   const now = new Date();
   const diffMs = d.getTime() - now.getTime();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  if (diffDays < 0) return "text-[#e55a3a]"; // overdue
+  if (diffDays < 0) return "text-[#e55a3a]"; // overdue — leave as-is (semantic color)
   if (diffDays <= 3) return "text-gold"; // due within 3 days
-  return "text-[#666]";
+  return "text-muted-foreground";
 }
 
 function formatDate(dateStr: string | null): string {
@@ -84,15 +84,15 @@ function FilterPillGroup({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="font-mono text-[9px] uppercase tracking-widest text-[#555]">
+      <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">
         {label}
       </span>
       <Link
         href={buildUrl(null)}
         className={`font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded-sm transition-colors ${
           !active
-            ? "text-white bg-white/10"
-            : "text-[#666] hover:text-white/60"
+            ? "text-foreground bg-muted"
+            : "text-muted-foreground hover:text-foreground/60"
         }`}
       >
         All
@@ -103,8 +103,8 @@ function FilterPillGroup({
           href={buildUrl(opt.value)}
           className={`font-mono text-[9px] uppercase tracking-widest px-2 py-1 rounded-sm transition-colors ${
             active === opt.value
-              ? "text-white bg-white/10"
-              : "text-[#666] hover:text-white/60"
+              ? "text-foreground bg-muted"
+              : "text-muted-foreground hover:text-foreground/60"
           }`}
         >
           {opt.label}
@@ -159,14 +159,14 @@ export default async function AssignmentsQueuePage({
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* ─── HEADER ─── */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+        <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
           <span className="text-gold font-semibold">07</span>
           ASSIGNMENT QUEUE
         </div>
-        <h2 className="font-serif text-[34px] leading-tight text-white">
+        <h2 className="font-serif text-[34px] leading-tight text-foreground">
           Active Assignments
         </h2>
-        <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+        <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
           All assignments across clients. Sort by due date; filter by status,
           client, or template.
         </p>
@@ -189,41 +189,41 @@ export default async function AssignmentsQueuePage({
       </div>
 
       {/* ─── TABLE ─── */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+      <Card className="bg-card border-border rounded-sm overflow-hidden">
         <table className="w-full text-left font-sans text-sm">
-          <thead className="bg-[#151515]">
-            <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-              <th className="font-normal px-6 py-4 border-b border-white/5">
+          <thead className="bg-muted">
+            <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+              <th className="font-normal px-6 py-4 border-b border-border">
                 Template
               </th>
-              <th className="font-normal px-4 py-4 border-b border-white/5">
+              <th className="font-normal px-4 py-4 border-b border-border">
                 Client
               </th>
-              <th className="font-normal px-4 py-4 border-b border-white/5">
+              <th className="font-normal px-4 py-4 border-b border-border">
                 Due Date
               </th>
-              <th className="font-normal px-4 py-4 border-b border-white/5">
+              <th className="font-normal px-4 py-4 border-b border-border">
                 Status
               </th>
-              <th className="font-normal px-4 py-4 border-b border-white/5">
+              <th className="font-normal px-4 py-4 border-b border-border">
                 Instructions
               </th>
-              <th className="font-normal px-6 py-4 border-b border-white/5 text-right">
+              <th className="font-normal px-6 py-4 border-b border-border text-right">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border">
             {rows.length === 0 ? (
               <tr>
                 <td
                   colSpan={6}
-                  className="text-center py-12 text-[#666] font-sans text-sm"
+                  className="text-center py-12 text-muted-foreground font-sans text-sm"
                 >
                   No assignments matching the current filters.{" "}
                   <Link
                     href="/admin/assignments"
-                    className="underline hover:text-white/80 transition-colors"
+                    className="underline hover:text-foreground/80 transition-colors"
                   >
                     Clear filters
                   </Link>
@@ -243,16 +243,16 @@ export default async function AssignmentsQueuePage({
                 return (
                   <tr
                     key={row.id}
-                    className="hover:bg-white/[0.02] transition-colors"
+                    className="hover:bg-muted/30 transition-colors"
                   >
-                    <td className="px-6 py-4 text-white font-medium">
+                    <td className="px-6 py-4 text-foreground font-medium">
                       {templateData?.name ?? "—"}
                     </td>
-                    <td className="px-4 py-4 text-white/80">
+                    <td className="px-4 py-4 text-foreground/80">
                       {clientData ? (
                         <Link
                           href={`/admin/clients/${clientData.id}`}
-                          className="hover:text-white transition-colors"
+                          className="hover:text-foreground transition-colors"
                         >
                           {clientData.name}
                         </Link>
@@ -268,13 +268,13 @@ export default async function AssignmentsQueuePage({
                     <td className="px-4 py-4">
                       <StatusPill status={row.status} />
                     </td>
-                    <td className="px-4 py-4 text-white/60 max-w-xs">
+                    <td className="px-4 py-4 text-foreground/60 max-w-xs">
                       {row.instructions ? (
                         <p className="text-sm line-clamp-2">
                           {row.instructions}
                         </p>
                       ) : (
-                        <span className="text-[#666]">—</span>
+                        <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">

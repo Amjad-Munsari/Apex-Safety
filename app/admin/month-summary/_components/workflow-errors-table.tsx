@@ -6,35 +6,35 @@ import type { WorkflowErrorWithDetails } from "@/lib/supabase/dashboard";
 const severityColor: Record<string, string> = {
   high: "text-danger",
   medium: "text-gold",
-  low: "text-white/40",
+  low: "text-muted-foreground",
 };
 
 export function WorkflowErrorsTable({ rows }: { rows: WorkflowErrorWithDetails[] }) {
   return (
-    <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
-        <span className="font-mono text-[10px] uppercase tracking-widest text-[#555]">Workflow Errors This Month</span>
-        <span className="font-mono text-[10px] text-white/20 ml-auto">{rows.length} records</span>
+    <Card className="bg-card border-border rounded-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border flex items-center gap-3">
+        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Workflow Errors This Month</span>
+        <span className="font-mono text-[10px] text-muted-foreground/50 ml-auto">{rows.length} records</span>
       </div>
 
       {rows.length > 0 ? (
         <>
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-border">
             {rows.map((e) => {
               const friendly = describeWorkflowError(e.workflow_name);
               return (
                 <div key={e.id} className="px-6 py-7 flex justify-between items-stretch gap-6">
                   {/* Left: what failed + details */}
                   <div className="min-w-0 flex-1">
-                    <div className="text-white/90 font-semibold text-base">{friendly.title}</div>
-                    <div className="text-white/50 text-xs mt-1.5 max-w-lg">{friendly.message}</div>
+                    <div className="text-foreground/90 font-semibold text-base">{friendly.title}</div>
+                    <div className="text-muted-foreground text-xs mt-1.5 max-w-lg">{friendly.message}</div>
 
                     {e.details.length > 0 ? (
                       <div className="flex flex-wrap gap-x-8 gap-y-2 mt-5">
                         {e.details.map((d) => (
                           <div key={d.label} className="flex items-baseline gap-2">
-                            <span className="font-mono text-[10px] uppercase tracking-widest text-[#555]">{d.label}</span>
-                            <span className="text-white/80 text-xs">{d.value}</span>
+                            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{d.label}</span>
+                            <span className="text-foreground/80 text-xs">{d.value}</span>
                           </div>
                         ))}
                       </div>
@@ -48,13 +48,13 @@ export function WorkflowErrorsTable({ rows }: { rows: WorkflowErrorWithDetails[]
                       {e.severity ? (
                         <span
                           className={`font-mono text-[10px] uppercase tracking-widest ${
-                            severityColor[e.severity.toLowerCase()] || "text-white/40"
+                            severityColor[e.severity.toLowerCase()] || "text-muted-foreground"
                           }`}
                         >
                           {e.severity}
                         </span>
                       ) : null}
-                      <span className="text-white/50 font-mono text-xs whitespace-nowrap">
+                      <span className="text-muted-foreground font-mono text-xs whitespace-nowrap">
                         {new Date(e.created_at).toLocaleString("en-GB", {
                           day: "numeric",
                           month: "short",
@@ -66,7 +66,7 @@ export function WorkflowErrorsTable({ rows }: { rows: WorkflowErrorWithDetails[]
                     {e.submissionId ? (
                       <Link
                         href={`/admin/assessments/${e.submissionId}/review`}
-                        className="font-mono text-[10px] uppercase tracking-widest text-white/60 hover:text-white transition-colors whitespace-nowrap mt-auto pt-4"
+                        className="font-mono text-[10px] uppercase tracking-widest text-foreground/60 hover:text-foreground transition-colors whitespace-nowrap mt-auto pt-4"
                       >
                         Open assessment review →
                       </Link>
@@ -77,13 +77,13 @@ export function WorkflowErrorsTable({ rows }: { rows: WorkflowErrorWithDetails[]
             })}
           </div>
           {rows.length === 25 ? (
-            <div className="px-6 py-2 text-[10px] font-mono text-white/30 border-t border-white/5">
+            <div className="px-6 py-2 text-[10px] font-mono text-muted-foreground/70 border-t border-border">
               Showing 25 most recent — see direct DB query for full month
             </div>
           ) : null}
         </>
       ) : (
-        <div className="px-6 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+        <div className="px-6 py-12 text-center text-muted-foreground/50 font-mono text-xs uppercase tracking-widest">
           No workflow errors this month
         </div>
       )}

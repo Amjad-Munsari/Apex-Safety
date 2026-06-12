@@ -46,12 +46,12 @@ export default async function ClientsPage() {
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
             <span className="text-teal font-semibold">02</span>
             CLIENT MANAGEMENT
           </div>
-          <h2 className="font-serif text-[34px] leading-tight text-white">All Clients</h2>
-          <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+          <h2 className="font-serif text-[34px] leading-tight text-foreground">All Clients</h2>
+          <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
             {clients?.length || 0} active client records across all service lines.
           </p>
         </div>
@@ -59,19 +59,19 @@ export default async function ClientsPage() {
       </div>
 
       {/* ─── TABLE ─── */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+      <Card className="bg-card border-border rounded-sm overflow-hidden">
         <table className="w-full text-left font-sans text-sm">
-          <thead className="bg-[#151515]">
-            <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-              <th className="font-normal px-6 py-4 border-b border-white/5">Client</th>
-              <th className="font-normal px-4 py-4 border-b border-white/5">RAG</th>
-              <th className="font-normal px-4 py-4 border-b border-white/5 text-right">Hours</th>
-              <th className="font-normal px-4 py-4 border-b border-white/5">Next Expiry</th>
-              <th className="font-normal px-4 py-4 border-b border-white/5">Proposal</th>
-              <th className="font-normal px-6 py-4 border-b border-white/5 text-right">Docs</th>
+          <thead className="bg-muted">
+            <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+              <th className="font-normal px-6 py-4 border-b border-border">Client</th>
+              <th className="font-normal px-4 py-4 border-b border-border">RAG</th>
+              <th className="font-normal px-4 py-4 border-b border-border text-right">Hours</th>
+              <th className="font-normal px-4 py-4 border-b border-border">Next Expiry</th>
+              <th className="font-normal px-4 py-4 border-b border-border">Proposal</th>
+              <th className="font-normal px-6 py-4 border-b border-border text-right">Docs</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border">
             {clients?.map((client) => {
               type DocRow = { expiry_date: string | null; document_category: string | null };
               type ProposalRow = { status: string | null };
@@ -118,7 +118,7 @@ export default async function ClientsPage() {
             })}
             {(!clients || clients.length === 0) && (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+                <td colSpan={6} className="px-6 py-12 text-center text-foreground/20 font-mono text-xs uppercase tracking-widest">
                   No clients found
                 </td>
               </tr>

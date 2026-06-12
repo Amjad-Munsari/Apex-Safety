@@ -95,12 +95,12 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
   return (
     <div className="flex flex-col gap-8">
       {/* Branding */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-8">
+      <Card className="bg-card border-border rounded-sm p-8">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#666] mb-2">01</div>
-            <h3 className="font-serif text-[22px] text-white leading-tight">Branding</h3>
-            <p className="text-[#888] text-xs mt-2 leading-relaxed">
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">01</div>
+            <h3 className="font-serif text-[22px] text-foreground leading-tight">Branding</h3>
+            <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
               Used on the client portal, proposals, contracts, and reports.
             </p>
           </div>
@@ -109,13 +109,13 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
             {/* Logo */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">Logo</span>
+                <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Logo</span>
                 {logoUrl && (
                   <button
                     type="button"
                     onClick={handleRemoveLogo}
                     disabled={uploadingLogo}
-                    className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-white/40 hover:text-danger transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground hover:text-danger transition-colors disabled:opacity-50"
                   >
                     <X className="w-3 h-3" /> Remove logo
                   </button>
@@ -123,7 +123,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
               </div>
               <div
                 onClick={() => !uploadingLogo && fileInputRef.current?.click()}
-                className="border border-dashed border-white/15 rounded-sm h-32 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-amber-500/40 hover:bg-white/[0.02] transition-all"
+                className="border border-dashed border-border rounded-sm h-32 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-amber-500/40 hover:bg-muted/30 transition-all"
               >
                 {logoUrl ? (
                   <Image
@@ -135,12 +135,12 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
                     className="max-h-16 w-auto object-contain"
                   />
                 ) : (
-                  <Upload className="w-5 h-5 text-white/40" />
+                  <Upload className="w-5 h-5 text-muted-foreground" />
                 )}
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-white/50">
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                   {uploadingLogo ? "Uploading…" : logoUrl ? "Click to replace" : "Click to upload SVG or PNG"}
                 </span>
-                <span className="font-mono text-[9px] text-white/30 tracking-[0.2em]">
+                <span className="font-mono text-[9px] text-muted-foreground tracking-[0.2em]">
                   Recommended 240×60 · max 2MB
                 </span>
               </div>
@@ -160,8 +160,8 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
             </div>
 
             {/* Preview */}
-            <div className="bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
-              <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#666] mb-3">Preview</div>
+            <div className="bg-background rounded-sm p-4 ring-1 ring-border">
+              <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground mb-3">Preview</div>
               <div className="flex items-center gap-2">
                 <div className="h-8 px-4 rounded-sm flex items-center font-mono text-[10px] uppercase tracking-[0.2em]" style={{ background: primary, color: "#fff" }}>
                   Primary CTA
@@ -176,12 +176,12 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
       </Card>
 
       {/* Notifications */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-8">
+      <Card className="bg-card border-border rounded-sm p-8">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#666] mb-2">02</div>
-            <h3 className="font-serif text-[22px] text-white leading-tight">Notifications</h3>
-            <p className="text-[#888] text-xs mt-2 leading-relaxed">
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">02</div>
+            <h3 className="font-serif text-[22px] text-foreground leading-tight">Notifications</h3>
+            <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
               Defaults applied to every email the platform sends on your behalf.
             </p>
           </div>
@@ -189,17 +189,17 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
           <div className="flex flex-col gap-6">
             <TextField label="Sign-off Name" value={signOff} onChange={setSignOff} hint="Used at the bottom of automated emails." />
             <TextField label="Default Sender Name" value={senderName} onChange={setSenderName} hint="Appears as the From: name in client inboxes." />
-            <div className="flex items-center justify-between bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
+            <div className="flex items-center justify-between bg-background rounded-sm p-4 ring-1 ring-border">
               <div>
-                <div className="text-sm text-white">Send expiry reminders</div>
-                <div className="text-[#888] text-xs mt-1">Email the primary contact as their documents approach expiry.</div>
+                <div className="text-sm text-foreground">Send expiry reminders</div>
+                <div className="text-muted-foreground text-xs mt-1">Email the primary contact as their documents approach expiry.</div>
               </div>
               <Toggle on={expiryReminders} onChange={setExpiryReminders} />
             </div>
-            <div className="flex items-center justify-between bg-black/30 rounded-sm p-4 ring-1 ring-white/5">
+            <div className="flex items-center justify-between bg-background rounded-sm p-4 ring-1 ring-border">
               <div>
-                <div className="text-sm text-white">Notify on document upload</div>
-                <div className="text-[#888] text-xs mt-1">Tell the client whenever a new document lands in their portal.</div>
+                <div className="text-sm text-foreground">Notify on document upload</div>
+                <div className="text-muted-foreground text-xs mt-1">Tell the client whenever a new document lands in their portal.</div>
               </div>
               <Toggle on={notifyUpload} onChange={setNotifyUpload} />
             </div>
@@ -225,8 +225,8 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
 function ColorPicker({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">{label}</span>
-      <div className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-sm h-10 px-3 focus-within:border-amber-500/50">
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-3 bg-background border border-border rounded-sm h-10 px-3 focus-within:border-amber-500/50">
         <input
           type="color"
           value={value}
@@ -237,7 +237,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 bg-transparent text-sm text-white outline-none font-mono uppercase tracking-wider"
+          className="flex-1 bg-transparent text-sm text-foreground outline-none font-mono uppercase tracking-wider"
         />
       </div>
     </label>
@@ -247,14 +247,14 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
 function TextField({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777]">{label}</span>
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-black/40 border border-white/10 rounded-sm h-9 px-3 text-sm text-white outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
+        className="bg-background border border-border rounded-sm h-9 px-3 text-sm text-foreground outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
       />
-      {hint && <span className="text-[#666] text-xs">{hint}</span>}
+      {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
     </label>
   )
 }
@@ -265,7 +265,7 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
       type="button"
       onClick={() => onChange(!on)}
       className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 ${
-        on ? "bg-gold" : "bg-white/20"
+        on ? "bg-gold" : "bg-muted"
       }`}
       aria-pressed={on}
     >

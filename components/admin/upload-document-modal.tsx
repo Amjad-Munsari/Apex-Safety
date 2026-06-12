@@ -86,19 +86,19 @@ export function UploadDocumentModal({
     <Dialog open={open} onOpenChange={setOpen}>
       <Button
         variant="secondary"
-        className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none"
         onClick={() => setOpen(true)}
       >
         <UploadCloud className="w-4 h-4 mr-2" /> {triggerLabel}
       </Button>
-      <DialogContent className="bg-[#1c1c1c] border-white/10 text-white sm:max-w-[425px]">
+      <DialogContent className="bg-card border-border text-foreground sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl font-normal">Upload Document</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 mt-4">
           {!clientId && (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="clientPicker" className="text-white/70 font-mono text-xs uppercase tracking-widest">
+              <Label htmlFor="clientPicker" className="text-foreground/70 font-mono text-xs uppercase tracking-widest">
                 Client
               </Label>
               <Select
@@ -106,15 +106,15 @@ export function UploadDocumentModal({
                 onValueChange={(v) => setSelectedClientId(v ?? "")}
                 required
               >
-                <SelectTrigger className="w-full data-[size=default]:h-10 text-sm bg-black/50 border-white/10 text-white">
+                <SelectTrigger className="w-full data-[size=default]:h-10 text-sm bg-background border-border text-foreground">
                   <SelectValue placeholder="Select client" />
                 </SelectTrigger>
-                <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
+                <SelectContent className="bg-card border-border text-foreground">
                   {(clients ?? []).map((c) => (
                     <SelectItem
                       key={c.id}
                       value={c.id}
-                      className="text-white data-highlighted:bg-white/10 data-highlighted:text-white focus:bg-white/10 focus:text-white"
+                      className="text-foreground data-highlighted:bg-muted data-highlighted:text-foreground focus:bg-muted focus:text-foreground"
                     >
                       {c.name}
                     </SelectItem>
@@ -125,7 +125,7 @@ export function UploadDocumentModal({
           )}
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="file" className="text-white/70 font-mono text-xs uppercase tracking-widest">
+            <Label htmlFor="file" className="text-foreground/70 font-mono text-xs uppercase tracking-widest">
               File
             </Label>
             <Input
@@ -134,24 +134,24 @@ export function UploadDocumentModal({
               required
               accept="application/pdf,image/*"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="h-10 text-sm bg-black/50 border-white/10 text-white file:h-8 file:mr-3 file:rounded-sm file:border-0 file:bg-white/10 hover:file:bg-white/20 file:px-4 file:text-xs file:font-mono file:uppercase file:tracking-widest file:text-white file:cursor-pointer"
+              className="h-10 text-sm bg-background border-border text-foreground file:h-8 file:mr-3 file:rounded-sm file:border-0 file:bg-muted hover:file:bg-muted file:px-4 file:text-xs file:font-mono file:uppercase file:tracking-widest file:text-foreground file:cursor-pointer"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="category" className="text-white/70 font-mono text-xs uppercase tracking-widest">
+            <Label htmlFor="category" className="text-foreground/70 font-mono text-xs uppercase tracking-widest">
               Category
             </Label>
             <Select name="category" required defaultValue={CATEGORY_OPTIONS[0]}>
-              <SelectTrigger className="w-full data-[size=default]:h-10 text-sm bg-black/50 border-white/10 text-white">
+              <SelectTrigger className="w-full data-[size=default]:h-10 text-sm bg-background border-border text-foreground">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
-              <SelectContent className="bg-[#1c1c1c] border-white/10 text-white">
+              <SelectContent className="bg-card border-border text-foreground">
                 {CATEGORY_OPTIONS.map((cat) => (
                   <SelectItem
                     key={cat}
                     value={cat}
-                    className="text-white data-highlighted:bg-white/10 data-highlighted:text-white focus:bg-white/10 focus:text-white"
+                    className="text-foreground data-highlighted:bg-muted data-highlighted:text-foreground focus:bg-muted focus:text-foreground"
                   >
                     {cat}
                   </SelectItem>
@@ -161,14 +161,14 @@ export function UploadDocumentModal({
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="expiryDate" className="text-white/70 font-mono text-xs uppercase tracking-widest">
+            <Label htmlFor="expiryDate" className="text-foreground/70 font-mono text-xs uppercase tracking-widest">
               Expiry Date (Optional)
             </Label>
             <Input
               id="expiryDate"
               name="expiryDate"
               type="date"
-              className="h-10 text-sm bg-black/50 border-white/10 text-white css-invert-calendar"
+              className="h-10 text-sm bg-background border-border text-foreground css-invert-calendar"
               style={{ colorScheme: "dark" }}
             />
           </div>
@@ -181,7 +181,7 @@ export function UploadDocumentModal({
             <Button
               type="submit"
               disabled={!file || !effectiveClientId || isUploading}
-              className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none w-full"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none w-full"
             >
               {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               {isUploading ? "Uploading..." : "Upload & Notify"}

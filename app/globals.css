@@ -3,9 +3,11 @@
 @import "shadcn/tailwind.css";
 
 /* `dark:` resolves under any `.dark` ancestor (next-themes attribute="class").
-   The admin surface root carries a permanent `dark` class (see app/admin/layout.tsx)
-   so its dark-assuming primitive styles still apply; the client surface gets `.dark`
-   only when the user toggles dark mode via next-themes on <html>. */
+   Both admin and client surfaces default to their light palettes via their
+   [data-surface] blocks; the dark cockpit (admin) and dark document-room (client)
+   are layered by the `.dark` overlays below and driven by the shared next-themes
+   toggle on <html>. The admin LOGIN page alone stays pinned dark as a brand surface
+   (see app/login/admin/page.tsx — no toggle there). */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -99,52 +101,49 @@
   --sidebar-ring: oklch(0.7 0 0);
 }
 
-/* ─── ADMIN SURFACE (operator / dark) ─────────────────────────────────────
-   Editorial-cockpit dark theme. Gold action accent, ringed cards.
-   Was previously the `.dark` block + an outer `<div class="dark">` wrapper;
-   now scoped purely via `data-surface="admin"`. */
+/* ─── ADMIN SURFACE (operator) ────────────────────────────────────────────
+   Monochrome cockpit. LIGHT is the default ("paper" inversion): near-white
+   background, near-black ink, same accents tuned for light. The dark cockpit
+   (the historical look) lives in the .dark overlay below, pixel-identical to
+   what shipped before. */
 [data-surface="admin"] {
-  --background: oklch(0.18 0.005 260);
-  --foreground: oklch(0.85 0 0);
-  --card: oklch(0.20 0.005 260);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.20 0.005 260);
-  --popover-foreground: oklch(0.95 0 0);
-  --primary: oklch(0.95 0 0);
-  --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.25 0.005 260);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.22 0.005 260);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.22 0.005 260);
-  --accent-foreground: oklch(0.95 0 0);
-  --destructive: oklch(0.60 0.16 20);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 10%);
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.18 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0 0);
+  --primary: oklch(0.18 0 0);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.18 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+  --accent: oklch(0.96 0 0);
+  --accent-foreground: oklch(0.18 0 0);
+  --destructive: oklch(0.55 0.18 25);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 12%);
   --ring: oklch(0.56 0.021 213.5);
-
-  --sidebar: oklch(0.14 0.005 260);
-  --sidebar-foreground: oklch(0.85 0 0);
-  --sidebar-primary: oklch(0.704 0.14 182.503);
-  --sidebar-primary-foreground: oklch(0.277 0.046 192.524);
-  --sidebar-accent: oklch(0.22 0.005 260);
-  --sidebar-accent-foreground: oklch(0.95 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar: oklch(0.99 0 0);
+  --sidebar-foreground: oklch(0.18 0 0);
+  --sidebar-primary: oklch(0.18 0 0);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: oklch(0.18 0 0);
+  --sidebar-border: oklch(0 0 0 / 10%);
   --sidebar-ring: oklch(0.56 0.021 213.5);
-
   --chart-1: oklch(0.855 0.138 181.071);
   --chart-2: oklch(0.704 0.14 182.503);
   --chart-3: oklch(0.6 0.118 184.704);
   --chart-4: oklch(0.511 0.096 186.391);
   --chart-5: oklch(0.437 0.078 188.216);
-
-  --gold: oklch(0.74 0.15 65);
+  --gold: oklch(0.62 0.15 65);   /* darker gold so it reads on white */
   --teal: #3b8273;
-  --danger: oklch(0.60 0.16 20);
-  --success: oklch(0.65 0.15 150);
-  --custom-card: oklch(0.16 0.005 260);
-
-  color-scheme: dark;
+  --danger: oklch(0.50 0.16 25);
+  --success: oklch(0.52 0.13 150);
+  --custom-card: oklch(0.97 0 0);
+  color-scheme: light;
 }
 
 /* ─── CLIENT SURFACE (customer / cream) ───────────────────────────────────
@@ -264,9 +263,51 @@
   color-scheme: dark;
 }
 
-/* ADMIN surface: already a dark palette — its existing [data-surface="admin"]
-   block stays canonical. No dark overlay needed; the wrapper just carries a
-   permanent `dark` class so primitive `dark:` styles keep resolving. */
+/* ADMIN surface in dark — the historical cockpit palette, moved verbatim from
+   the old [data-surface="admin"] block so dark mode is pixel-identical.
+   Dual selector: `.dark [data-surface="admin"]` matches when next-themes sets
+   `class="dark"` on <html> (post-unpin); `[data-surface="admin"].dark` matches
+   the admin login page which stays pinned dark as a brand surface. */
+.dark [data-surface="admin"],
+[data-surface="admin"].dark {
+  --background: oklch(0.18 0.005 260);
+  --foreground: oklch(0.85 0 0);
+  --card: oklch(0.20 0.005 260);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.20 0.005 260);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(0.95 0 0);
+  --primary-foreground: oklch(0.15 0 0);
+  --secondary: oklch(0.25 0.005 260);
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.22 0.005 260);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.22 0.005 260);
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.60 0.16 20);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 10%);
+  --ring: oklch(0.56 0.021 213.5);
+  --sidebar: oklch(0.14 0.005 260);
+  --sidebar-foreground: oklch(0.85 0 0);
+  --sidebar-primary: oklch(0.704 0.14 182.503);
+  --sidebar-primary-foreground: oklch(0.277 0.046 192.524);
+  --sidebar-accent: oklch(0.22 0.005 260);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.56 0.021 213.5);
+  --chart-1: oklch(0.855 0.138 181.071);
+  --chart-2: oklch(0.704 0.14 182.503);
+  --chart-3: oklch(0.6 0.118 184.704);
+  --chart-4: oklch(0.511 0.096 186.391);
+  --chart-5: oklch(0.437 0.078 188.216);
+  --gold: oklch(0.74 0.15 65);
+  --teal: #3b8273;
+  --danger: oklch(0.60 0.16 20);
+  --success: oklch(0.65 0.15 150);
+  --custom-card: oklch(0.16 0.005 260);
+  color-scheme: dark;
+}
 
 @layer base {
   * {
@@ -288,30 +329,43 @@
     animation: fade-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
-  /* Native <select> on admin (dark) surfaces — kill OS magenta accent, force dark popup.
-     Note: dropdowns are commonly portalled (fixed/absolute) but stay in the DOM under
-     [data-surface="admin"], so descendant selectors still apply. */
-  [data-surface="admin"] select,
-  [data-surface="admin"] ~ * select,
-  body[data-admin-surface] select {
+  /* Native <select> on admin DARK surfaces — kill OS magenta accent, force dark popup.
+     Scoped to dark mode only; light admin selects fall back to browser default light
+     controls (intended). Note: dropdowns are commonly portalled (fixed/absolute) but
+     stay in the DOM under [data-surface="admin"], so descendant selectors still apply. */
+  .dark [data-surface="admin"] select,
+  [data-surface="admin"].dark select,
+  .dark [data-surface="admin"] ~ * select,
+  [data-surface="admin"].dark ~ * select,
+  .dark body[data-admin-surface] select,
+  body.dark[data-admin-surface] select {
     color-scheme: dark;
     accent-color: #d97706;
     background-color: #1a1a1a;
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.1);
   }
-  [data-surface="admin"] select option,
-  [data-surface="admin"] ~ * select option,
-  body[data-admin-surface] select option {
+  .dark [data-surface="admin"] select option,
+  [data-surface="admin"].dark select option,
+  .dark [data-surface="admin"] ~ * select option,
+  [data-surface="admin"].dark ~ * select option,
+  .dark body[data-admin-surface] select option,
+  body.dark[data-admin-surface] select option {
     background-color: #1c1c1c;
     color: #ffffff;
   }
-  [data-surface="admin"] select option:checked,
-  [data-surface="admin"] select option:hover,
-  [data-surface="admin"] ~ * select option:checked,
-  [data-surface="admin"] ~ * select option:hover,
-  body[data-admin-surface] select option:checked,
-  body[data-admin-surface] select option:hover {
+  .dark [data-surface="admin"] select option:checked,
+  .dark [data-surface="admin"] select option:hover,
+  [data-surface="admin"].dark select option:checked,
+  [data-surface="admin"].dark select option:hover,
+  .dark [data-surface="admin"] ~ * select option:checked,
+  .dark [data-surface="admin"] ~ * select option:hover,
+  [data-surface="admin"].dark ~ * select option:checked,
+  [data-surface="admin"].dark ~ * select option:hover,
+  .dark body[data-admin-surface] select option:checked,
+  .dark body[data-admin-surface] select option:hover,
+  body.dark[data-admin-surface] select option:checked,
+  body.dark[data-admin-surface] select option:hover {
     background-color: #d97706;
     background: linear-gradient(0deg, #d97706 0%, #d97706 100%);
     color: #000000;

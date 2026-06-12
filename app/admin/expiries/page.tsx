@@ -14,51 +14,51 @@ export default async function ExpiriesPage() {
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
-            <span className="text-[#d4a373] font-semibold">02</span>
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
+            <span className="text-gold font-semibold">02</span>
             COMPLIANCE MONITORING
           </div>
-          <h2 className="font-serif text-[34px] leading-tight text-white">
+          <h2 className="font-serif text-[34px] leading-tight text-foreground">
             Upcoming Expiries
           </h2>
-          <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+          <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
             A comprehensive view of all client documents expiring in the next 30 days.
           </p>
         </div>
       </div>
 
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+      <Card className="bg-card border-border rounded-sm overflow-hidden">
         <table className="w-full text-left font-sans text-sm">
-          <thead className="bg-[#151515]">
-            <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-              <th className="font-normal px-6 py-4 border-b border-white/5">Document</th>
-              <th className="font-normal px-6 py-4 border-b border-white/5">Client</th>
-              <th className="font-normal px-6 py-4 border-b border-white/5">Expiry Date</th>
-              <th className="font-normal px-6 py-4 border-b border-white/5">Status</th>
-              <th className="font-normal px-6 py-4 border-b border-white/5 text-right">Action</th>
+          <thead className="bg-muted">
+            <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+              <th className="font-normal px-6 py-4 border-b border-border">Document</th>
+              <th className="font-normal px-6 py-4 border-b border-border">Client</th>
+              <th className="font-normal px-6 py-4 border-b border-border">Expiry Date</th>
+              <th className="font-normal px-6 py-4 border-b border-border">Status</th>
+              <th className="font-normal px-6 py-4 border-b border-border text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-border">
             {expiries.map((doc) => {
               const daysLeft = Math.ceil((new Date(doc.expiry_date || "").getTime() - Date.now()) / (1000 * 60 * 60 * 24));
               return (
-                <tr key={doc.id} className="group hover:bg-white/[0.02] transition-colors">
+                <tr key={doc.id} className="group hover:bg-muted transition-colors">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <FileText className="w-4 h-4 text-white/20" />
+                      <FileText className="w-4 h-4 text-muted-foreground" />
                       <div>
-                        <div className="font-medium text-white">{doc.filename}</div>
-                        <div className="text-[10px] text-[#666] font-mono uppercase tracking-widest">{doc.document_category}</div>
+                        <div className="font-medium text-foreground">{doc.filename}</div>
+                        <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{doc.document_category}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex items-center gap-2 text-white/70">
+                    <div className="flex items-center gap-2 text-foreground/70">
                       <Building2 className="w-3.5 h-3.5" />
                       {(doc.client as { name?: string } | null)?.name}
                     </div>
                   </td>
-                  <td className="px-6 py-4 font-mono text-white/50">
+                  <td className="px-6 py-4 font-mono text-muted-foreground">
                     {new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="px-6 py-4">
@@ -81,7 +81,7 @@ export default async function ExpiriesPage() {
             })}
             {expiries.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+                <td colSpan={5} className="px-6 py-12 text-center text-muted-foreground font-mono text-xs uppercase tracking-widest">
                   No expiring documents found
                 </td>
               </tr>

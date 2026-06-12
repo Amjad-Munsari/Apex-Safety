@@ -43,20 +43,20 @@ export default async function ProposalsPage() {
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
             <span className="text-gold font-semibold">04</span>
             SALES PIPELINE
           </div>
-          <h2 className="font-serif text-[34px] leading-tight text-white">
+          <h2 className="font-serif text-[34px] leading-tight text-foreground">
             Active Proposals
           </h2>
-          <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+          <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
             Track the status of sent proposals and signed contracts.
           </p>
         </div>
         
         <Link href="/admin/proposals/new">
-          <Button className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none flex gap-2">
+          <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none flex gap-2">
             + New Proposal
           </Button>
         </Link>
@@ -70,11 +70,11 @@ export default async function ProposalsPage() {
           return (
             <div key={status} className="flex flex-col gap-4">
               <div className="flex justify-between items-center px-1">
-                <h3 className="font-mono text-[10px] uppercase tracking-widest text-[#555]">{status === 'Contract Issued' ? 'Issued' : status}</h3>
-                <span className="font-mono text-[10px] text-white/20">{filtered.length}</span>
+                <h3 className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{status === 'Contract Issued' ? 'Issued' : status}</h3>
+                <span className="font-mono text-[10px] text-muted-foreground">{filtered.length}</span>
               </div>
               
-              <div className="flex flex-col gap-4 min-h-[500px] p-2 rounded-sm bg-white/[0.02] border border-white/[0.05]">
+              <div className="flex flex-col gap-4 min-h-[500px] p-2 rounded-sm bg-muted/30 border border-border">
                   {filtered.map((prop) => {
                     const total = (prop as { total_price?: number }).total_price || calculateProposalTotal(prop.services_json)
                     const documentUrl = prop.proposal_pdf_path
@@ -100,15 +100,15 @@ export default async function ProposalsPage() {
                   })}
                 
                 {filtered.length === 0 && (
-                  <div className="flex-1 flex items-center justify-center border border-dashed border-white/[0.05] rounded-sm">
-                    <span className="font-mono text-[9px] uppercase tracking-widest text-white/5">Empty</span>
+                  <div className="flex-1 flex items-center justify-center border border-dashed border-border rounded-sm">
+                    <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground/30">Empty</span>
                   </div>
                 )}
               </div>
 
-              <div className="px-1 pt-2 border-t border-white/5">
-                <div className="font-mono text-[10px] text-[#444] uppercase tracking-widest">Total Value</div>
-                <div className="font-serif text-xl text-white/40">£{totalValue.toLocaleString()}</div>
+              <div className="px-1 pt-2 border-t border-border">
+                <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Total Value</div>
+                <div className="font-serif text-xl text-muted-foreground">£{totalValue.toLocaleString()}</div>
               </div>
             </div>
           )
