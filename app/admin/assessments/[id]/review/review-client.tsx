@@ -194,10 +194,19 @@ export function ReviewClient({
       if (result.downloadUrl) {
         window.open(result.downloadUrl, "_blank")
       }
+      // Leave the review page once finalized — the draft is now the report of
+      // record. Staying here left Approve/Regenerate clickable, which re-ran
+      // finalizeReport and emailed the client a duplicate. Redirect to the
+      // client page where the delivered report now shows. Keep `approving` true
+      // through the navigation so the buttons can't be re-fired mid-redirect.
+      if (result.clientId) {
+        router.push(`/admin/clients/${result.clientId}`)
+        return
+      }
+      setApproving(false)
       router.refresh()
     } catch (err: any) {
       toast.error(err.message || "Failed to generate PDF")
-    } finally {
       setApproving(false)
     }
   }

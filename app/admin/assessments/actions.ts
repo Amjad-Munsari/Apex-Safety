@@ -824,12 +824,27 @@ export async function finalizeReport(
   // 1. Fetch submission + client details
   const { data: submission, error: fetchError } = await adminClient
     .from("form_submissions")
-    .select("id, client_id, created_at, client:clients(name, site_address)")
+    .select("id, client_id, status, created_at, client:clients(name, site_address)")
     .eq("id", submissionId)
     .single()
 
   if (fetchError || !submission) {
     throw new Error("Submission not found")
+  }
+
+  // 1a. Idempotency guard — a submission is finalized exactly once. A second run
+  // (double-click, or a Review tab left open after approval) must NOT regenerate
+  // the PDF or re-dispatch report_ready, which would email the client a duplicate
+  // report. Return the clientId so the caller can still redirect to the client
+  // page (the report already exists there).
+  if (submission.status === "completed") {
+    return {
+      success: true,
+      alreadyFinalized: true,
+      clientId: submission.client_id,
+      downloadUrl: null,
+      deliveryEmailFailed: false,
+    }
   }
 
   // 1b. Resolve client-facing contact email (D-07 — copies cron/expiry pattern).
@@ -893,6 +908,10 @@ export async function finalizeReport(
 
   revalidatePath("/admin/review-queue")
   revalidatePath(`/admin/assessments/${submissionId}/review`)
+  // The client detail page (/admin/clients/[id]) renders delivered reports from
+  // completed submissions; without this it serves a stale Router Cache entry and
+  // the just-finalized report only appears after a manual refresh.
+  revalidatePath(`/admin/clients/${submission.client_id}`)
 
   // 5. D-07 — mint a 7-day client-facing signed URL (separate from Matt's 5-min URL).
   // This URL is ONLY ever placed inside the n8n payload; it must NOT be returned
@@ -937,5 +956,5 @@ export async function finalizeReport(
     .from("reports")
     .createSignedUrl(fileName, 60 * 5) // 5 minute link
 
-  return { success: true, downloadUrl: signedUrlData?.signedUrl ?? null, deliveryEmailFailed }
+  return { success: true, clientId: submission.client_id, downloadUrl: signedUrlData?.signedUrl ?? null, deliveryEmailFailed }
 }

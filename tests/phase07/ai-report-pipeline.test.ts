@@ -259,6 +259,21 @@ function applyDefaultStubs() {
     data: { schema_json: { entities: {} } },
     error: null,
   })
+  // Default status is a pre-finalization state so the idempotency guard in
+  // finalizeReport (status === 'completed' → early no-op) does NOT trip for the
+  // existing happy-path tests. The dedicated guard test below overrides it.
+  formSubmissionsSelectSingleSpy.mockResolvedValue({
+    data: {
+      id: SUBMISSION_ID,
+      answers_json: { q1: "yes" },
+      template_version_id: "tv-1",
+      client_id: CLIENT_ID,
+      status: "draft_ready_for_review",
+      created_at: "2026-05-29T12:00:00Z",
+      client: { name: "Acme Properties Ltd", site_address: "12 Example Street" },
+    },
+    error: null,
+  })
   clientUsersSelectLimitSpy.mockResolvedValue({
     data: [{ name: "Acme Contact", email: "contact@acme.test" }],
     error: null,
@@ -465,5 +480,39 @@ describe("Phase 7 — AI report pipeline contract", () => {
     expect(signedUrlEntries).toHaveLength(2)
     expect((signedUrlEntries[0] as { ttl: number }).ttl).toBe(60 * 60 * 24 * 7)
     expect((signedUrlEntries[1] as { ttl: number }).ttl).toBe(60 * 5)
+  })
+
+  // ── Test 6: idempotency guard ──────────────────────────────────────────────
+  // Re-finalizing an already-completed submission (double-click / stale Review
+  // tab) must be a no-op: no PDF regeneration, no second report_ready dispatch
+  // (which would email the client a duplicate). The clientId is still returned
+  // so the caller can redirect to the client page.
+
+  it("idempotency: finalizeReport on an already-'completed' submission does NOT regenerate the PDF or re-dispatch", async () => {
+    formSubmissionsSelectSingleSpy.mockResolvedValue({
+      data: {
+        id: SUBMISSION_ID,
+        client_id: CLIENT_ID,
+        status: "completed",
+        created_at: "2026-05-29T12:00:00Z",
+        client: { name: "Acme Properties Ltd", site_address: "12 Example Street" },
+      },
+      error: null,
+    })
+
+    const { finalizeReport } = await import("@/app/admin/assessments/actions")
+    const result = await finalizeReport(SUBMISSION_ID, VALID_APPROVED_DRAFT)
+
+    // No side-effects: no upload, no status update, no dispatch.
+    expect(storageUploadSpy).not.toHaveBeenCalled()
+    expect(formSubmissionsUpdateSpy).not.toHaveBeenCalled()
+    expect(dispatchNotificationSpy).not.toHaveBeenCalled()
+
+    // Returns success + clientId for the caller's redirect.
+    expect(result).toMatchObject({
+      success: true,
+      alreadyFinalized: true,
+      clientId: CLIENT_ID,
+    })
   })
 })
