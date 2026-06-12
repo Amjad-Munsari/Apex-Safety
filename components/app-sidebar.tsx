@@ -47,9 +47,8 @@ const systemTools: NavItem[] = [
 const linkClass =
   "flex w-full items-center pl-3 pr-3 h-10 rounded-[4px] " +
   "text-sm tracking-wide font-medium " +
-  "border-l-2 border-transparent " +
   "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors duration-150 " +
-  "data-[active]:text-sidebar-foreground data-[active]:bg-sidebar-accent data-[active]:border-gold";
+  "data-[active]:text-sidebar-foreground data-[active]:bg-sidebar-accent";
 
 export function AppSidebar({ stats }: { stats?: SidebarStats }) {
   const pathname = usePathname();
