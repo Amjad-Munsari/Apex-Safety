@@ -10,6 +10,7 @@ import {
   SheetContent,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import ThemeSwitch from "@/components/ui/theme-switch";
 
 interface NavChild {
   label: string;
@@ -81,12 +82,12 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
   const subItems = activeGroup?.children;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#e5e1d8]">
+    <header className="sticky top-0 z-50 w-full bg-card/80 backdrop-blur-md border-b border-border">
       {/* Primary row — brand (left) · nav (center) · user (right) */}
       <div className="max-w-[1320px] mx-auto h-16 lg:h-20 px-4 lg:px-6 xl:px-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
         {/* Brand (left) */}
         <Link href="/client" className="flex flex-col gap-0.5 min-w-0 shrink-0 justify-self-start">
-          <span className="font-serif text-[15px] lg:text-[18px] text-[#1a1a1a] font-medium tracking-tight whitespace-nowrap truncate max-w-[200px] lg:max-w-[280px]">
+          <span className="font-serif text-[15px] lg:text-[18px] text-foreground font-medium tracking-tight whitespace-nowrap truncate max-w-[200px] lg:max-w-[280px]">
             {orgName}
           </span>
         </Link>
@@ -102,8 +103,8 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                 className={cn(
                   "text-[13px] lg:text-[14px] font-bold tracking-tight whitespace-nowrap border-b-2 pb-1 transition-colors",
                   active
-                    ? "text-black border-black"
-                    : "text-[#6b6560] border-transparent hover:text-black hover:border-[#ddd]"
+                    ? "text-foreground border-foreground"
+                    : "text-muted-foreground border-transparent hover:text-foreground hover:border-border"
                 )}
               >
                 {group.label}
@@ -117,18 +118,19 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
             removed from flow, which would otherwise auto-place this in column 2). */}
         <div className="flex items-center gap-4 lg:gap-6 shrink-0 col-start-3 justify-self-end">
           <div className="hidden lg:flex flex-col items-end leading-tight">
-            <span className="text-[12px] font-bold tracking-tight text-[#1a1a1a] whitespace-nowrap">
+            <span className="text-[12px] font-bold tracking-tight text-foreground whitespace-nowrap">
               {userName}
             </span>
-            <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-[#6b6560] mt-0.5 whitespace-nowrap">
+            <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-muted-foreground mt-0.5 whitespace-nowrap">
               {userRole}
             </span>
           </div>
+          <ThemeSwitch className="hidden md:flex" />
           <form action="/auth/signout" method="POST" className="hidden md:block">
             <Button
               type="submit"
               variant="outline"
-              className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[10px] uppercase tracking-[0.2em] h-8 lg:h-9 px-4 font-bold shadow-none transition-colors whitespace-nowrap"
+              className="rounded-sm border-border bg-transparent hover:bg-muted text-[10px] uppercase tracking-[0.2em] h-8 lg:h-9 px-4 font-bold shadow-none transition-colors whitespace-nowrap"
             >
               Sign out
             </Button>
@@ -142,18 +144,18 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                   {...props}
                   variant="outline"
                   size="icon"
-                  className="md:hidden rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] h-9 w-9 shadow-none"
+                  className="md:hidden rounded-sm border-border bg-transparent hover:bg-muted h-9 w-9 shadow-none"
                   aria-label="Open menu"
                 >
                   <Menu className="h-4 w-4" />
                 </Button>
               )}
             />
-            <SheetContent side="right" className="bg-white text-[#1a1a1a] p-0">
-              <div className="px-6 pt-6 pb-4 border-b border-[#e5e1d8]">
+            <SheetContent side="right" className="bg-card text-foreground p-0">
+              <div className="px-6 pt-6 pb-4 border-b border-border">
                 <div className="font-serif text-[18px] mt-0.5">{orgName}</div>
                 <div className="mt-3 text-[12px] font-bold">{userName}</div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#6b6560]">
+                <div className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                   {userRole}
                 </div>
               </div>
@@ -167,7 +169,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                         onClick={() => setMobileOpen(false)}
                         className={cn(
                           "px-6 py-2 block text-[14px] font-bold tracking-tight transition-colors",
-                          groupIsActive ? "text-black" : "text-[#1a1a1a] hover:text-black"
+                          groupIsActive ? "text-foreground" : "text-foreground hover:text-foreground"
                         )}
                       >
                         {group.label}
@@ -184,8 +186,8 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                                 className={cn(
                                   "pl-10 pr-6 py-2 text-[13px] transition-colors",
                                   childActive
-                                    ? "text-black font-semibold bg-[#faf9f6]"
-                                    : "text-[#6b6560] hover:text-black hover:bg-[#faf9f6]"
+                                    ? "text-foreground font-semibold bg-muted"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                                 )}
                               >
                                 {child.label}
@@ -198,15 +200,21 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                   );
                 })}
               </nav>
-              <form action="/auth/signout" method="POST" className="px-6 pt-2 pb-6 mt-auto border-t border-[#e5e1d8]">
-                <Button
-                  type="submit"
-                  variant="outline"
-                  className="w-full rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[10px] uppercase tracking-[0.2em] h-10 font-bold shadow-none"
-                >
-                  Sign out
-                </Button>
-              </form>
+              <div className="px-6 pt-4 pb-6 mt-auto border-t border-border flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-muted-foreground">Theme</span>
+                  <ThemeSwitch />
+                </div>
+                <form action="/auth/signout" method="POST">
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    className="w-full rounded-sm border-border bg-transparent hover:bg-muted text-[10px] uppercase tracking-[0.2em] h-10 font-bold shadow-none"
+                  >
+                    Sign out
+                  </Button>
+                </form>
+              </div>
             </SheetContent>
           </Sheet>
         </div>
@@ -214,7 +222,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
 
       {/* Secondary row — sub-nav tabs for the active group (desktop) */}
       {subItems && subItems.length > 0 && (
-        <div className="hidden md:block border-t border-[#efece5] bg-white/50">
+        <div className="hidden md:block border-t border-border bg-background/50">
           <div className="max-w-[1320px] mx-auto px-4 lg:px-6 xl:px-8 h-11 flex items-center justify-center gap-7">
             {subItems.map((child) => {
               const childActive = hrefActive(child.href, pathname);
@@ -225,8 +233,8 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
                   className={cn(
                     "font-mono text-[10px] uppercase tracking-[0.2em] border-b-2 pb-0.5 transition-colors whitespace-nowrap",
                     childActive
-                      ? "text-black border-black"
-                      : "text-[#6b6560] border-transparent hover:text-black"
+                      ? "text-foreground border-foreground"
+                      : "text-muted-foreground border-transparent hover:text-foreground"
                   )}
                 >
                   {child.label}
