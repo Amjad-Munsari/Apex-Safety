@@ -56,22 +56,22 @@ export function AssessmentAnswersView({
       <div className="flex flex-col gap-3">
         <Link
           href={backHref}
-          className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#666] hover:text-white transition-colors w-fit"
+          className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors w-fit"
         >
           <ArrowLeft className="w-3.5 h-3.5" /> {clientName}
         </Link>
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-[10px] tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
             <FileText className="w-3.5 h-3.5" /> Assessment answers
           </div>
-          <h2 className="font-serif text-[30px] leading-tight text-white">{templateName}</h2>
+          <h2 className="font-serif text-[30px] leading-tight text-foreground">{templateName}</h2>
           <div className="flex items-center gap-3 flex-wrap mt-1">
-            <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 ring-white/15 text-white/70 font-mono text-[10px] uppercase tracking-widest leading-none">
-              <span className="size-1.5 rounded-full bg-white/40" />
+            <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 ring-border text-foreground/70 font-mono text-[10px] uppercase tracking-widest leading-none">
+              <span className="size-1.5 rounded-full bg-muted-foreground/40" />
               Read-only
             </span>
             {formatted && (
-              <span className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 Submitted {formatted}
               </span>
             )}
@@ -92,10 +92,10 @@ export function AssessmentAnswersView({
 
       {/* Appendix (notes + media), read-only — not part of the schema fields. */}
       {(notes || media.length > 0) && (
-        <div className="flex flex-col gap-4 border-t border-white/5 pt-6">
-          <span className="font-mono text-[10px] uppercase tracking-widest text-white/40">Appendix</span>
+        <div className="flex flex-col gap-4 border-t border-border pt-6">
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Appendix</span>
           {notes && (
-            <p className="text-sm text-white/80 whitespace-pre-wrap leading-relaxed">{notes}</p>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">{notes}</p>
           )}
           {media.length > 0 && (
             <div className="flex flex-wrap gap-3">

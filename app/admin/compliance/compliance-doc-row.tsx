@@ -81,31 +81,31 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
 
   return (
     <tr
-      className={`hover:bg-white/[0.04] transition-colors group ${clientId ? "cursor-pointer" : ""}`}
+      className={`hover:bg-muted/50 transition-colors group ${clientId ? "cursor-pointer" : ""}`}
     >
       <td className="px-6 py-4 relative">
         {clientId && (
           <Link
             href={`/admin/clients/${clientId}`}
             aria-label={`Open ${doc.client?.name ?? "client"}`}
-            className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/20"
+            className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-border"
           />
         )}
         <div className="flex items-center gap-3 pointer-events-none relative z-10">
-          <FileText className="w-4 h-4 text-white/20 group-hover:text-white/40 transition-colors" />
+          <FileText className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
           <div>
-            <div className="font-medium text-white">{doc.filename}</div>
-            <div className="text-[10px] text-[#666] font-mono uppercase tracking-widest">{doc.document_category}</div>
+            <div className="font-medium text-foreground">{doc.filename}</div>
+            <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{doc.document_category}</div>
           </div>
         </div>
       </td>
       <td className="px-4 py-4">
-        <div className="flex items-center gap-2 text-white/70">
+        <div className="flex items-center gap-2 text-foreground/70">
           <Building2 className="w-3.5 h-3.5" />
           {doc.client?.name}
         </div>
       </td>
-      <td className="px-4 py-4 font-mono text-white/50 text-sm">{expDateLabel}</td>
+      <td className="px-4 py-4 font-mono text-muted-foreground text-sm">{expDateLabel}</td>
       <td className="px-4 py-4">
         {daysLeft !== null && (
           <Badge variant="outline" className={`border-${color}/40 text-${color} bg-${color}/5 font-mono text-[10px] uppercase tracking-widest`}>
@@ -131,7 +131,7 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
             type="button"
             onClick={handleView}
             disabled={viewPending}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-white/10 text-white/70 hover:text-white hover:bg-white/[0.04] disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-border text-foreground/70 hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest"
             aria-label="View PDF"
           >
             <Eye className="w-3 h-3" />
@@ -141,7 +141,7 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
             type="button"
             onClick={handleDownload}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-white/10 text-white/70 hover:text-white hover:bg-white/[0.04] disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest"
+            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-border text-foreground/70 hover:text-foreground hover:bg-muted disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest"
             aria-label="Download PDF"
           >
             <Download className="w-3 h-3" />

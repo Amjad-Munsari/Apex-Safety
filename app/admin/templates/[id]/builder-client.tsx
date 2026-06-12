@@ -66,26 +66,26 @@ interface Props {
 
 const surfaceTokens = {
   dark: {
-    root: "bg-[#111]",
-    toolbar: "bg-[#111] border-white/10",
-    panel: "bg-[#0d0d0d]",
-    columnDivider: "border-white/10",
+    root: "bg-background",
+    toolbar: "bg-background border-border",
+    panel: "bg-background",
+    columnDivider: "border-border",
     canvasBg: "",
-    titleInput: "text-white border-transparent focus:border-white/20",
-    typeLabel: "text-white/30",
-    backLink: "text-white/50 hover:text-white",
-    backDivider: "bg-white/10",
-    saveLabel: "text-white/50 hover:text-white",
+    titleInput: "text-foreground border-transparent focus:border-border",
+    typeLabel: "text-muted-foreground",
+    backLink: "text-foreground/70 hover:text-foreground",
+    backDivider: "bg-muted",
+    saveLabel: "text-foreground/70 hover:text-foreground",
     savedTag: "text-teal",
     errorTag: "text-[#8b2b21]",
-    publishBtn: "bg-teal hover:bg-teal/90 text-white",
-    emptyIconRing: "border-white/10",
-    emptyIcon: "text-white/20",
-    emptyText: "text-white/30",
-    emptySubtext: "text-white/20",
-    bottomBar: "bg-white/5 border-white/10 text-white/40",
+    publishBtn: "bg-teal hover:bg-teal/90 text-foreground",
+    emptyIconRing: "border-border",
+    emptyIcon: "text-muted-foreground",
+    emptyText: "text-muted-foreground",
+    emptySubtext: "text-muted-foreground",
+    bottomBar: "bg-muted border-border text-muted-foreground",
     unsavedTag: "text-amber-400",
-    selectPanelText: "text-white/20",
+    selectPanelText: "text-muted-foreground",
   },
   cream: {
     root: "bg-[#fbfaf5]",
@@ -356,7 +356,7 @@ export function TemplateBuilderClient({
             {templateType}
           </span>
           {hasDraft && !isPublished ? (
-            <Badge className="bg-[#c0a66d]/20 text-[#c0a66d] border-[#c0a66d]/30 text-[10px] font-mono shrink-0">
+            <Badge className="bg-gold/20 text-gold border-gold/30 text-[10px] font-mono shrink-0">
               DRAFT v{versionNumber}
             </Badge>
           ) : isPublished ? (
@@ -365,12 +365,12 @@ export function TemplateBuilderClient({
             </Badge>
           ) : null}
           {hasDraft && isPublished && (
-            <Badge className="bg-[#c0a66d]/20 text-[#c0a66d] border-[#c0a66d]/30 text-[10px] font-mono shrink-0">
+            <Badge className="bg-gold/20 text-gold border-gold/30 text-[10px] font-mono shrink-0">
               UNPUBLISHED EDITS
             </Badge>
           )}
           {readOnly && (
-            <Badge className="bg-white/10 text-white/60 border-white/20 text-[10px] font-mono shrink-0">
+            <Badge className="bg-muted text-muted-foreground border-border text-[10px] font-mono shrink-0">
               READ ONLY{readOnlyNotice ? ` · ${readOnlyNotice.toUpperCase()}` : ""}
             </Badge>
           )}

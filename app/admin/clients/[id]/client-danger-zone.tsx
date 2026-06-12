@@ -93,10 +93,10 @@ export function ClientDangerZone({
       {/* Deactivate / Reactivate */}
       <div className="flex items-center justify-between gap-6 flex-wrap">
         <div>
-          <div className="text-white text-sm font-medium">
+          <div className="text-foreground text-sm font-medium">
             {active ? "Deactivate client" : "Reactivate client"}
           </div>
-          <div className="text-white/40 text-xs mt-0.5 max-w-md">
+          <div className="text-foreground/40 text-xs mt-0.5 max-w-md">
             {active
               ? "Mark this client inactive. All data is kept and this can be undone."
               : "Restore this client to active status."}
@@ -107,7 +107,7 @@ export function ClientDangerZone({
           disabled={busy}
           variant="outline"
           size="sm"
-          className="bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-[10px] uppercase tracking-wider font-mono h-8 gap-2 shrink-0"
+          className="bg-muted border-border hover:bg-muted text-foreground/70 text-[10px] uppercase tracking-wider font-mono h-8 gap-2 shrink-0"
         >
           {busy ? (
             <Loader2 className="w-3 h-3 animate-spin" />
@@ -120,13 +120,13 @@ export function ClientDangerZone({
         </Button>
       </div>
 
-      <div className="h-px bg-white/5" />
+      <div className="h-px bg-border" />
 
       {/* Delete permanently */}
       <div className="flex items-center justify-between gap-6 flex-wrap">
         <div>
-          <div className="text-white text-sm font-medium">Delete permanently</div>
-          <div className="text-white/40 text-xs mt-0.5 max-w-md">
+          <div className="text-foreground text-sm font-medium">Delete permanently</div>
+          <div className="text-foreground/40 text-xs mt-0.5 max-w-md">
             Erases this client and all related records and files. This cannot be
             undone.
           </div>
@@ -147,12 +147,12 @@ export function ClientDangerZone({
       </div>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="sm:max-w-[460px] bg-[#1c1c1c] border-white/10 text-white">
+        <DialogContent className="sm:max-w-[460px] bg-card border-border text-foreground">
           <DialogHeader>
             <DialogTitle className="font-serif text-2xl text-danger">
               Delete {clientName}?
             </DialogTitle>
-            <DialogDescription className="text-white/50">
+            <DialogDescription className="text-muted-foreground">
               This permanently removes the client and everything attached to it.
               This action cannot be undone.
             </DialogDescription>
@@ -160,7 +160,7 @@ export function ClientDangerZone({
 
           <div className="py-2 flex flex-col gap-4">
             {blast.length > 0 && (
-              <div className="text-xs text-white/60 leading-relaxed">
+              <div className="text-xs text-foreground/60 leading-relaxed">
                 The following will be erased:
                 <ul className="mt-2 flex flex-col gap-1">
                   {blast.map((b) => (
@@ -173,7 +173,7 @@ export function ClientDangerZone({
                     </li>
                   ))}
                 </ul>
-                <p className="mt-2 text-white/40">
+                <p className="mt-2 text-foreground/40">
                   …plus all assignments, generated reports, and signatures.
                 </p>
               </div>
@@ -182,9 +182,9 @@ export function ClientDangerZone({
             <div className="grid gap-2">
               <Label
                 htmlFor="confirm-name"
-                className="text-xs text-white/50 font-sans normal-case tracking-normal"
+                className="text-xs text-muted-foreground font-sans normal-case tracking-normal"
               >
-                Type <span className="font-mono text-white">{clientName}</span> to
+                Type <span className="font-mono text-foreground">{clientName}</span> to
                 confirm.
               </Label>
               <Input
@@ -192,7 +192,7 @@ export function ClientDangerZone({
                 value={confirmName}
                 onChange={(e) => setConfirmName(e.target.value)}
                 autoComplete="off"
-                className="bg-black/40 border-white/10 h-10 focus:ring-danger/30"
+                className="bg-background border-border h-10 focus:ring-danger/30"
                 placeholder={clientName}
               />
             </div>
@@ -207,7 +207,7 @@ export function ClientDangerZone({
               variant="outline"
               onClick={() => setDeleteOpen(false)}
               disabled={busy}
-              className="bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-[10px] uppercase tracking-wider font-mono h-9"
+              className="bg-muted border-border hover:bg-muted text-foreground/70 text-[10px] uppercase tracking-wider font-mono h-9"
             >
               Cancel
             </Button>

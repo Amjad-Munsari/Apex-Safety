@@ -6,6 +6,7 @@ import { BrandingProvider } from "@/components/branding-provider";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import ThemeSwitch from "@/components/ui/theme-switch";
 
 export default async function AdminLayout({
   children,
@@ -25,25 +26,26 @@ export default async function AdminLayout({
       // more horizontal room. Overrides the shared 16rem default for this surface.
       style={{ "--sidebar-width": "13rem" } as CSSProperties}
     >
-      <div data-surface="admin" className="dark fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
+      <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
         <BrandingProvider />
         <Suspense fallback={<AppSidebar stats={{ clients: 0, expiries: 0, reports: 0, compliance: 0, proposals: 0, errors: 0 }} />}>
           <SidebarStats />
         </Suspense>
         <div className="flex-1 flex flex-col h-full max-h-full min-h-0 overflow-hidden">
           {/* Top Bar */}
-          <header className="h-[72px] min-h-[72px] flex items-center justify-between px-8 border-b border-white/5 shrink-0 bg-background/50">
+          <header className="h-[72px] min-h-[72px] flex items-center justify-between px-8 border-b border-border shrink-0 bg-background/50">
             {/* Search */}
             <AdminSearch />
 
             {/* Right Date and Action */}
             <div className="flex items-center gap-6">
               <div className="flex flex-col items-end">
-                <span className="text-[10px] uppercase font-mono tracking-widest text-[#555]">Today</span>
-                <span className="text-sm font-medium text-white/90 font-sans tracking-wide">{today}</span>
+                <span className="text-[10px] uppercase font-mono tracking-widest text-muted-foreground">Today</span>
+                <span className="text-sm font-medium text-foreground font-sans tracking-wide">{today}</span>
               </div>
+              <ThemeSwitch />
               <Link href="/admin/proposals/new">
-                <Button variant="secondary" className="bg-white hover:bg-white/90 text-black rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none">
+                <Button variant="secondary" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none">
                   + New Proposal
                 </Button>
               </Link>

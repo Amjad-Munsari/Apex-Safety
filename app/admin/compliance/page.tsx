@@ -78,12 +78,12 @@ export default async function CompliancePage({
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
             <span className="text-teal font-semibold">03</span>
             COMPLIANCE OVERVIEW
           </div>
-          <h2 className="font-serif text-[34px] leading-tight text-white">Document Compliance</h2>
-          <p className="text-[#666] text-sm font-sans tracking-wide max-w-xl">
+          <h2 className="font-serif text-[34px] leading-tight text-foreground">Document Compliance</h2>
+          <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
             All {compliance.total} client documents — {pct}% currently compliant.
           </p>
         </div>
@@ -97,16 +97,16 @@ export default async function CompliancePage({
           { label: "Expiring (30 days)", count: compliance.expiring, color: "gold", pct: compliance.total > 0 ? Math.round((compliance.expiring / compliance.total) * 100) : 0 },
           { label: "Expired", count: compliance.expired, color: "danger", pct: compliance.total > 0 ? Math.round((compliance.expired / compliance.total) * 100) : 0 },
         ].map((stat) => (
-          <Card key={stat.label} className="bg-[#1c1c1c] border-white/5 rounded-sm p-6">
+          <Card key={stat.label} className="bg-card border-border rounded-sm p-6">
             <div className={`font-mono text-[10px] uppercase tracking-widest text-${stat.color} mb-3`}>{stat.label}</div>
-            <div className="font-serif text-4xl text-white mb-1">{stat.count}</div>
-            <div className="text-xs text-[#666] font-mono">{stat.pct}% of total</div>
+            <div className="font-serif text-4xl text-foreground mb-1">{stat.count}</div>
+            <div className="text-xs text-muted-foreground font-mono">{stat.pct}% of total</div>
           </Card>
         ))}
       </div>
 
       {/* ─── TABS ─── */}
-      <div className="flex items-center gap-10 border-b border-white/5">
+      <div className="flex items-center gap-10 border-b border-border">
         {TABS.map((tab) => {
           const isActive = active === tab.key;
           const href = tab.key === "all" ? "/admin/compliance" : `/admin/compliance?status=${tab.key}`;
@@ -115,11 +115,11 @@ export default async function CompliancePage({
               key={tab.key}
               href={href}
               className={`group relative flex items-center gap-2 pb-3 font-mono text-[11px] uppercase tracking-widest transition-colors ${
-                isActive ? "text-white" : "text-white/40 hover:text-white/80"
+                isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground/80"
               }`}
             >
               <span>{tab.label}</span>
-              <span className={`text-[10px] ${isActive ? "text-white/70" : "text-white/30"}`}>
+              <span className={`text-[10px] ${isActive ? "text-foreground/70" : "text-muted-foreground/70"}`}>
                 {counts[tab.key]}
               </span>
               {isActive && <span className="absolute -bottom-px left-0 right-0 h-0.5 bg-gold" />}
@@ -134,7 +134,7 @@ export default async function CompliancePage({
           {current.length > 0 && <DocTable title="Current" color="teal" docs={current} now={now} />}
           {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />}
           {expired.length > 0 && <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />}
-          {undated.length > 0 && <DocTable title="No Expiry Date" color="white/40" docs={undated} now={now} />}
+          {undated.length > 0 && <DocTable title="No Expiry Date" color="muted-foreground" docs={undated} now={now} />}
         </>
       )}
       {active === "expired" && (
@@ -154,7 +154,7 @@ export default async function CompliancePage({
       )}
       {active === "undated" && (
         undated.length > 0
-          ? <DocTable title="No Expiry Date" color="white/40" docs={undated} now={now} />
+          ? <DocTable title="No Expiry Date" color="muted-foreground" docs={undated} now={now} />
           : <EmptyTab label="No documents without an expiry date" />
       )}
     </div>
@@ -163,7 +163,7 @@ export default async function CompliancePage({
 
 function EmptyTab({ label }: { label: string }) {
   return (
-    <Card className="bg-[#1c1c1c] border-white/5 rounded-sm py-12 text-center text-white/20 font-mono text-xs uppercase tracking-widest">
+    <Card className="bg-card border-border rounded-sm py-12 text-center text-muted-foreground/50 font-mono text-xs uppercase tracking-widest">
       {label}
     </Card>
   );
@@ -183,23 +183,23 @@ function DocTable({
   showReminder?: boolean;
 }) {
   return (
-    <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-      <div className="px-6 py-4 border-b border-white/5 flex items-center gap-3">
+    <Card className="bg-card border-border rounded-sm overflow-hidden">
+      <div className="px-6 py-4 border-b border-border flex items-center gap-3">
         <div className={`w-2 h-2 rounded-full bg-${color}`} />
         <span className={`font-mono text-[10px] uppercase tracking-widest text-${color}`}>{title}</span>
-        <span className="font-mono text-[10px] text-white/20 ml-auto">{docs.length} docs</span>
+        <span className="font-mono text-[10px] text-muted-foreground/50 ml-auto">{docs.length} docs</span>
       </div>
       <table className="w-full text-left font-sans text-sm">
-        <thead className="bg-[#151515]">
-          <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-            <th className="font-normal px-6 py-3 border-b border-white/5">Document</th>
-            <th className="font-normal px-4 py-3 border-b border-white/5">Client</th>
-            <th className="font-normal px-4 py-3 border-b border-white/5">Expiry Date</th>
-            <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
-            <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Actions</th>
+        <thead className="bg-muted">
+          <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+            <th className="font-normal px-6 py-3 border-b border-border">Document</th>
+            <th className="font-normal px-4 py-3 border-b border-border">Client</th>
+            <th className="font-normal px-4 py-3 border-b border-border">Expiry Date</th>
+            <th className="font-normal px-4 py-3 border-b border-border">Status</th>
+            <th className="font-normal px-4 py-3 border-b border-border text-right">Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/5">
+        <tbody className="divide-y divide-border">
           {docs.map((doc) => {
             const expDate = doc.expiry_date ? new Date(doc.expiry_date) : null;
             const daysLeft = expDate ? Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;

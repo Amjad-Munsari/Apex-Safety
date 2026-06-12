@@ -159,7 +159,7 @@ export function ProposalActions({
             <Button
               variant="outline"
               onClick={handleDownload}
-              className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
+              className="border-border hover:bg-muted rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
             >
               <Download className="w-3.5 h-3.5" /> Download PDF
             </Button>
@@ -177,7 +177,7 @@ export function ProposalActions({
           <Button
             variant="outline"
             onClick={handleEdit}
-            className="border-white/10 hover:bg-white/5 rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
+            className="border-border hover:bg-muted rounded-sm h-9 px-4 font-mono text-[10px] uppercase tracking-widest gap-2"
           >
             <Pencil className="w-3.5 h-3.5" /> Edit
           </Button>
@@ -207,7 +207,7 @@ export function ProposalActions({
             <Button
               onClick={handleMarkSigned}
               disabled={pending}
-              className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
             >
               <CheckCircle2 className="w-3.5 h-3.5" /> Mark as signed
             </Button>
@@ -217,7 +217,7 @@ export function ProposalActions({
             <Button
               onClick={handleIssueContract}
               disabled={pending}
-              className="bg-white hover:bg-white/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
             >
               <FileSignature className="w-3.5 h-3.5" /> Issue contract
             </Button>

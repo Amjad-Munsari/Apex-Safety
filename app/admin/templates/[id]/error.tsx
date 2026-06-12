@@ -22,11 +22,11 @@ export default function TemplateEditorError({
         <AlertCircle className="w-8 h-8 text-danger" />
       </div>
       <div className="space-y-2 max-w-md">
-        <h2 className="text-2xl font-serif text-white">Template editor unavailable</h2>
+        <h2 className="text-2xl font-serif text-foreground">Template editor unavailable</h2>
         <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
           This template's schema couldn't be loaded into the builder.
         </p>
-        <p className="text-white/40 text-sm pt-2">
+        <p className="text-muted-foreground text-sm pt-2">
           The schema may be in an older format. The published version is still safe — open it directly or return to the templates list.
         </p>
       </div>
@@ -34,21 +34,21 @@ export default function TemplateEditorError({
         <Link href="/admin/templates">
           <Button
             variant="outline"
-            className="border-white/10 hover:bg-white/5 font-mono text-xs uppercase tracking-widest"
+            className="border-border hover:bg-muted font-mono text-xs uppercase tracking-widest"
           >
             Back to templates
           </Button>
         </Link>
         <Button
           onClick={() => reset()}
-          className="bg-white text-black hover:bg-white/90 font-mono text-xs uppercase tracking-widest"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 font-mono text-xs uppercase tracking-widest"
         >
           Try again
         </Button>
       </div>
       {error.digest && (
-        <div className="mt-8 pt-8 border-t border-white/5 w-full max-w-xs">
-          <div className="font-mono text-[10px] text-[#444] uppercase tracking-tighter">
+        <div className="mt-8 pt-8 border-t border-border w-full max-w-xs">
+          <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-tighter">
             Error ID: {error.digest}
           </div>
         </div>

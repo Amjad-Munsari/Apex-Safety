@@ -25,18 +25,18 @@ export function NewTemplateButton() {
     <>
       <Button
         onClick={() => setShowModal(true)}
-        className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none"
       >
         + New Template
       </Button>
 
       {showModal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-[#1c1c1c] border border-white/10 rounded-sm w-full max-w-md p-8 flex flex-col gap-6">
-            <h3 className="font-serif text-2xl text-white">New Template</h3>
+          <div className="bg-card border border-border rounded-sm w-full max-w-md p-8 flex flex-col gap-6">
+            <h3 className="font-serif text-2xl text-foreground">New Template</h3>
 
             <div className="flex flex-col gap-2">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+              <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 Template Name
               </label>
               <input
@@ -45,19 +45,19 @@ export function NewTemplateButton() {
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                 placeholder="e.g. Fire Risk Assessment (Type 3)"
-                className="bg-transparent border border-white/10 rounded-sm px-4 py-3 text-white text-sm placeholder:text-white/20 outline-none focus:border-white/30 transition-colors"
+                className="bg-transparent border border-border rounded-sm px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-border/60 transition-colors"
                 autoFocus
               />
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-white/40">
+              <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                 Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="bg-[#111] border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-white/30 transition-colors"
+                className="bg-background border border-border rounded-sm px-4 py-3 text-foreground text-sm outline-none focus:border-border/60 transition-colors"
               >
                 <option value="fra">Fire Risk Assessment</option>
                 <option value="site-risk">Site Risk Assessment</option>
@@ -69,14 +69,14 @@ export function NewTemplateButton() {
               <Button
                 variant="ghost"
                 onClick={() => setShowModal(false)}
-                className="text-white/40 hover:text-white"
+                className="text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreate}
                 disabled={!name.trim() || isPending}
-                className="bg-white hover:bg-white/90 text-black rounded-sm px-6"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6"
               >
                 {isPending ? "Creating…" : "Create"}
               </Button>

@@ -22,7 +22,7 @@ export default function Error({
         <AlertCircle className="w-8 h-8 text-danger" />
       </div>
       <div className="space-y-2">
-        <h2 className="text-2xl font-serif text-white">Something went wrong</h2>
+        <h2 className="text-2xl font-serif text-foreground">Something went wrong</h2>
         <p className="text-muted-foreground font-mono text-sm max-w-md">
           The admin dashboard encountered an unexpected error. This has been logged and we're looking into it.
         </p>
@@ -31,20 +31,20 @@ export default function Error({
         <Button
           variant="outline"
           onClick={() => window.location.href = "/admin"}
-          className="border-white/10 hover:bg-white/5 font-mono text-xs uppercase tracking-widest"
+          className="border-border hover:bg-muted font-mono text-xs uppercase tracking-widest"
         >
           Return to Dashboard
         </Button>
         <Button
           onClick={() => reset()}
-          className="bg-white text-black hover:bg-white/90 font-mono text-xs uppercase tracking-widest"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 font-mono text-xs uppercase tracking-widest"
         >
           Try again
         </Button>
       </div>
       {error.digest && (
-        <div className="mt-8 pt-8 border-t border-white/5 w-full max-w-xs">
-          <div className="font-mono text-[10px] text-[#444] uppercase tracking-tighter">
+        <div className="mt-8 pt-8 border-t border-border w-full max-w-xs">
+          <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-tighter">
             Error ID: {error.digest}
           </div>
         </div>

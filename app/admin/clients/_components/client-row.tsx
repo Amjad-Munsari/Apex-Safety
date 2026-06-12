@@ -38,20 +38,20 @@ export function ClientRow({
   // stacking overlay. Inner interactive elements (the ActivePill tooltip
   // trigger) stop propagation so they keep their own behaviour.
   return (
-    <tr className="group hover:bg-white/[0.02] transition-colors cursor-pointer">
+    <tr className="group hover:bg-muted transition-colors cursor-pointer">
       <td className="px-6 py-4 relative">
         <Link
           href={`/admin/clients/${id}`}
           aria-label={`Open ${name}`}
-          className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/20"
+          className="absolute inset-0 z-0 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-border"
         />
         <div className="flex items-start gap-4 pointer-events-none relative z-10 min-w-0">
-          <span className="font-mono text-[10px] text-[#555] mt-1 w-10 shrink-0">CL-<br />{id.slice(0, 4).toUpperCase()}</span>
+          <span className="font-mono text-[10px] text-muted-foreground mt-1 w-10 shrink-0">CL-<br />{id.slice(0, 4).toUpperCase()}</span>
           <div className="min-w-0">
-            <div className="font-medium text-white mb-0.5 flex items-center min-w-0">
-              <span className={`truncate ${active ? "" : "text-white/40"}`}>{name}</span>
+            <div className="font-medium text-foreground mb-0.5 flex items-center min-w-0">
+              <span className={`truncate ${active ? "" : "text-foreground/40"}`}>{name}</span>
               {!active && (
-                <span className="ml-2 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] bg-white/5 border border-white/10 leading-none">
+                <span className="ml-2 shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground bg-muted border border-border leading-none">
                   Inactive
                 </span>
               )}
@@ -59,7 +59,7 @@ export function ClientRow({
                 <ActivePill count={activeCount} />
               </span>
             </div>
-            <div className="text-xs text-white/40">Client Record</div>
+            <div className="text-xs text-foreground/40">Client Record</div>
           </div>
         </div>
       </td>
@@ -68,17 +68,17 @@ export function ClientRow({
           <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor} shrink-0`} /> {ragLabel}
         </div>
       </td>
-      <td className="px-4 py-4 font-mono text-xs text-white/70 text-center">{hoursBalance}h</td>
+      <td className="px-4 py-4 font-mono text-xs text-foreground/70 text-center">{hoursBalance}h</td>
       <td className="px-4 py-4">
-        <div className="text-white text-sm mb-0.5 truncate">{nextExpiryLabel}</div>
-        <div className="text-xs text-[#666] truncate">{nextExpiryCategory}</div>
+        <div className="text-foreground text-sm mb-0.5 truncate">{nextExpiryLabel}</div>
+        <div className="text-xs text-muted-foreground truncate">{nextExpiryCategory}</div>
       </td>
       <td className="px-4 py-4 text-center">
-        <div className={`inline-flex whitespace-nowrap px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "white"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
+        <div className={`inline-flex whitespace-nowrap px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "foreground"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "foreground"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
           {proposalStatus ? (proposalStatus === "Contract Issued" ? "Issued" : proposalStatus) : "None"}
         </div>
       </td>
-      <td className="px-4 py-4 font-mono text-xs text-center text-white/50">
+      <td className="px-4 py-4 font-mono text-xs text-center text-muted-foreground">
         {docCount}
       </td>
     </tr>

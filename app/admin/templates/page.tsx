@@ -74,11 +74,11 @@ export default async function TemplatesPage() {
       {/* Header */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
             <span className="text-teal font-semibold">07</span>
             FORM TEMPLATES
           </div>
-          <h2 className="font-serif text-[32px] leading-tight text-white">
+          <h2 className="font-serif text-[32px] leading-tight text-foreground">
             Assessment Templates
           </h2>
         </div>
@@ -88,14 +88,14 @@ export default async function TemplatesPage() {
       {/* Admin (master) templates */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <h3 className="font-mono text-xs tracking-widest text-white/50 uppercase">Admin templates</h3>
-          <span className="font-mono text-[10px] text-white/30">{adminTemplates.length}</span>
+          <h3 className="font-mono text-xs tracking-widest text-muted-foreground uppercase">Admin templates</h3>
+          <span className="font-mono text-[10px] text-muted-foreground">{adminTemplates.length}</span>
         </div>
-        <p className="text-white/30 text-xs -mt-2">Your master templates — clients can fill and fork these.</p>
+        <p className="text-muted-foreground text-xs -mt-2">Your master templates — clients can fill and fork these.</p>
         {adminTemplates.length === 0 ? (
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-12 text-center">
-            <p className="text-white/40 font-mono text-sm mb-4">No admin templates yet</p>
-            <p className="text-white/30 text-xs">Create your first form template to get started</p>
+          <Card className="bg-card border-border rounded-sm p-12 text-center">
+            <p className="text-muted-foreground font-mono text-sm mb-4">No admin templates yet</p>
+            <p className="text-muted-foreground text-xs">Create your first form template to get started</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -107,13 +107,13 @@ export default async function TemplatesPage() {
       {/* Client (customer-owned) templates */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <h3 className="font-mono text-xs tracking-widest text-white/50 uppercase">Client templates</h3>
-          <span className="font-mono text-[10px] text-white/30">{clientTemplates.length}</span>
+          <h3 className="font-mono text-xs tracking-widest text-muted-foreground uppercase">Client templates</h3>
+          <span className="font-mono text-[10px] text-muted-foreground">{clientTemplates.length}</span>
         </div>
-        <p className="text-white/30 text-xs -mt-2">Built or forked by customers — owned by their organisation.</p>
+        <p className="text-muted-foreground text-xs -mt-2">Built or forked by customers — owned by their organisation.</p>
         {clientTemplates.length === 0 ? (
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-8 text-center">
-            <p className="text-white/40 font-mono text-sm">No customer-built templates yet</p>
+          <Card className="bg-card border-border rounded-sm p-8 text-center">
+            <p className="text-muted-foreground font-mono text-sm">No customer-built templates yet</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

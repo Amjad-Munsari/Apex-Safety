@@ -24,7 +24,7 @@ export function RemindButton({ docId, clientName }: { docId: string; clientName:
       variant="ghost"
       onClick={handleRemind}
       disabled={pending}
-      className="h-8 text-[10px] font-mono uppercase tracking-widest text-[#666] hover:text-white disabled:opacity-50"
+      className="h-8 text-[10px] font-mono uppercase tracking-widest text-muted-foreground hover:text-foreground disabled:opacity-50"
     >
       {pending ? "Sending…" : "Remind"}
     </Button>

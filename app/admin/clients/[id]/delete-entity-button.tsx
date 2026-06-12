@@ -79,7 +79,7 @@ export function DeleteEntityButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={`Delete ${kind}`}
-        className="inline-flex items-center gap-1.5 h-7 px-2 rounded-sm text-[#888] hover:text-danger hover:bg-danger/10 font-mono text-[10px] uppercase tracking-widest transition-colors"
+        className="inline-flex items-center gap-1.5 h-7 px-2 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger/10 font-mono text-[10px] uppercase tracking-widest transition-colors"
       >
         <Trash2 className="w-3 h-3" />
         {label}
@@ -96,7 +96,7 @@ export function DeleteEntityButton({
             <AlertDialogAction
               onClick={handleConfirm}
               disabled={pending}
-              className="bg-destructive text-white hover:bg-destructive/90"
+              className="bg-destructive text-primary-foreground hover:bg-destructive/90"
             >
               {pending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

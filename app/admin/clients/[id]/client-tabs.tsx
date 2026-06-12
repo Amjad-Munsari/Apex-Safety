@@ -224,9 +224,9 @@ export function ClientTabs({
   }
 
   function assignmentStatusClass(status: string): string {
-    if (status === "in_progress") return "text-[#c0a66d] bg-[#c0a66d]/10"
+    if (status === "in_progress") return "text-gold bg-gold/10"
     if (status === "completed") return "text-teal bg-teal/10"
-    return "text-[#666] bg-[#555]/10"
+    return "text-muted-foreground bg-muted/10"
   }
 
   function assignmentStatusLabel(status: string): string {
@@ -238,65 +238,65 @@ export function ClientTabs({
   return (
     <div className="flex flex-col gap-6">
       {/* Contact info row */}
-      <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6">
+      <Card className="bg-card border-border rounded-sm p-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#888]">Contact</span>
-            <span className="text-white text-sm">{contactName ?? "—"}</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Contact</span>
+            <span className="text-foreground text-sm">{contactName ?? "—"}</span>
           </div>
           <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#888]">Email</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Email</span>
             {contactEmail ? (
-              <a href={`mailto:${contactEmail}`} className="text-white text-sm hover:text-gold transition-colors break-all">
+              <a href={`mailto:${contactEmail}`} className="text-foreground text-sm hover:text-gold transition-colors break-all">
                 {contactEmail}
               </a>
             ) : (
-              <span className="text-white text-sm">—</span>
+              <span className="text-foreground text-sm">—</span>
             )}
           </div>
           <div className="flex flex-col gap-2">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-[#888]">Phone</span>
-            <span className="text-white text-sm">{contactPhone ?? "—"}</span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Phone</span>
+            <span className="text-foreground text-sm">{contactPhone ?? "—"}</span>
           </div>
         </div>
       </Card>
 
       <Tabs defaultValue="documents" className="w-full">
-        <TabsList variant="line" className="border-b border-white/5 w-full justify-start rounded-none bg-transparent gap-6 px-0 h-auto py-0">
-          <TabsTrigger value="documents" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
-            <FileText className="w-3.5 h-3.5" /> Documents <span className="text-white/30">{documents.length}</span>
+        <TabsList variant="line" className="border-b border-border w-full justify-start rounded-none bg-transparent gap-6 px-0 h-auto py-0">
+          <TabsTrigger value="documents" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
+            <FileText className="w-3.5 h-3.5" /> Documents <span className="text-muted-foreground">{documents.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="compliance" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
+          <TabsTrigger value="compliance" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
             <ShieldCheck className="w-3.5 h-3.5" /> Compliance
           </TabsTrigger>
-          <TabsTrigger value="assessments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
-            <ClipboardCheck className="w-3.5 h-3.5" /> Assessments <span className="text-white/30">{assessments.length}</span>
+          <TabsTrigger value="assessments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
+            <ClipboardCheck className="w-3.5 h-3.5" /> Assessments <span className="text-muted-foreground">{assessments.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="reports" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
-            <FileCheck className="w-3.5 h-3.5" /> Reports <span className="text-white/30">{reports.length}</span>
+          <TabsTrigger value="reports" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
+            <FileCheck className="w-3.5 h-3.5" /> Reports <span className="text-muted-foreground">{reports.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="proposals" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
-            <FileSignature className="w-3.5 h-3.5" /> Proposals <span className="text-white/30">{proposals.length}</span>
+          <TabsTrigger value="proposals" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
+            <FileSignature className="w-3.5 h-3.5" /> Proposals <span className="text-muted-foreground">{proposals.length}</span>
           </TabsTrigger>
-          <TabsTrigger value="hours" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
+          <TabsTrigger value="hours" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
             <Clock className="w-3.5 h-3.5" /> Hours log
           </TabsTrigger>
-          <TabsTrigger value="assignments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
+          <TabsTrigger value="assignments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
             <ClipboardList className="w-3.5 h-3.5" /> Assigned Forms{activeAssignmentCount > 0 ? ` (${activeAssignmentCount})` : ""}
           </TabsTrigger>
-          <TabsTrigger value="access" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-white text-white/40">
+          <TabsTrigger value="access" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
             <Users className="w-3.5 h-3.5" /> Access{clientUsers.length > 0 ? ` (${clientUsers.length})` : ""}
           </TabsTrigger>
         </TabsList>
 
         {/* DOCUMENTS */}
         <TabsContent value="documents" className="pt-6">
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden flex flex-col">
-            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+          <Card className="bg-card border-border rounded-sm overflow-hidden flex flex-col">
+            <div className="px-6 py-4 flex justify-between items-center border-b border-border">
               <div className="flex items-center gap-3">
-                <FileText className="w-4 h-4 text-white/40" />
-                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Documents</h3>
-                <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">
+                <FileText className="w-4 h-4 text-foreground/40" />
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Documents</h3>
+                <span className="px-2.5 py-1 bg-muted border border-border rounded-full text-[9px] font-mono uppercase tracking-widest text-muted-foreground ml-3 leading-none">
                   {documents.length} files
                 </span>
               </div>
@@ -304,33 +304,33 @@ export function ClientTabs({
             <div className="w-full overflow-x-auto">
               {documents.length === 0 ? (
                 <div className="p-10 text-center flex flex-col items-center justify-center">
-                  <FileText className="w-8 h-8 text-white/20 mb-3" />
-                  <p className="text-white/50 text-sm">No documents uploaded yet.</p>
+                  <FileText className="w-8 h-8 text-foreground/20 mb-3" />
+                  <p className="text-muted-foreground text-sm">No documents uploaded yet.</p>
                 </div>
               ) : (
                 <table className="w-full text-left font-sans text-sm">
-                  <thead className="bg-[#151515]">
-                    <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                      <th className="font-normal px-6 py-3 border-b border-white/5">Filename</th>
-                      <th className="font-normal px-4 py-3 border-b border-white/5">Category</th>
-                      <th className="font-normal px-4 py-3 border-b border-white/5">Expiry</th>
-                      <th className="font-normal px-4 py-3 border-b border-white/5">Status</th>
-                      <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Uploaded</th>
-                      <th className="font-normal px-6 py-3 border-b border-white/5 text-right"></th>
+                  <thead className="bg-muted">
+                    <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                      <th className="font-normal px-6 py-3 border-b border-border">Filename</th>
+                      <th className="font-normal px-4 py-3 border-b border-border">Category</th>
+                      <th className="font-normal px-4 py-3 border-b border-border">Expiry</th>
+                      <th className="font-normal px-4 py-3 border-b border-border">Status</th>
+                      <th className="font-normal px-4 py-3 border-b border-border text-right">Uploaded</th>
+                      <th className="font-normal px-6 py-3 border-b border-border text-right"></th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-border">
                     {documents.map((doc) => {
                       const status = ragFromDate(doc.expiry_date)
                       return (
-                        <tr key={doc.id} className="hover:bg-white/[0.02] transition-colors group">
-                          <td className="px-6 py-4 text-white">{doc.filename}</td>
-                          <td className="px-4 py-4 text-white/70">{doc.document_category}</td>
-                          <td className="px-4 py-4 text-white/70">
+                        <tr key={doc.id} className="hover:bg-muted transition-colors group">
+                          <td className="px-6 py-4 text-foreground">{doc.filename}</td>
+                          <td className="px-4 py-4 text-foreground/70">{doc.document_category}</td>
+                          <td className="px-4 py-4 text-foreground/70">
                             {doc.expiry_date ? new Date(doc.expiry_date).toLocaleDateString("en-GB") : "—"}
                           </td>
                           <td className="px-4 py-4"><RagPill status={status} /></td>
-                          <td className="px-4 py-4 font-mono text-xs text-right text-white/50">
+                          <td className="px-4 py-4 font-mono text-xs text-right text-muted-foreground">
                             {new Date(doc.uploaded_at).toLocaleDateString("en-GB")}
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -351,26 +351,26 @@ export function ClientTabs({
         {/* COMPLIANCE — grouped */}
         <TabsContent value="compliance" className="pt-6">
           {complianceCategories.length === 0 ? (
-            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-10 text-center flex flex-col items-center justify-center">
-              <ShieldCheck className="w-8 h-8 text-white/20 mb-3" />
-              <p className="text-white/50 text-sm">No compliance documents on file yet.</p>
-              <p className="text-white/30 text-xs mt-1">Upload one from the Documents tab to start the record.</p>
+            <Card className="bg-card border-border rounded-sm p-10 text-center flex flex-col items-center justify-center">
+              <ShieldCheck className="w-8 h-8 text-foreground/20 mb-3" />
+              <p className="text-muted-foreground text-sm">No compliance documents on file yet.</p>
+              <p className="text-muted-foreground text-xs mt-1">Upload one from the Documents tab to start the record.</p>
             </Card>
           ) : (
             <div className="flex flex-col gap-10">
               {Object.entries(compliance).map(([category, items]) => (
                 <section key={category} className="flex flex-col gap-4">
                   <div className="flex items-baseline gap-3 px-1">
-                    <h3 className="font-mono text-[10px] tracking-widest text-white/60 uppercase">{category}</h3>
-                    <span className="font-mono text-[10px] text-white/30 lowercase">{items.length} item{items.length === 1 ? "" : "s"}</span>
+                    <h3 className="font-mono text-[10px] tracking-widest text-foreground/60 uppercase">{category}</h3>
+                    <span className="font-mono text-[10px] text-muted-foreground lowercase">{items.length} item{items.length === 1 ? "" : "s"}</span>
                   </div>
-                  <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-                    <div className="divide-y divide-white/5">
+                  <Card className="bg-card border-border rounded-sm overflow-hidden">
+                    <div className="divide-y divide-border">
                       {items.map((item) => (
                         <div key={item.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center gap-4">
                           <div className="flex-1 min-w-0">
-                            <div className="text-white text-sm font-medium truncate">{item.title}</div>
-                            <div className="font-mono text-[10px] text-white/30 uppercase tracking-widest mt-1">
+                            <div className="text-foreground text-sm font-medium truncate">{item.title}</div>
+                            <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mt-1">
                               {item.expiry ? `Expires ${new Date(item.expiry).toLocaleDateString("en-GB")}` : "No expiry"}
                             </div>
                           </div>
@@ -388,44 +388,44 @@ export function ClientTabs({
         {/* ASSESSMENTS */}
         <TabsContent value="assessments" className="pt-6">
           {assessments.length === 0 ? (
-            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-10 text-center flex flex-col items-center justify-center">
-              <ClipboardCheck className="w-8 h-8 text-white/20 mb-3" />
-              <p className="text-white/50 text-sm">No assessments yet.</p>
-              <p className="text-white/30 text-xs mt-1">Assessments delivered to this client will appear here.</p>
+            <Card className="bg-card border-border rounded-sm p-10 text-center flex flex-col items-center justify-center">
+              <ClipboardCheck className="w-8 h-8 text-foreground/20 mb-3" />
+              <p className="text-muted-foreground text-sm">No assessments yet.</p>
+              <p className="text-muted-foreground text-xs mt-1">Assessments delivered to this client will appear here.</p>
             </Card>
           ) : (
-            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+            <Card className="bg-card border-border rounded-sm overflow-hidden">
               <table className="w-full text-left font-sans text-sm">
-                <thead className="bg-[#151515]">
-                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                    <th className="font-normal px-6 py-3 border-b border-white/5">Reference</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Date</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Type</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center">Status</th>
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right w-px" />
+                <thead className="bg-muted">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                    <th className="font-normal px-6 py-3 border-b border-border">Reference</th>
+                    <th className="font-normal px-4 py-3 border-b border-border">Date</th>
+                    <th className="font-normal px-4 py-3 border-b border-border">Type</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center">Status</th>
+                    <th className="font-normal px-6 py-3 border-b border-border text-right w-px" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-border">
                   {assessments.map((a) => (
                     <tr
                       key={a.id}
                       {...rowNav(a.viewHref)}
-                      className="group hover:bg-white/[0.02] transition-colors cursor-pointer focus:outline-none focus:bg-white/[0.03]"
+                      className="group hover:bg-muted transition-colors cursor-pointer focus:outline-none focus:bg-muted"
                     >
-                      <td className="px-6 py-4 font-mono text-xs text-white/60">{a.id}</td>
-                      <td className="px-4 py-4 text-white/80">
+                      <td className="px-6 py-4 font-mono text-xs text-foreground/60">{a.id}</td>
+                      <td className="px-4 py-4 text-foreground/80">
                         {new Date(a.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
-                      <td className="px-4 py-4 text-white">{a.type}</td>
+                      <td className="px-4 py-4 text-foreground">{a.type}</td>
                       <td className="px-4 py-4 text-center">
                         <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 font-mono text-[10px] uppercase tracking-widest leading-none
                           ${a.status === "Delivered" ? "ring-success/40 text-success" :
                             a.status === "In review" ? "ring-gold/40 text-gold" :
-                            "ring-white/15 text-white/60"}`}>
+                            "ring-border text-foreground/60"}`}>
                           <span className={`size-1.5 rounded-full ${
                             a.status === "Delivered" ? "bg-success" :
                             a.status === "In review" ? "bg-gold" :
-                            "bg-white/40"
+                            "bg-foreground/40"
                           }`} />
                           {a.status}
                         </span>
@@ -449,36 +449,36 @@ export function ClientTabs({
         {/* REPORTS — report drafts + delivered reports for this client */}
         <TabsContent value="reports" className="pt-6">
           {reports.length === 0 ? (
-            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-10 text-center flex flex-col items-center justify-center">
-              <FileCheck className="w-8 h-8 text-white/20 mb-3" />
-              <p className="text-white/50 text-sm">No reports yet.</p>
-              <p className="text-white/30 text-xs mt-1">
+            <Card className="bg-card border-border rounded-sm p-10 text-center flex flex-col items-center justify-center">
+              <FileCheck className="w-8 h-8 text-foreground/20 mb-3" />
+              <p className="text-muted-foreground text-sm">No reports yet.</p>
+              <p className="text-muted-foreground text-xs mt-1">
                 When an assessment is submitted, its report draft appears here to review and approve.
               </p>
             </Card>
           ) : (
-            <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+            <Card className="bg-card border-border rounded-sm overflow-hidden">
               <table className="w-full text-left font-sans text-sm">
-                <thead className="bg-[#151515]">
-                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                    <th className="font-normal px-6 py-3 border-b border-white/5">Reference</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Date</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Type</th>
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-center">Status</th>
+                <thead className="bg-muted">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                    <th className="font-normal px-6 py-3 border-b border-border">Reference</th>
+                    <th className="font-normal px-4 py-3 border-b border-border">Date</th>
+                    <th className="font-normal px-4 py-3 border-b border-border">Type</th>
+                    <th className="font-normal px-6 py-3 border-b border-border text-center">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-border">
                   {reports.map((r) => (
                     <tr
                       key={r.id}
                       {...reportRowProps(r)}
-                      className="group hover:bg-white/[0.02] transition-colors cursor-pointer focus:outline-none focus:bg-white/[0.03]"
+                      className="group hover:bg-muted transition-colors cursor-pointer focus:outline-none focus:bg-muted"
                     >
-                      <td className="px-6 py-4 font-mono text-xs text-white/60">{r.id}</td>
-                      <td className="px-4 py-4 text-white/80">
+                      <td className="px-6 py-4 font-mono text-xs text-foreground/60">{r.id}</td>
+                      <td className="px-4 py-4 text-foreground/80">
                         {new Date(r.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
-                      <td className="px-4 py-4 text-white">{r.type}</td>
+                      <td className="px-4 py-4 text-foreground">{r.type}</td>
                       <td className="px-6 py-4 text-center">
                         <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 font-mono text-[10px] uppercase tracking-widest leading-none
                           ${r.status === "Delivered" ? "ring-success/40 text-success" :
@@ -502,35 +502,35 @@ export function ClientTabs({
 
         {/* PROPOSALS */}
         <TabsContent value="proposals" className="pt-6">
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+          <Card className="bg-card border-border rounded-sm overflow-hidden">
             {proposals.length === 0 ? (
-              <div className="p-10 text-center text-white/50 text-sm">No proposals generated yet.</div>
+              <div className="p-10 text-center text-muted-foreground text-sm">No proposals generated yet.</div>
             ) : (
               <table className="w-full text-left font-sans text-sm">
-                <thead className="bg-[#151515]">
-                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                    <th className="font-normal px-6 py-3 border-b border-white/5">Date</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center">Status</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-center">Amount</th>
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right w-px" />
+                <thead className="bg-muted">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                    <th className="font-normal px-6 py-3 border-b border-border">Date</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center">Status</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center">Amount</th>
+                    <th className="font-normal px-6 py-3 border-b border-border text-right w-px" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-border">
                   {proposals.map((p) => (
                     <tr
                       key={p.id}
                       {...rowNav(`/admin/proposals/${p.id}`)}
-                      className="group hover:bg-white/[0.02] transition-colors cursor-pointer focus:outline-none focus:bg-white/[0.03]"
+                      className="group hover:bg-muted transition-colors cursor-pointer focus:outline-none focus:bg-muted"
                     >
-                      <td className="px-6 py-4 text-white/80">
+                      <td className="px-6 py-4 text-foreground/80">
                         {new Date(p.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
                       <td className="px-4 py-4 text-center">
-                        <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 ring-white/15 text-white/70 font-mono text-[10px] uppercase tracking-widest leading-none">
+                        <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full ring-1 ring-border text-foreground/70 font-mono text-[10px] uppercase tracking-widest leading-none">
                           {p.status === "Contract Issued" ? "Issued" : (p.status || "Draft")}
                         </span>
                       </td>
-                      <td className="px-4 py-4 font-mono text-xs text-center text-white">
+                      <td className="px-4 py-4 font-mono text-xs text-center text-foreground">
                         £{p.total.toLocaleString()}
                       </td>
                       <td className="pl-8 pr-6 py-4 text-right">
@@ -551,44 +551,44 @@ export function ClientTabs({
 
         {/* HOURS LOG */}
         <TabsContent value="hours" className="pt-6">
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
-            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+          <Card className="bg-card border-border rounded-sm overflow-hidden">
+            <div className="px-6 py-4 flex justify-between items-center border-b border-border">
               <div className="flex items-center gap-3">
-                <Clock className="w-4 h-4 text-white/40" />
-                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Hours transactions</h3>
+                <Clock className="w-4 h-4 text-foreground/40" />
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Hours transactions</h3>
               </div>
-              <div className="font-mono text-[10px] text-white/40 uppercase tracking-widest">
+              <div className="font-mono text-[10px] text-foreground/40 uppercase tracking-widest">
                 Current balance:&nbsp;
-                <span className="text-white font-serif text-base">{hoursBalance}h</span>
+                <span className="text-foreground font-serif text-base">{hoursBalance}h</span>
               </div>
             </div>
             {hoursLog.length === 0 ? (
               <div className="p-10 text-center flex flex-col items-center justify-center">
-                <Clock className="w-8 h-8 text-white/20 mb-3" />
-                <p className="text-white/50 text-sm">No hours transactions yet.</p>
-                <p className="text-white/30 text-xs mt-1">Adjustments and purchases will appear here.</p>
+                <Clock className="w-8 h-8 text-foreground/20 mb-3" />
+                <p className="text-muted-foreground text-sm">No hours transactions yet.</p>
+                <p className="text-muted-foreground text-xs mt-1">Adjustments and purchases will appear here.</p>
               </div>
             ) : (
               <table className="w-full text-left font-sans text-sm">
-                <thead className="bg-[#151515]">
-                  <tr className="text-[10px] font-mono tracking-widest uppercase text-[#555]">
-                    <th className="font-normal px-6 py-3 border-b border-white/5">Date</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5">Description</th>
-                    <th className="font-normal px-4 py-3 border-b border-white/5 text-right">Change</th>
-                    <th className="font-normal px-6 py-3 border-b border-white/5 text-right">Balance</th>
+                <thead className="bg-muted">
+                  <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
+                    <th className="font-normal px-6 py-3 border-b border-border">Date</th>
+                    <th className="font-normal px-4 py-3 border-b border-border">Description</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-right">Change</th>
+                    <th className="font-normal px-6 py-3 border-b border-border text-right">Balance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-border">
                   {hoursLog.map((txn) => (
-                    <tr key={txn.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="px-6 py-4 text-white/80">
+                    <tr key={txn.id} className="hover:bg-muted transition-colors">
+                      <td className="px-6 py-4 text-foreground/80">
                         {new Date(txn.date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
-                      <td className="px-4 py-4 text-white">{txn.description}</td>
+                      <td className="px-4 py-4 text-foreground">{txn.description}</td>
                       <td className={`px-4 py-4 font-mono text-xs text-right ${txn.delta >= 0 ? "text-success" : "text-danger"}`}>
                         {txn.delta >= 0 ? "+" : ""}{txn.delta}h
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-right text-white">{txn.balance}h</td>
+                      <td className="px-6 py-4 font-mono text-xs text-right text-foreground">{txn.balance}h</td>
                     </tr>
                   ))}
                 </tbody>
@@ -598,14 +598,14 @@ export function ClientTabs({
         </TabsContent>
         {/* ASSIGNED FORMS */}
         <TabsContent value="assignments" className="pt-6">
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden">
+          <Card className="bg-card border-border rounded-sm overflow-hidden">
             {/* Tab header: title + Assign template button */}
-            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+            <div className="px-6 py-4 flex justify-between items-center border-b border-border">
               <div className="flex items-center gap-3">
-                <ClipboardList className="w-4 h-4 text-white/40" />
-                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Assigned forms</h3>
+                <ClipboardList className="w-4 h-4 text-foreground/40" />
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Assigned forms</h3>
                 {assignments.length > 0 && (
-                  <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">
+                  <span className="px-2.5 py-1 bg-muted border border-border rounded-full text-[9px] font-mono uppercase tracking-widest text-muted-foreground ml-3 leading-none">
                     {assignments.length} form{assignments.length === 1 ? "" : "s"}
                   </span>
                 )}
@@ -623,17 +623,17 @@ export function ClientTabs({
             {/* Empty state */}
             {assignments.length === 0 ? (
               <div className="p-10 text-center flex flex-col items-center justify-center">
-                <ClipboardList className="w-8 h-8 text-white/20 mb-3" />
-                <p className="text-white/50 text-sm font-serif text-lg">No forms assigned to this client yet.</p>
-                <p className="text-white/30 text-xs mt-1">Use &ldquo;Assign template&rdquo; above to assign a published template.</p>
+                <ClipboardList className="w-8 h-8 text-foreground/20 mb-3" />
+                <p className="text-muted-foreground text-sm font-serif text-lg">No forms assigned to this client yet.</p>
+                <p className="text-muted-foreground text-xs mt-1">Use &ldquo;Assign template&rdquo; above to assign a published template.</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-border">
                 {assignments.map((assignment) => (
                   <div key={assignment.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1 min-w-0">
                       {/* Template name */}
-                      <div className="text-base font-medium text-white font-serif truncate">
+                      <div className="text-base font-medium text-foreground font-serif truncate">
                         {assignment.template?.name ?? "—"}
                       </div>
                       {/* Metadata row: due date + status pill + overdue indicator */}
@@ -646,7 +646,7 @@ export function ClientTabs({
                         return (
                           <>
                             <div className="flex items-center gap-3 mt-1">
-                              <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                              <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                                 DUE · {formatDueDate(assignment.due_date)}
                               </span>
                               {showStatusPill && (
@@ -672,7 +672,7 @@ export function ClientTabs({
                       })()}
                       {/* Instructions (if present) */}
                       {assignment.instructions && (
-                        <p className="text-sm text-white/60 line-clamp-2 mt-1">
+                        <p className="text-sm text-foreground/60 line-clamp-2 mt-1">
                           {assignment.instructions}
                         </p>
                       )}
@@ -683,7 +683,7 @@ export function ClientTabs({
                         {assignment.template_version_id && (
                           <Link
                             href={`/admin/assessments/new?clientId=${clientId}&templateVersionId=${assignment.template_version_id}`}
-                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-[#c0a66d] hover:bg-[#c0a66d]/90 text-black font-medium font-mono text-[10px] uppercase tracking-widest transition-colors"
+                            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground font-medium font-mono text-[10px] uppercase tracking-widest transition-colors"
                           >
                             <ClipboardCheck className="w-3 h-3" />
                             Start assessment
@@ -699,45 +699,45 @@ export function ClientTabs({
           </Card>
 
           {/* CLIENT-BUILT FORMS — read-only visibility into self-serve templates */}
-          <Card className="bg-[#1c1c1c] border-white/5 rounded-sm overflow-hidden mt-6">
-            <div className="px-6 py-4 flex justify-between items-center border-b border-white/5">
+          <Card className="bg-card border-border rounded-sm overflow-hidden mt-6">
+            <div className="px-6 py-4 flex justify-between items-center border-b border-border">
               <div className="flex items-center gap-3">
-                <ClipboardList className="w-4 h-4 text-white/40" />
-                <h3 className="font-sans font-medium text-white tracking-wide text-lg">Client-built forms</h3>
+                <ClipboardList className="w-4 h-4 text-foreground/40" />
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Client-built forms</h3>
                 {clientTemplates.length > 0 && (
-                  <span className="px-2.5 py-1 bg-white/5 border border-white/10 rounded-full text-[9px] font-mono uppercase tracking-widest text-white/50 ml-3 leading-none">
+                  <span className="px-2.5 py-1 bg-muted border border-border rounded-full text-[9px] font-mono uppercase tracking-widest text-muted-foreground ml-3 leading-none">
                     {clientTemplates.length} template{clientTemplates.length === 1 ? "" : "s"}
                   </span>
                 )}
               </div>
-              <span className="font-mono text-[9px] uppercase tracking-widest text-white/30">Read only</span>
+              <span className="font-mono text-[9px] uppercase tracking-widest text-muted-foreground">Read only</span>
             </div>
 
             {clientTemplates.length === 0 ? (
               <div className="p-10 text-center flex flex-col items-center justify-center">
-                <ClipboardList className="w-8 h-8 text-white/20 mb-3" />
-                <p className="text-white/50 text-sm">This client hasn&rsquo;t built or forked any templates yet.</p>
-                <p className="text-white/30 text-xs mt-1">Templates they create or clone will appear here.</p>
+                <ClipboardList className="w-8 h-8 text-foreground/20 mb-3" />
+                <p className="text-muted-foreground text-sm">This client hasn&rsquo;t built or forked any templates yet.</p>
+                <p className="text-muted-foreground text-xs mt-1">Templates they create or clone will appear here.</p>
               </div>
             ) : (
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-border">
                 {clientTemplates.map((t) => (
                   <div key={t.id} className="px-6 py-5 flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex-1 min-w-0">
-                      <div className="text-base font-medium text-white font-serif truncate">{t.name}</div>
+                      <div className="text-base font-medium text-foreground font-serif truncate">{t.name}</div>
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                           {t.template_type}
                         </span>
-                        <span className="font-mono text-[10px] uppercase tracking-widest text-[#666]">
+                        <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
                           · {formatDueDate(t.created_at)}
                         </span>
                         {t.parent_template_id ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#c0a66d] bg-[#c0a66d]/10">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-gold bg-gold/10">
                             Cloned{t.parentName ? ` from ${t.parentName}` : ""}
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-white/50 bg-white/5">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground bg-muted">
                             Built from scratch
                           </span>
                         )}
@@ -745,7 +745,7 @@ export function ClientTabs({
                     </div>
                     <span
                       className={`inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] leading-none shrink-0 ${
-                        t.is_published ? "text-[#3b8273] bg-[#3b8273]/10" : "text-[#666] bg-[#555]/10"
+                        t.is_published ? "text-[#3b8273] bg-[#3b8273]/10" : "text-muted-foreground bg-muted"
                       }`}
                     >
                       {t.is_published ? "Published" : "Draft"}
@@ -754,7 +754,7 @@ export function ClientTabs({
                         builder in read-only mode for customer-owned templates. */}
                     <Link
                       href={`/admin/templates/${t.id}`}
-                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-white/10 hover:border-white/25 text-white/70 hover:text-white font-mono text-[10px] uppercase tracking-widest transition-colors shrink-0"
+                      className="inline-flex items-center gap-1.5 h-8 px-3 rounded-sm border border-border hover:border-border/60 text-foreground/70 hover:text-foreground font-mono text-[10px] uppercase tracking-widest transition-colors shrink-0"
                     >
                       <Eye className="w-3 h-3" />
                       View

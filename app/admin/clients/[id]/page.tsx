@@ -286,7 +286,7 @@ export default async function ClientDetailsPage({
           <span className="font-mono text-[10px] uppercase tracking-[0.25em] shrink-0">
             Deactivated
           </span>
-          <span className="text-white/70">
+          <span className="text-foreground/70">
             This client is frozen. Uploading documents, creating proposals or
             assessments, assigning forms, adjusting hours, and inviting users are
             disabled. Existing records stay intact — reactivate to make changes.
@@ -297,14 +297,14 @@ export default async function ClientDetailsPage({
       {/* ─── HEADER ─── */}
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-[#666] uppercase">
+          <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
             <Building className="w-3.5 h-3.5" />
             Client Record
           </div>
-          <h2 className="font-serif text-[32px] md:text-[34px] leading-tight text-white whitespace-nowrap flex items-center gap-3">
+          <h2 className="font-serif text-[32px] md:text-[34px] leading-tight text-foreground whitespace-nowrap flex items-center gap-3">
             {client.name}
             {client.active === false && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#888] bg-white/5 border border-white/10 leading-none">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground bg-muted border border-border leading-none">
                 Inactive
               </span>
             )}
@@ -318,17 +318,17 @@ export default async function ClientDetailsPage({
 
       {/* ─── SUMMARY CARDS ─── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-[#888] font-mono text-[10px] uppercase tracking-widest mb-2">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground font-mono text-[10px] uppercase tracking-widest mb-2">
             <MapPin className="w-3 h-3" /> Site Address
           </div>
-          <div className="text-white/90 text-sm leading-relaxed">
+          <div className="text-foreground/90 text-sm leading-relaxed">
             {client.site_address || "No primary address registered."}
           </div>
         </Card>
 
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2 text-[#888] font-mono text-[10px] uppercase tracking-widest mb-2">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col gap-2">
+          <div className="flex items-center justify-between gap-2 text-muted-foreground font-mono text-[10px] uppercase tracking-widest mb-2">
             <div className="flex items-center gap-2">
               <Clock className="w-3 h-3" /> Retained Hours
             </div>
@@ -336,17 +336,17 @@ export default async function ClientDetailsPage({
               <AdjustHoursDialog clientId={client.id} currentBalance={client.hours_balance || 0} />
             )}
           </div>
-          <div className="text-white font-serif text-3xl">
+          <div className="text-foreground font-serif text-3xl">
             {client.hours_balance || 0}{" "}
-            <span className="text-sm font-sans text-white/40">hrs</span>
+            <span className="text-sm font-sans text-foreground/40">hrs</span>
           </div>
         </Card>
 
-        <Card className="bg-[#1c1c1c] border-white/5 rounded-sm p-6 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-[#888] font-mono text-[10px] uppercase tracking-widest mb-2">
+        <Card className="bg-card border-border rounded-sm p-6 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-muted-foreground font-mono text-[10px] uppercase tracking-widest mb-2">
             <Calendar className="w-3 h-3" /> Client Since
           </div>
-          <div className="text-white/90 text-sm leading-relaxed">
+          <div className="text-foreground/90 text-sm leading-relaxed">
             {new Date(client.created_at).toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
           </div>
         </Card>

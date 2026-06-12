@@ -134,7 +134,7 @@ export function AssignTemplateModal({
       >
         {triggerLabel}
       </Button>
-      <DialogContent className="bg-[#1c1c1c] border-white/10 text-white sm:max-w-[480px]">
+      <DialogContent className="bg-card border-border text-foreground sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl font-normal">
             Assign template
@@ -147,7 +147,7 @@ export function AssignTemplateModal({
             <div className="flex flex-col gap-2">
               <Label
                 htmlFor="templatePicker"
-                className="text-white/70 font-mono text-xs uppercase tracking-widest"
+                className="text-foreground/70 font-mono text-xs uppercase tracking-widest"
               >
                 Template
               </Label>
@@ -161,15 +161,15 @@ export function AssignTemplateModal({
                 )}
                 required
               >
-                <SelectTrigger className="w-full h-10 bg-black/50 border-white/15 text-white data-placeholder:text-white/45">
+                <SelectTrigger className="w-full h-10 bg-background border-border text-foreground data-placeholder:text-muted-foreground">
                   <SelectValue placeholder="Select template" />
                 </SelectTrigger>
-                <SelectContent className="w-[--anchor-width] max-h-64 bg-[#222] border-white/15 text-white">
+                <SelectContent className="w-[--anchor-width] max-h-64 bg-card border-border text-foreground">
                   {(templates ?? []).map((t) => (
                     <SelectItem
                       key={t.id}
                       value={t.id}
-                      className="text-white/90 data-highlighted:bg-white/10 data-highlighted:text-white focus:bg-white/10 focus:text-white"
+                      className="text-foreground/90 data-highlighted:bg-muted data-highlighted:text-foreground focus:bg-muted focus:text-foreground"
                     >
                       {t.name}
                     </SelectItem>
@@ -181,11 +181,11 @@ export function AssignTemplateModal({
 
           {/* (b) Clients — bare text when launched from a client page, else a checkbox grid */}
           <div className="flex flex-col gap-2">
-            <Label className="text-white/70 font-mono text-xs uppercase tracking-widest">
+            <Label className="text-foreground/70 font-mono text-xs uppercase tracking-widest">
               {preselectClientId ? "Client" : "Clients"}
             </Label>
             {preselectClientId ? (
-              <p className="text-white text-sm font-sans">
+              <p className="text-foreground text-sm font-sans">
                 {clients.find((c) => c.id === preselectClientId)?.name ??
                   "this client"}
               </p>
@@ -199,18 +199,18 @@ export function AssignTemplateModal({
                       onCheckedChange={(checked) =>
                         toggleClient(c.id, Boolean(checked))
                       }
-                      className="border-white/30 data-checked:bg-[#c0a66d] data-checked:border-[#c0a66d]"
+                      className="border-border data-checked:bg-gold data-checked:border-gold"
                     />
                     <Label
                       htmlFor={`client-${c.id}`}
-                      className="text-white text-sm font-sans cursor-pointer"
+                      className="text-foreground text-sm font-sans cursor-pointer"
                     >
                       {c.name}
                     </Label>
                   </div>
                 ))}
                 {clients.length === 0 && (
-                  <p className="text-white/40 text-xs font-mono">
+                  <p className="text-muted-foreground text-xs font-mono">
                     No clients available
                   </p>
                 )}
@@ -222,7 +222,7 @@ export function AssignTemplateModal({
           <div className="flex flex-col gap-2">
             <Label
               htmlFor="dueDate"
-              className="text-white/70 font-mono text-xs uppercase tracking-widest"
+              className="text-foreground/70 font-mono text-xs uppercase tracking-widest"
             >
               Due date
             </Label>
@@ -232,7 +232,7 @@ export function AssignTemplateModal({
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="bg-black/50 border-white/10 text-white"
+              className="bg-background border-border text-foreground"
               style={{ colorScheme: "dark" }}
             />
           </div>
@@ -241,7 +241,7 @@ export function AssignTemplateModal({
           <div className="flex flex-col gap-2">
             <Label
               htmlFor="instructions"
-              className="text-white/70 font-mono text-xs uppercase tracking-widest"
+              className="text-foreground/70 font-mono text-xs uppercase tracking-widest"
             >
               Instructions (optional)
             </Label>
@@ -252,7 +252,7 @@ export function AssignTemplateModal({
               rows={3}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              className="bg-black/50 border-white/10 text-white resize-none"
+              className="bg-background border-border text-foreground resize-none"
             />
           </div>
 
@@ -262,14 +262,14 @@ export function AssignTemplateModal({
               type="button"
               variant="outline"
               onClick={() => handleOpenChange(false)}
-              className="border-white/20 text-white/70 hover:text-white hover:bg-white/5"
+              className="border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isSubmitDisabled}
-              className="bg-[#c0a66d] hover:bg-[#c0a66d]/90 text-black font-medium rounded-sm px-5 h-9 text-sm tracking-wide border-none disabled:opacity-40"
+              className="bg-gold hover:bg-gold/90 text-black font-medium rounded-sm px-5 h-9 text-sm tracking-wide border-none disabled:opacity-40"
             >
               {pending ? "Assigning…" : "Assign template"}
             </Button>

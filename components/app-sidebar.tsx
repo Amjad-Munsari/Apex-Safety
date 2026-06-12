@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import ThemeSwitch from "@/components/ui/theme-switch";
 
 export interface SidebarStats {
   clients: number;
@@ -47,8 +48,8 @@ const linkClass =
   "flex w-full items-center pl-3 pr-3 h-10 rounded-[4px] " +
   "text-sm tracking-wide font-medium " +
   "border-l-2 border-transparent " +
-  "text-white/55 hover:text-white hover:bg-white/5 transition-colors duration-150 " +
-  "data-[active]:text-white data-[active]:bg-white/10 data-[active]:border-gold";
+  "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors duration-150 " +
+  "data-[active]:text-sidebar-foreground data-[active]:bg-sidebar-accent data-[active]:border-gold";
 
 export function AppSidebar({ stats }: { stats?: SidebarStats }) {
   const pathname = usePathname();
@@ -57,11 +58,11 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
     item.exact ? pathname === item.href : (pathname ?? "").startsWith(item.href);
 
   return (
-    <Sidebar className="border-none bg-black">
-      <SidebarHeader className="pt-10 px-6 pb-8 border-b border-white/5">
+    <Sidebar className="border-none bg-sidebar text-sidebar-foreground">
+      <SidebarHeader className="pt-10 px-6 pb-8 border-b border-sidebar-border">
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase font-mono mb-2 opacity-50">Practice</span>
-          <h1 className="font-serif text-[28px] leading-[0.9] text-white font-medium tracking-tight">
+          <h1 className="font-serif text-[28px] leading-[0.9] text-sidebar-foreground font-medium tracking-tight">
             888 Safety<br />
             &amp; Training.
           </h1>
@@ -83,7 +84,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
                     <Link {...props} href={item.href} className={linkClass}>
                       <span>{item.label}</span>
                       {showCount && (
-                        <span className="ml-auto text-[10px] font-mono text-white/40">
+                        <span className="ml-auto text-[10px] font-mono text-muted-foreground">
                           {count}
                         </span>
                       )}
@@ -95,8 +96,8 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
           })}
 
           {/* System Tools */}
-          <div className="mt-8 pt-8 border-t border-white/5 flex flex-col gap-1">
-            <span className="px-3 text-[10px] font-mono uppercase tracking-[0.2em] text-white/30 mb-3">System Tools</span>
+          <div className="mt-8 pt-8 border-t border-sidebar-border flex flex-col gap-1">
+            <span className="px-3 text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mb-3">System Tools</span>
             {systemTools.map((item) => {
               const active = isItemActive(item);
               return (
@@ -117,18 +118,22 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         </SidebarMenu>
       </SidebarContent>
 
-      <SidebarFooter className="px-6 py-6 border-t border-white/5">
+      <SidebarFooter className="px-6 py-6 border-t border-sidebar-border">
         <div className="flex flex-col gap-2.5 font-mono text-[12px]">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-            <span className="text-white font-semibold tracking-wide">Matt Robinson</span>
+            <span className="text-sidebar-foreground font-semibold tracking-wide">Matt Robinson</span>
           </div>
-          <span className="text-white/40">888FST@proton.me</span>
+          <span className="text-muted-foreground">888FST@proton.me</span>
           <form action="/auth/signout" method="POST">
-            <button type="submit" className="mt-1 w-full rounded-[4px] border border-white/15 bg-white/5 px-3 py-2 text-[10px] uppercase tracking-[0.15em] text-white/70 hover:border-gold hover:bg-white/10 hover:text-white transition-colors">
+            <button type="submit" className="mt-1 w-full rounded-[4px] border border-sidebar-border bg-sidebar-accent px-3 py-2 text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/70 hover:border-gold hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
               Sign out
             </button>
           </form>
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Theme</span>
+            <ThemeSwitch />
+          </div>
         </div>
       </SidebarFooter>
     </Sidebar>

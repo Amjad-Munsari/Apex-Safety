@@ -45,7 +45,7 @@ export function RevokeAssignmentButton({ assignmentId }: RevokeAssignmentButtonP
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
-        className="font-mono text-[10px] uppercase tracking-widest h-7 px-2 text-[#666] border-white/10 hover:border-white/30 hover:text-white"
+        className="font-mono text-[10px] uppercase tracking-widest h-7 px-2 text-muted-foreground border-border hover:border-border/60 hover:text-foreground"
       >
         Revoke
       </Button>
@@ -63,7 +63,7 @@ export function RevokeAssignmentButton({ assignmentId }: RevokeAssignmentButtonP
             <AlertDialogAction
               onClick={handleConfirm}
               disabled={isPending}
-              className="bg-destructive text-white hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isPending ? "Revoking..." : "Revoke assignment"}
             </AlertDialogAction>
