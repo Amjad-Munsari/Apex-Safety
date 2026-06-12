@@ -37,7 +37,7 @@ export default async function ServicesPage() {
         </div>
 
         <ServiceDialog>
-          <Button className="bg-gold text-black hover:bg-gold/90 rounded-md px-4 font-medium text-sm h-9 tracking-wide flex gap-2">
+          <Button className="bg-gold text-gold-foreground hover:bg-gold/90 rounded-md px-4 font-medium text-sm h-9 tracking-wide flex gap-2">
             <Plus className="w-4 h-4" /> Add Service
           </Button>
         </ServiceDialog>

@@ -124,7 +124,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
               </div>
               <div
                 onClick={() => !uploadingLogo && fileInputRef.current?.click()}
-                className="border border-dashed border-border rounded-sm h-32 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-amber-500/40 hover:bg-muted/30 transition-all"
+                className="border border-dashed border-border rounded-sm h-32 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-gold/40 hover:bg-muted/30 transition-all"
               >
                 {logoUrl ? (
                   <Image
@@ -236,7 +236,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black rounded-sm px-6 font-medium text-[11px] h-10 tracking-wide border-none flex gap-2"
+          className="bg-gold hover:bg-gold/90 disabled:opacity-40 text-gold-foreground rounded-sm px-6 font-medium text-[11px] h-10 tracking-wide border-none flex gap-2"
         >
           <Save className="w-3.5 h-3.5" />
           {saving ? "Saving..." : "Save Changes"}
@@ -250,7 +250,7 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
   return (
     <label className="flex flex-col gap-2">
       <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-3 bg-background border border-border rounded-sm h-10 px-3 focus-within:border-amber-500/50">
+      <div className="flex items-center gap-3 bg-background border border-border rounded-sm h-10 px-3 focus-within:border-gold/50">
         <input
           type="color"
           value={value}
@@ -276,7 +276,7 @@ function TextField({ label, value, onChange, hint }: { label: string; value: str
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-background border border-border rounded-sm h-9 px-3 text-sm text-foreground outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all"
+        className="bg-background border border-border rounded-sm h-9 px-3 text-sm text-foreground outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20 transition-all"
       />
       {hint && <span className="text-muted-foreground text-xs">{hint}</span>}
     </label>

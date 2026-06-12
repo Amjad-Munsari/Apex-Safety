@@ -48,7 +48,7 @@ export default async function AdminLayout({
                 </Button>
               </Link>
               <Link href="/admin/assessments/new">
-                <Button variant="secondary" className="bg-amber-500 hover:bg-amber-400 text-black rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none">
+                <Button variant="secondary" className="bg-gold hover:bg-gold/90 text-gold-foreground rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none">
                   + New Assessment
                 </Button>
               </Link>

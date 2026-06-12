@@ -197,7 +197,7 @@ export function ProposalActions({
             <Button
               onClick={handleSendForSignature}
               disabled={pending}
-              className="bg-gold hover:bg-gold/90 text-black rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
+              className="bg-gold hover:bg-gold/90 text-gold-foreground rounded-sm h-9 px-5 font-mono text-[10px] uppercase tracking-widest gap-2"
             >
               <Send className="w-3.5 h-3.5" /> Send for signature
             </Button>

@@ -269,7 +269,7 @@ export function AssignTemplateModal({
             <Button
               type="submit"
               disabled={isSubmitDisabled}
-              className="bg-gold hover:bg-gold/90 text-black font-medium rounded-sm px-5 h-9 text-sm tracking-wide border-none disabled:opacity-40"
+              className="bg-gold hover:bg-gold/90 text-gold-foreground font-medium rounded-sm px-5 h-9 text-sm tracking-wide border-none disabled:opacity-40"
             >
               {pending ? "Assigning…" : "Assign template"}
             </Button>
