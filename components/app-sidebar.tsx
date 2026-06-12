@@ -39,6 +39,7 @@ const mainNav: NavItem[] = [
 const systemTools: NavItem[] = [
   { label: "Form Templates",  href: "/admin/templates",     statsKey: null },
   { label: "Service Catalog", href: "/admin/services",      statsKey: null },
+  { label: "Contractors",     href: "/admin/directory",     statsKey: null },
   { label: "Notifications",   href: "/admin/notifications", statsKey: null },
   { label: "Settings",        href: "/admin/settings",      statsKey: null },
 ];
