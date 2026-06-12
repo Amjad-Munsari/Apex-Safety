@@ -126,7 +126,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
               {userRole}
             </span>
           </div>
-          <ThemeSwitch className="hidden md:flex" />
+          <ThemeSwitch size="sm" className="hidden md:flex" />
           <form action="/auth/signout" method="POST" className="hidden md:block">
             <Button
               type="submit"
@@ -204,7 +204,7 @@ export function ClientPortalNav({ orgName, userName, userRole }: ClientPortalNav
               <div className="px-6 pt-4 pb-6 mt-auto border-t border-border flex flex-col gap-3">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase font-mono tracking-[0.2em] text-muted-foreground">Theme</span>
-                  <ThemeSwitch />
+                  <ThemeSwitch size="sm" />
                 </div>
                 <form action="/auth/signout" method="POST">
                   <Button
