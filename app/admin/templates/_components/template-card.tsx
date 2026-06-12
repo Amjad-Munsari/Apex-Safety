@@ -28,6 +28,8 @@ interface TemplateCardProps {
   versionNumber: number
   publishedCount: number
   hasUnpublishedDraft: boolean
+  /** Owning organisation name — shown on customer-owned templates only. */
+  ownerLabel?: string
 }
 
 export function TemplateCard({
@@ -39,6 +41,7 @@ export function TemplateCard({
   versionNumber,
   publishedCount,
   hasUnpublishedDraft,
+  ownerLabel,
 }: TemplateCardProps) {
   const router = useRouter()
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -70,6 +73,11 @@ export function TemplateCard({
                 <span className="text-[11px] font-mono text-white/40 uppercase tracking-wider">
                   {templateType}
                 </span>
+                {ownerLabel && (
+                  <span className="text-[11px] font-mono text-[#c0a66d]/80 uppercase tracking-wider">
+                    {ownerLabel}
+                  </span>
+                )}
               </div>
               <div className="flex flex-col items-end gap-1.5 shrink-0">
                 {isPublished ? (
