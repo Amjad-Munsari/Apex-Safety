@@ -6,7 +6,6 @@ import { BrandingProvider } from "@/components/branding-provider";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import ThemeSwitch from "@/components/ui/theme-switch";
 
 export default async function AdminLayout({
   children,
@@ -43,7 +42,6 @@ export default async function AdminLayout({
                 <span className="text-[10px] uppercase font-mono tracking-widest text-muted-foreground">Today</span>
                 <span className="text-sm font-medium text-foreground font-sans tracking-wide">{today}</span>
               </div>
-              <ThemeSwitch />
               <Link href="/admin/proposals/new">
                 <Button variant="secondary" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-4 font-medium text-[11px] h-8 tracking-wide border-none">
                   + New Proposal

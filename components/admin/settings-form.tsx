@@ -6,6 +6,7 @@ import { Upload, Save, X } from "lucide-react"
 import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import ThemeSwitch from "@/components/ui/theme-switch"
 import { DEFAULT_BRANDING, applyBranding, loadBranding, saveBranding } from "@/lib/branding"
 import { saveNotificationSettings, uploadBrandingLogo, removeBrandingLogo } from "@/app/admin/settings/actions"
 
@@ -202,6 +203,29 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
                 <div className="text-muted-foreground text-xs mt-1">Tell the client whenever a new document lands in their portal.</div>
               </div>
               <Toggle on={notifyUpload} onChange={setNotifyUpload} />
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Appearance */}
+      <Card className="bg-card border-border rounded-sm p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">03</div>
+            <h3 className="font-serif text-[22px] text-foreground leading-tight">Appearance</h3>
+            <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
+              Display preferences for the admin interface.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between bg-background rounded-sm p-4 ring-1 ring-border">
+              <div>
+                <div className="text-sm text-foreground">Theme</div>
+                <div className="text-muted-foreground text-xs mt-1">Switch between light and dark mode.</div>
+              </div>
+              <ThemeSwitch />
             </div>
           </div>
         </div>

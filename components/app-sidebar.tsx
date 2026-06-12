@@ -10,7 +10,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import ThemeSwitch from "@/components/ui/theme-switch";
 
 export interface SidebarStats {
   clients: number;
@@ -130,10 +129,6 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
               Sign out
             </button>
           </form>
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground">Theme</span>
-            <ThemeSwitch />
-          </div>
         </div>
       </SidebarFooter>
     </Sidebar>
