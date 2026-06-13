@@ -15,18 +15,18 @@ interface SignatureFieldProps {
 
 const surfaceTokens = {
   dark: {
-    canvas: "border-slate-800 bg-slate-950",
-    canvasActive: "border-amber-500/50",
-    instruction: "text-slate-500",
-    actionGhost: "text-slate-400 hover:text-slate-100 hover:bg-slate-900",
-    actionPrimary: "bg-amber-500 text-slate-950 hover:bg-amber-400",
-    preview: "border-slate-800 bg-slate-950",
-    previewMeta: "text-slate-500",
-    inkColor: "#f8fafc", // slate-50 — readable on dark canvas
+    canvas: "border-border bg-white",
+    canvasActive: "border-gold/50",
+    instruction: "text-muted-foreground",
+    actionGhost: "text-muted-foreground hover:text-foreground hover:bg-muted",
+    actionPrimary: "bg-gold text-gold-foreground hover:bg-gold/90",
+    preview: "border-border bg-white",
+    previewMeta: "text-muted-foreground",
+    inkColor: "#1a1a1a",
   },
   cream: {
     canvas: "border-border bg-white",
-    canvasActive: "border-amber-500/60",
+    canvasActive: "border-gold/60",
     instruction: "text-muted-foreground",
     actionGhost: "text-muted-foreground hover:text-foreground hover:bg-muted",
     actionPrimary: "bg-primary text-primary-foreground hover:bg-primary/90",

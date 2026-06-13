@@ -18,12 +18,12 @@ interface DateFieldProps {
 const surfaceTokens = {
   dark: {
     input:
-      "bg-slate-950 border-slate-800 text-slate-100 focus:ring-amber-500/20 focus:border-amber-500 [color-scheme:dark]",
-    formatted: "text-slate-400",
+      "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-gold/20 focus:border-gold",
+    formatted: "text-muted-foreground",
   },
   cream: {
     input:
-      "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-amber-500/20 focus:border-amber-500",
+      "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-gold/20 focus:border-gold",
     formatted: "text-muted-foreground",
   },
 } as const

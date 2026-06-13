@@ -17,7 +17,7 @@ interface MicButtonProps {
 }
 
 const idleByForSurface = {
-  dark: "text-slate-400 hover:text-slate-200",
+  dark: "text-muted-foreground hover:text-foreground",
   cream: "text-muted-foreground hover:text-foreground",
 } as const
 
@@ -67,12 +67,12 @@ export function MicButton({ className, onTranscript, surface = "dark", dictation
   return (
     <div className={cn("absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2", className)}>
       {isRecording && (
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-amber-500 animate-pulse">
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-gold animate-pulse">
           Recording…
         </span>
       )}
       {isTranscribing && (
-        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-amber-500 animate-pulse">
+        <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-gold animate-pulse">
           Transcribing…
         </span>
       )}
@@ -84,7 +84,7 @@ export function MicButton({ className, onTranscript, surface = "dark", dictation
         aria-label={supported ? (isRecording ? "Stop recording" : "Speak to dictate") : "Audio recording not supported in this browser"}
         className={cn(
           "h-8 w-8 rounded-full transition-all duration-300",
-          isRecording && "bg-amber-500/20 text-amber-500 animate-pulse scale-110",
+          isRecording && "bg-gold/20 text-gold animate-pulse scale-110",
           !isRecording && idleByForSurface[surface],
           !supported && "opacity-60"
         )}

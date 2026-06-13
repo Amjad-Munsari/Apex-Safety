@@ -16,19 +16,19 @@ interface MultiPhotoFieldProps {
 
 const surfaceTokens = {
   dark: {
-    cell: "border-slate-800 bg-slate-950",
-    addBtn: "border-slate-800 hover:border-amber-500/50 hover:bg-amber-500/5",
-    addIconWrap: "bg-slate-800 group-hover:bg-amber-500/20",
-    addIcon: "text-slate-400 group-hover:text-amber-500",
-    addLabel: "text-slate-500 group-hover:text-amber-500/80",
-    countLabel: "text-slate-500",
+    cell: "border-border bg-muted",
+    addBtn: "border-border hover:border-gold/50 hover:bg-gold/5",
+    addIconWrap: "bg-muted group-hover:bg-gold/20",
+    addIcon: "text-muted-foreground group-hover:text-gold",
+    addLabel: "text-muted-foreground group-hover:text-gold/80",
+    countLabel: "text-muted-foreground",
   },
   cream: {
     cell: "border-border bg-muted",
-    addBtn: "border-border hover:border-amber-500/60 hover:bg-amber-500/5",
-    addIconWrap: "bg-muted group-hover:bg-amber-500/20",
-    addIcon: "text-muted-foreground group-hover:text-amber-600",
-    addLabel: "text-muted-foreground group-hover:text-amber-600",
+    addBtn: "border-border hover:border-gold/60 hover:bg-gold/5",
+    addIconWrap: "bg-muted group-hover:bg-gold/20",
+    addIcon: "text-muted-foreground group-hover:text-gold",
+    addLabel: "text-muted-foreground group-hover:text-gold",
     countLabel: "text-muted-foreground",
   },
 } as const
@@ -106,7 +106,7 @@ export function MultiPhotoField({
             disabled={isProcessing}
           >
             {isProcessing ? (
-              <Loader2 className="h-6 w-6 text-amber-500 animate-spin" />
+              <Loader2 className="h-6 w-6 text-gold animate-spin" />
             ) : (
               <>
                 <div

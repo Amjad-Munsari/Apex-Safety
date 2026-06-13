@@ -105,7 +105,7 @@ export function ClientTemplateCard({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={pending}
-              className="bg-danger hover:bg-danger/90 text-primary-foreground"
+              className="bg-danger hover:bg-danger/90 text-white"
             >
               {pending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

@@ -20,11 +20,11 @@ interface CheckboxFieldProps {
 
 const surfaceTokens = {
   dark: {
-    box: "border-slate-700 bg-slate-950",
-    boxChecked: "border-amber-500 bg-amber-500/10",
-    check: "text-amber-500",
-    label: "text-slate-200",
-    row: "hover:bg-slate-900/50",
+    box: "border-border bg-card",
+    boxChecked: "border-primary bg-primary",
+    check: "text-primary-foreground",
+    label: "text-foreground",
+    row: "hover:bg-muted",
   },
   cream: {
     box: "border-border bg-card",

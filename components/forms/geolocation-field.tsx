@@ -21,12 +21,12 @@ interface GeolocationFieldProps {
 
 const surfaceTokens = {
   dark: {
-    panel: "border-slate-800 bg-slate-950",
-    icon: "text-amber-500",
-    coord: "text-slate-100",
-    meta: "text-slate-500",
-    error: "text-red-400",
-    btn: "text-slate-400 hover:text-amber-500 hover:bg-slate-900",
+    panel: "border-border bg-card",
+    icon: "text-foreground",
+    coord: "text-foreground",
+    meta: "text-muted-foreground",
+    error: "text-danger",
+    btn: "text-muted-foreground hover:text-foreground hover:bg-muted",
   },
   cream: {
     panel: "border-border bg-card",
