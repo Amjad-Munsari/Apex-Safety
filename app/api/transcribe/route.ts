@@ -9,27 +9,45 @@ import type { DictationContext } from "@/hooks/use-stt"
 // multipart form data here: an `audio` file plus an optional `context` JSON
 // blob describing the field being dictated into.
 //
-// Two-stage pipeline, both stages on the existing OpenRouter key:
-//   1. Hearing — OpenRouter's dedicated /audio/transcriptions endpoint with a
-//      purpose-built ASR model (Whisper). Unlike a chat model fed audio, ASR
-//      models don't complete from a prompt, so silence can't become invented
-//      fire-safety prose.
+// Two-stage pipeline, both stages on the existing OpenRouter key. OpenRouter is
+// a chat/completions router with no dedicated ASR endpoint, so both stages are
+// chat calls:
+//   1. Hearing — a multimodal model that accepts audio input (Gemini) is sent
+//      the clip as an `input_audio` content part and asked to transcribe it
+//      verbatim. A generative model can complete from silence, so the prompt
+//      forbids inventing words and makes it emit NO_SPEECH for empty audio; the
+//      client-side silence gate (hooks/use-stt.ts) and the confabulation guard
+//      below are the backstops.
 //   2. Formatting — a cheap text model reshapes the verbatim transcript into
 //      a value for the specific field (digits for numbers, single-line names,
 //      spoken "new line" commands). Text-in/text-out: it can only work with
-//      words Whisper actually heard. Best-effort — failures fall back to the
-//      raw transcript.
+//      words the hearing pass actually returned. Best-effort — failures fall
+//      back to the raw transcript.
 
-const STT_MODEL = process.env.OPENROUTER_STT_MODEL || "openai/whisper-large-v3"
+// Hearing model — MUST accept audio input. Gemini Flash is multimodal, cheap and
+// reachable on OpenRouter. (OpenRouter exposes no Whisper/ASR endpoint, so an
+// ASR-only id like openai/whisper-large-v3 is not callable here.)
+const STT_MODEL = process.env.OPENROUTER_STT_MODEL || "google/gemini-2.5-flash"
 const FORMAT_MODEL = process.env.OPENROUTER_STT_FORMAT_MODEL || "google/gemini-2.5-flash"
 
 // 2 min of 16 kHz mono 16-bit WAV is ~3.9 MB — anything bigger is not a clip
 // from our recorder. Also keeps us under Vercel's 4.5 MB request body limit.
 const MAX_AUDIO_BYTES = 4 * 1024 * 1024
 
-// The formatter must say this — not an empty string, which models resist —
-// when the transcript holds nothing usable. Mapped to "" before returning.
+// The hearing and formatting passes must say this — not an empty string, which
+// models resist — when the audio/transcript holds nothing usable. Mapped to ""
+// before returning.
 const NO_SPEECH_SENTINEL = "NO_SPEECH"
+
+// Instruction for the hearing pass. A generative model told to "transcribe" can
+// complete from silence, so invention is forbidden explicitly and empty audio is
+// routed to the same NO_SPEECH sentinel the formatter uses.
+const TRANSCRIBE_PROMPT = [
+  "Transcribe the spoken words in this audio verbatim, in English.",
+  "Output ONLY the words actually spoken — never add, complete, translate or invent content.",
+  "Do not describe the audio or add any commentary, labels, quotes or markdown.",
+  `If there is no intelligible speech (silence or background noise only), output exactly: ${NO_SPEECH_SENTINEL}`,
+].join(" ")
 
 // Confabulation guard: fast natural speech tops out near 4 words/sec, so a
 // transcript meaningfully past that rate was invented, not heard (Whisper can
@@ -109,9 +127,14 @@ export async function POST(request: Request) {
   }
 }
 
-/** OpenRouter's dedicated speech-to-text endpoint (launched May 2026). */
+/**
+ * Stage 1 — "hearing". OpenRouter has no ASR endpoint, so the clip is sent to a
+ * multimodal chat model as an `input_audio` content part (OpenRouter's documented
+ * audio-input shape) and asked for a verbatim transcript. Returns "" for silence
+ * (the NO_SPEECH sentinel) so the caller can skip the formatter.
+ */
 async function transcribeAudio(audio: Uint8Array, apiKey: string): Promise<string> {
-  const res = await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -119,11 +142,22 @@ async function transcribeAudio(audio: Uint8Array, apiKey: string): Promise<strin
     },
     body: JSON.stringify({
       model: STT_MODEL,
-      input_audio: {
-        data: Buffer.from(audio).toString("base64"),
-        format: "wav",
-      },
-      language: "en",
+      temperature: 0,
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: TRANSCRIBE_PROMPT },
+            {
+              type: "input_audio",
+              input_audio: {
+                data: Buffer.from(audio).toString("base64"),
+                format: "wav",
+              },
+            },
+          ],
+        },
+      ],
     }),
   })
 
@@ -132,8 +166,15 @@ async function transcribeAudio(audio: Uint8Array, apiKey: string): Promise<strin
     throw new Error(`STT request failed (${res.status}): ${body.slice(0, 300)}`)
   }
 
-  const json = (await res.json()) as { text?: string }
-  return (json.text ?? "").trim()
+  const json = (await res.json()) as {
+    choices?: { message?: { content?: string } }[]
+  }
+  const text = (json.choices?.[0]?.message?.content ?? "").trim()
+
+  // Silence → "" so the caller short-circuits before the formatter. Tolerant of
+  // trailing punctuation the model may add, matching sanitizeTranscript.
+  if (text.replace(/[^A-Z_]/gi, "").toUpperCase() === NO_SPEECH_SENTINEL) return ""
+  return text
 }
 
 /** Reshape the verbatim transcript into a value for the specific field. */

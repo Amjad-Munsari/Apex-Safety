@@ -1,8 +1,8 @@
 // Tests for POST /api/transcribe — the dictation transcription route.
 //
-// Two-stage pipeline: OpenRouter's /audio/transcriptions endpoint (mocked via
-// global fetch) does the hearing, then a text model (mocked via generateText)
-// formats the transcript for the field.
+// Two-stage pipeline: a multimodal model on OpenRouter's /chat/completions
+// endpoint (mocked via global fetch) hears the audio, then a text model (mocked
+// via generateText) formats the transcript for the field.
 //
 // Mock strategy: spies declared BEFORE vi.mock factories (hoisting-safe
 // pattern, same as tests/proposals/sign-route.test.ts).
@@ -89,18 +89,31 @@ function makeRequest(
   })
 }
 
-/** Minimal Response-shaped object — avoids jsdom/undici realm issues. */
+/** Minimal Response-shaped object — avoids jsdom/undici realm issues. The
+ *  hearing pass reads choices[0].message.content from chat/completions. */
 function sttResponse(text: string, status = 200) {
+  const payload = { choices: [{ message: { content: text } }] }
   return {
     ok: status >= 200 && status < 300,
     status,
-    json: async () => ({ text }),
-    text: async () => JSON.stringify({ text }),
+    json: async () => payload,
+    text: async () => JSON.stringify(payload),
   }
 }
 
-function sttBodyOfLastCall(): { model: string; input_audio: { data: string; format: string }; language: string } {
+type AudioPart = { type: string; text?: string; input_audio?: { data: string; format: string } }
+
+function sttBodyOfLastCall(): {
+  model: string
+  temperature: number
+  messages: { role: string; content: AudioPart[] }[]
+} {
   return JSON.parse((fetchSpy.mock.calls[0][1] as { body: string }).body)
+}
+
+/** The input_audio content part sent on the most recent hearing call. */
+function audioPartOfLastCall(): AudioPart | undefined {
+  return sttBodyOfLastCall().messages[0].content.find((p) => p.type === "input_audio")
 }
 
 function formatterPromptOfLastCall(): string {
@@ -179,22 +192,22 @@ describe("POST /api/transcribe", () => {
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it("sends the WAV to OpenRouter's transcription endpoint as base64", async () => {
+  it("sends the WAV to OpenRouter's chat endpoint as an input_audio part", async () => {
     const audio = makeAudioBytes(2)
 
     const res = await POST(makeRequest(audio))
 
     expect(res.status).toBe(200)
     expect(fetchSpy).toHaveBeenCalledTimes(1)
-    expect(fetchSpy.mock.calls[0][0]).toBe("https://openrouter.ai/api/v1/audio/transcriptions")
+    expect(fetchSpy.mock.calls[0][0]).toBe("https://openrouter.ai/api/v1/chat/completions")
     const init = fetchSpy.mock.calls[0][1] as { headers: Record<string, string> }
     expect(init.headers.Authorization).toBe("Bearer test-key")
 
     const body = sttBodyOfLastCall()
-    expect(body.model).toBe("openai/whisper-large-v3")
-    expect(body.language).toBe("en")
-    expect(body.input_audio.format).toBe("wav")
-    expect(body.input_audio.data).toBe(Buffer.from(audio).toString("base64"))
+    expect(body.model).toBe("google/gemini-2.5-flash")
+    const audioPart = audioPartOfLastCall()
+    expect(audioPart?.input_audio?.format).toBe("wav")
+    expect(audioPart?.input_audio?.data).toBe(Buffer.from(audio).toString("base64"))
   })
 
   it("returns the raw transcript without a formatting pass when no context is sent", async () => {
@@ -239,8 +252,17 @@ describe("POST /api/transcribe", () => {
     expect(prompt).toContain("Use ONLY words from the transcript")
   })
 
-  it("returns empty text when the ASR hears nothing, skipping the formatter", async () => {
+  it("returns empty text when the hearing pass returns nothing, skipping the formatter", async () => {
     fetchSpy.mockResolvedValue(sttResponse("   "))
+
+    const res = await POST(makeRequest(makeAudioBytes(2), { label: "Premises name" }))
+
+    expect(await res.json()).toEqual({ text: "" })
+    expect(generateTextSpy).not.toHaveBeenCalled()
+  })
+
+  it("maps the hearing pass's NO_SPEECH sentinel to empty text, skipping the formatter", async () => {
+    fetchSpy.mockResolvedValue(sttResponse("NO_SPEECH."))
 
     const res = await POST(makeRequest(makeAudioBytes(2), { label: "Premises name" }))
 
@@ -287,14 +309,14 @@ describe("POST /api/transcribe", () => {
   })
 
   it("honours the OPENROUTER_STT_MODEL override", async () => {
-    vi.stubEnv("OPENROUTER_STT_MODEL", "openai/gpt-4o-mini-transcribe")
+    vi.stubEnv("OPENROUTER_STT_MODEL", "openai/gpt-4o-audio-preview")
     vi.resetModules()
     const { POST: freshPOST } = await import("@/app/api/transcribe/route")
 
     const res = await freshPOST(makeRequest(makeAudioBytes(2)))
 
     expect(res.status).toBe(200)
-    expect(sttBodyOfLastCall().model).toBe("openai/gpt-4o-mini-transcribe")
+    expect(sttBodyOfLastCall().model).toBe("openai/gpt-4o-audio-preview")
   })
 
   it("returns 502 when the STT request fails", async () => {
