@@ -334,27 +334,23 @@
     @apply font-sans;
   }
 
-  /* Smooth light/dark cross-fade. A low-specificity default in @layer base so
-     the token-driven surfaces (background, cards, sidebar, borders, ink) ease
-     between palettes when next-themes flips `.dark`. Lives in the base layer,
-     so any element carrying a Tailwind `transition-*` utility (buttons, links)
-     keeps its own faster transition and overrides this.
+  /* Theme cross-fade — FALLBACK PATH. The toggle drives the View Transitions
+     API (components/ui/theme-switch.tsx) for one unified, GPU-composited page
+     cross-fade. Browsers without VT support get this per-element color
+     transition instead. It's intentionally gated behind `@supports not (...)`
+     so it NEVER runs alongside a view transition: per-element transitions fire
+     at slightly different times across the tree, which is the staggered,
+     "buggy"-looking switch we're avoiding on modern browsers.
 
-     Deliberately limited to background-color / border-color / color. box-shadow,
-     fill and stroke are EXCLUDED on purpose: box-shadow can't be GPU-composited,
-     so transitioning it across every shadowed element forces a full-tree repaint
-     each frame and the toggle stutters on large pages. Icons (lucide) paint with
-     currentColor, so they still ease via the `color` transition for free. */
-  *, *::before, *::after {
-    transition: background-color 0.3s ease, border-color 0.3s ease,
-      color 0.3s ease;
-  }
-
-  /* Respect reduced-motion and keep the very first paint instant (the theme
-     class is applied pre-hydration, so no fade should fire on load anyway). */
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      transition: none;
+     Limited to background-color / border-color / color — box-shadow/fill/stroke
+     are excluded (box-shadow can't be GPU-composited → full-tree repaint jank;
+     lucide icons ease via currentColor through the `color` transition anyway). */
+  @supports not (view-transition-name: none) {
+    @media (prefers-reduced-motion: no-preference) {
+      *, *::before, *::after {
+        transition: background-color 0.3s ease, border-color 0.3s ease,
+          color 0.3s ease;
+      }
     }
   }
 
@@ -422,6 +418,19 @@
     -moz-appearance: textfield;
     appearance: textfield;
   }
+}
+
+/* Light/dark cross-fade driven by the View Transitions API. The theme toggle
+   wraps the palette change in document.startViewTransition (see
+   components/ui/theme-switch.tsx), so the browser captures the page before and
+   after and cross-fades the two snapshots as one composited layer — every
+   element flips in perfect unison, with no per-element timing skew and no
+   repaint cost. Tune the cross-fade timing here. Kept outside @layer base so
+   these pseudo-elements aren't subject to layer cascade. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.32s;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* The admin shell is a fixed, non-scrolling frame — only the inner <main>

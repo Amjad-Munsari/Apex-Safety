@@ -1,6 +1,7 @@
 "use client";
 
 import { MoonIcon, SunIcon } from "lucide-react";
+import { flushSync } from "react-dom";
 import { Switch } from "@/components/ui/switch";
 import { useTheme } from "next-themes";
 import { useCallback, useEffect, useState } from "react";
@@ -21,8 +22,29 @@ const ThemeSwitch = ({
 
   const handleCheckedChange = useCallback(
     (isChecked: boolean) => {
-      setChecked(isChecked);
-      setTheme(isChecked ? "dark" : "light");
+      const apply = () => {
+        setChecked(isChecked);
+        setTheme(isChecked ? "dark" : "light");
+      };
+
+      const doc = document as Document & {
+        startViewTransition?: (cb: () => void) => unknown;
+      };
+      const reducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      // View Transitions API: cross-fade the whole page as one GPU-composited
+      // snapshot so every element flips in unison — no per-element timing skew
+      // (the staggered, "buggy" look) and no repaint jank. flushSync forces
+      // next-themes' class change onto <html> synchronously inside the callback
+      // so the API captures the new palette. Browsers without VT fall through to
+      // an instant swap + the CSS transition fallback in globals.css.
+      if (doc.startViewTransition && !reducedMotion) {
+        doc.startViewTransition(() => flushSync(apply));
+      } else {
+        apply();
+      }
     },
     [setTheme],
   );
