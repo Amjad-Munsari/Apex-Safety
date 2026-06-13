@@ -71,31 +71,31 @@ export default function BillingPage() {
             08 Billing
           </span>
         </div>
-        <h2 className="font-serif text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
+        <h2 className="font-serif text-[44px] text-foreground font-normal tracking-tight leading-[1.05]">
           Hours &amp; billing.
         </h2>
       </section>
 
       {/* ─── CURRENT BALANCE CARD ─── */}
-      <div className="bg-white border border-[#e5e1d8] rounded-sm p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      <div className="bg-card border border-border rounded-sm p-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
         <div className="space-y-4">
-          <span className="font-mono text-[9px] uppercase tracking-[0.4em] font-medium text-[#6b6560]">
+          <span className="font-mono text-[9px] uppercase tracking-[0.4em] font-medium text-muted-foreground">
             Current Balance
           </span>
           <div className="flex items-baseline gap-4">
             <span
               className={cn(
                 "font-serif text-[54px] leading-none tracking-tight transition-colors",
-                balance < 5 ? "text-[#9d4033]" : "text-[#1a1a1a]"
+                balance < 5 ? "text-danger" : "text-foreground"
               )}
             >
               {formatBalanceDisplay(balance)}
             </span>
-            <span className="text-[18px] font-sans font-normal text-[#6b6560] tracking-tight">
+            <span className="text-[18px] font-sans font-normal text-muted-foreground tracking-tight">
               hours remaining
             </span>
           </div>
-          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#6b6560] uppercase font-medium">
+          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-muted-foreground uppercase font-medium">
             <span>18.5h used this year</span>
             <span className="opacity-60 font-sans tracking-normal">&middot;</span>
             <span>last top-up {lastTopUp}</span>
@@ -104,7 +104,7 @@ export default function BillingPage() {
 
         <Button
           onClick={openCheckout}
-          className="bg-[#1a1a1a] hover:bg-black text-white rounded-sm h-10 px-6 font-sans text-[11px] font-bold tracking-tight shadow-none flex items-center gap-3 transition-colors group"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm h-10 px-6 font-sans text-[11px] font-bold tracking-tight shadow-none flex items-center gap-3 transition-colors group"
         >
           Buy more hours{" "}
           <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
@@ -113,13 +113,13 @@ export default function BillingPage() {
 
       {/* ─── TRANSACTION HISTORY ─── */}
       <section id="history" className="space-y-6 scroll-mt-24">
-        <h3 className="font-mono text-[9px] tracking-[0.25em] font-bold text-[#6b6560] uppercase px-1">
+        <h3 className="font-mono text-[9px] tracking-[0.25em] font-bold text-muted-foreground uppercase px-1">
           Transaction History
         </h3>
 
-        <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
-          <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">Transaction history coming soon.</p>
-          <p className="font-sans text-[13px] text-[#6b6560] max-w-md mx-auto leading-relaxed">
+        <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
+          <p className="font-serif text-[20px] text-foreground mb-3">Transaction history coming soon.</p>
+          <p className="font-sans text-[13px] text-muted-foreground max-w-md mx-auto leading-relaxed">
             Top-ups and hours drawn down against site visits will be itemised here once billing is
             live. For a statement in the meantime, message your consultant.
           </p>
@@ -130,16 +130,16 @@ export default function BillingPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
           showCloseButton={!processing}
-          className="bg-white text-[#1a1a1a] ring-1 ring-[#e5e1d8] sm:max-w-md p-6 gap-5"
+          className="bg-card text-foreground ring-1 ring-border sm:max-w-md p-6 gap-5"
         >
           {processing ? (
             <div className="py-12 flex flex-col items-center justify-center gap-4">
               <Loader2 className="h-6 w-6 text-amber-600 animate-spin" />
               <div className="space-y-1 text-center">
-                <DialogTitle className="font-serif text-[18px] text-[#1a1a1a] font-medium tracking-tight">
+                <DialogTitle className="font-serif text-[18px] text-foreground font-medium tracking-tight">
                   Processing payment…
                 </DialogTitle>
-                <DialogDescription className="text-[12px] text-[#6b6560] font-sans tracking-tight">
+                <DialogDescription className="text-[12px] text-muted-foreground font-sans tracking-tight">
                   Connecting to PayPal &middot; do not close this window.
                 </DialogDescription>
               </div>
@@ -147,13 +147,13 @@ export default function BillingPage() {
           ) : (
             <>
               <div className="space-y-2">
-                <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#6b6560] font-bold">
+                <div className="font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground font-bold">
                   Step 1 of 1 &middot; Top-up
                 </div>
-                <DialogTitle className="font-serif text-[22px] text-[#1a1a1a] font-medium tracking-tight leading-tight">
+                <DialogTitle className="font-serif text-[22px] text-foreground font-medium tracking-tight leading-tight">
                   Buy more hours.
                 </DialogTitle>
-                <DialogDescription className="text-[12px] text-[#6b6560] font-sans tracking-tight">
+                <DialogDescription className="text-[12px] text-muted-foreground font-sans tracking-tight">
                   Pick a package. Hours are credited to your balance the moment payment clears.
                 </DialogDescription>
               </div>
@@ -170,24 +170,24 @@ export default function BillingPage() {
                         "w-full text-left rounded-sm px-4 py-3.5 flex items-center gap-4 transition-colors relative",
                         isSelected
                           ? "ring-2 ring-amber-500 bg-amber-50/60"
-                          : "ring-1 ring-[#e5e1d8] bg-white hover:ring-[#cfc8b8] hover:bg-[#faf9f6]"
+                          : "ring-1 ring-border bg-card hover:ring-border hover:bg-muted"
                       )}
                     >
                       <div className="flex items-baseline gap-1.5 min-w-[64px]">
                         <span
                           className={cn(
                             "font-serif text-[28px] leading-none tracking-tight",
-                            isSelected ? "text-amber-700" : "text-[#1a1a1a]"
+                            isSelected ? "text-amber-700" : "text-foreground"
                           )}
                         >
                           {pkg.hours}
                         </span>
-                        <span className="font-sans text-[11px] text-[#6b6560] font-medium">hours</span>
+                        <span className="font-sans text-[11px] text-muted-foreground font-medium">hours</span>
                       </div>
 
                       <div className="flex-1 flex flex-col gap-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-[9px] uppercase tracking-[0.2em] font-bold text-[#6b6560]">
+                          <span className="font-mono text-[9px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
                             £{pkg.perHour}/hour
                           </span>
                           {pkg.popular && (
@@ -207,7 +207,7 @@ export default function BillingPage() {
                         <span
                           className={cn(
                             "font-serif text-[20px] tracking-tight transition-colors",
-                            isSelected ? "text-amber-700" : "text-[#1a1a1a]"
+                            isSelected ? "text-amber-700" : "text-foreground"
                           )}
                         >
                           £{pkg.price.toLocaleString()}
@@ -215,7 +215,7 @@ export default function BillingPage() {
                         <div
                           className={cn(
                             "h-4 w-4 rounded-full flex items-center justify-center transition-colors",
-                            isSelected ? "bg-amber-500" : "ring-1 ring-[#e5e1d8] bg-white"
+                            isSelected ? "bg-amber-500" : "ring-1 ring-border bg-card"
                           )}
                         >
                           {isSelected && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
@@ -226,7 +226,7 @@ export default function BillingPage() {
                 })}
               </div>
 
-              <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-[#6b6560] font-bold text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground font-bold text-center">
                 Secure checkout via PayPal &middot; VAT included
               </div>
 
@@ -234,7 +234,7 @@ export default function BillingPage() {
                 <Button
                   variant="outline"
                   onClick={() => setDialogOpen(false)}
-                  className="rounded-sm border-[#e5e1d8] bg-transparent hover:bg-[#f9f8f6] text-[#1a1a1a] text-[10px] uppercase tracking-[0.2em] font-bold h-10 px-5 shadow-none"
+                  className="rounded-sm border-border bg-transparent hover:bg-muted text-foreground text-[10px] uppercase tracking-[0.2em] font-bold h-10 px-5 shadow-none"
                 >
                   Cancel
                 </Button>

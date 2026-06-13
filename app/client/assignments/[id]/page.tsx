@@ -66,20 +66,20 @@ export default async function AssignmentLandingPage({ params }: Props) {
       <div className="max-w-xl mx-auto py-12 px-6">
         <Link
           href="/client/assignments"
-          className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8a857f] hover:text-[#1a1a1a] transition-colors"
+          className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
         >
           ← Back to Assessments
         </Link>
         <div className="mt-8 space-y-4">
-          <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium leading-[1.1]">
+          <h2 className="font-serif text-[28px] text-foreground font-medium leading-[1.1]">
             {(() => {
               type TemplateJoin = { name?: string } | { name?: string }[] | null;
               const t = assignment.template as TemplateJoin;
               return Array.isArray(t) ? (t[0]?.name ?? "Untitled form") : (t?.name ?? "Untitled form");
             })()}
           </h2>
-          <div className="bg-[#f5f3ee] rounded-sm p-4 border-l-2 border-teal">
-            <p className="text-sm font-sans text-[#1a1a1a]">
+          <div className="bg-muted rounded-sm p-4 border-l-2 border-teal">
+            <p className="text-sm font-sans text-foreground">
               This form has already been submitted.
             </p>
           </div>
@@ -102,7 +102,7 @@ export default async function AssignmentLandingPage({ params }: Props) {
       {/* Back link */}
       <Link
         href="/client/assignments"
-        className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8a857f] hover:text-[#1a1a1a] transition-colors"
+        className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
       >
         ← Back to Assessments
       </Link>
@@ -110,7 +110,7 @@ export default async function AssignmentLandingPage({ params }: Props) {
       {/* Top section */}
       <div className="space-y-4">
         {/* Template name */}
-        <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium leading-[1.1]">
+        <h2 className="font-serif text-[28px] text-foreground font-medium leading-[1.1]">
           {templateName}
         </h2>
 
@@ -118,7 +118,7 @@ export default async function AssignmentLandingPage({ params }: Props) {
         {assignment.due_date && (
           <p
             className={`font-mono text-[10px] uppercase tracking-[0.2em] ${
-              overdue ? "text-[#e55a3a]" : "text-[#8a857f]"
+              overdue ? "text-danger" : "text-muted-foreground"
             }`}
           >
             DUE · {dueDateText}
@@ -127,14 +127,14 @@ export default async function AssignmentLandingPage({ params }: Props) {
 
         {/* Instructions block */}
         {assignment.instructions && (
-          <div className="bg-[#f5f3ee] rounded-sm p-4 border-l-2 border-[#c0a66d] space-y-2">
+          <div className="bg-muted rounded-sm p-4 border-l-2 border-gold space-y-2">
             <div className="flex items-center gap-2">
-              <Info className="w-4 h-4 text-[#c0a66d]" />
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">
+              <Info className="w-4 h-4 text-gold" />
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
                 From your assessor
               </span>
             </div>
-            <p className="text-sm font-sans text-[#1a1a1a] leading-relaxed">
+            <p className="text-sm font-sans text-foreground leading-relaxed">
               {assignment.instructions}
             </p>
           </div>

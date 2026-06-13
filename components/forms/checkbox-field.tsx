@@ -27,11 +27,11 @@ const surfaceTokens = {
     row: "hover:bg-slate-900/50",
   },
   cream: {
-    box: "border-[#d8d4cc] bg-white",
-    boxChecked: "border-[#1a1a1a] bg-[#1a1a1a]",
-    check: "text-white",
-    label: "text-[#1a1a1a]",
-    row: "hover:bg-[#faf9f6]",
+    box: "border-border bg-card",
+    boxChecked: "border-primary bg-primary",
+    check: "text-primary-foreground",
+    label: "text-foreground",
+    row: "hover:bg-muted",
   },
 } as const
 

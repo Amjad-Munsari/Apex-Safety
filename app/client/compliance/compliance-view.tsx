@@ -71,16 +71,16 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
       {categories.map((category) => (
         <section key={category.name} className="space-y-6">
           <div className="flex items-baseline gap-3 px-1">
-            <h3 className="font-mono text-[9px] tracking-[0.25em] font-medium text-[#8a857f] uppercase">
+            <h3 className="font-mono text-[9px] tracking-[0.25em] font-medium text-muted-foreground uppercase">
               {category.name}
             </h3>
-            <span className="font-mono text-[9px] text-[#8a857f] font-normal tracking-[0.05em] lowercase">
+            <span className="font-mono text-[9px] text-muted-foreground font-normal tracking-[0.05em] lowercase">
               {category.count} document{category.count === 1 ? "" : "s"}
             </span>
           </div>
 
-          <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
-            <div className="divide-y divide-[#f0ede6]">
+          <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+            <div className="divide-y divide-border">
               {category.documents.map((doc) => {
                 const isHighlighted = highlightId === doc.id;
                 return (
@@ -91,15 +91,15 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
                     className={cn(
                       "px-8 py-5 flex flex-col md:flex-row items-center justify-between gap-8 group transition-all scroll-mt-28",
                       isHighlighted
-                        ? "bg-[#fff7d6] ring-1 ring-inset ring-[#c0a66d]/40 animate-in fade-in"
-                        : "hover:bg-[#faf9f6]/50"
+                        ? "bg-gold/10 ring-1 ring-inset ring-gold/40 animate-in fade-in"
+                        : "hover:bg-muted/50"
                     )}
                   >
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-sans font-semibold text-[15px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
+                      <h4 className="font-sans font-semibold text-[15px] text-foreground tracking-tight group-hover:text-foreground truncate">
                         {doc.title}
                       </h4>
-                      <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-[#8a857f] uppercase font-medium mt-1.5">
+                      <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-muted-foreground uppercase font-medium mt-1.5">
                         <span>{doc.id.slice(0, 8).toUpperCase()}</span>
                         <span className="opacity-60 font-sans">&mdash;</span>
                         <span>{doc.size}</span>
@@ -108,18 +108,18 @@ export function ComplianceView({ categories }: { categories: ComplianceCategory[
 
                     <div className="flex items-center gap-12 shrink-0">
                       <div className="space-y-1.5 w-[100px]">
-                        <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#8a857f] block">
+                        <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-muted-foreground block">
                           Issued
                         </span>
-                        <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">
+                        <span className="font-mono text-[11px] font-medium text-foreground tracking-tight whitespace-nowrap">
                           {doc.issued}
                         </span>
                       </div>
                       <div className="space-y-1.5 w-[100px]">
-                        <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-[#8a857f] block">
+                        <span className="font-mono text-[8px] uppercase tracking-[0.25em] font-medium text-muted-foreground block">
                           Expires
                         </span>
-                        <span className="font-mono text-[11px] font-medium text-[#1a1a1a] tracking-tight whitespace-nowrap">
+                        <span className="font-mono text-[11px] font-medium text-foreground tracking-tight whitespace-nowrap">
                           {doc.expires || "—"}
                         </span>
                       </div>

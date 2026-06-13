@@ -52,28 +52,28 @@ export function FileDownloadMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         disabled={disabled || pending}
-        className={`flex items-center border border-[#e5e1d8] rounded-sm group/btn cursor-pointer bg-white overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all p-0 disabled:opacity-50 disabled:cursor-not-allowed ${sm ? "h-9" : "h-12"}`}
+        className={`flex items-center border border-border rounded-sm group/btn cursor-pointer bg-card overflow-hidden outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 transition-all p-0 disabled:opacity-50 disabled:cursor-not-allowed ${sm ? "h-9" : "h-12"}`}
       >
-        <div className={`h-full flex items-center justify-center border-r border-[#e5e1d8] group-hover/btn:bg-[#faf9f6] transition-colors ${sm ? "w-7" : "w-8"}`}>
-          <ChevronDown className="h-3.5 w-3.5 text-[#8a857f] group-hover/btn:text-[#1a1a1a] transition-colors" />
+        <div className={`h-full flex items-center justify-center border-r border-border group-hover/btn:bg-muted transition-colors ${sm ? "w-7" : "w-8"}`}>
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground group-hover/btn:text-foreground transition-colors" />
         </div>
-        <div className={`h-full flex items-center justify-center group-hover/btn:bg-[#faf9f6] transition-colors ${sm ? "px-3.5 min-w-[110px]" : "px-5 min-w-[140px]"}`}>
-          <span className={`font-sans font-bold tracking-tight text-[#1a1a1a] ${sm ? "text-[11px]" : "text-[12px]"}`}>
+        <div className={`h-full flex items-center justify-center group-hover/btn:bg-muted transition-colors ${sm ? "px-3.5 min-w-[110px]" : "px-5 min-w-[140px]"}`}>
+          <span className={`font-sans font-bold tracking-tight text-foreground ${sm ? "text-[11px]" : "text-[12px]"}`}>
             {pending ? "Preparing…" : label}
           </span>
         </div>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="rounded-sm border-[#e5e1d8] p-1 shadow-md bg-white">
+      <DropdownMenuContent align="end" className="rounded-sm border-border p-1 shadow-md bg-card">
         <DropdownMenuItem
           onClick={run(onDownload)}
-          className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
+          className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-foreground hover:bg-muted"
         >
           <Download className="h-3.5 w-3.5" /> Download PDF
         </DropdownMenuItem>
         {onView && (
           <DropdownMenuItem
             onClick={run(onView)}
-            className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-[#1a1a1a] hover:bg-[#faf9f6]"
+            className="text-[10px] font-mono font-bold uppercase tracking-widest p-3 cursor-pointer h-10 flex items-center gap-3 text-foreground hover:bg-muted"
           >
             <ExternalLink className="h-3.5 w-3.5" /> View Online
           </DropdownMenuItem>

@@ -40,33 +40,33 @@ export function AssessmentsList({ rows }: Props) {
 
   return (
     <section className="space-y-4">
-      <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+      <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
         {/* Column header */}
-        <div className="hidden md:grid grid-cols-[minmax(0,1fr)_140px_140px_220px] gap-4 px-6 py-3 border-b border-[#f0ede6] font-mono text-[8px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
+        <div className="hidden md:grid grid-cols-[minmax(0,1fr)_140px_140px_220px] gap-4 px-6 py-3 border-b border-border font-mono text-[8px] tracking-[0.25em] text-muted-foreground uppercase font-bold">
           <span>Name</span>
           <span>Date</span>
           <span>Status</span>
           <span className="text-right">Actions</span>
         </div>
 
-        <div className="divide-y divide-[#f0ede6]">
+        <div className="divide-y divide-border">
           {sorted.map((row) => {
             const isCompleted = row.status === "completed";
             return (
               <div
                 key={row.id}
-                className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_140px_140px_220px] gap-4 px-6 py-4 items-center hover:bg-[#faf9f6]/80 transition-all group"
+                className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_140px_140px_220px] gap-4 px-6 py-4 items-center hover:bg-muted/50 transition-all group"
               >
                 {/* Name */}
                 <Link href={`/client/assessments/${row.id}`} className="min-w-0 space-y-1">
-                  <div className="font-sans font-semibold text-[15px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
+                  <div className="font-sans font-semibold text-[15px] text-foreground tracking-tight group-hover:text-foreground truncate">
                     {row.name}
                   </div>
                 </Link>
 
                 {/* Date */}
-                <div className="font-mono text-[10px] tracking-[0.15em] text-[#6b6560] uppercase font-bold">
-                  <span className="md:hidden text-[#8a857f] mr-2">Date:</span>
+                <div className="font-mono text-[10px] tracking-[0.15em] text-muted-foreground uppercase font-bold">
+                  <span className="md:hidden text-muted-foreground mr-2">Date:</span>
                   {row.date}
                 </div>
 
@@ -88,7 +88,7 @@ export function AssessmentsList({ rows }: Props) {
                     <Link href={`/client/assessments/${row.id}`}>
                       <Button
                         variant="outline"
-                        className="rounded-sm border-[#e5e1d8] bg-transparent text-[#1a1a1a] hover:bg-[#f9f8f6] h-9 px-4 font-bold text-[8.5px] uppercase tracking-[0.25em] shadow-none transition-all"
+                        className="rounded-sm border-border bg-transparent text-foreground hover:bg-muted h-9 px-4 font-bold text-[8.5px] uppercase tracking-[0.25em] shadow-none transition-all"
                       >
                         View
                         <ChevronRight className="w-3 h-3 ml-1" />

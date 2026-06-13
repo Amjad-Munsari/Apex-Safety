@@ -19,9 +19,9 @@ const surfaceTokens = {
     valueMuted: "text-slate-500",
   },
   cream: {
-    starIdle: "text-[#d8d4cc] hover:text-amber-500/40",
-    valueText: "text-[#1a1a1a]",
-    valueMuted: "text-[#8a857f]",
+    starIdle: "text-border hover:text-amber-500/40",
+    valueText: "text-foreground",
+    valueMuted: "text-muted-foreground",
   },
 } as const
 
@@ -47,7 +47,7 @@ export function RatingField({
               onClick={() => onChange(star === current ? 0 : star)}
               className={cn(
                 "p-1 transition-colors",
-                filled ? "text-[#d97706]" : t.starIdle
+                filled ? "text-gold" : t.starIdle
               )}
               aria-label={`Rate ${star} of ${maxRating}`}
             >

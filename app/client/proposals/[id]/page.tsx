@@ -21,7 +21,7 @@ export default async function ClientProposalDetailPage({
   const ctx = await getClientContext();
   if (!ctx?.client_id) {
     return (
-      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-muted-foreground">
         No client context found
       </div>
     );
@@ -44,7 +44,7 @@ export default async function ClientProposalDetailPage({
 
   if (!proposal) {
     return (
-      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-muted-foreground">
         Proposal not found
       </div>
     );
@@ -83,7 +83,7 @@ export default async function ClientProposalDetailPage({
       {/* Back */}
       <Link
         href="/client/proposals"
-        className="inline-flex items-center gap-2 text-[#6b6560] hover:text-black transition-colors"
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span className="font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
@@ -93,15 +93,15 @@ export default async function ClientProposalDetailPage({
 
       {/* Header */}
       <section className="space-y-3">
-        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
+        <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-muted-foreground uppercase font-bold">
           <span className="text-teal">{reference}</span>
           <span className="opacity-50">·</span>
           <span>Sent {new Date(issuedAt).toLocaleDateString("en-GB", DATE_FMT)}</span>
         </div>
-        <h2 className="font-serif text-[40px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
+        <h2 className="font-serif text-[40px] text-foreground font-normal tracking-tight leading-[1.05]">
           {title}.
         </h2>
-        <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
+        <p className="text-muted-foreground text-[13px] font-sans tracking-tight max-w-xl">
           £{Math.round(total).toLocaleString()} · {services.length} {services.length === 1 ? "service" : "services"} bundled
         </p>
       </section>
@@ -109,19 +109,19 @@ export default async function ClientProposalDetailPage({
       {/* Body */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 items-start">
         {/* PDF or services breakdown */}
-        <div className="bg-white rounded-sm overflow-hidden ring-1 ring-[#e5e1d8] shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+        <div className="bg-card rounded-sm overflow-hidden ring-1 ring-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
           {signedPdfUrl ? (
             <iframe
               src={signedPdfUrl}
               title={`Proposal ${reference}`}
-              className="w-full bg-[#f7f5f0]"
+              className="w-full bg-muted"
               style={{ aspectRatio: "210 / 297", border: 0 }}
             />
           ) : (
-            <div className="aspect-[210/297] w-full p-12 text-[#1a1a1a] flex flex-col items-center justify-center text-center">
-              <FileText className="w-10 h-10 text-[#8a857f] mb-4" />
+            <div className="aspect-[210/297] w-full p-12 text-foreground flex flex-col items-center justify-center text-center">
+              <FileText className="w-10 h-10 text-muted-foreground mb-4" />
               <h3 className="font-serif text-[22px] mb-2">PDF not generated yet</h3>
-              <p className="font-sans text-[13px] text-[#6b6560] max-w-sm">
+              <p className="font-sans text-[13px] text-muted-foreground max-w-sm">
                 The proposal document is still being prepared. The services breakdown is
                 visible on the right.
               </p>
@@ -131,26 +131,26 @@ export default async function ClientProposalDetailPage({
 
         {/* Sidebar — download + breakdown */}
         <div className="lg:sticky lg:top-24 space-y-4">
-          <div className="bg-white border border-[#e5e1d8] rounded-sm p-6 space-y-4">
-            <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] font-bold">
+          <div className="bg-card border border-border rounded-sm p-6 space-y-4">
+            <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-bold">
               Your Proposal
             </div>
-            <p className="font-sans text-[13px] text-[#1a1a1a]/80 leading-relaxed">
+            <p className="font-sans text-[13px] text-foreground/80 leading-relaxed">
               {isSigned
                 ? "This proposal has been accepted. Download a copy for your records."
                 : "Review the document, then accept and sign below. You can download a copy at any time."}
             </p>
             {!isSigned && <AcceptSignButton proposalId={proposal.id} />}
             <FileDownloadUrl label="Download proposal" downloadUrl={signedPdfDownloadUrl} />
-            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">
-              Status: <span className={isSigned ? "text-teal" : "text-[#c0a66d]"}>{proposal.status}</span>
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+              Status: <span className={isSigned ? "text-teal" : "text-gold"}>{proposal.status}</span>
             </p>
           </div>
 
           {/* Quick services list — secondary, in case PDF is slow to load */}
           {services.length > 0 && (
-            <div className="bg-white border border-[#e5e1d8] rounded-sm p-6">
-              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] font-bold mb-3">
+            <div className="bg-card border border-border rounded-sm p-6">
+              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-bold mb-3">
                 Scope
               </div>
               <ul className="space-y-2.5">
@@ -158,12 +158,12 @@ export default async function ClientProposalDetailPage({
                   const name = item?.service?.name || item?.name || "Service";
                   const qty = Number(item?.quantity) || 1;
                   return (
-                    <li key={idx} className="font-sans text-[12px] text-[#1a1a1a]/80 flex items-start gap-2">
-                      <span className="font-mono text-[10px] text-[#8a857f] mt-0.5 w-5 shrink-0">
+                    <li key={idx} className="font-sans text-[12px] text-foreground/80 flex items-start gap-2">
+                      <span className="font-mono text-[10px] text-muted-foreground mt-0.5 w-5 shrink-0">
                         {String(idx + 1).padStart(2, "0")}
                       </span>
                       <span>
-                        {name} <span className="text-[#8a857f]">× {qty}</span>
+                        {name} <span className="text-muted-foreground">× {qty}</span>
                       </span>
                     </li>
                   );

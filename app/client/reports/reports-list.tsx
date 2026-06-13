@@ -16,22 +16,22 @@ const TONE: Record<Report["status"], StatusTone> = {
 
 export function ReportsList({ reports }: Props) {
   return (
-    <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
-      <div className="divide-y divide-[#f0ede6]">
+    <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] overflow-hidden">
+      <div className="divide-y divide-border">
         {reports.map((report) => (
-          <div key={report.id} className="px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-8 group hover:bg-[#faf9f6]/50 transition-all">
+          <div key={report.id} className="px-8 py-6 flex flex-col md:flex-row items-center justify-between gap-8 group hover:bg-muted/50 transition-all">
 
             {/* Left: Number & Info */}
             <div className="flex flex-1 items-center gap-8 min-w-0">
-              <span className="font-serif text-[24px] text-[#8a857f] group-hover:text-[#1a1a1a] transition-colors tabular-nums shrink-0">
+              <span className="font-serif text-[24px] text-muted-foreground group-hover:text-foreground transition-colors tabular-nums shrink-0">
                 {report.number}
               </span>
 
               <div className="min-w-0">
-                <h4 className="font-sans font-semibold text-[15px] text-[#1a1a1a] tracking-tight group-hover:text-black truncate">
+                <h4 className="font-sans font-semibold text-[15px] text-foreground tracking-tight group-hover:text-foreground truncate">
                   {report.title}
                 </h4>
-                <div className="flex items-center gap-2 font-mono text-[9px] tracking-[0.05em] text-[#8a857f] uppercase font-medium mt-1.5 whitespace-nowrap overflow-hidden">
+                <div className="flex items-center gap-2 font-mono text-[9px] tracking-[0.05em] text-muted-foreground uppercase font-medium mt-1.5 whitespace-nowrap overflow-hidden">
                   <span>{report.location}</span>
                   <span className="opacity-60">&middot;</span>
                   <span>{report.date}</span>

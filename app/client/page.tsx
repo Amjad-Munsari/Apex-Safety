@@ -56,8 +56,8 @@ export default async function ClientDashboardPage() {
   if (!ctx) {
     return (
       <div className="space-y-4">
-        <h2 className="font-serif text-[30px] text-[#1a1a1a]">Sign in to continue.</h2>
-        <p className="text-[#6b6560] text-[13px]">Your dashboard appears once your account is linked to a client.</p>
+        <h2 className="font-serif text-[30px] text-foreground">Sign in to continue.</h2>
+        <p className="text-muted-foreground text-[13px]">Your dashboard appears once your account is linked to a client.</p>
       </div>
     );
   }

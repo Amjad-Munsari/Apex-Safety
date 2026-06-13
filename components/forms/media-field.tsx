@@ -23,12 +23,12 @@ const surfaceTokens = {
     addLabel: "text-slate-500 group-hover:text-amber-500/80",
   },
   cream: {
-    cell: "border-[#e5e1d8] bg-[#faf9f6]",
+    cell: "border-border bg-muted",
     checkFill: "fill-white",
-    addBtn: "border-[#e5e1d8] hover:border-amber-500/60 hover:bg-amber-500/5",
-    addIconWrap: "bg-[#f0ede6] group-hover:bg-amber-500/20",
-    addIcon: "text-[#6b6560] group-hover:text-amber-600",
-    addLabel: "text-[#6b6560] group-hover:text-amber-600",
+    addBtn: "border-border hover:border-amber-500/60 hover:bg-amber-500/5",
+    addIconWrap: "bg-muted group-hover:bg-amber-500/20",
+    addIcon: "text-muted-foreground group-hover:text-amber-600",
+    addLabel: "text-muted-foreground group-hover:text-amber-600",
   },
 } as const
 

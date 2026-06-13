@@ -92,21 +92,21 @@ const surfaceTokens = {
     specialtyError: "text-[#8b2b21]",
   },
   cream: {
-    title: "text-[#1a1a1a]",
-    description: "text-[#6b6560]",
-    divider: "border-[#e5e1d8]",
-    instanceCard: "bg-white border-[#e5e1d8]",
-    instanceHeader: "text-[#6b6560]",
-    instanceNumber: "font-mono text-[10px] uppercase tracking-widest text-[#6b6560]",
-    collapseBtn: "text-[#6b6560] hover:text-[#1a1a1a]",
-    removeBtn: "text-[#6b6560] hover:text-[#8b2b21]",
-    addButton: "border-[#e5e1d8] text-[#6b6560] hover:border-[#1a1a1a] hover:text-[#1a1a1a]",
-    addButtonDisabled: "border-[#e5e1d8] text-[#c5c0bb] cursor-not-allowed",
+    title: "text-foreground",
+    description: "text-muted-foreground",
+    divider: "border-border",
+    instanceCard: "bg-card border-border",
+    instanceHeader: "text-muted-foreground",
+    instanceNumber: "font-mono text-[10px] uppercase tracking-widest text-muted-foreground",
+    collapseBtn: "text-muted-foreground hover:text-foreground",
+    removeBtn: "text-muted-foreground hover:text-danger",
+    addButton: "border-border text-muted-foreground hover:border-foreground hover:text-foreground",
+    addButtonDisabled: "border-border text-muted-foreground/40 cursor-not-allowed",
     badge: "font-mono text-[10px] uppercase tracking-widest text-teal",
-    muted: "text-[#6b6560]",
-    inputBase: "bg-white border-[#e5e1d8] text-[#1a1a1a] placeholder-[#c5c0bb]",
-    checkboxLabel: "text-[#1a1a1a]",
-    specialtyError: "text-[#8b2b21]",
+    muted: "text-muted-foreground",
+    inputBase: "bg-card border-border text-foreground placeholder-muted-foreground",
+    checkboxLabel: "text-foreground",
+    specialtyError: "text-danger",
   },
 } as const
 
@@ -174,7 +174,7 @@ function ChildInput({
         />
         <span className="text-sm">
           {label}
-          {required && <span className="ml-1 text-[#8b2b21]">*</span>}
+          {required && <span className="ml-1 text-danger">*</span>}
         </span>
       </label>
     )
@@ -185,7 +185,7 @@ function ChildInput({
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold">
           {label}
-          {required && <span className="ml-1 text-[#8b2b21]">*</span>}
+          {required && <span className="ml-1 text-danger">*</span>}
         </label>
         <textarea
           value={(value as string) ?? ""}
@@ -216,7 +216,7 @@ function ChildInput({
       <div className="flex flex-col gap-1">
         <label className="text-xs font-semibold">
           {label}
-          {required && <span className="ml-1 text-[#8b2b21]">*</span>}
+          {required && <span className="ml-1 text-danger">*</span>}
         </label>
         <select
           value={(value as string) ?? ""}
@@ -243,7 +243,7 @@ function ChildInput({
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold">
         {label}
-        {required && <span className="ml-1 text-[#8b2b21]">*</span>}
+        {required && <span className="ml-1 text-danger">*</span>}
       </label>
       <input
         type={inputType}

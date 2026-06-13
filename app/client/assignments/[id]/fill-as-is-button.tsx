@@ -47,7 +47,7 @@ export function FillAsIsButton({ assignmentId }: FillAsIsButtonProps) {
     <button
       onClick={handleClick}
       disabled={pending}
-      className="flex-1 rounded-sm bg-[#1a1a1a] text-white h-11 px-5 font-mono text-[9px] uppercase tracking-[0.25em] hover:bg-[#333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex-1 rounded-sm bg-primary text-primary-foreground h-11 px-5 font-mono text-[9px] uppercase tracking-[0.25em] hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {pending ? "Opening…" : "Fill as-is"}
     </button>

@@ -23,8 +23,8 @@ const surfaceTokens = {
   },
   cream: {
     input:
-      "bg-white border-[#e5e1d8] text-[#1a1a1a] placeholder:text-[#a8a39d] focus:ring-amber-500/20 focus:border-amber-500",
-    formatted: "text-[#6b6560]",
+      "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-amber-500/20 focus:border-amber-500",
+    formatted: "text-muted-foreground",
   },
 } as const
 

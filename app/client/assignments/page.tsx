@@ -35,7 +35,7 @@ export default async function ClientAssignmentsPage() {
           </span>
         </div>
         <div className="flex items-end justify-between gap-6 flex-wrap">
-          <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">
+          <h2 className="font-serif text-[28px] text-foreground font-medium tracking-tight leading-[1.1]">
             Assessments assigned to you.
           </h2>
         </div>
@@ -43,16 +43,16 @@ export default async function ClientAssignmentsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="active" className="w-full">
-        <TabsList className="border-b border-[#e5e1d8] w-full justify-start rounded-none bg-transparent gap-6 px-0 h-auto py-0">
+        <TabsList className="border-b border-border w-full justify-start rounded-none bg-transparent gap-6 px-0 h-auto py-0">
           <TabsTrigger
             value="active"
-            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-[#1a1a1a] text-[#6b6560]"
+            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-muted-foreground"
           >
             Active
           </TabsTrigger>
           <TabsTrigger
             value="completed"
-            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-[#1a1a1a] text-[#6b6560]"
+            className="font-mono text-[10px] uppercase tracking-[0.2em] gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-muted-foreground"
           >
             Completed
           </TabsTrigger>
@@ -62,8 +62,8 @@ export default async function ClientAssignmentsPage() {
         <TabsContent value="active" className="pt-6">
           {active.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <h3 className="font-serif text-[20px] text-[#1a1a1a]">No assessments assigned yet</h3>
-              <p className="text-sm font-sans text-[#6b6560]">
+              <h3 className="font-serif text-[20px] text-foreground">No assessments assigned yet</h3>
+              <p className="text-sm font-sans text-muted-foreground">
                 When Matt assigns an assessment to your organisation, it&apos;ll appear here.
               </p>
             </div>
@@ -82,8 +82,8 @@ export default async function ClientAssignmentsPage() {
         <TabsContent value="completed" className="pt-6">
           {completed.length === 0 ? (
             <div className="py-16 text-center space-y-3">
-              <h3 className="font-serif text-[20px] text-[#1a1a1a]">No completed assessments yet</h3>
-              <p className="text-sm font-sans text-[#6b6560]">
+              <h3 className="font-serif text-[20px] text-foreground">No completed assessments yet</h3>
+              <p className="text-sm font-sans text-muted-foreground">
                 Submitted assessments will appear here for reference.
               </p>
             </div>

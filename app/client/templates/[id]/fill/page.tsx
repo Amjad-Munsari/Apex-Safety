@@ -73,11 +73,11 @@ export default async function FillCustomerTemplatePage({ params }: Props) {
       <div className="max-w-3xl mx-auto pt-6 px-4">
         <Link
           href="/client/templates"
-          className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#8a857f] hover:text-[#1a1a1a] transition-colors"
+          className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
         >
           ← Back to My Templates
         </Link>
-        <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1] mt-4">
+        <h2 className="font-serif text-[28px] text-foreground font-medium tracking-tight leading-[1.1] mt-4">
           {template.name}
         </h2>
       </div>
