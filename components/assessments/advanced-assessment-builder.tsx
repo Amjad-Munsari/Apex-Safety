@@ -214,7 +214,7 @@ export function AdvancedAssessmentBuilder({
                   </button>
                 ))}
                 {clients.length === 0 && (
-                  <div className="text-white/50 text-sm" style={{ gridColumn: '1 / -1' }}>
+                  <div className="text-[color:var(--p-text-muted)] text-sm" style={{ gridColumn: '1 / -1' }}>
                     No clients yet.{' '}
                     <a href="/admin/clients" style={{ color: 'var(--p-gold)' }}>
                       Add one in the client list →
@@ -271,7 +271,7 @@ export function AdvancedAssessmentBuilder({
                             letterSpacing: '0.2em',
                             textTransform: 'uppercase',
                             color: 'var(--p-gold)',
-                            background: 'rgba(192, 166, 109, 0.12)',
+                            background: 'color-mix(in srgb, var(--p-gold) 12%, transparent)',
                             verticalAlign: 'middle',
                           }}
                         >
@@ -288,7 +288,7 @@ export function AdvancedAssessmentBuilder({
                   </button>
                 ))}
                 {visibleTemplates.length === 0 && (
-                  <div className="text-white/50 text-sm" style={{ gridColumn: '1 / -1' }}>
+                  <div className="text-[color:var(--p-text-muted)] text-sm" style={{ gridColumn: '1 / -1' }}>
                     No published templates yet.{' '}
                     <a href="/admin/templates" style={{ color: 'var(--p-gold)' }}>
                       Build one in the template editor →

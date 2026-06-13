@@ -115,7 +115,7 @@ export function TemplateCard({
           setConfirmOpen(true)
         }}
         aria-label={`Delete template ${name}`}
-        className="absolute top-3 right-3 inline-flex items-center justify-center h-7 w-7 rounded-sm text-muted-foreground hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-3 right-3 inline-flex items-center justify-center h-7 w-7 rounded-sm text-muted-foreground hover:text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-opacity"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>
@@ -134,7 +134,7 @@ export function TemplateCard({
             <AlertDialogAction
               onClick={handleDelete}
               disabled={pending}
-              className="bg-red-500 hover:bg-red-400 text-white"
+              className="bg-destructive hover:bg-destructive/90 text-white"
             >
               {pending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

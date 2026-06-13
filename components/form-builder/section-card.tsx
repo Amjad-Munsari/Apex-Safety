@@ -47,16 +47,16 @@ interface Props {
 
 const surfaceTokens = {
   dark: {
-    base: "bg-[#1c1c1c] border-white/5",
+    base: "bg-card border-border",
     selected: "bg-[#1e2e2b] border-teal/50",
-    grip: "text-white/20 group-hover/header:text-white/50",
-    title: "text-white",
-    dropZone: "border-white/10",
+    grip: "text-muted-foreground group-hover/header:text-foreground/70",
+    title: "text-foreground",
+    dropZone: "border-border",
     dropZoneActive: "border-teal bg-teal/10",
-    dropZoneText: "text-white/20",
+    dropZoneText: "text-muted-foreground",
     dropZoneTextActive: "text-teal",
-    actionBtn: "text-white/30 hover:text-white/70 hover:bg-white/5",
-    deleteBtn: "text-white/30 hover:text-[#8b2b21] hover:bg-[#8b2b21]/10",
+    actionBtn: "text-muted-foreground hover:text-foreground/70 hover:bg-muted",
+    deleteBtn: "text-muted-foreground hover:text-danger hover:bg-danger/10",
   },
   cream: {
     base: "bg-white border-[#e5e1d8]",

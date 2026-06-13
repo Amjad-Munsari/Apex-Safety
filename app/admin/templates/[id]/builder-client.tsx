@@ -77,7 +77,7 @@ const surfaceTokens = {
     backDivider: "bg-muted",
     saveLabel: "text-foreground/70 hover:text-foreground",
     savedTag: "text-teal",
-    errorTag: "text-[#8b2b21]",
+    errorTag: "text-danger",
     publishBtn: "bg-teal hover:bg-teal/90 text-foreground",
     emptyIconRing: "border-border",
     emptyIcon: "text-muted-foreground",
@@ -88,26 +88,26 @@ const surfaceTokens = {
     selectPanelText: "text-muted-foreground",
   },
   cream: {
-    root: "bg-[#fbfaf5]",
-    toolbar: "bg-white border-[#e5e1d8]",
-    panel: "bg-[#faf9f6]",
-    columnDivider: "border-[#e5e1d8]",
-    canvasBg: "bg-[#fbfaf5]",
-    titleInput: "text-[#1a1a1a] border-transparent focus:border-[#1a1a1a]/20",
-    typeLabel: "text-[#8a857f]",
-    backLink: "text-[#6b6560] hover:text-black",
-    backDivider: "bg-[#e5e1d8]",
-    saveLabel: "text-[#6b6560] hover:text-black",
+    root: "bg-background",
+    toolbar: "bg-card border-border",
+    panel: "bg-card",
+    columnDivider: "border-border",
+    canvasBg: "bg-background",
+    titleInput: "text-foreground border-transparent focus:border-border",
+    typeLabel: "text-muted-foreground",
+    backLink: "text-foreground/70 hover:text-foreground",
+    backDivider: "bg-muted",
+    saveLabel: "text-foreground/70 hover:text-foreground",
     savedTag: "text-teal",
-    errorTag: "text-[#8b2b21]",
-    publishBtn: "bg-[#1a1a1a] hover:bg-black text-white",
-    emptyIconRing: "border-[#e5e1d8]",
-    emptyIcon: "text-[#a8a39d]",
-    emptyText: "text-[#6b6560]",
-    emptySubtext: "text-[#8a857f]",
-    bottomBar: "bg-[#f0ede6] border-[#e5e1d8] text-[#6b6560]",
+    errorTag: "text-danger",
+    publishBtn: "bg-primary hover:bg-primary/90 text-primary-foreground",
+    emptyIconRing: "border-border",
+    emptyIcon: "text-muted-foreground",
+    emptyText: "text-muted-foreground",
+    emptySubtext: "text-muted-foreground",
+    bottomBar: "bg-muted border-border text-muted-foreground",
     unsavedTag: "text-amber-600",
-    selectPanelText: "text-[#8a857f]",
+    selectPanelText: "text-muted-foreground",
   },
 } as const;
 
@@ -445,8 +445,8 @@ export function TemplateBuilderClient({
         {/* Center: Canvas column */}
         <div className={cn("flex-1 flex flex-col overflow-hidden", t.canvasBg)}>
           {removedEntities.length > 0 && !removalDismissed && (
-            <div className="shrink-0 px-6 py-3 bg-[#8b2b21]/10 border-b border-[#8b2b21]/30 flex items-start gap-3">
-              <div className="flex-1 text-xs text-[#8b2b21]">
+            <div className="shrink-0 px-6 py-3 bg-danger/10 border-b border-danger/30 flex items-start gap-3">
+              <div className="flex-1 text-xs text-danger">
                 <span className="font-semibold">
                   {removedEntities.length} field{removedEntities.length === 1 ? "" : "s"} removed.
                 </span>{" "}
@@ -458,7 +458,7 @@ export function TemplateBuilderClient({
               </div>
               <button
                 onClick={() => setRemovalDismissed(true)}
-                className="text-[#8b2b21]/60 hover:text-[#8b2b21] text-xs font-mono shrink-0"
+                className="text-danger/60 hover:text-danger text-xs font-mono shrink-0"
               >
                 Dismiss
               </button>

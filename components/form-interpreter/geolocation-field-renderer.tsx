@@ -62,15 +62,15 @@ type Props = EntityComponentProps<typeof geolocationFieldEntity> & {
 
 const surfaceTokens = {
   dark: {
-    label: "text-white/70",
-    required: "text-[#8b2b21]",
-    helpText: "text-white/40",
-    error: "text-[#8b2b21]",
-    panel: "bg-white/5 border-white/10",
-    panelText: "text-white",
-    panelMuted: "text-white/50",
-    panelError: "text-[#8b2b21]",
-    instructionText: "text-white/40",
+    label: "text-foreground",
+    required: "text-danger",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
+    panel: "bg-card border-border",
+    panelText: "text-foreground",
+    panelMuted: "text-muted-foreground",
+    panelError: "text-danger",
+    instructionText: "text-muted-foreground",
   },
   cream: {
     label: "text-foreground",

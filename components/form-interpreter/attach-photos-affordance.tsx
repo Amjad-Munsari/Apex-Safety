@@ -68,13 +68,13 @@ interface AttachPhotosAffordanceProps {
 
 const surfaceTokens = {
   dark: {
-    container: "border-white/10",
-    iconColor: "text-white/40",
-    labelText: "text-white/50",
+    container: "border-border",
+    iconColor: "text-muted-foreground",
+    labelText: "text-muted-foreground",
     countBadge: "bg-teal-900/60 text-teal-300 border border-teal-700/50",
-    button: "text-white/50 hover:text-white/80 hover:bg-white/5 border border-white/10 hover:border-white/20",
-    thumbnail: "border-white/10 rounded-sm",
-    removeButton: "bg-red-700/80 hover:bg-red-600 text-white",
+    button: "text-muted-foreground hover:text-foreground hover:bg-muted border border-border hover:border-border",
+    thumbnail: "border-border rounded-sm",
+    removeButton: "bg-danger/80 hover:bg-danger text-foreground",
     errorOverlay: "bg-black/60 text-red-400",
     uploadingOverlay: "bg-black/40",
   },

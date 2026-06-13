@@ -27,10 +27,10 @@ type Surface = "dark" | "cream";
 
 const surfaceTokens = {
   dark: {
-    select: "bg-[#111] border-white/10 text-white focus:border-white/30",
-    input: "bg-transparent border-white/10 text-white placeholder:text-white/20 focus:border-white/30",
-    separator: "text-white/20",
-    trashBtn: "text-white/20 hover:text-[#8b2b21]",
+    select: "bg-muted border-border text-foreground focus:border-border",
+    input: "bg-transparent border-border text-foreground placeholder:text-muted-foreground focus:border-border",
+    separator: "text-muted-foreground",
+    trashBtn: "text-muted-foreground hover:text-danger",
   },
   cream: {
     select: "bg-white border-[#e5e1d8] text-[#1a1a1a] focus:border-[#1a1a1a]/40",

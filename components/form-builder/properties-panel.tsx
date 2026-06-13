@@ -38,23 +38,23 @@ interface Props {
 
 const surfaceTokens = {
   dark: {
-    headerBorder: "border-white/5",
-    headerLabel: "text-white/30",
-    label: "text-white/40",
+    headerBorder: "border-border",
+    headerLabel: "text-muted-foreground",
+    label: "text-muted-foreground",
     input:
-      "bg-transparent border-white/10 text-white placeholder:text-white/20 focus:border-white/30",
-    helpHint: "text-white/20",
+      "bg-transparent border-border text-foreground placeholder:text-muted-foreground focus:border-border",
+    helpHint: "text-muted-foreground",
     toggleOn: "bg-teal",
-    toggleOff: "bg-white/10",
-    toggleKnob: "bg-white",
-    optionInput: "bg-transparent border-white/10 text-white focus:border-white/30",
-    optionRemove: "text-white/20 hover:text-[#8b2b21]",
+    toggleOff: "bg-muted",
+    toggleKnob: "bg-background",
+    optionInput: "bg-transparent border-border text-foreground focus:border-border",
+    optionRemove: "text-muted-foreground hover:text-danger",
     addOptionInput:
-      "bg-transparent border-dashed border-white/10 text-white placeholder:text-white/20 focus:border-white/20",
-    addOptionBtn: "text-white/30 hover:text-teal",
-    select: "bg-[#111] border-white/10 text-white focus:border-white/30",
-    selectPanelText: "text-white/20",
-    typeFooter: "border-white/5 text-white/20",
+      "bg-transparent border-dashed border-border text-foreground placeholder:text-muted-foreground focus:border-border",
+    addOptionBtn: "text-muted-foreground hover:text-teal",
+    select: "bg-muted border-border text-foreground focus:border-border",
+    selectPanelText: "text-muted-foreground",
+    typeFooter: "border-border text-muted-foreground",
     formulaMono: "text-teal",
   },
   cream: {

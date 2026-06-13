@@ -60,13 +60,13 @@ interface Props {
 
 const surfaceTokens = {
   dark: {
-    headerBorder: "border-white/5",
-    headerLabel: "text-white/30",
-    btnHover: "hover:bg-white/[0.05]",
-    iconBox: "bg-white/5 border-white/10 group-hover:border-white/20",
-    icon: "text-white/50 group-hover:text-white/80",
-    label: "text-white/70 group-hover:text-white",
-    desc: "text-white/25",
+    headerBorder: "border-border",
+    headerLabel: "text-muted-foreground",
+    btnHover: "hover:bg-muted",
+    iconBox: "bg-muted border-border group-hover:border-border",
+    icon: "text-muted-foreground group-hover:text-foreground/80",
+    label: "text-foreground/70 group-hover:text-foreground",
+    desc: "text-muted-foreground",
   },
   cream: {
     headerBorder: "border-[#e5e1d8]",

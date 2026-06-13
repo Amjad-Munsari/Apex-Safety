@@ -657,13 +657,13 @@ export function ClientTabs({
                                 </span>
                               )}
                               {overdue && (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#a14a2a] bg-[#a14a2a]/10">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-danger bg-danger/10">
                                   OVERDUE
                                 </span>
                               )}
                             </div>
                             {overdue && (
-                              <p className="text-xs text-[#a14a2a] mt-1">
+                              <p className="text-xs text-danger mt-1">
                                 Was due {d} day{d === 1 ? "" : "s"} ago
                               </p>
                             )}
@@ -745,7 +745,7 @@ export function ClientTabs({
                     </div>
                     <span
                       className={`inline-flex items-center px-1.5 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] leading-none shrink-0 ${
-                        t.is_published ? "text-[#3b8273] bg-[#3b8273]/10" : "text-muted-foreground bg-muted"
+                        t.is_published ? "text-teal bg-teal/10" : "text-muted-foreground bg-muted"
                       }`}
                     >
                       {t.is_published ? "Published" : "Draft"}

@@ -69,16 +69,16 @@ interface PendingPhoto {
 
 const surfaceTokens = {
   dark: {
-    label: "text-white/70",
-    required: "text-[#8b2b21]",
-    helpText: "text-white/40",
-    error: "text-[#8b2b21]",
-    cell: "border-slate-800 bg-slate-950",
-    removeBtn: "bg-red-700/80 hover:bg-red-600 text-white",
-    addBtn: "border-slate-700 hover:border-amber-500/50 hover:bg-amber-500/5",
-    addIcon: "text-slate-400 group-hover:text-amber-500",
-    addLabel: "text-slate-500 group-hover:text-amber-500/80",
-    countLabel: "text-slate-500",
+    label: "text-foreground",
+    required: "text-danger",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
+    cell: "border-border bg-muted",
+    removeBtn: "bg-danger/80 hover:bg-danger text-foreground",
+    addBtn: "border-border hover:border-gold/50 hover:bg-gold/5",
+    addIcon: "text-muted-foreground group-hover:text-gold",
+    addLabel: "text-muted-foreground group-hover:text-gold",
+    countLabel: "text-muted-foreground",
     errorOverlay: "bg-black/60 text-red-400",
   },
   cream: {

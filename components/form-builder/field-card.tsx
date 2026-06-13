@@ -39,13 +39,13 @@ interface Props {
 
 const surfaceTokens = {
   dark: {
-    base: "bg-[#1c1c1c] border-white/5 hover:border-white/10 hover:bg-[#222]",
+    base: "bg-card border-border hover:border-border hover:bg-card",
     selected: "bg-[#1e2e2b] border-teal/50 shadow-[0_0_0_1px_rgba(59,130,115,0.2)]",
-    grip: "text-white/20 hover:text-white/50",
-    label: "text-white",
-    typeBadge: "text-white/30",
-    actionBtn: "text-white/30 hover:text-white/70 hover:bg-white/5",
-    deleteBtn: "text-white/30 hover:text-[#8b2b21] hover:bg-[#8b2b21]/10",
+    grip: "text-muted-foreground hover:text-foreground/70",
+    label: "text-foreground",
+    typeBadge: "text-muted-foreground",
+    actionBtn: "text-muted-foreground hover:text-foreground/70 hover:bg-muted",
+    deleteBtn: "text-muted-foreground hover:text-danger hover:bg-danger/10",
   },
   cream: {
     base: "bg-white border-[#e5e1d8] hover:border-[#1a1a1a]/15 hover:bg-[#faf9f6]",

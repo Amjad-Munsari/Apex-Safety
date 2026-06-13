@@ -14,11 +14,11 @@ type Props = EntityComponentProps<typeof textareaFieldEntity> & {
 
 const surfaceTokens = {
   dark: {
-    label: "text-white/70",
-    required: "text-[#8b2b21]",
-    input: "bg-transparent border-white/10 text-white placeholder:text-white/30 focus-visible:border-white/30",
-    helpText: "text-white/40",
-    error: "text-[#8b2b21]",
+    label: "text-foreground",
+    required: "text-danger",
+    input: "bg-card border-border text-foreground placeholder:text-muted-foreground",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
   },
   cream: {
     label: "text-foreground",

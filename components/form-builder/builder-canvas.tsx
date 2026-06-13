@@ -36,10 +36,10 @@ interface Props {
 
 const surfaceTokens = {
   dark: {
-    emptyText: "text-white/30",
-    emptySubtext: "text-white/20",
-    overlayCard: "bg-[#2a2a2a] border border-teal/50",
-    overlayText: "text-white",
+    emptyText: "text-muted-foreground",
+    emptySubtext: "text-muted-foreground",
+    overlayCard: "bg-card border border-teal/50",
+    overlayText: "text-foreground",
   },
   cream: {
     emptyText: "text-[#6b6560]",

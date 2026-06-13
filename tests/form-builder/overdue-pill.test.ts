@@ -15,8 +15,8 @@ describe("OverduePill — rendering rules", () => {
     const result = OverduePill({ daysOverdue: 5 });
 
     expect(result).not.toBeNull();
-    expect(result!.props.className).toContain("text-[#a14a2a]");
-    expect(result!.props.className).toContain("bg-[#a14a2a]/10");
+    expect(result!.props.className).toContain("text-danger");
+    expect(result!.props.className).toContain("bg-danger/10");
     expect(result!.props.children).toBe("OVERDUE");
   });
 

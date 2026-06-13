@@ -13,10 +13,10 @@ type Props = EntityComponentProps<typeof numberFieldEntity> & {
 
 const surfaceTokens = {
   dark: {
-    label: "text-white/70",
-    required: "text-[#8b2b21]",
-    helpText: "text-white/40",
-    error: "text-[#8b2b21]",
+    label: "text-foreground",
+    required: "text-danger",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
   },
   cream: {
     label: "text-foreground",

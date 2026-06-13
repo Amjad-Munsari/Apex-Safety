@@ -25,7 +25,7 @@ export function OverduePill({
 
   return (
     <span
-      className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-[#a14a2a] bg-[#a14a2a]/10"
+      className="inline-flex items-center px-2 py-0.5 rounded-sm font-mono text-[9px] uppercase tracking-[0.25em] text-danger bg-danger/10"
       aria-label={ariaLabel}
     >
       OVERDUE

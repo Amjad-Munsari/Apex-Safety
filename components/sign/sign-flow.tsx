@@ -100,15 +100,15 @@ function renderTypedSignatureToCanvas(text: string): string {
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f7f5f0] flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-[#e5e1d8] bg-[#f7f5f0]">
+      <header className="border-b border-border bg-background">
         <div className="max-w-4xl mx-auto px-5 py-5 flex items-center gap-3">
-          <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-[#8a857f] font-bold">
+          <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-muted-foreground font-bold">
             888
           </span>
-          <span className="text-[#e5e1d8] select-none">|</span>
-          <span className="font-serif text-[17px] text-[#1a1a1a] tracking-tight leading-none">
+          <span className="text-border select-none">|</span>
+          <span className="font-serif text-[17px] text-foreground tracking-tight leading-none">
             Safety &amp; Training
           </span>
         </div>
@@ -121,7 +121,7 @@ function PageShell({ children }: { children: React.ReactNode }) {
 function StatusCard({ children }: { children: React.ReactNode }) {
   return (
     <main className="flex-1 flex items-center justify-center px-5 py-16">
-      <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_4px_24px_rgba(0,0,0,0.05)] p-10 max-w-md w-full text-center space-y-4">
+      <div className="bg-card border border-border rounded-sm shadow-[0_4px_24px_rgba(0,0,0,0.05)] p-10 max-w-md w-full text-center space-y-4">
         {children}
       </div>
     </main>
@@ -132,7 +132,7 @@ function LoadingView() {
   return (
     <PageShell>
       <main className="flex-1 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4 text-[#8a857f]">
+        <div className="flex flex-col items-center gap-4 text-muted-foreground">
           <Loader2 className="w-8 h-8 animate-spin" />
           <span className="font-mono text-[10px] uppercase tracking-[0.3em]">
             Loading proposal
@@ -147,13 +147,13 @@ function ExpiredView() {
   return (
     <PageShell>
       <StatusCard>
-        <div className="w-10 h-10 rounded-full bg-[#f7f5f0] border border-[#e5e1d8] flex items-center justify-center mx-auto">
-          <FileText className="w-5 h-5 text-[#8a857f]" />
+        <div className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center mx-auto">
+          <FileText className="w-5 h-5 text-muted-foreground" />
         </div>
-        <h1 className="font-serif text-[22px] text-[#1a1a1a] tracking-tight">
+        <h1 className="font-serif text-[22px] text-foreground tracking-tight">
           Link expired
         </h1>
-        <p className="font-sans text-[13px] text-[#6b6560] leading-relaxed">
+        <p className="font-sans text-[13px] text-muted-foreground leading-relaxed">
           This signing link has expired. Please contact 888 Safety &amp; Training for a new link.
         </p>
       </StatusCard>
@@ -165,13 +165,13 @@ function AlreadySignedView() {
   return (
     <PageShell>
       <StatusCard>
-        <div className="w-10 h-10 rounded-full bg-[#3b8273]/10 border border-[#3b8273]/20 flex items-center justify-center mx-auto">
-          <CheckCircle2 className="w-5 h-5 text-[#3b8273]" />
+        <div className="w-10 h-10 rounded-full bg-teal/10 border border-teal/20 flex items-center justify-center mx-auto">
+          <CheckCircle2 className="w-5 h-5 text-teal" />
         </div>
-        <h1 className="font-serif text-[22px] text-[#1a1a1a] tracking-tight">
+        <h1 className="font-serif text-[22px] text-foreground tracking-tight">
           Already signed
         </h1>
-        <p className="font-sans text-[13px] text-[#6b6560] leading-relaxed">
+        <p className="font-sans text-[13px] text-muted-foreground leading-relaxed">
           This proposal has already been signed. Thank you.
         </p>
       </StatusCard>
@@ -193,43 +193,43 @@ function SuccessView({
   return (
     <PageShell>
       <main className="flex-1 flex items-center justify-center px-5 py-16">
-        <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_4px_24px_rgba(0,0,0,0.05)] p-10 max-w-md w-full space-y-6">
+        <div className="bg-card border border-border rounded-sm shadow-[0_4px_24px_rgba(0,0,0,0.05)] p-10 max-w-md w-full space-y-6">
           <div className="flex flex-col items-center text-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-[#3b8273]/10 border border-[#3b8273]/20 flex items-center justify-center">
-              <CheckCircle2 className="w-6 h-6 text-[#3b8273]" />
+            <div className="w-12 h-12 rounded-full bg-teal/10 border border-teal/20 flex items-center justify-center">
+              <CheckCircle2 className="w-6 h-6 text-teal" />
             </div>
             <div>
-              <h1 className="font-serif text-[28px] text-[#1a1a1a] tracking-tight leading-[1.1]">
+              <h1 className="font-serif text-[28px] text-foreground tracking-tight leading-[1.1]">
                 Proposal signed
               </h1>
-              <p className="font-sans text-[13px] text-[#6b6560] mt-2 leading-relaxed">
+              <p className="font-sans text-[13px] text-muted-foreground mt-2 leading-relaxed">
                 Thank you, {signerName}. Your signature has been recorded.
               </p>
             </div>
           </div>
-          <div className="border border-[#e5e1d8] rounded-sm p-5 space-y-3">
+          <div className="border border-border rounded-sm p-5 space-y-3">
             <div>
-              <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] block">
+              <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground block">
                 Reference
               </span>
-              <span className="font-sans text-[13px] text-[#1a1a1a] font-medium">
+              <span className="font-sans text-[13px] text-foreground font-medium">
                 {reference}
               </span>
             </div>
             <div>
-              <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] block">
+              <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground block">
                 Proposal
               </span>
-              <span className="font-sans text-[13px] text-[#1a1a1a]">{title}</span>
+              <span className="font-sans text-[13px] text-foreground">{title}</span>
             </div>
             <div>
-              <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] block">
+              <span className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground block">
                 Signed at
               </span>
-              <span className="font-sans text-[13px] text-[#1a1a1a]">{timestamp}</span>
+              <span className="font-sans text-[13px] text-foreground">{timestamp}</span>
             </div>
           </div>
-          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] text-center">
+          <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground text-center">
             888 Safety &amp; Training will be in touch shortly.
           </p>
         </div>
@@ -385,8 +385,8 @@ export function SignFlow({ token }: { token: string }) {
     return (
       <PageShell>
         <StatusCard>
-          <h1 className="font-serif text-[22px] text-[#1a1a1a]">Something went wrong</h1>
-          <p className="font-sans text-[13px] text-[#6b6560]">{fetchState.message}</p>
+          <h1 className="font-serif text-[22px] text-foreground">Something went wrong</h1>
+          <p className="font-sans text-[13px] text-muted-foreground">{fetchState.message}</p>
         </StatusCard>
       </PageShell>
     )
@@ -412,15 +412,15 @@ export function SignFlow({ token }: { token: string }) {
       <main className="flex-1 max-w-4xl mx-auto w-full px-5 py-10 space-y-10">
         {/* Proposal header */}
         <section className="space-y-3">
-          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
-            <span className="text-[#3b8273]">{proposal.reference}</span>
+          <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-muted-foreground uppercase font-bold">
+            <span className="text-teal">{proposal.reference}</span>
             <span className="opacity-50">·</span>
             <span>Sent {formatDate(proposal.createdDate)}</span>
           </div>
-          <h1 className="font-serif text-[36px] sm:text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
+          <h1 className="font-serif text-[36px] sm:text-[44px] text-foreground font-normal tracking-tight leading-[1.05]">
             {proposal.title}.
           </h1>
-          <p className="text-[#6b6560] text-[13px] font-sans tracking-tight">
+          <p className="text-muted-foreground text-[13px] font-sans tracking-tight">
             £{Math.round(proposal.total).toLocaleString()} inc. VAT &nbsp;·&nbsp;{" "}
             {proposal.serviceCount} {proposal.serviceCount === 1 ? "service" : "services"} bundled
           </p>
@@ -429,19 +429,19 @@ export function SignFlow({ token }: { token: string }) {
         {/* Two-column layout on large screens */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
           {/* Left: PDF */}
-          <div className="bg-white rounded-sm overflow-hidden ring-1 ring-[#e5e1d8] shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <div className="bg-card rounded-sm overflow-hidden ring-1 ring-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
             {proposal.pdfUrl ? (
               <iframe
                 src={proposal.pdfUrl}
                 title={`Proposal ${proposal.reference}`}
-                className="w-full bg-[#f7f5f0]"
+                className="w-full bg-muted"
                 style={{ aspectRatio: "210 / 297", border: 0 }}
               />
             ) : (
-              <div className="aspect-[210/297] w-full p-12 text-[#1a1a1a] flex flex-col items-center justify-center text-center">
-                <FileText className="w-10 h-10 text-[#8a857f] mb-4" />
+              <div className="aspect-[210/297] w-full p-12 text-foreground flex flex-col items-center justify-center text-center">
+                <FileText className="w-10 h-10 text-muted-foreground mb-4" />
                 <h3 className="font-serif text-[22px] mb-2">Document preparing</h3>
-                <p className="font-sans text-[13px] text-[#6b6560] max-w-sm leading-relaxed">
+                <p className="font-sans text-[13px] text-muted-foreground max-w-sm leading-relaxed">
                   The proposal PDF is still being prepared. You can still review the
                   scope below and sign using the form.
                 </p>
@@ -452,8 +452,8 @@ export function SignFlow({ token }: { token: string }) {
           {/* Right: proposal summary + signing form */}
           <div className="lg:sticky lg:top-8 space-y-5">
             {/* Summary card */}
-            <div className="bg-white border border-[#e5e1d8] rounded-sm p-6 space-y-4">
-              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] font-bold">
+            <div className="bg-card border border-border rounded-sm p-6 space-y-4">
+              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-bold">
                 Scope
               </div>
               {proposal.services.length > 0 && (
@@ -461,25 +461,25 @@ export function SignFlow({ token }: { token: string }) {
                   {proposal.services.map((item, idx) => (
                     <li
                       key={idx}
-                      className="font-sans text-[12px] text-[#1a1a1a]/80 flex items-start gap-2"
+                      className="font-sans text-[12px] text-foreground/80 flex items-start gap-2"
                     >
-                      <span className="font-mono text-[10px] text-[#8a857f] mt-0.5 w-5 shrink-0">
+                      <span className="font-mono text-[10px] text-muted-foreground mt-0.5 w-5 shrink-0">
                         {String(idx + 1).padStart(2, "0")}
                       </span>
                       <span>
                         {item.name}{" "}
-                        <span className="text-[#8a857f]">× {item.quantity}</span>
+                        <span className="text-muted-foreground">× {item.quantity}</span>
                       </span>
                     </li>
                   ))}
                 </ul>
               )}
-              <div className="pt-2 border-t border-[#e5e1d8]">
+              <div className="pt-2 border-t border-border">
                 <div className="flex justify-between items-baseline">
-                  <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#8a857f]">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground">
                     Total inc. VAT
                   </span>
-                  <span className="font-serif text-[20px] text-[#1a1a1a]">
+                  <span className="font-serif text-[20px] text-foreground">
                     £{Math.round(proposal.total).toLocaleString()}
                   </span>
                 </div>
@@ -489,9 +489,9 @@ export function SignFlow({ token }: { token: string }) {
             {/* Signature form */}
             <form
               onSubmit={handleSubmit}
-              className="bg-white border border-[#e5e1d8] rounded-sm p-6 space-y-5"
+              className="bg-card border border-border rounded-sm p-6 space-y-5"
             >
-              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-[#8a857f] font-bold">
+              <div className="font-mono text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-bold">
                 Sign this proposal
               </div>
 
@@ -499,7 +499,7 @@ export function SignFlow({ token }: { token: string }) {
               <div className="space-y-1.5">
                 <label
                   htmlFor="signer-name"
-                  className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#8a857f] block"
+                  className="font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground block"
                 >
                   Full name
                 </label>
@@ -508,7 +508,7 @@ export function SignFlow({ token }: { token: string }) {
                   type="text"
                   value={signerName}
                   onChange={(e) => setSignerName(e.target.value)}
-                  className="w-full h-10 px-3 bg-[#f7f5f0] border border-[#e5e1d8] rounded-sm font-sans text-[13px] text-[#1a1a1a] placeholder:text-[#8a857f] focus:outline-none focus:ring-1 focus:ring-[#3b8273]/50 focus:border-[#3b8273]/50 transition-colors"
+                  className="w-full h-10 px-3 bg-muted border border-border rounded-sm font-sans text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal/50 focus:border-teal/50 transition-colors"
                   placeholder="Your full name"
                   autoComplete="name"
                 />
@@ -518,7 +518,7 @@ export function SignFlow({ token }: { token: string }) {
               <div className="space-y-1.5">
                 <label
                   htmlFor="signer-email"
-                  className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#8a857f] block"
+                  className="font-mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground block"
                 >
                   Email address
                 </label>
@@ -527,7 +527,7 @@ export function SignFlow({ token }: { token: string }) {
                   type="email"
                   value={signerEmail}
                   onChange={(e) => setSignerEmail(e.target.value)}
-                  className="w-full h-10 px-3 bg-[#f7f5f0] border border-[#e5e1d8] rounded-sm font-sans text-[13px] text-[#1a1a1a] placeholder:text-[#8a857f] focus:outline-none focus:ring-1 focus:ring-[#3b8273]/50 focus:border-[#3b8273]/50 transition-colors"
+                  className="w-full h-10 px-3 bg-muted border border-border rounded-sm font-sans text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal/50 focus:border-teal/50 transition-colors"
                   placeholder="your@email.com"
                   autoComplete="email"
                 />
@@ -535,7 +535,7 @@ export function SignFlow({ token }: { token: string }) {
 
               {/* Mode toggle */}
               <div className="space-y-3">
-                <div className="flex items-center gap-1 p-1 bg-[#f7f5f0] rounded-sm border border-[#e5e1d8]">
+                <div className="flex items-center gap-1 p-1 bg-muted rounded-sm border border-border">
                   {(["draw", "type"] as const).map((mode) => (
                     <button
                       key={mode}
@@ -544,8 +544,8 @@ export function SignFlow({ token }: { token: string }) {
                       className={[
                         "flex-1 h-7 rounded-[2px] font-mono text-[9px] uppercase tracking-[0.2em] font-bold transition-colors",
                         signMode === mode
-                          ? "bg-white border border-[#e5e1d8] text-[#1a1a1a] shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
-                          : "text-[#8a857f] hover:text-[#1a1a1a]",
+                          ? "bg-card border border-border text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                          : "text-muted-foreground hover:text-foreground",
                       ].join(" ")}
                     >
                       {mode === "draw" ? "Draw" : "Type instead"}
@@ -565,7 +565,7 @@ export function SignFlow({ token }: { token: string }) {
                       type="text"
                       value={typedText}
                       onChange={(e) => setTypedText(e.target.value)}
-                      className="w-full h-10 px-3 bg-[#f7f5f0] border border-[#e5e1d8] rounded-sm font-sans text-[13px] text-[#1a1a1a] placeholder:text-[#8a857f] focus:outline-none focus:ring-1 focus:ring-[#3b8273]/50 focus:border-[#3b8273]/50 transition-colors"
+                      className="w-full h-10 px-3 bg-muted border border-border rounded-sm font-sans text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-teal/50 focus:border-teal/50 transition-colors"
                       placeholder="Type your name to sign"
                       autoComplete="off"
                     />
@@ -573,10 +573,10 @@ export function SignFlow({ token }: { token: string }) {
                     {typedText.trim() && (
                       <div
                         ref={typedPreviewRef}
-                        className="w-full min-h-[72px] px-4 py-3 bg-white border border-[#e5e1d8] rounded-sm flex items-center overflow-hidden"
+                        className="w-full min-h-[72px] px-4 py-3 bg-card border border-border rounded-sm flex items-center overflow-hidden"
                       >
                         <span
-                          className="text-[#1a1a1a] leading-none select-none"
+                          className="text-foreground leading-none select-none"
                           style={{
                             fontFamily: SCRIPT_FONT,
                             fontSize: "2.2rem",
@@ -592,8 +592,8 @@ export function SignFlow({ token }: { token: string }) {
                       </div>
                     )}
                     {!typedText.trim() && (
-                      <div className="w-full min-h-[72px] px-4 py-3 bg-white border border-[#e5e1d8] rounded-sm flex items-center">
-                        <span className="text-[#8a857f] font-sans text-[12px]">
+                      <div className="w-full min-h-[72px] px-4 py-3 bg-card border border-border rounded-sm flex items-center">
+                        <span className="text-muted-foreground font-sans text-[12px]">
                           Your signature preview will appear here
                         </span>
                       </div>
@@ -615,8 +615,8 @@ export function SignFlow({ token }: { token: string }) {
                     className={[
                       "w-4 h-4 rounded-[3px] border transition-colors flex items-center justify-center",
                       termsChecked
-                        ? "bg-[#3b8273] border-[#3b8273]"
-                        : "bg-[#f7f5f0] border-[#e5e1d8] group-hover:border-[#3b8273]/40",
+                        ? "bg-teal border-teal"
+                        : "bg-muted border-border group-hover:border-teal/40",
                     ].join(" ")}
                   >
                     {termsChecked && (
@@ -634,14 +634,14 @@ export function SignFlow({ token }: { token: string }) {
                     )}
                   </div>
                 </div>
-                <span className="font-sans text-[12px] text-[#6b6560] leading-relaxed">
+                <span className="font-sans text-[12px] text-muted-foreground leading-relaxed">
                   I agree to the terms and services outlined in this proposal
                 </span>
               </label>
 
               {/* Inline error */}
               {submitState.phase === "error" && (
-                <p className="font-sans text-[12px] text-red-600 bg-red-50 border border-red-200 rounded-sm px-3 py-2">
+                <p className="font-sans text-[12px] text-danger bg-danger/10 border border-danger/20 rounded-sm px-3 py-2">
                   {submitState.message}
                 </p>
               )}
@@ -653,8 +653,8 @@ export function SignFlow({ token }: { token: string }) {
                 className={[
                   "w-full h-12 rounded-sm font-mono text-[10px] uppercase tracking-[0.25em] font-bold transition-colors flex items-center justify-center gap-2",
                   canSubmit
-                    ? "bg-[#1a1a1a] text-white hover:bg-black cursor-pointer"
-                    : "bg-[#1a1a1a]/30 text-white/60 cursor-not-allowed",
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer"
+                    : "bg-primary/30 text-primary-foreground/60 cursor-not-allowed",
                 ].join(" ")}
               >
                 {submitState.phase === "submitting" ? (

@@ -380,7 +380,7 @@ export function AdvancedProposalBuilder({
                   </button>
                 ))}
                 {clients.length === 0 && (
-                  <div className="text-white/50 text-sm" style={{ gridColumn: '1 / -1' }}>
+                  <div className="text-[color:var(--p-text-muted)] text-sm" style={{ gridColumn: '1 / -1' }}>
                     No clients yet. <a href="/admin/clients" style={{ color: 'var(--p-gold)' }}>Add one in the client list →</a>
                   </div>
                 )}
@@ -487,7 +487,7 @@ export function AdvancedProposalBuilder({
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span
                               style={{
-                                color: item.needsOverride ? '#c55a5a' : 'var(--p-text-muted)',
+                                color: item.needsOverride ? 'var(--p-red)' : 'var(--p-text-muted)',
                                 fontSize: 9,
                                 fontFamily: 'var(--p-font-mono)',
                                 textTransform: 'uppercase',
@@ -509,11 +509,10 @@ export function AdvancedProposalBuilder({
                                 fontSize: 12,
                                 fontFamily: 'var(--p-font-mono)',
                                 background: 'transparent',
-                                border: `1px solid ${item.needsOverride ? '#c55a5a' : 'rgba(255,255,255,0.15)'}`,
+                                border: `1px solid ${item.needsOverride ? 'var(--p-red)' : 'var(--p-border-subtle)'}`,
                                 borderRadius: 3,
                                 color: 'var(--p-text)',
                                 textAlign: 'right',
-                                colorScheme: 'dark',
                               }}
                             />
                             <span style={{ color: 'var(--p-text-muted)', fontSize: 10 }}>/ {item.unit}</span>
@@ -558,7 +557,7 @@ export function AdvancedProposalBuilder({
                 + Generate proposal
               </button>
               {hasUnpricedItem ? (
-                <div className="prop-generate-note" style={{ color: '#c55a5a' }}>
+                <div className="prop-generate-note" style={{ color: 'var(--p-red)' }}>
                   Enter a price for the highlighted items before generating.
                 </div>
               ) : (

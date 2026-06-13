@@ -19,12 +19,12 @@ type Props = EntityComponentProps<typeof selectFieldEntity> & {
 
 const surfaceTokens = {
   dark: {
-    label: "text-white/70",
-    required: "text-[#8b2b21]",
-    trigger: "bg-transparent border-white/10 text-white",
-    content: "bg-[#1c1c1c] border-white/10 text-white",
-    helpText: "text-white/40",
-    error: "text-[#8b2b21]",
+    label: "text-foreground",
+    required: "text-danger",
+    trigger: "bg-card border-border text-foreground",
+    content: "bg-card border-border text-foreground",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
   },
   cream: {
     label: "text-foreground",

@@ -27,11 +27,11 @@ type Surface = "dark" | "cream";
 
 const surfaceTokens = {
   dark: {
-    label: "text-white/40",
-    headerBorder: "border-white/5",
-    toggleActiveChip: "bg-teal text-white",
-    toggleInactiveChip: "bg-white/10 text-white/40",
-    addBtn: "border-dashed border-white/10 text-white/30 hover:text-teal",
+    label: "text-muted-foreground",
+    headerBorder: "border-border",
+    toggleActiveChip: "bg-teal text-foreground",
+    toggleInactiveChip: "bg-muted text-muted-foreground",
+    addBtn: "border-dashed border-border text-muted-foreground hover:text-teal",
   },
   cream: {
     label: "text-[#8a857f]",

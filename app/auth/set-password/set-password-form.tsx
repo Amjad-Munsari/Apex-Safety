@@ -55,27 +55,27 @@ export function SetPasswordForm() {
   }
 
   return (
-    <Card className="w-full max-w-md border-0 bg-white/10 backdrop-blur-xl text-white shadow-2xl">
+    <Card className="w-full max-w-md border-0 bg-card/80 backdrop-blur-xl text-foreground shadow-2xl">
       <CardHeader className="space-y-1">
         <CardTitle className="text-3xl font-bold tracking-tight">Set your password</CardTitle>
-        <CardDescription className="text-slate-300">
+        <CardDescription className="text-muted-foreground">
           Choose a password to finish setting up your 888 Safety portal access.
         </CardDescription>
       </CardHeader>
       <CardContent>
         {done ? (
           <div className="flex flex-col items-center text-center gap-3 py-6">
-            <CheckCircle2 className="h-10 w-10 text-green-400" />
-            <p className="text-white font-medium">Password set — signing you in…</p>
+            <CheckCircle2 className="h-10 w-10 text-success" />
+            <p className="text-foreground font-medium">Password set — signing you in…</p>
           </div>
         ) : hasSession === false ? (
           <div className="space-y-4 py-2">
-            <p className="text-sm text-red-300">
+            <p className="text-sm text-danger">
               This link has expired or was already used. Ask your administrator to resend your invite.
             </p>
             <Button
               onClick={() => router.push("/auth/login")}
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-6 text-lg font-semibold"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg font-semibold"
             >
               Go to sign in
             </Button>
@@ -83,31 +83,31 @@ export function SetPasswordForm() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
                 type="password"
                 placeholder="New password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500 h-12"
+                className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary h-12"
                 required
               />
             </div>
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400" />
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
               <Input
                 type="password"
                 placeholder="Confirm password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-red-500 focus:ring-red-500 h-12"
+                className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary h-12"
                 required
               />
             </div>
-            {error && <p className="text-sm text-red-400 font-medium">{error}</p>}
+            {error && <p className="text-sm text-danger font-medium">{error}</p>}
             <Button
               type="submit"
-              className="w-full bg-red-600 hover:bg-red-700 text-white py-6 text-lg font-semibold"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg font-semibold"
               disabled={loading || hasSession === null}
             >
               {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Set password & continue"}

@@ -1,7 +1,32 @@
 /* ═══════════════════════════════════════════
    PROPOSAL GENERATOR — DESIGN TOKENS
    ═══════════════════════════════════════════ */
+
+/* Light "paper" palette — admin portal default. */
 :root {
+  --p-bg: #faf9f7;
+  --p-surface: #ffffff;
+  --p-surface-raised: #f3f2ef;
+  --p-input-bg: #ffffff;
+  --p-border: #e3e1dc;
+  --p-border-subtle: #edebe7;
+  --p-text: #1a1b1e;
+  --p-text-secondary: #5a5b5f;
+  --p-text-muted: #8a8d92;
+  --p-gold: #8f7434;
+  --p-gold-dim: #b3995c;
+  --p-blue: #3d6ea5;
+  --p-green: #2e8f50;
+  --p-red: #b03d3d;
+  --p-white: #ffffff;
+
+  --p-font-serif: var(--font-serif), 'Playfair Display', Georgia, serif;
+  --p-font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --p-font-mono: var(--font-mono), 'Courier New', monospace;
+}
+
+/* Dark cockpit palette — the original wizard look, driven by next-themes. */
+.dark {
   --p-bg: #0b0c0f;
   --p-surface: #141518;
   --p-surface-raised: #1a1c20;
@@ -17,10 +42,6 @@
   --p-green: #5ac57a;
   --p-red: #c55a5a;
   --p-white: #ffffff;
-
-  --p-font-serif: var(--font-serif), 'Playfair Display', Georgia, serif;
-  --p-font-sans: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --p-font-mono: var(--font-mono), 'Courier New', monospace;
 }
 
 /* ═══════════════════════════════════════════
@@ -207,8 +228,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #1a1c20;
-  /* Dark background matching reference */
+  background: var(--p-surface-raised);
   border: 1px solid var(--p-border);
   display: flex;
   align-items: center;
@@ -825,7 +845,7 @@
 }
 
 .prop-skeleton-container {
-  background: #111111;
+  background: var(--p-surface-raised);
   border: 1px solid var(--p-border);
   padding: 40px;
   min-height: 500px;

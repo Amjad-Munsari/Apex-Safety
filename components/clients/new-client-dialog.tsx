@@ -62,21 +62,21 @@ export function NewClientButton({
     <>
       <Button
         onClick={() => setOpen(true)}
-        className="bg-white hover:bg-white/90 text-black rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none flex gap-2"
+        className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none flex gap-2"
       >
         <Plus className="w-4 h-4" /> New Client
       </Button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset() }}>
-        <DialogContent className="sm:max-w-[440px] border-white/5 bg-[#1c1c1c] text-white rounded-sm">
+        <DialogContent className="sm:max-w-[440px] border-border bg-card text-foreground rounded-sm">
           <DialogHeader>
-            <div className="text-[10px] font-mono tracking-[0.25em] text-[#666] uppercase mb-1">
+            <div className="text-[10px] font-mono tracking-[0.25em] text-muted-foreground uppercase mb-1">
               New Client
             </div>
-            <DialogTitle className="font-serif text-[22px] font-normal text-white tracking-tight leading-tight">
+            <DialogTitle className="font-serif text-[22px] font-normal text-foreground tracking-tight leading-tight">
               Onboard a new client.
             </DialogTitle>
-            <p className="text-[#888] text-xs font-sans tracking-wide mt-1">
+            <p className="text-muted-foreground text-xs font-sans tracking-wide mt-1">
               They&apos;ll receive a portal invite and start with a 0h hours balance.
             </p>
           </DialogHeader>
@@ -110,18 +110,18 @@ export function NewClientButton({
               placeholder="0161 552 0918"
             />
 
-            <div className="flex justify-between items-center pt-3 border-t border-white/5">
+            <div className="flex justify-between items-center pt-3 border-t border-border">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="text-[#888] hover:text-white text-[10px] uppercase tracking-[0.2em] font-mono transition-colors"
+                className="text-muted-foreground hover:text-foreground text-[10px] uppercase tracking-[0.2em] font-mono transition-colors"
               >
                 Cancel
               </button>
               <Button
                 type="submit"
                 disabled={!canSubmit || submitting}
-                className="bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-black rounded-sm px-5 font-medium text-[11px] h-9 tracking-wide border-none flex gap-2"
+                className="bg-gold hover:bg-gold/90 disabled:opacity-40 text-gold-foreground rounded-sm px-5 font-medium text-[11px] h-9 tracking-wide border-none flex gap-2"
               >
                 <Send className="w-3.5 h-3.5" />
                 {submitting ? "Sending..." : "Send Invite"}
@@ -153,9 +153,9 @@ function Field({
 }) {
   return (
     <label className="flex flex-col gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#777] flex items-center gap-2">
+      <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground flex items-center gap-2">
         {label}
-        {optional && <span className="text-[#555]">(optional)</span>}
+        {optional && <span className="text-muted-foreground/60">(optional)</span>}
       </span>
       <input
         type={type}
@@ -163,7 +163,7 @@ function Field({
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-black/40 border border-white/10 rounded-sm h-9 px-3 text-sm text-white placeholder:text-white/20 focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 outline-none transition-all"
+        className="bg-muted border border-border rounded-sm h-9 px-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-gold/50 focus:ring-2 focus:ring-gold/20 outline-none transition-all"
       />
     </label>
   )

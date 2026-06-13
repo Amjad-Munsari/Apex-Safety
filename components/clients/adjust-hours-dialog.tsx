@@ -68,25 +68,25 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={
-        <Button variant="outline" size="sm" className="bg-white/5 border-white/10 hover:bg-white/10 text-white/70 text-[10px] uppercase tracking-wider font-mono h-7">
+        <Button variant="outline" size="sm" className="bg-muted border-border hover:bg-muted/80 text-muted-foreground text-[10px] uppercase tracking-wider font-mono h-7">
           Adjust Balance
         </Button>
       } />
       <DialogContent
-        className="sm:max-w-[425px] bg-[#1c1c1c] border-white/10 text-white"
+        className="sm:max-w-[425px] bg-card border-border text-foreground"
         initialFocus={inputRef}
       >
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl">Adjust Hours Balance</DialogTitle>
-          <DialogDescription className="text-white/40">
-            Add or deduct hours from this client's retained balance. Current: <span className="text-white font-mono">{currentBalance} hrs</span>
+          <DialogDescription className="text-muted-foreground">
+            Add or deduct hours from this client's retained balance. Current: <span className="text-foreground font-mono">{currentBalance} hrs</span>
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="amount" className="text-xs uppercase tracking-widest text-[#888] font-mono">Amount (Hours)</Label>
+            <Label htmlFor="amount" className="text-xs uppercase tracking-widest text-muted-foreground font-mono">Amount (Hours)</Label>
             <div className="relative">
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/20" />
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40" />
               <Input
                 ref={inputRef}
                 id="amount"
@@ -96,16 +96,16 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 onFocus={(e) => e.target.select()}
-                className="bg-black/40 border-white/10 pl-10 pr-12 h-12 text-lg focus:ring-white/20"
+                className="bg-muted border-border pl-10 pr-12 h-12 text-lg focus:ring-border"
                 placeholder="0.0"
               />
-              {/* Custom stepper — themed to the dark dialog, replacing the hidden native arrows. */}
+              {/* Custom stepper — themed to the dialog, replacing the hidden native arrows. */}
               <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex flex-col gap-px">
                 <button
                   type="button"
                   aria-label="Increase hours"
                   onClick={() => step(1)}
-                  className="flex h-[18px] w-7 items-center justify-center rounded-sm border border-white/10 bg-white/5 text-white/50 hover:bg-white/15 hover:text-white transition-colors"
+                  className="flex h-[18px] w-7 items-center justify-center rounded-sm border border-border bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors"
                 >
                   <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.5} />
                 </button>
@@ -113,7 +113,7 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
                   type="button"
                   aria-label="Decrease hours"
                   onClick={() => step(-1)}
-                  className="flex h-[18px] w-7 items-center justify-center rounded-sm border border-white/10 bg-white/5 text-white/50 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-30 disabled:hover:bg-white/5 disabled:hover:text-white/50"
+                  className="flex h-[18px] w-7 items-center justify-center rounded-sm border border-border bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors disabled:opacity-30 disabled:hover:bg-muted disabled:hover:text-muted-foreground"
                   disabled={(parseFloat(amount) || 0) <= 0}
                 >
                   <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} />
@@ -134,7 +134,7 @@ export function AdjustHoursDialog({ clientId, currentBalance }: AdjustHoursDialo
           <Button
             onClick={() => handleAdjust("add")}
             disabled={loading || (parseFloat(amount) || 0) <= 0}
-            className="flex-1 bg-white hover:bg-white/90 text-black rounded-sm gap-2 uppercase text-[10px] font-mono tracking-widest"
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm gap-2 uppercase text-[10px] font-mono tracking-widest"
           >
             <Plus className="w-3 h-3" /> Add Hours
           </Button>

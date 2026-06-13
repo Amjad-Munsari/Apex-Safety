@@ -38,8 +38,8 @@ export default function LoginPage() {
 
 
   return (
-    <div data-surface="client" className="min-h-screen flex bg-[#fbfaf5]">
-      {/* Left panel — branding */}
+    <div data-surface="client" className="min-h-screen flex bg-background">
+      {/* Left panel — branding (intentionally pinned dark as brand surface) */}
       <div className="hidden lg:flex flex-col justify-between w-[420px] bg-[#1a1a1a] p-12 shrink-0">
         <div>
           <span className="font-mono text-[9px] tracking-[0.3em] text-white/30 uppercase font-bold">
@@ -74,8 +74,8 @@ export default function LoginPage() {
 
           {/* Header */}
           <div className="space-y-2">
-            <h2 className="font-serif text-[28px] text-[#1a1a1a] tracking-tight">Sign in</h2>
-            <p className="text-[#999] text-[13px] font-sans">
+            <h2 className="font-serif text-[28px] text-foreground tracking-tight">Sign in</h2>
+            <p className="text-muted-foreground text-[13px] font-sans">
               Use your email and password, or enter demo mode.
             </p>
           </div>
@@ -85,7 +85,7 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <label
                 htmlFor="email"
-                className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#999] font-bold"
+                className="block text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground font-bold"
               >
                 Email address
               </label>
@@ -96,7 +96,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full h-12 border border-[#e5e1d8] bg-white rounded-sm px-4 text-[14px] text-[#1a1a1a] placeholder:text-[#bbb] outline-none focus:border-[#1a1a1a] transition-colors font-sans"
+                className="w-full h-12 border border-border bg-card rounded-sm px-4 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground transition-colors font-sans"
                 placeholder="you@company.com"
               />
             </div>
@@ -104,7 +104,7 @@ export default function LoginPage() {
             <div className="space-y-1.5">
               <label
                 htmlFor="password"
-                className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#999] font-bold"
+                className="block text-[9px] font-mono uppercase tracking-[0.25em] text-muted-foreground font-bold"
               >
                 Password
               </label>
@@ -115,19 +115,19 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full h-12 border border-[#e5e1d8] bg-white rounded-sm px-4 text-[14px] text-[#1a1a1a] placeholder:text-[#bbb] outline-none focus:border-[#1a1a1a] transition-colors font-sans"
+                className="w-full h-12 border border-border bg-card rounded-sm px-4 text-[14px] text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground transition-colors font-sans"
                 placeholder="••••••••"
               />
             </div>
 
             {error && (
-              <p className="text-[12px] text-[#c0392b] font-sans">{error}</p>
+              <p className="text-[12px] text-danger font-sans">{error}</p>
             )}
 
             <button
               type="submit"
               disabled={submitting || isPending}
-              className="w-full h-12 bg-[#1a1a1a] hover:bg-black text-white rounded-sm font-sans text-[13px] font-bold tracking-tight transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm font-sans text-[13px] font-bold tracking-tight transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting || isPending ? "Signing in…" : "Sign in"}
             </button>

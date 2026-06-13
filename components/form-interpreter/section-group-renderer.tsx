@@ -10,8 +10,8 @@ type Props = EntityComponentProps<typeof sectionGroupEntity> & {
 
 const surfaceTokens = {
   dark: {
-    title: "text-white",
-    divider: "border-white/10",
+    title: "text-foreground",
+    divider: "border-border",
   },
   cream: {
     title: "text-foreground",

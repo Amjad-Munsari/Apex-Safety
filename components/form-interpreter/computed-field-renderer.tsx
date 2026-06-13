@@ -66,9 +66,9 @@ type Props = EntityComponentProps<typeof computedFieldEntity> & {
 
 const surfaceTokens = {
   dark: {
-    label: "text-white/70",
-    helpText: "text-white/40",
-    placeholder: "border-white/10 text-white/40",
+    label: "text-foreground",
+    helpText: "text-muted-foreground",
+    placeholder: "border-border text-muted-foreground",
   },
   cream: {
     label: "text-foreground",
