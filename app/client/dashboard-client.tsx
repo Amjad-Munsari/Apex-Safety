@@ -191,7 +191,7 @@ export function ClientDashboard({ data, greeting }: Props) {
             {data.attentionDocs.map((doc) => (
               <div key={doc.id} className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-5 group hover:bg-muted/50 transition-all">
                 <div className="space-y-1 flex-1">
-                  <h4 className="font-sans font-extrabold text-[14px] text-foreground tracking-tight group-hover:text-foreground">{doc.title}</h4>
+                  <h4 className="font-sans font-medium text-[14px] text-foreground tracking-tight group-hover:text-foreground">{doc.title}</h4>
                   <div className="flex items-center gap-3 font-mono text-[8px] tracking-[0.25em] text-muted-foreground uppercase font-bold">
                      <span>{doc.id.slice(0, 8).toUpperCase()}</span>
                      <span className="opacity-50">&middot;</span>
