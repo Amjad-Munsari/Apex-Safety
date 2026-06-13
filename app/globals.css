@@ -338,12 +338,16 @@
      the token-driven surfaces (background, cards, sidebar, borders, ink) ease
      between palettes when next-themes flips `.dark`. Lives in the base layer,
      so any element carrying a Tailwind `transition-*` utility (buttons, links)
-     keeps its own faster transition and overrides this. Color/shadow only —
-     never layout — so the switch can't reflow. */
+     keeps its own faster transition and overrides this.
+
+     Deliberately limited to background-color / border-color / color. box-shadow,
+     fill and stroke are EXCLUDED on purpose: box-shadow can't be GPU-composited,
+     so transitioning it across every shadowed element forces a full-tree repaint
+     each frame and the toggle stutters on large pages. Icons (lucide) paint with
+     currentColor, so they still ease via the `color` transition for free. */
   *, *::before, *::after {
     transition: background-color 0.3s ease, border-color 0.3s ease,
-      color 0.3s ease, fill 0.3s ease, stroke 0.3s ease,
-      box-shadow 0.3s ease;
+      color 0.3s ease;
   }
 
   /* Respect reduced-motion and keep the very first paint instant (the theme
