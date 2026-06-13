@@ -64,7 +64,7 @@ export function CustomiseFirstButton({ assignmentId }: CustomiseFirstButtonProps
       <Button
         variant="outline"
         onClick={() => setOpen(true)}
-        className="flex-1 rounded-sm border border-[#1a1a1a] bg-transparent text-[#1a1a1a] h-11 px-5 font-mono text-[9px] uppercase tracking-[0.25em] hover:bg-[#1a1a1a]/5 transition-colors"
+        className="flex-1 rounded-sm border border-foreground bg-transparent text-foreground h-11 px-5 font-mono text-[9px] uppercase tracking-[0.25em] hover:bg-foreground/5 transition-colors"
       >
         Customise first
       </Button>
@@ -78,7 +78,7 @@ export function CustomiseFirstButton({ assignmentId }: CustomiseFirstButtonProps
             onClick={() => setOpen(false)}
             disabled={pending}
             aria-label="Close"
-            className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-sm text-[#8a857f] transition-colors hover:bg-black/5 hover:text-[#1a1a1a] disabled:opacity-50"
+            className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
           >
             <X className="h-4 w-4" />
           </button>
@@ -93,7 +93,7 @@ export function CustomiseFirstButton({ assignmentId }: CustomiseFirstButtonProps
             <AlertDialogAction
               onClick={handleConfirm}
               disabled={pending}
-              className="bg-[#1a1a1a] text-white hover:bg-[#1a1a1a]/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {pending ? "Creating copy…" : "Create my copy"}
             </AlertDialogAction>

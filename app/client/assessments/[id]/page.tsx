@@ -22,10 +22,10 @@ const STATUS_LABEL: Record<AssessmentStatus, string> = {
 }
 
 const STATUS_PILL: Record<AssessmentStatus, { border: string; text: string; dot: string }> = {
-  completed: { border: "border-[#3b8273]", text: "text-[#3b8273]", dot: "bg-[#3b8273]" },
+  completed: { border: "border-teal", text: "text-teal", dot: "bg-teal" },
   submitted: { border: "border-[#4f6d8f]", text: "text-[#4f6d8f]", dot: "bg-[#4f6d8f]" },
-  in_progress: { border: "border-[#c0a66d]", text: "text-[#c0a66d]", dot: "bg-[#c0a66d]" },
-  scheduled: { border: "border-[#8a857f]", text: "text-[#6b6560]", dot: "bg-[#8a857f]" },
+  in_progress: { border: "border-gold", text: "text-gold", dot: "bg-gold" },
+  scheduled: { border: "border-border", text: "text-muted-foreground", dot: "bg-muted-foreground" },
 }
 
 // Supabase nests the template join as either an object or a single-element
@@ -91,7 +91,7 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
       {/* Back link */}
       <Link
         href="/client/assessments"
-        className="inline-flex items-center gap-2 text-[#6b6560] hover:text-black transition-colors"
+        className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="w-3.5 h-3.5" />
         <span className="font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
@@ -103,15 +103,15 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
       <section className="space-y-3">
         <div className="flex items-end justify-between gap-6 flex-wrap">
           <div className="space-y-2">
-            <h2 className="font-serif text-[32px] text-[#1a1a1a] font-medium tracking-tight leading-[1.05]">
+            <h2 className="font-serif text-[32px] text-foreground font-medium tracking-tight leading-[1.05]">
               {name}.
             </h2>
             <div className="flex items-center gap-4 font-mono text-[9px] tracking-[0.25em] uppercase font-bold">
-              <span className="flex items-center gap-1.5 text-[#6b6560]">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
                 <Calendar className="w-3 h-3" />
                 {date}
               </span>
-              <span className="text-[#d8d4cc]">·</span>
+              <span className="text-border">·</span>
               <span
                 className={cn(
                   "px-2.5 py-1 border rounded-full leading-none flex items-center gap-1.5 text-[8px] tracking-[0.16em]",
@@ -128,18 +128,18 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
       </section>
 
       {/* Body — status-specific */}
-      <section className="bg-white border border-[#e5e1d8] rounded-sm p-8 shadow-sm">
+      <section className="bg-card border border-border rounded-sm p-8 shadow-sm">
         {status === "completed" && (
           <div className="flex flex-col gap-6">
             <div className="flex items-start gap-5">
-              <div className="w-10 h-10 rounded-sm bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-sm bg-success/10 text-success flex items-center justify-center shrink-0">
                 <FileText className="w-5 h-5" />
               </div>
               <div className="space-y-1.5">
-                <h4 className="font-serif text-[18px] text-[#1a1a1a] font-medium leading-tight">
+                <h4 className="font-serif text-[18px] text-foreground font-medium leading-tight">
                   Report delivered
                 </h4>
-                <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
+                <p className="text-muted-foreground text-[13px] font-sans tracking-tight max-w-xl">
                   Matt's signed-off report is ready. Download the PDF for your records, or open it in
                   a new tab.
                 </p>
@@ -151,14 +151,14 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
 
         {status === "submitted" && (
           <div className="flex items-start gap-5">
-            <div className="w-10 h-10 rounded-sm bg-[#eef2f7] text-[#4f6d8f] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-sm bg-muted text-muted-foreground flex items-center justify-center shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div className="space-y-1.5 max-w-xl">
-              <h4 className="font-serif text-[18px] text-[#1a1a1a] font-medium leading-tight">
+              <h4 className="font-serif text-[18px] text-foreground font-medium leading-tight">
                 Assessment submitted.
               </h4>
-              <p className="text-[#6b6560] text-[13px] font-sans tracking-tight">
+              <p className="text-muted-foreground text-[13px] font-sans tracking-tight">
                 Your responses have been recorded and saved to your records. Your consultant has
                 been notified and can view this submission.
               </p>
@@ -168,14 +168,14 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
 
         {status === "in_progress" && (
           <div className="flex items-start gap-5">
-            <div className="w-10 h-10 rounded-sm bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-sm bg-gold/10 text-gold flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5" />
             </div>
             <div className="space-y-1.5 max-w-xl">
-              <h4 className="font-serif text-[18px] text-[#1a1a1a] font-medium leading-tight">
+              <h4 className="font-serif text-[18px] text-foreground font-medium leading-tight">
                 Matt is currently working on this assessment.
               </h4>
-              <p className="text-[#6b6560] text-[13px] font-sans tracking-tight">
+              <p className="text-muted-foreground text-[13px] font-sans tracking-tight">
                 You'll be notified by email as soon as the report is ready. No action is required
                 from you — site visits, evidence capture and write-up all happen on Matt's side.
               </p>
@@ -185,14 +185,14 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
 
         {status === "scheduled" && (
           <div className="flex items-start gap-5">
-            <div className="w-10 h-10 rounded-sm bg-[#f5f3ee] text-[#6b6560] flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-sm bg-muted text-muted-foreground flex items-center justify-center shrink-0">
               <Calendar className="w-5 h-5" />
             </div>
             <div className="space-y-1.5 max-w-xl">
-              <h4 className="font-serif text-[18px] text-[#1a1a1a] font-medium leading-tight">
+              <h4 className="font-serif text-[18px] text-foreground font-medium leading-tight">
                 Scheduled for {date}.
               </h4>
-              <p className="text-[#6b6560] text-[13px] font-sans tracking-tight">
+              <p className="text-muted-foreground text-[13px] font-sans tracking-tight">
                 Matt will visit on the scheduled date to carry out this assessment on-site. If you
                 need to reschedule, message him directly.
               </p>

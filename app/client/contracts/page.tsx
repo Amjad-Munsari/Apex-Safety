@@ -23,7 +23,7 @@ export default async function ClientContractsPage() {
   const ctx = await getClientContext();
   if (!ctx?.client_id) {
     return (
-      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-muted-foreground">
         No client context found
       </div>
     );
@@ -103,7 +103,7 @@ export default async function ClientContractsPage() {
             07 · Contracts
           </span>
         </div>
-        <h2 className="font-serif text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
+        <h2 className="font-serif text-[44px] text-foreground font-normal tracking-tight leading-[1.05]">
           Service agreements.
         </h2>
       </section>
@@ -111,9 +111,9 @@ export default async function ClientContractsPage() {
       {/* List or empty state */}
       {mappedContracts.length === 0 ? (
         /* Existing editorial empty-state card — verbatim */
-        <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
-          <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">No contracts yet.</p>
-          <p className="font-sans text-[13px] text-[#8a857f] max-w-md mx-auto leading-relaxed">
+        <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
+          <p className="font-serif text-[20px] text-foreground mb-3">No contracts yet.</p>
+          <p className="font-sans text-[13px] text-muted-foreground max-w-md mx-auto leading-relaxed">
             Counter-signed service agreements will appear here once your proposal is accepted and issued
             by 888 Safety &amp; Training.
           </p>
@@ -123,20 +123,20 @@ export default async function ClientContractsPage() {
           {mappedContracts.map((c) => (
             <div
               key={c.id}
-              className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-7"
+              className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-7"
             >
               <div className="flex items-start justify-between gap-6">
                 {/* Left */}
                 <div className="flex-1 min-w-0 space-y-2">
-                  <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
+                  <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-muted-foreground uppercase font-bold">
                     <span>{c.reference}</span>
                     <span className="opacity-50">·</span>
                     <span>Issued {c.issuedAt}</span>
                   </div>
-                  <h3 className="font-serif text-[24px] text-[#1a1a1a] tracking-tight leading-tight">
+                  <h3 className="font-serif text-[24px] text-foreground tracking-tight leading-tight">
                     {c.title}
                   </h3>
-                  <p className="font-sans text-[13px] text-[#6b6560]">
+                  <p className="font-sans text-[13px] text-muted-foreground">
                     {c.serviceCount} {c.serviceCount === 1 ? "service" : "services"} · £
                     {Math.round(c.total).toLocaleString()}
                   </p>

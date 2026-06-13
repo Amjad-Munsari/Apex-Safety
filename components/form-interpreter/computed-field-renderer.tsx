@@ -71,9 +71,9 @@ const surfaceTokens = {
     placeholder: "border-white/10 text-white/40",
   },
   cream: {
-    label: "text-[#1a1a1a]",
-    helpText: "text-[#6b6560]",
-    placeholder: "border-[#e5e1d8] text-[#6b6560]",
+    label: "text-foreground",
+    helpText: "text-muted-foreground",
+    placeholder: "border-border text-muted-foreground",
   },
 } as const
 

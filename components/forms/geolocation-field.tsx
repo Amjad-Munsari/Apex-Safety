@@ -29,12 +29,12 @@ const surfaceTokens = {
     btn: "text-slate-400 hover:text-amber-500 hover:bg-slate-900",
   },
   cream: {
-    panel: "border-[#e5e1d8] bg-white",
-    icon: "text-[#1a1a1a]",
-    coord: "text-[#1a1a1a]",
-    meta: "text-[#6b6560]",
-    error: "text-[#8b2b21]",
-    btn: "text-[#6b6560] hover:text-[#1a1a1a] hover:bg-[#faf9f6]",
+    panel: "border-border bg-card",
+    icon: "text-foreground",
+    coord: "text-foreground",
+    meta: "text-muted-foreground",
+    error: "text-danger",
+    btn: "text-muted-foreground hover:text-foreground hover:bg-muted",
   },
 } as const
 

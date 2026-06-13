@@ -24,25 +24,25 @@ export function NewClientTemplateButton() {
     <>
       <Button
         onClick={() => setShowModal(true)}
-        className="rounded-sm bg-[#1a1a1a] hover:bg-black text-white h-10 px-6 font-bold text-[10px] uppercase tracking-[0.25em] shadow-none"
+        className="rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground h-10 px-6 font-bold text-[10px] uppercase tracking-[0.25em] shadow-none"
       >
         + New Template
       </Button>
 
       {showModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#e5e1d8] rounded-sm w-full max-w-md p-8 flex flex-col gap-6 shadow-xl">
-            <h3 className="font-serif text-2xl text-[#1a1a1a]">New Template</h3>
+          <div className="bg-card border border-border rounded-sm w-full max-w-md p-8 flex flex-col gap-6 shadow-xl">
+            <h3 className="font-serif text-2xl text-foreground">New Template</h3>
 
             <div className="flex flex-col gap-2">
-              <label className="font-mono text-[10px] uppercase tracking-widest text-[#8a857f]">Template Name</label>
+              <label className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Template Name</label>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                 placeholder="e.g. Daily Fire Door Walkaround"
-                className="bg-white border border-[#e5e1d8] rounded-sm px-4 py-3 text-[#1a1a1a] text-sm placeholder:text-[#a8a39d] outline-none focus:border-[#1a1a1a]/40 transition-colors"
+                className="bg-card border border-border rounded-sm px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-foreground/40 transition-colors"
                 autoFocus
               />
             </div>
@@ -51,14 +51,14 @@ export function NewClientTemplateButton() {
               <Button
                 variant="ghost"
                 onClick={() => setShowModal(false)}
-                className="text-[#6b6560] hover:text-black"
+                className="text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleCreate}
                 disabled={!name.trim() || isPending}
-                className="bg-[#1a1a1a] hover:bg-black text-white rounded-sm px-6"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6"
               >
                 {isPending ? "Creating…" : "Create"}
               </Button>

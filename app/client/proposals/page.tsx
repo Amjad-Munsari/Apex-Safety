@@ -25,7 +25,7 @@ export default async function ClientProposalsPage() {
   const ctx = await getClientContext();
   if (!ctx?.client_id) {
     return (
-      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-[#8a857f]">
+      <div className="py-24 text-center font-mono text-xs uppercase tracking-widest text-muted-foreground">
         No client context found
       </div>
     );
@@ -67,10 +67,10 @@ export default async function ClientProposalsPage() {
             06 · Proposals
           </span>
         </div>
-        <h2 className="font-serif text-[44px] text-[#1a1a1a] font-normal tracking-tight leading-[1.05]">
+        <h2 className="font-serif text-[44px] text-foreground font-normal tracking-tight leading-[1.05]">
           Proposals from Matt.
         </h2>
-        <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
+        <p className="text-muted-foreground text-[13px] font-sans tracking-tight max-w-xl">
           Review what&apos;s been quoted and download the PDF for your records.
         </p>
       </section>
@@ -78,9 +78,9 @@ export default async function ClientProposalsPage() {
       {/* List */}
       <section className="space-y-4">
         {proposals.length === 0 ? (
-          <div className="bg-white border border-[#e5e1d8] rounded-sm p-12 text-center">
-            <p className="font-serif text-[20px] text-[#1a1a1a] mb-2">No proposals yet.</p>
-            <p className="font-sans text-[13px] text-[#6b6560]">
+          <div className="bg-card border border-border rounded-sm p-12 text-center">
+            <p className="font-serif text-[20px] text-foreground mb-2">No proposals yet.</p>
+            <p className="font-sans text-[13px] text-muted-foreground">
               When Matt sends you a proposal, it will appear here.
             </p>
           </div>
@@ -91,20 +91,20 @@ export default async function ClientProposalsPage() {
               <Link
                 key={p.id}
                 href={`/client/proposals/${p.id}`}
-                className="block bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-[#d8d3c8] transition-all p-7 group"
+                className="block bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:shadow-md hover:border-border/70 transition-all p-7 group"
               >
                 <div className="flex items-start justify-between gap-6">
                   {/* Left */}
                   <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-[#8a857f] uppercase font-bold">
+                    <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-muted-foreground uppercase font-bold">
                       <span>{p.reference}</span>
                       <span className="opacity-50">·</span>
                       <span>Sent {p.issuedAt}</span>
                     </div>
-                    <h3 className="font-serif text-[24px] text-[#1a1a1a] tracking-tight leading-tight group-hover:text-black">
+                    <h3 className="font-serif text-[24px] text-foreground tracking-tight leading-tight group-hover:text-foreground">
                       {p.title}
                     </h3>
-                    <p className="font-sans text-[13px] text-[#6b6560]">
+                    <p className="font-sans text-[13px] text-muted-foreground">
                       {p.serviceCount} {p.serviceCount === 1 ? "service" : "services"} · £
                       {Math.round(p.total).toLocaleString()}
                     </p>
@@ -113,7 +113,7 @@ export default async function ClientProposalsPage() {
                   {/* Right */}
                   <div className="flex flex-col items-end gap-3 shrink-0">
                     <StatusPill tone={pill.tone} label={pill.label} />
-                    <div className="flex items-center gap-1.5 text-[#6b6560] group-hover:text-black transition-colors font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
+                    <div className="flex items-center gap-1.5 text-muted-foreground group-hover:text-foreground transition-colors font-mono text-[9px] uppercase tracking-[0.25em] font-bold">
                       Open
                       <ChevronRight className="w-3 h-3" />
                     </div>

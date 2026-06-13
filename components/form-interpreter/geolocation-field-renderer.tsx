@@ -73,15 +73,15 @@ const surfaceTokens = {
     instructionText: "text-white/40",
   },
   cream: {
-    label: "text-[#1a1a1a]",
-    required: "text-[#8b2b21]",
-    helpText: "text-[#6b6560]",
-    error: "text-[#8b2b21]",
-    panel: "bg-white border-[#e5e1d8]",
-    panelText: "text-[#1a1a1a]",
-    panelMuted: "text-[#6b6560]",
-    panelError: "text-[#8b2b21]",
-    instructionText: "text-[#6b6560]",
+    label: "text-foreground",
+    required: "text-danger",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
+    panel: "bg-card border-border",
+    panelText: "text-foreground",
+    panelMuted: "text-muted-foreground",
+    panelError: "text-danger",
+    instructionText: "text-muted-foreground",
   },
 } as const
 
@@ -258,7 +258,7 @@ export function GeolocationFieldRenderer({ entity, setValue, surface = "cream", 
       {showAccuracyBadge && (
         <div
           role="alert"
-          className="inline-flex items-center gap-2 px-2 py-1 rounded-sm text-xs font-mono bg-amber-100 text-amber-900 border border-amber-300"
+          className="inline-flex items-center gap-2 px-2 py-1 rounded-sm text-xs font-mono bg-gold/10 text-gold border border-gold/30"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

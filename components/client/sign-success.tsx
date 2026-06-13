@@ -20,7 +20,7 @@ export function SignSuccess({ title, message }: { title: string; message: string
   )
 
   return (
-    <div className="relative bg-white border border-[#e5e1d8] rounded-sm p-12 flex flex-col items-center justify-center text-center overflow-hidden min-h-[420px]">
+    <div className="relative bg-card border border-border rounded-sm p-12 flex flex-col items-center justify-center text-center overflow-hidden min-h-[420px]">
       {/* Confetti */}
       <div className="absolute inset-0 pointer-events-none">
         {confetti.map((c) => (
@@ -46,8 +46,8 @@ export function SignSuccess({ title, message }: { title: string; message: string
         <div className="font-mono text-[10px] uppercase tracking-[0.3em] text-teal font-bold">
           Signed & Sealed
         </div>
-        <h3 className="font-serif text-[28px] text-[#1a1a1a] tracking-tight">{title}</h3>
-        <p className="font-sans text-[13px] text-[#6b6560] max-w-md mx-auto leading-relaxed">{message}</p>
+        <h3 className="font-serif text-[28px] text-foreground tracking-tight">{title}</h3>
+        <p className="font-sans text-[13px] text-muted-foreground max-w-md mx-auto leading-relaxed">{message}</p>
       </div>
 
       <style>{`

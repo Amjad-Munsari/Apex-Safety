@@ -22,11 +22,11 @@ const surfaceTokens = {
     error: "text-[#8b2b21]",
   },
   cream: {
-    label: "text-[#1a1a1a]",
-    required: "text-[#8b2b21]",
-    input: "bg-white border-[#e5e1d8] text-[#1a1a1a] placeholder:text-[#a8a39d]",
-    helpText: "text-[#6b6560]",
-    error: "text-[#8b2b21]",
+    label: "text-foreground",
+    required: "text-danger",
+    input: "bg-card border-border text-foreground placeholder:text-muted-foreground",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
   },
 } as const
 

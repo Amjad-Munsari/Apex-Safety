@@ -34,7 +34,7 @@ export default async function ClientTemplatesPage() {
           </span>
         </div>
         <div className="flex items-end justify-between gap-6 flex-wrap">
-          <h2 className="font-serif text-[28px] text-[#1a1a1a] font-medium tracking-tight leading-[1.05]">
+          <h2 className="font-serif text-[28px] text-foreground font-medium tracking-tight leading-[1.05]">
             My Templates
           </h2>
           <NewClientTemplateButton />
@@ -43,18 +43,18 @@ export default async function ClientTemplatesPage() {
 
       {/* My Templates */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between border-b border-[#e5e1d8] pb-2">
-          <h3 className="font-mono text-[10px] tracking-[0.25em] uppercase font-bold text-[#1a1a1a]">
+        <div className="flex items-center justify-between border-b border-border pb-2">
+          <h3 className="font-mono text-[10px] tracking-[0.25em] uppercase font-bold text-foreground">
             My Templates
           </h3>
-          <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-[#8a857f]">
+          <span className="font-mono text-[9px] tracking-[0.25em] uppercase text-muted-foreground">
             {mine?.length ?? 0} created
           </span>
         </div>
         {!mine || mine.length === 0 ? (
           <div className="py-6">
             <h3 className="font-serif text-xl">No templates yet</h3>
-            <p className="text-sm text-[#6b6560] mt-2">Create your own forms or customise an assigned assessment when it arrives.</p>
+            <p className="text-sm text-muted-foreground mt-2">Create your own forms or customise an assigned assessment when it arrives.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

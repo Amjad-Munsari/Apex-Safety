@@ -5,9 +5,9 @@ export default function ProposalsLoading() {
     <div className="space-y-12">
       {/* Hero header */}
       <section className="space-y-3">
-        <Skeleton className="h-3 w-24 bg-[#ede9e0]" />
-        <Skeleton className="h-12 w-64 bg-[#ede9e0]" />
-        <Skeleton className="h-3 w-80 bg-[#ede9e0]" />
+        <Skeleton className="h-3 w-24 bg-muted" />
+        <Skeleton className="h-12 w-64 bg-muted" />
+        <Skeleton className="h-3 w-80 bg-muted" />
       </section>
 
       {/* Card grid */}
@@ -15,19 +15,19 @@ export default function ProposalsLoading() {
         {[0, 1, 2].map((i) => (
           <div
             key={i}
-            className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-7"
+            className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] p-7"
           >
             <div className="flex items-start justify-between gap-6">
               {/* Left */}
               <div className="flex-1 space-y-3">
-                <Skeleton className="h-3 w-40 bg-[#ede9e0]" />
-                <Skeleton className="h-7 w-64 bg-[#ede9e0]" />
-                <Skeleton className="h-3 w-32 bg-[#ede9e0]" />
+                <Skeleton className="h-3 w-40 bg-muted" />
+                <Skeleton className="h-7 w-64 bg-muted" />
+                <Skeleton className="h-3 w-32 bg-muted" />
               </div>
               {/* Right */}
               <div className="flex flex-col items-end gap-3 shrink-0">
-                <Skeleton className="h-6 w-28 bg-[#ede9e0] rounded-full" />
-                <Skeleton className="h-3 w-12 bg-[#ede9e0]" />
+                <Skeleton className="h-6 w-28 bg-muted rounded-full" />
+                <Skeleton className="h-3 w-12 bg-muted" />
               </div>
             </div>
           </div>

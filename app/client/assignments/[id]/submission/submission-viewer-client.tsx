@@ -50,25 +50,25 @@ export function SubmissionViewerClient({
       <div className="max-w-3xl mx-auto pt-6 pb-4 px-4 space-y-3">
         <Link
           href="/client/assignments"
-          className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] hover:text-[#1a1a1a] transition-colors"
+          className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground transition-colors"
         >
           &larr; Back to Assessments
         </Link>
 
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <h2 className="font-serif text-[22px] text-[#1a1a1a] font-medium tracking-tight leading-[1.15]">
+          <h2 className="font-serif text-[22px] text-foreground font-medium tracking-tight leading-[1.15]">
             Submitted form
           </h2>
           {formattedDate && (
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f] shrink-0">
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground shrink-0">
               Submitted {formattedDate}
             </span>
           )}
         </div>
 
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-[#f0f7f4] border border-[#c8e0d6]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#2d7a5e]" />
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#2d7a5e]">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-sm bg-success/10 border border-success/20">
+          <span className="w-1.5 h-1.5 rounded-full bg-success" />
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-success">
             Read-only &middot; Submitted
           </span>
         </div>

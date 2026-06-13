@@ -4,10 +4,10 @@ export type StatusTone = "success" | "warning" | "danger" | "info" | "neutral"
 
 const TONE: Record<StatusTone, { ring: string; text: string; dot: string }> = {
   success: { ring: "border-teal/40", text: "text-teal", dot: "bg-teal" },
-  warning: { ring: "border-[#c0a66d]/40", text: "text-[#c0a66d]", dot: "bg-[#c0a66d]" },
-  danger: { ring: "border-[#e06050]/40", text: "text-[#e06050]", dot: "bg-[#e06050]" },
+  warning: { ring: "border-gold/40", text: "text-gold", dot: "bg-gold" },
+  danger: { ring: "border-danger/40", text: "text-danger", dot: "bg-danger" },
   info: { ring: "border-[#4f6d8f]/40", text: "text-[#4f6d8f]", dot: "bg-[#4f6d8f]" },
-  neutral: { ring: "border-[#8a857f]/40", text: "text-[#6b6560]", dot: "bg-[#8a857f]" },
+  neutral: { ring: "border-muted-foreground/40", text: "text-muted-foreground", dot: "bg-muted-foreground" },
 }
 
 /**

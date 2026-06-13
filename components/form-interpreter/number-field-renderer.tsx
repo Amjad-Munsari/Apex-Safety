@@ -19,10 +19,10 @@ const surfaceTokens = {
     error: "text-[#8b2b21]",
   },
   cream: {
-    label: "text-[#1a1a1a]",
-    required: "text-[#8b2b21]",
-    helpText: "text-[#6b6560]",
-    error: "text-[#8b2b21]",
+    label: "text-foreground",
+    required: "text-danger",
+    helpText: "text-muted-foreground",
+    error: "text-danger",
   },
 } as const
 

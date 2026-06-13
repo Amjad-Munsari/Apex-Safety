@@ -25,13 +25,13 @@ const surfaceTokens = {
     inkColor: "#f8fafc", // slate-50 — readable on dark canvas
   },
   cream: {
-    canvas: "border-[#e5e1d8] bg-white",
+    canvas: "border-border bg-white",
     canvasActive: "border-amber-500/60",
-    instruction: "text-[#6b6560]",
-    actionGhost: "text-[#6b6560] hover:text-[#1a1a1a] hover:bg-[#faf9f6]",
-    actionPrimary: "bg-[#1a1a1a] text-white hover:bg-black",
-    preview: "border-[#e5e1d8] bg-white",
-    previewMeta: "text-[#6b6560]",
+    instruction: "text-muted-foreground",
+    actionGhost: "text-muted-foreground hover:text-foreground hover:bg-muted",
+    actionPrimary: "bg-primary text-primary-foreground hover:bg-primary/90",
+    preview: "border-border bg-white",
+    previewMeta: "text-muted-foreground",
     inkColor: "#1a1a1a",
   },
 } as const

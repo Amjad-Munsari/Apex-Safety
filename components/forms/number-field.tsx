@@ -26,8 +26,8 @@ const surfaceTokens = {
     btn: "border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-900 hover:text-amber-500 hover:border-amber-500/50",
   },
   cream: {
-    input: "bg-white border-[#e5e1d8] text-[#1a1a1a] placeholder:text-[#a8a39d] focus:ring-amber-500/20 focus:border-amber-500",
-    btn: "border-[#e5e1d8] bg-white text-[#1a1a1a] hover:bg-[#faf9f6] hover:text-amber-600 hover:border-amber-500/50",
+    input: "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-amber-500/20 focus:border-amber-500",
+    btn: "border-border bg-card text-foreground hover:bg-muted hover:text-amber-600 hover:border-amber-500/50",
   },
 } as const
 

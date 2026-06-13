@@ -82,15 +82,15 @@ function AssessmentsListShell({ children }: { children: React.ReactNode }) {
       {/* ─── HEADER ─── */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[10px] text-[#3b8273] tracking-[0.4em] uppercase font-medium">
+          <span className="font-mono text-[10px] text-teal tracking-[0.4em] uppercase font-medium">
             05 Assessments
           </span>
         </div>
         <div className="space-y-1">
-          <h2 className="font-serif text-[32px] text-[#1a1a1a] font-medium tracking-tight leading-[1.1]">
+          <h2 className="font-serif text-[32px] text-foreground font-medium tracking-tight leading-[1.1]">
             Assessments
           </h2>
-          <p className="text-[#6b6560] text-[13px] font-sans tracking-tight max-w-xl">
+          <p className="text-muted-foreground text-[13px] font-sans tracking-tight max-w-xl">
             Matt carries out your fire-safety inspections on-site and uploads the signed-off report
             here. Download a completed report, or check progress on a visit in flight.
           </p>
@@ -104,9 +104,9 @@ function AssessmentsListShell({ children }: { children: React.ReactNode }) {
 
 function AssessmentsEmpty({ headline, body }: { headline: string; body: string }) {
   return (
-    <div className="bg-white border border-[#e5e1d8] rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
-      <p className="font-serif text-[20px] text-[#1a1a1a] mb-3">{headline}</p>
-      <p className="font-sans text-[13px] text-[#6b6560] max-w-md mx-auto leading-relaxed">{body}</p>
+    <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
+      <p className="font-serif text-[20px] text-foreground mb-3">{headline}</p>
+      <p className="font-sans text-[13px] text-muted-foreground max-w-md mx-auto leading-relaxed">{body}</p>
     </div>
   );
 }

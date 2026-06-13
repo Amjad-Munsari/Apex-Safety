@@ -49,10 +49,10 @@ function StatusPill({ status }: { status: string }) {
 
   const colorClass =
     status === "in_progress"
-      ? "text-[#8a6d24] bg-[#c0a66d]/10"
+      ? "text-gold bg-gold/10"
       : status === "completed"
         ? "text-teal bg-teal/10"
-        : "text-[#666] bg-[#555]/10";
+        : "text-muted-foreground bg-muted";
 
   return (
     <span
@@ -69,9 +69,9 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
   const overdueDays = daysOverdue(assignment.due_date);
 
   return (
-    <article className="bg-white border border-[#e5e1d8] rounded-sm p-6 flex flex-col gap-4 hover:border-[#1a1a1a]/30 transition-colors cursor-pointer">
+    <article className="bg-card border border-border rounded-sm p-6 flex flex-col gap-4 hover:border-foreground/30 transition-colors cursor-pointer">
       {/* Row 1: Template name */}
-      <h3 className="font-serif text-[18px] text-[#1a1a1a] leading-tight">
+      <h3 className="font-serif text-[18px] text-foreground leading-tight">
         {getTemplateName(assignment.template)}
       </h3>
 
@@ -79,7 +79,7 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
       <div className="flex items-center gap-3 flex-wrap">
         <span
           className={`font-mono text-[9px] uppercase tracking-[0.2em] ${
-            overdue ? "text-[#e55a3a]" : "text-[#6b6560]"
+            overdue ? "text-danger" : "text-muted-foreground"
           }`}
         >
           DUE · {dueDateText}
@@ -99,14 +99,14 @@ export function AssignmentCard({ assignment, variant }: AssignmentCardProps) {
 
       {/* Overdue detail line (active tab only) */}
       {variant === "active" && overdue && assignment.status !== "completed" && (
-        <p className="text-xs text-[#a14a2a]">
+        <p className="text-xs text-danger">
           Was due {overdueDays} day{overdueDays === 1 ? "" : "s"} ago
         </p>
       )}
 
       {/* Row 3: Instructions clamp (active tab only) */}
       {variant === "active" && assignment.instructions && (
-        <p className="text-sm font-sans text-[#6b6560] italic line-clamp-2 max-w-2xl before:content-['—_'] before:text-[#8a6d24]">
+        <p className="text-sm font-sans text-muted-foreground italic line-clamp-2 max-w-2xl before:content-['—_'] before:text-gold">
           {assignment.instructions}
         </p>
       )}

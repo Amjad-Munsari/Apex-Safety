@@ -14,8 +14,8 @@ const surfaceTokens = {
     divider: "border-white/10",
   },
   cream: {
-    title: "text-[#1a1a1a]",
-    divider: "border-[#e5e1d8]",
+    title: "text-foreground",
+    divider: "border-border",
   },
 } as const
 

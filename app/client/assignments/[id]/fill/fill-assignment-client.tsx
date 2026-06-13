@@ -62,16 +62,16 @@ export function FillAssignmentClient({
       {/* Progress bar */}
       <div className="max-w-3xl mx-auto pt-6 pb-2 px-4">
         <div className="flex items-center justify-between mb-2">
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
             Progress
           </span>
-          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#8a857f]">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
             {progress}% complete
           </span>
         </div>
-        <div className="h-0.5 bg-[#e5e1d8] rounded-full overflow-hidden">
+        <div className="h-0.5 bg-border rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#1a1a1a] transition-all duration-300"
+            className="h-full bg-foreground transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -93,12 +93,12 @@ export function FillAssignmentClient({
       />
 
       {/* Submit button — black fill, full-width per UI-SPEC Route F */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#faf9f6] border-t border-[#e5e1d8] p-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-border p-4">
         <div className="max-w-3xl mx-auto">
           <button
             onClick={() => interpreterRef.current?.submit()}
             disabled={isSubmitting}
-            className="w-full rounded-sm bg-[#1a1a1a] text-white h-12 font-mono text-[9px] uppercase tracking-[0.25em] hover:bg-[#333] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-sm bg-primary text-primary-foreground h-12 font-mono text-[9px] uppercase tracking-[0.25em] hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Submitting…" : "Submit form"}
           </button>
