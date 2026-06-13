@@ -67,6 +67,11 @@ export default async function NewAssessmentPage({
     const tpl: any = Array.isArray(row.template) ? row.template[0] : row.template;
     if (!tpl) continue;
     if (tpl.deleted_at) continue;
+    // A customer-owned row with no owner org is corrupt data. Without this
+    // guard it would fall through to ownerClientId=null and be offered as a
+    // GLOBAL master — one client's template must never be offered for another
+    // client, so hide it instead.
+    if (tpl.owner_type === "customer" && !tpl.owner_id) continue;
 
     const templateId: string = tpl.id;
     const existing = latestPerTemplate.get(templateId);
