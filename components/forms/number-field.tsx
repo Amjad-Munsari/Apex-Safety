@@ -3,10 +3,8 @@
 import React from "react"
 import { Minus, Plus } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { MicButton } from "./mic-button"
 import { cn } from "@/lib/utils"
 import type { FormSurface } from "./form-surface"
-import type { DictationContext } from "@/hooks/use-stt"
 
 interface NumberFieldProps {
   value: number | string | undefined
@@ -16,8 +14,6 @@ interface NumberFieldProps {
   max?: number
   step?: number
   surface?: FormSurface
-  /** Mic dictation context — callers with a field label should pass it through. */
-  dictation?: DictationContext
 }
 
 const surfaceTokens = {
@@ -39,7 +35,6 @@ export function NumberField({
   max,
   step = 1,
   surface = "dark",
-  dictation,
 }: NumberFieldProps) {
   const t = surfaceTokens[surface]
 
@@ -59,9 +54,9 @@ export function NumberField({
   }
 
   // Narrow-bounded fields (e.g. PAS 79 likelihood/consequence 1–5) — typing is
-  // disabled and the mic affordance is hidden because the value space is so
-  // small that the −/+ buttons are the only sensible input. Wider ranges
-  // (e.g. fire-warden count 0–999) and unbounded fields keep typing + mic.
+  // disabled because the value space is so small that the −/+ buttons are the
+  // only sensible input. Wider ranges (e.g. fire-warden count 0–999) and
+  // unbounded fields keep free typing.
   // The bug this guards against: typing into a field already showing a value
   // appends ("1" + "5" → "15") and lands an out-of-range value in the store
   // that downstream computed fields reject, leaving the form in a broken
@@ -84,15 +79,11 @@ export function NumberField({
         <Minus className="h-4 w-4" />
       </button>
 
-      <div className="relative flex-1 group">
+      <div className="flex-1">
         <Input
           type="number"
           inputMode="decimal"
-          className={cn(
-            "h-12 rounded-sm text-center",
-            isNarrowBounded ? "" : "pr-12",
-            t.input
-          )}
+          className={cn("h-12 rounded-sm text-center", t.input)}
           placeholder={placeholder}
           value={safeNumeric ?? ""}
           min={min}
@@ -127,19 +118,6 @@ export function NumberField({
                 }
           }
         />
-        {!isNarrowBounded && (
-          <MicButton
-            surface={surface}
-            dictation={dictation ?? { kind: "number", placeholder, min, max }}
-            onTranscript={(text) => {
-              // The model is asked for digits only; this regex is the fallback
-              // for transcripts like "70 units". Raw text if no number found.
-              const match = text.match(/-?\d+(?:\.\d+)?/)
-              if (match) onChange(clamp(Number(match[0])))
-              else onChange(text)
-            }}
-          />
-        )}
       </div>
 
       <button

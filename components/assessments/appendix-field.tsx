@@ -1,7 +1,6 @@
 "use client"
 
 import { Textarea } from "@/components/ui/textarea"
-import { MicButton } from "@/components/forms/mic-button"
 import { MediaField } from "@/components/forms/media-field"
 import { Label } from "@/components/ui/label"
 
@@ -34,23 +33,12 @@ export function AppendixField({
           <Label className="uppercase text-[0.65rem] tracking-[0.1em] text-[var(--p-text-muted)] font-bold mb-3 block">
             General Notes
           </Label>
-          <div className="relative group">
-            <Textarea
-              className="bg-[var(--p-input-bg)] border-[var(--p-border)] text-[var(--p-text)] focus:ring-[var(--p-gold)]/20 focus:border-[var(--p-gold)] pr-12 min-h-[140px] rounded-sm"
-              placeholder="Dictate or type additional observations..."
-              value={notesValue}
-              onChange={(e) => onChangeNotes(e.target.value)}
-            />
-            <MicButton
-              className="top-3 translate-y-0"
-              onTranscript={(text) => onChangeNotes((notesValue ? notesValue + " " : "") + text)}
-              dictation={{
-                label: "Additional observations — general notes",
-                kind: "textarea",
-                helpText: "Other issues, context, or visual evidence not covered by the form schema.",
-              }}
-            />
-          </div>
+          <Textarea
+            className="bg-[var(--p-input-bg)] border-[var(--p-border)] text-[var(--p-text)] focus:ring-[var(--p-gold)]/20 focus:border-[var(--p-gold)] min-h-[140px] rounded-sm"
+            placeholder="Type additional observations..."
+            value={notesValue}
+            onChange={(e) => onChangeNotes(e.target.value)}
+          />
         </div>
 
         <div>

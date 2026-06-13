@@ -44,13 +44,6 @@ export function NumberFieldRenderer({ entity, setValue, surface = "cream", dynam
         min={attrs.min}
         max={attrs.max}
         onChange={(v) => setValue(v)}
-        dictation={{
-          label: attrs.label,
-          kind: "number",
-          helpText: attrs.helpText,
-          min: attrs.min,
-          max: attrs.max,
-        }}
       />
       {attrs.helpText && (
         <p className={cn("text-xs", t.helpText)}>{attrs.helpText}</p>
