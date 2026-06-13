@@ -334,6 +334,26 @@
     @apply font-sans;
   }
 
+  /* Smooth light/dark cross-fade. A low-specificity default in @layer base so
+     the token-driven surfaces (background, cards, sidebar, borders, ink) ease
+     between palettes when next-themes flips `.dark`. Lives in the base layer,
+     so any element carrying a Tailwind `transition-*` utility (buttons, links)
+     keeps its own faster transition and overrides this. Color/shadow only —
+     never layout — so the switch can't reflow. */
+  *, *::before, *::after {
+    transition: background-color 0.3s ease, border-color 0.3s ease,
+      color 0.3s ease, fill 0.3s ease, stroke 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  /* Respect reduced-motion and keep the very first paint instant (the theme
+     class is applied pre-hydration, so no fade should fire on load anyway). */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition: none;
+    }
+  }
+
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }

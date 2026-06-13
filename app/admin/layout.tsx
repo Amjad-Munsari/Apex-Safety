@@ -5,6 +5,7 @@ import { SidebarStats } from "@/components/admin/sidebar-stats";
 import { BrandingProvider } from "@/components/branding-provider";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
+import ThemeSwitch from "@/components/ui/theme-switch";
 import Link from "next/link";
 
 export default async function AdminLayout({
@@ -38,6 +39,7 @@ export default async function AdminLayout({
 
             {/* Right Date and Action */}
             <div className="flex items-center gap-6">
+              <ThemeSwitch size="sm" />
               <div className="flex flex-col items-end">
                 <span className="text-[10px] uppercase font-mono tracking-widest text-muted-foreground">Today</span>
                 <span className="text-sm font-medium text-foreground font-sans tracking-wide">{today}</span>

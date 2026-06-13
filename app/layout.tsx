@@ -36,7 +36,7 @@ export default function RootLayout({
     >
 
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster position="top-right" richColors />
         </ThemeProvider>
