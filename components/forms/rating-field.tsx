@@ -14,12 +14,12 @@ interface RatingFieldProps {
 
 const surfaceTokens = {
   dark: {
-    starIdle: "text-slate-700 hover:text-amber-500/40",
-    valueText: "text-slate-300",
-    valueMuted: "text-slate-500",
+    starIdle: "text-border hover:text-gold/40",
+    valueText: "text-foreground",
+    valueMuted: "text-muted-foreground",
   },
   cream: {
-    starIdle: "text-border hover:text-amber-500/40",
+    starIdle: "text-border hover:text-gold/40",
     valueText: "text-foreground",
     valueMuted: "text-muted-foreground",
   },

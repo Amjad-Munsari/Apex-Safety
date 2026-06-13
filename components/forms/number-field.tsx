@@ -22,12 +22,12 @@ interface NumberFieldProps {
 
 const surfaceTokens = {
   dark: {
-    input: "bg-slate-950 border-slate-800 focus:ring-amber-500/20 focus:border-amber-500",
-    btn: "border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-900 hover:text-amber-500 hover:border-amber-500/50",
+    input: "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-gold/20 focus:border-gold",
+    btn: "border-border bg-card text-foreground hover:bg-muted hover:text-gold hover:border-gold/50",
   },
   cream: {
-    input: "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-amber-500/20 focus:border-amber-500",
-    btn: "border-border bg-card text-foreground hover:bg-muted hover:text-amber-600 hover:border-amber-500/50",
+    input: "bg-card border-border text-foreground placeholder:text-muted-foreground focus:ring-gold/20 focus:border-gold",
+    btn: "border-border bg-card text-foreground hover:bg-muted hover:text-gold hover:border-gold/50",
   },
 } as const
 

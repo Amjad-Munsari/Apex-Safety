@@ -92,6 +92,11 @@
   --gold: #d97706;  /* brand secondary (orange) */
   --gold-foreground: oklch(0.99 0 0);  /* near-white on dark gold (#d97706, ~0.65L) */
   --teal: #3b8273;  /* brand primary (teal) */
+  /* Semantic accents must exist here too: dialogs/popovers portal to <body>,
+     outside any [data-surface] wrapper, so they resolve tokens from :root. */
+  --danger: oklch(0.55 0.18 25);
+  --success: oklch(0.52 0.13 150);
+  --custom-card: oklch(0.97 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.98 0 0);
   --sidebar-foreground: oklch(0.18 0 0);
@@ -228,6 +233,9 @@
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(1 0 0 / 12%);
   --sidebar-ring: oklch(0.6 0 0);
+  --danger: oklch(0.60 0.16 20);
+  --success: oklch(0.65 0.15 150);
+  --custom-card: oklch(0.20 0 0);
   color-scheme: dark;
 }
 
