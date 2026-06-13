@@ -407,8 +407,13 @@ export async function submitAssessmentAction(
     throw new Error(`Failed to submit assessment: ${updateError.message}`)
   }
   if (!updatedRows || updatedRows.length === 0) {
+    // Keep the precise diagnostic in the server log; surface a human message
+    // to the toast (the most common cause by far is "already submitted").
+    console.error(
+      `Submit matched zero rows for submission ${submissionId} — already submitted, deleted, or started by a different admin.`
+    )
     throw new Error(
-      "Submit matched zero rows — submission may have been submitted, deleted, or belongs to a different user."
+      "This assessment has already been submitted — it's waiting in the review queue."
     )
   }
 

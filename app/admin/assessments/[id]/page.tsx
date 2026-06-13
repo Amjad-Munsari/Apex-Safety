@@ -28,10 +28,17 @@ export default async function AssessmentPage({ params }: { params: Promise<{ id:
     notFound()
   }
 
-  // Once submitted, the fill UI is no longer the right surface — bounce
-  // back to the client record (the AI review flow has its own /review route).
-  if (submission.status === "submitted") {
-    redirect(submission.client_id ? `/admin/clients/${submission.client_id}` : "/admin")
+  // Once past draft, the fill UI is no longer the right surface — its
+  // "Submit assessment" CTA runs the draft-only submit, which can only fail
+  // on a submitted row. Route by status instead:
+  //   - completed → read-only answers view
+  //   - submitted / draft_ready_for_review / ai_draft_failed (or anything
+  //     else non-draft) → the AI review workspace, which handles all three.
+  if (submission.status === "completed") {
+    redirect(`/admin/assessments/${id}/view`)
+  }
+  if (submission.status !== "draft") {
+    redirect(`/admin/assessments/${id}/review`)
   }
 
   // Step 2: fetch the PINNED template version by submission.template_version_id.
