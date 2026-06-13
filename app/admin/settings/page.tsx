@@ -17,7 +17,7 @@ export default async function SettingsPage() {
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
-          <span className="text-teal font-semibold">10</span>
+          <span className="text-teal font-semibold">11</span>
           PRACTICE SETTINGS
         </div>
         <h2 className="font-serif text-[34px] leading-tight text-foreground">Settings.</h2>

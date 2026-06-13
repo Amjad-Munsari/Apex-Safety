@@ -19,7 +19,7 @@ export default async function DirectoryPage() {
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
-            <span className="text-teal font-semibold">11</span>
+            <span className="text-teal font-semibold">09</span>
             CONTRACTOR DIRECTORY
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-foreground">Contractor Directory</h2>
@@ -36,18 +36,11 @@ export default async function DirectoryPage() {
       </div>
 
       {/* ─── TABLE ─── */}
-      <Card className="bg-card ring-1 ring-foreground/10 rounded-lg overflow-hidden p-0 gap-0">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-foreground/5">
-          <div className="flex items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-              Directory
-            </span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-sm bg-foreground/5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-              {activeCount} Active · {contractors.length} Total
-            </span>
-          </div>
-        </div>
-
+      <div className="flex flex-col gap-3">
+        <span className="inline-flex items-center self-start px-2 py-0.5 rounded-sm bg-foreground/5 text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          {activeCount} Active · {contractors.length} Total
+        </span>
+        <Card className="bg-card ring-1 ring-foreground/10 rounded-lg overflow-hidden p-0 gap-0">
         <table className="w-full text-left font-sans text-sm">
           <thead>
             <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
@@ -80,7 +73,8 @@ export default async function DirectoryPage() {
             )}
           </tbody>
         </table>
-      </Card>
+        </Card>
+      </div>
     </div>
   )
 }

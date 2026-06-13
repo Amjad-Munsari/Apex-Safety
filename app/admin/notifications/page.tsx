@@ -66,7 +66,7 @@ export default async function NotificationsPage() {
       <div className="flex justify-between items-end">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-3 font-mono text-xs tracking-widest text-muted-foreground uppercase">
-            <span className="text-teal font-semibold">09</span>
+            <span className="text-teal font-semibold">10</span>
             REMINDER LOG
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-foreground">Notifications.</h2>
