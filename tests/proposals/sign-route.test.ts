@@ -38,6 +38,10 @@ const storageSignedUrlSpy = vi.fn()
 const storageDownloadSpy = vi.fn()
 // storage.from().upload()
 const storageUploadSpy = vi.fn()
+// workflow_errors.insert()  (auto-issue failure logging)
+const workflowErrorsInsertSpy = vi.fn()
+// issueContractCore — the route auto-fires this after a successful sign
+const issueContractCoreSpy = vi.fn()
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
@@ -80,6 +84,11 @@ vi.mock("@/lib/supabase/admin", () => ({
           insert: (data: unknown) => signaturesInsertSpy(data),
         }
       }
+      if (table === "workflow_errors") {
+        return {
+          insert: (data: unknown) => workflowErrorsInsertSpy(data),
+        }
+      }
       return {}
     },
     storage: {
@@ -107,6 +116,10 @@ vi.mock("@/lib/signing", () => ({
 const dispatchSpy = vi.fn()
 vi.mock("@/lib/notifications/n8n-dispatch", () => ({
   dispatchNotification: (...args: unknown[]) => dispatchSpy(...args),
+}))
+
+vi.mock("@/lib/proposals/issue-contract", () => ({
+  issueContractCore: (...args: unknown[]) => issueContractCoreSpy(...args),
 }))
 
 const revalidateSpy = vi.fn()
@@ -275,6 +288,8 @@ describe("GET /api/sign/[token]", () => {
 describe("POST /api/sign/[token]", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Default: auto-issue succeeds so existing success-path tests are unaffected.
+    issueContractCoreSpy.mockResolvedValue({ ok: true })
   })
 
   it("returns 400 when signature_image does not start with correct prefix", async () => {
@@ -556,5 +571,88 @@ describe("POST /api/sign/[token]", () => {
     // Neither download nor upload should be called when path is null
     expect(storageDownloadSpy).not.toHaveBeenCalled()
     expect(storageUploadSpy).not.toHaveBeenCalled()
+  })
+
+  it("auto-issues the contract after a successful sign (calls issueContractCore)", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({ data: VALID_CONSUMED_ROW, error: null })
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme Fire Ltd", contact_email: "jane@acme.example" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(200)
+
+    // Contract auto-issued with the consumed proposal id
+    expect(issueContractCoreSpy).toHaveBeenCalledTimes(1)
+    expect(issueContractCoreSpy).toHaveBeenCalledWith(VALID_PROPOSAL_ROW.id)
+    // Happy path logs nothing to workflow_errors
+    expect(workflowErrorsInsertSpy).not.toHaveBeenCalled()
+  })
+
+  it("still returns 200 and logs workflow_errors when auto-issue returns ok:false", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({ data: VALID_CONSUMED_ROW, error: null })
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme Fire Ltd", contact_email: "jane@acme.example" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+    // Contract generation fails (returned error, not thrown)
+    issueContractCoreSpy.mockResolvedValue({ ok: false, error: "boom" })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    // Signature is already persisted — the request must still succeed
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json).toEqual({ success: true })
+
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledTimes(1)
+    const arg = workflowErrorsInsertSpy.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.workflow_name).toBe("auto_issue_contract")
+    expect(arg.error_message).toBe("boom")
+    expect(arg.payload).toMatchObject({
+      proposalId: VALID_PROPOSAL_ROW.id,
+      client_id: VALID_PROPOSAL_ROW.client_id,
+    })
+  })
+
+  it("still returns 200 and logs workflow_errors when auto-issue throws", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({ data: VALID_CONSUMED_ROW, error: null })
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme Fire Ltd", contact_email: "jane@acme.example" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+    // Contract generation throws (unexpected error)
+    issueContractCoreSpy.mockRejectedValue(new Error("kaboom"))
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(200)
+    const json = await res.json()
+    expect(json).toEqual({ success: true })
+
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledTimes(1)
+    const arg = workflowErrorsInsertSpy.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.workflow_name).toBe("auto_issue_contract")
+    expect(arg.error_message).toBe("kaboom")
   })
 })

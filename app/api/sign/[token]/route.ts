@@ -5,6 +5,7 @@ import { hashToken } from "@/lib/signing"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { embedSignatureInPdf } from "@/lib/pdf/embed-signature"
+import { issueContractCore } from "@/lib/proposals/issue-contract"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -320,9 +321,42 @@ export async function POST(
     console.error("[sign/[token]] Notification dispatch failed:", err)
   }
 
-  // 10. Revalidate admin Kanban
+  // 10. Auto-issue the Service Agreement now that the proposal is "Signed".
+  //     Best-effort: the signature row is already persisted and the single-use
+  //     token consumed, so a contract failure must NEVER roll that back or 500
+  //     the request. Failures are logged to workflow_errors (surfaced on the
+  //     admin dashboard) and Matt can fall back to the manual "Issue contract"
+  //     button. issueContractCore is the admin action's logic WITHOUT the
+  //     requireAdmin() gate — there is no admin session on this public route, and
+  //     the client proved authority by redeeming the single-use signing token.
+  try {
+    const issued = await issueContractCore(consumed.id)
+    if (!issued.ok) {
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "auto_issue_contract",
+        error_message: issued.error,
+        payload: { proposalId: consumed.id, client_id: consumed.client_id },
+      })
+    }
+  } catch (err) {
+    console.error(
+      `[sign/[token]] Auto-issue contract failed for proposal ${consumed.id}:`,
+      err
+    )
+    try {
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "auto_issue_contract",
+        error_message: err instanceof Error ? err.message : String(err),
+        payload: { proposalId: consumed.id, client_id: consumed.client_id },
+      })
+    } catch (logErr) {
+      console.error("[sign/[token]] Failed to log auto-issue error:", logErr)
+    }
+  }
+
+  // 11. Revalidate admin Kanban
   revalidatePath("/admin/proposals")
 
-  // 11. Return success
+  // 12. Return success
   return NextResponse.json({ success: true })
 }

@@ -8,6 +8,7 @@ import { generateSigningToken, hashDocument } from "@/lib/signing"
 import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
 import { getSiteUrl } from "@/lib/site-url"
 import { SendProposalError } from "@/lib/proposals/send-errors"
+import { issueContractCore } from "@/lib/proposals/issue-contract"
 import { generateText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
 
@@ -548,151 +549,11 @@ export async function issueContract(
   proposalId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   await requireAdmin()
-
-  // 1. Load proposal
-  const { data: proposal, error: proposalError } = await adminClient
-    .from("proposals")
-    .select("id, client_id, status, services_json, total_price, signed_at")
-    .eq("id", proposalId)
-    .maybeSingle()
-
-  if (proposalError || !proposal) {
-    return { ok: false, error: "Proposal not found." }
-  }
-
-  if (proposal.status === "Contract Issued") {
-    return { ok: false, error: "A contract has already been issued for this proposal." }
-  }
-
-  if (proposal.status !== "Signed") {
-    return { ok: false, error: "The proposal must be signed before a contract can be issued." }
-  }
-
-  const servicesJson = Array.isArray(proposal.services_json) ? proposal.services_json : []
-  if (servicesJson.length === 0) {
-    return { ok: false, error: "This proposal has no services, so a contract cannot be generated." }
-  }
-
-  // 2. Load client details
-  const { data: client } = await adminClient
-    .from("clients")
-    .select("name, site_address, contact_name, contact_email")
-    .eq("id", proposal.client_id)
-    .single()
-
-  // 3. Signature details (who signed for the client, and when) — best-effort.
-  const { data: signature } = await adminClient
-    .from("proposal_signatures")
-    .select("signer_name, signed_at")
-    .eq("proposal_id", proposalId)
-    .order("signed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  // 4. Reconstruct line items — tolerate both the `{ service, quantity }` shape
-  //    and any flattened items (mirrors regenerateProposalPdf).
-  const pdfServices = (servicesJson as Record<string, unknown>[]).map((s) => {
-    const svc = s.service as Record<string, unknown> | undefined
-    return {
-      name: (svc?.name ?? s.name ?? "Service") as string,
-      description: (svc?.description ?? s.description ?? "") as string,
-      quantity: Number(s.quantity) || 1,
-      unit_price: Number(svc?.unit_price ?? s.unit_price ?? s.price) || 0,
-    }
-  })
-
-  const subtotal = pdfServices.reduce((acc, s) => acc + s.quantity * s.unit_price, 0)
-  const vat = subtotal * VAT_RATE
-  const total = subtotal + vat
-
-  const fmtDate = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : null
-  const issuedDate = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-
-  // 5. Generate the contract PDF
-  let pdfBuffer: Buffer
-  try {
-    const { generateContractPdfBuffer } = await import("@/lib/pdf/generator")
-    pdfBuffer = await generateContractPdfBuffer({
-      clientName: client?.name || "Client",
-      clientAddress: client?.site_address || "Address on file",
-      contactName: client?.contact_name || "Contact on file",
-      reference: `CON-${proposalId.slice(0, 6).toUpperCase()}`,
-      services: pdfServices,
-      subtotalAmount: subtotal,
-      vatAmount: vat,
-      totalAmount: total,
-      signedDate: fmtDate(signature?.signed_at ?? proposal.signed_at),
-      signedBy: signature?.signer_name ?? null,
-      issuedDate,
-    })
-  } catch (err) {
-    console.error("issueContract: PDF generation failed", { proposalId, err })
-    return { ok: false, error: "Failed to generate the contract PDF. Please try again." }
-  }
-
-  // 6. Upload to storage (proposals bucket — same bucket the client page reads)
-  const fileName = `${proposal.client_id}/contract_${proposalId}.pdf`
-  const { error: uploadError } = await adminClient.storage
-    .from("proposals")
-    .upload(fileName, pdfBuffer, { contentType: "application/pdf", upsert: true })
-
-  if (uploadError) {
-    console.error("issueContract: upload failed", { proposalId, uploadError })
-    return { ok: false, error: "Failed to store the contract PDF. Please try again." }
-  }
-
-  // 7. Persist path + advance status (atomic-ish: both in one update)
-  const { error: updateError } = await adminClient
-    .from("proposals")
-    .update({ contract_pdf_path: fileName, status: "Contract Issued" })
-    .eq("id", proposalId)
-
-  if (updateError) {
-    console.error("issueContract: status/path update failed", { proposalId, updateError })
-    return { ok: false, error: "Contract generated but could not be linked to the proposal." }
-  }
-
-  // 8. Notify the client — non-fatal. Mint a 7-day signed URL for the email only.
-  try {
-    const { data: signed } = await adminClient.storage
-      .from("proposals")
-      .createSignedUrl(fileName, 60 * 60 * 24 * 7)
-
-    const services: Array<{ service?: { name?: string }; name?: string }> = servicesJson as Array<{
-      service?: { name?: string }
-      name?: string
-    }>
-    const proposalTitle =
-      services.length === 1
-        ? services[0]?.service?.name ?? services[0]?.name ?? "Compliance Services"
-        : "Compliance & Training Programme"
-
-    if (client?.contact_email) {
-      const dispatch = await dispatchNotification({
-        type: "contract_issued",
-        client_name: client?.name ?? "there",
-        client_email: client.contact_email,
-        proposal_title: proposalTitle,
-        contract_url: signed?.signedUrl ?? "",
-        issued_at: new Date().toISOString(),
-      })
-      if (!dispatch.ok) {
-        await adminClient.from("workflow_errors").insert({
-          workflow_name: "contract_issued_email",
-          error_message: dispatch.error ?? "unknown dispatch failure",
-          payload: { proposalId, client_id: proposal.client_id },
-        })
-      }
-    }
-  } catch (err) {
-    console.error("issueContract: notification dispatch failed", { proposalId, err })
-  }
-
-  revalidatePath("/admin/proposals")
-  revalidatePath(`/admin/proposals/${proposalId}`)
-  revalidatePath("/client/contracts")
-  return { ok: true }
+  // Admin gate passed — delegate to the shared, gate-free core. The same core is
+  // called by the public signing route to auto-issue the contract the moment the
+  // client signs (no admin session there). Single source of truth lives in
+  // lib/proposals/issue-contract.ts.
+  return issueContractCore(proposalId)
 }
 
 /**
