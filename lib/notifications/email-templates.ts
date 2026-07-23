@@ -60,44 +60,85 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;")
 }
 
+// ── brand palette (from app/globals.css) ────────────────────────────────────
+const C = {
+  teal: "#3b8273",     // brand primary
+  tealDark: "#2f6b5e", // header depth
+  gold: "#d97706",     // brand secondary / accent rule
+  ink: "#1a1a1a",      // foreground, primary CTA fill
+  body: "#4b453f",     // body copy
+  muted: "#8a837b",    // footer / secondary
+  cream: "#f4f1ea",    // page canvas
+  card: "#ffffff",
+  border: "#e5e1d8",   // hairline
+  linkBox: "#faf9f6",  // raw-link chip bg
+}
+
+const FONT =
+  "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif"
+
 // ── layout ───────────────────────────────────────────────────────────────────
 
 /** Wrap body content in the shared shell: brand header, card, optional CTA,
  *  footer. `bodyHtml` is trusted (built here); dynamic values are escaped by
- *  the callers below before interpolation. */
+ *  the callers below before interpolation. `preheader` seeds the inbox preview
+ *  snippet (hidden in-body); defaults to the heading. */
 function layout(opts: {
   heading: string
   bodyHtml: string
   cta?: { label: string; url: string }
   footerNote?: string
+  preheader?: string
 }): string {
-  const { heading, bodyHtml, cta, footerNote } = opts
+  const { heading, bodyHtml, cta, footerNote, preheader } = opts
+
   const button = cta
-    ? `<tr><td style="padding:8px 0 4px;">
-         <a href="${cta.url}" style="display:inline-block;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 22px;border-radius:6px;">${escapeHtml(cta.label)}</a>
+    ? `<tr><td style="padding:20px 0 6px;">
+         <!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${cta.url}" style="height:46px;v-text-anchor:middle;width:280px;" arcsize="14%" fillcolor="${C.ink}" strokecolor="${C.ink}"><w:anchorlock/><center style="color:#ffffff;font-family:${FONT};font-size:15px;font-weight:600;">${escapeHtml(cta.label)}</center></v:roundrect><![endif]-->
+         <!--[if !mso]><!-- --><a href="${cta.url}" style="display:inline-block;background:${C.ink};color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;line-height:1;padding:15px 26px;border-radius:8px;">${escapeHtml(cta.label)}</a><!--<![endif]-->
        </td></tr>
-       <tr><td style="padding:4px 0 0;color:#64748b;font-size:12px;word-break:break-all;">Or paste this link into your browser:<br/>${cta.url}</td></tr>`
+       <tr><td style="padding:6px 0 0;">
+         <div style="color:${C.muted};font-size:12px;line-height:1.5;margin-bottom:6px;">Or paste this link into your browser:</div>
+         <div style="background:${C.linkBox};border:1px solid ${C.border};border-radius:6px;padding:10px 12px;color:${C.teal};font-size:12px;word-break:break-all;">${cta.url}</div>
+       </td></tr>`
     : ""
+
+  const preview = escapeHtml(preheader ?? heading)
+
   return `<!doctype html>
 <html lang="en">
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:32px 16px;">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="color-scheme" content="light"/>
+  <meta name="supported-color-schemes" content="light"/>
+</head>
+<body style="margin:0;padding:0;background:${C.cream};font-family:${FONT};-webkit-font-smoothing:antialiased;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${C.cream};font-size:1px;line-height:1px;">${preview}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.cream};padding:36px 16px;">
     <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;">
-        <tr><td style="background:#0f172a;padding:20px 28px;">
-          <span style="color:#ffffff;font-size:17px;font-weight:700;letter-spacing:0.2px;">${escapeHtml(BRAND)}</span>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:${C.card};border:1px solid ${C.border};border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(26,26,26,0.05);">
+        <!-- header -->
+        <tr><td style="background:${C.teal};background-image:linear-gradient(135deg,${C.teal},${C.tealDark});padding:26px 32px;">
+          <div style="color:#ffffff;font-size:19px;font-weight:700;letter-spacing:0.2px;">${escapeHtml(BRAND)}</div>
+          <div style="color:rgba(255,255,255,0.72);font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;">Fire Safety &amp; Compliance</div>
         </td></tr>
-        <tr><td style="padding:28px 28px 8px;">
-          <h1 style="margin:0 0 12px;font-size:20px;line-height:1.3;color:#0f172a;">${escapeHtml(heading)}</h1>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="color:#334155;font-size:15px;line-height:1.6;">
-            <tr><td style="padding:0 0 8px;">${bodyHtml}</td></tr>
+        <!-- gold accent rule -->
+        <tr><td style="height:3px;background:${C.gold};font-size:0;line-height:0;">&nbsp;</td></tr>
+        <!-- body -->
+        <tr><td style="padding:32px 32px 12px;">
+          <h1 style="margin:0 0 16px;font-size:21px;line-height:1.3;color:${C.ink};font-weight:700;">${escapeHtml(heading)}</h1>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="color:${C.body};font-size:15px;line-height:1.65;">
+            <tr><td>${bodyHtml}</td></tr>
             ${button}
           </table>
         </td></tr>
-        <tr><td style="padding:20px 28px 26px;border-top:1px solid #f1f5f9;color:#94a3b8;font-size:12px;line-height:1.5;">
-          ${footerNote ? `${escapeHtml(footerNote)}<br/><br/>` : ""}This is an automated message from ${escapeHtml(BRAND)}. Replying to this email reaches our team.
+        <!-- footer -->
+        <tr><td style="padding:22px 32px 28px;border-top:1px solid ${C.border};color:${C.muted};font-size:12px;line-height:1.6;">
+          ${footerNote ? `${escapeHtml(footerNote)}<br/><br/>` : ""}This is an automated message from <span style="color:${C.body};font-weight:600;">${escapeHtml(BRAND)}</span>. Replying to this email reaches our team.
         </td></tr>
       </table>
+      <div style="max-width:600px;color:${C.muted};font-size:11px;line-height:1.5;padding:16px 8px 0;">${escapeHtml(BRAND)} · Fire safety &amp; compliance management</div>
     </td></tr>
   </table>
 </body>
