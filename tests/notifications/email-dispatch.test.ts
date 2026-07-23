@@ -39,7 +39,7 @@ describe("dispatchNotification — Resend email transport", () => {
 
   it("sends an email via Resend for an email-shaped payload and returns ok:true", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_test_key")
-    vi.stubEnv("EMAIL_FROM", "Merlin Safety System <notifications@send.888safetyandtraining.com>")
+    vi.stubEnv("EMAIL_FROM", "Merlin Safety System <notifications@merlinsafetysystem.com>")
     vi.stubEnv("EMAIL_REPLY_TO", "888fst@proton.me")
     sendSpy.mockResolvedValue({ data: { id: "email_123" }, error: null })
 
@@ -57,7 +57,7 @@ describe("dispatchNotification — Resend email transport", () => {
       replyTo?: string
     }
     expect(opts.to).toBe("contact@acme.example")
-    expect(opts.from).toContain("send.888safetyandtraining.com")
+    expect(opts.from).toContain("merlinsafetysystem.com")
     expect(opts.subject).toContain("Fire Risk Assessment Proposal")
     expect(opts.replyTo).toBe("888fst@proton.me")
     // The raw signing URL must appear in the email body (it's the CTA), but never

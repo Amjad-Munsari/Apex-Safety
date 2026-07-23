@@ -8,7 +8,7 @@ import { buildEmail, EMAIL_TYPES } from "./email-templates"
 // Notification dispatch.
 //
 // Eight of the payload variants are customer emails — these are rendered from
-// templates and sent via Resend (from the verified send.888safetyandtraining.com
+// templates and sent via Resend (from the verified merlinsafetysystem.com
 // domain). The three client_form_* variants are NOT emails: they are events for
 // a partner (Finley) n8n Switch, keyed on client_id, and still POST to the n8n
 // webhook. dispatchNotification is the single entry point for both; call sites
@@ -118,7 +118,7 @@ export interface DispatchResult {
   error?: string
 }
 
-const DEFAULT_FROM = "Merlin Safety System <notifications@send.888safetyandtraining.com>"
+const DEFAULT_FROM = "Merlin Safety System <notifications@merlinsafetysystem.com>"
 
 function isProd(): boolean {
   return process.env.NODE_ENV === "production"
