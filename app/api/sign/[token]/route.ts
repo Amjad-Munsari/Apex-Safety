@@ -258,10 +258,32 @@ export async function POST(
 
   if (insertError) {
     console.error(
-      "[sign/[token]] Failed to insert proposal_signatures row:",
+      "[sign/[token]] Failed to insert proposal_signatures row — rolling back the Signed transition:",
       insertError
     )
-    // Do not 500 — proposal is already marked Signed. Log for manual recovery.
+    // The signature row IS the evidence the transition exists to capture. If it
+    // can't be persisted we must not leave the proposal Signed (which would also
+    // auto-issue a contract at step 10) with no signature. Undo the consume so
+    // the state is atomic; restoring signing_token_used=false lets the client
+    // retry with the same link.
+    const { error: rollbackError } = await adminClient
+      .from("proposals")
+      .update({
+        signing_token_used: false,
+        status: row.status,
+        signed_at: null,
+      })
+      .eq("id", consumed.id)
+    if (rollbackError) {
+      console.error(
+        "[sign/[token]] CRITICAL: signature insert AND rollback both failed — proposal is Signed with no evidence, manual recovery needed:",
+        { proposalId: consumed.id, rollbackError }
+      )
+    }
+    return NextResponse.json(
+      { error: "signature_persist_failed" },
+      { status: 500 }
+    )
   }
 
   // 8. Embed signature into PDF and re-upload (best-effort — must not fail the request)
