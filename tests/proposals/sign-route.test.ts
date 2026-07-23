@@ -26,8 +26,12 @@ async function makeMinimalPdfBlob(): Promise<Blob> {
 
 // proposals.select().eq().maybeSingle()
 const proposalsSelectSpy = vi.fn()
-// proposals.update().eq().eq().select().maybeSingle()
+// consume path: proposals.update().eq().eq().gt().select().maybeSingle()
 const proposalsUpdateSpy = vi.fn()
+// rollback path: proposals.update().eq().eq().eq()  (awaited directly)
+const proposalsRollbackSpy = vi.fn()
+// captures every proposals.update(payload) arg, in call order
+const proposalsUpdatePayloads: unknown[] = []
 // clients.select().eq().single()
 const clientsSingleSpy = vi.fn()
 // proposal_signatures.insert()
@@ -51,23 +55,29 @@ vi.mock("@/lib/supabase/admin", () => ({
   adminClient: {
     from: (table: string) => {
       if (table === "proposals") {
+        // One chainable builder serves both terminals:
+        //  - consume: .eq().eq().gt().select().maybeSingle() → proposalsUpdateSpy
+        //  - rollback: .eq().eq().eq() awaited directly → proposalsRollbackSpy (thenable)
+        const updateBuilder: Record<string, unknown> = {
+          eq: () => updateBuilder,
+          gt: () => updateBuilder,
+          select: () => updateBuilder,
+          maybeSingle: () => proposalsUpdateSpy(),
+          then: (
+            resolve: (v: unknown) => unknown,
+            reject: (e: unknown) => unknown
+          ) => Promise.resolve(proposalsRollbackSpy()).then(resolve, reject),
+        }
         return {
           select: () => ({
             eq: () => ({
               maybeSingle: () => proposalsSelectSpy(),
             }),
           }),
-          update: () => ({
-            eq: () => ({
-              eq: () => ({
-                gt: () => ({
-                  select: () => ({
-                    maybeSingle: () => proposalsUpdateSpy(),
-                  }),
-                }),
-              }),
-            }),
-          }),
+          update: (payload: unknown) => {
+            proposalsUpdatePayloads.push(payload)
+            return updateBuilder
+          },
         }
       }
       if (table === "clients") {
@@ -288,8 +298,12 @@ describe("GET /api/sign/[token]", () => {
 describe("POST /api/sign/[token]", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Default: auto-issue succeeds so existing success-path tests are unaffected.
+    proposalsUpdatePayloads.length = 0
+    // Sane defaults so existing success-path tests are unaffected.
     issueContractCoreSpy.mockResolvedValue({ ok: true })
+    proposalsRollbackSpy.mockResolvedValue({ error: null })
+    dispatchSpy.mockResolvedValue({ ok: true })
+    workflowErrorsInsertSpy.mockResolvedValue({ error: null })
   })
 
   it("returns 400 when signature_image does not start with correct prefix", async () => {
@@ -503,6 +517,84 @@ describe("POST /api/sign/[token]", () => {
     expect(json).toEqual({ error: "signature_persist_failed" })
     // The contract must NOT be auto-issued when evidence failed to persist.
     expect(issueContractCoreSpy).not.toHaveBeenCalled()
+
+    // The rollback UPDATE restores the pre-signing state (second proposals.update).
+    expect(proposalsUpdatePayloads.length).toBe(2)
+    expect(proposalsUpdatePayloads[1]).toMatchObject({
+      signing_token_used: false,
+      status: VALID_PROPOSAL_ROW.status, // restored to prior "Sent", not left "Signed"
+      signed_at: null,
+    })
+  })
+
+  it("writes a durable workflow_errors record when the rollback itself fails", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({ data: { ...VALID_CONSUMED_ROW }, error: null })
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: { message: "DB error" } })
+    // The compensating UPDATE also fails — the proposal may be stuck Signed.
+    proposalsRollbackSpy.mockResolvedValue({ error: { message: "rollback boom" } })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+
+    expect(res.status).toBe(500)
+    // A recovery trail must exist — not just a console log.
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ workflow_name: "sign_rollback_failed" })
+    )
+    expect(issueContractCoreSpy).not.toHaveBeenCalled()
+  })
+
+  it("rolls back and 500s when the consumed row has no document hash", async () => {
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    // Consume succeeds but the stored document hash is missing.
+    proposalsUpdateSpy.mockResolvedValue({
+      data: { ...VALID_CONSUMED_ROW, signing_document_hash: null },
+      error: null,
+    })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+
+    expect(res.status).toBe(500)
+    const json = await res.json()
+    expect(json).toEqual({ error: "server_error" })
+    // No signature was inserted, no contract issued, and the Signed transition
+    // was rolled back (a second proposals.update restoring the prior state).
+    expect(signaturesInsertSpy).not.toHaveBeenCalled()
+    expect(issueContractCoreSpy).not.toHaveBeenCalled()
+    expect(proposalsUpdatePayloads.length).toBe(2)
+    expect(proposalsUpdatePayloads[1]).toMatchObject({
+      signing_token_used: false,
+      signed_at: null,
+    })
+  })
+
+  it("records a workflow_errors row when the confirmation email fails to send", async () => {
+    const pdfBlob = await makeMinimalPdfBlob()
+
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    proposalsUpdateSpy.mockResolvedValue({ data: { ...VALID_CONSUMED_ROW }, error: null })
+    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme", contact_email: "a@a.com" },
+      error: null,
+    })
+    // The proposal_signed confirmation email fails (e.g. missing RESEND_API_KEY).
+    dispatchSpy.mockResolvedValue({ ok: false, error: "RESEND_API_KEY not configured" })
+    storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+
+    // Signature is persisted, so the request still succeeds — but the delivery
+    // failure is recorded rather than silently swallowed.
+    expect(res.status).toBe(200)
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ workflow_name: "proposal_signed_email" })
+    )
   })
 
   it("defaults ip_address to '0.0.0.0' when x-forwarded-for header is absent", async () => {

@@ -89,6 +89,44 @@ describe("dispatchNotification — Resend email transport", () => {
     expect(sendSpy).not.toHaveBeenCalled()
   })
 
+  it("escapes client-controlled fields in the rendered HTML (no raw markup injection)", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_key")
+    sendSpy.mockResolvedValue({ data: { id: "e1" }, error: null })
+
+    const { dispatchNotification } = await import("@/lib/notifications/dispatch")
+    await dispatchNotification({
+      ...SIGNATURE_PAYLOAD,
+      client_name: '<script>alert(1)</script>',
+      proposal_title: '"><img src=x onerror=alert(2)>',
+    })
+
+    const html = (sendSpy.mock.calls[0][0] as { html: string }).html
+    expect(html).not.toContain("<script>alert(1)</script>")
+    expect(html).not.toContain("<img src=x onerror=alert(2)>")
+    expect(html).toContain("&lt;script&gt;")
+    expect(html).toContain("&lt;img src=x")
+  })
+
+  it("uses recipient_email (not client_email) as the To for portal invites", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_key")
+    sendSpy.mockResolvedValue({ data: { id: "e2" }, error: null })
+
+    const { dispatchNotification } = await import("@/lib/notifications/dispatch")
+    const result = await dispatchNotification({
+      type: "client_portal_invite",
+      client_name: "Acme Ltd",
+      recipient_name: "Jane",
+      recipient_email: "jane@acme.example",
+      invite_url: "https://app.example.com/auth/confirm?token_hash=abc",
+      status: "invited",
+    })
+
+    expect(result.ok).toBe(true)
+    const opts = sendSpy.mock.calls[0][0] as { to: string; html: string }
+    expect(opts.to).toBe("jane@acme.example")
+    expect(opts.html).toContain("Acme Ltd")
+  })
+
   it("routes client_form_* events to the n8n webhook, not Resend", async () => {
     vi.stubEnv("N8N_WEBHOOK_URL", "https://n8n.example.test/webhook/events")
     vi.stubEnv("N8N_WEBHOOK_SECRET", "secret-token")

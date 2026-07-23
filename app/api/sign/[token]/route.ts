@@ -46,6 +46,54 @@ function parseServices(servicesJson: unknown): ServiceItem[] {
   return Array.isArray(servicesJson) ? (servicesJson as ServiceItem[]) : []
 }
 
+/**
+ * Undo a Signed/token-consumed transition when the post-consume work can't
+ * complete (missing document hash, signature-evidence insert failure). Returns
+ * the proposal to its pre-signing state so it is never left Signed without
+ * evidence and the single-use link stays usable for a retry.
+ *
+ * The UPDATE is guarded on the exact state this request set
+ * (status='Signed' AND signing_token_used=true) so a concurrent admin change
+ * (e.g. withdrawing the proposal) is never clobbered. If the rollback itself
+ * fails, a durable workflow_errors row is written — a console log alone would
+ * leave a stuck proposal with no recovery trail.
+ */
+async function rollbackSignedConsume(
+  proposalId: string,
+  priorStatus: string,
+  reason: string
+): Promise<void> {
+  const { error: rollbackError } = await adminClient
+    .from("proposals")
+    .update({
+      signing_token_used: false,
+      status: priorStatus,
+      signed_at: null,
+    })
+    .eq("id", proposalId)
+    .eq("status", "Signed")
+    .eq("signing_token_used", true)
+
+  if (rollbackError) {
+    console.error(
+      "[sign/[token]] CRITICAL: rollback failed — proposal may be Signed with no evidence, manual recovery needed:",
+      { proposalId, reason, rollbackError }
+    )
+    try {
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "sign_rollback_failed",
+        error_message: `${reason}: ${rollbackError.message ?? "unknown rollback error"}`,
+        payload: { proposalId },
+      })
+    } catch (logErr) {
+      console.error(
+        "[sign/[token]] Failed to persist sign_rollback_failed record:",
+        { proposalId, logErr }
+      )
+    }
+  }
+}
+
 // ── GET /api/sign/[token] ─────────────────────────────────────────────────────
 
 export async function GET(
@@ -228,12 +276,16 @@ export async function POST(
     return NextResponse.json({ error: "already_signed" }, { status: 409 })
   }
 
-  // 5. Guard: document hash must be present — fail loudly if missing
+  // 5. Guard: document hash must be present — fail loudly if missing.
+  // Same failure class as a signature-insert failure: the token was just
+  // consumed and the row set Signed, so roll that back before 500ing rather
+  // than leaving a Signed proposal with no evidence.
   if (!consumed.signing_document_hash) {
     console.error(
-      "[sign/[token]] Proposal consumed but has no stored document hash — manual recovery needed.",
+      "[sign/[token]] Proposal consumed but has no stored document hash — rolling back:",
       { proposalId: consumed.id }
     )
+    await rollbackSignedConsume(consumed.id, row.status, "missing_document_hash")
     return NextResponse.json({ error: "server_error" }, { status: 500 })
   }
 
@@ -263,23 +315,10 @@ export async function POST(
     )
     // The signature row IS the evidence the transition exists to capture. If it
     // can't be persisted we must not leave the proposal Signed (which would also
-    // auto-issue a contract at step 10) with no signature. Undo the consume so
-    // the state is atomic; restoring signing_token_used=false lets the client
+    // auto-issue a contract at step 10) with no signature. Roll back the consume
+    // so the state is atomic; restoring signing_token_used=false lets the client
     // retry with the same link.
-    const { error: rollbackError } = await adminClient
-      .from("proposals")
-      .update({
-        signing_token_used: false,
-        status: row.status,
-        signed_at: null,
-      })
-      .eq("id", consumed.id)
-    if (rollbackError) {
-      console.error(
-        "[sign/[token]] CRITICAL: signature insert AND rollback both failed — proposal is Signed with no evidence, manual recovery needed:",
-        { proposalId: consumed.id, rollbackError }
-      )
-    }
+    await rollbackSignedConsume(consumed.id, row.status, "signature_insert_failed")
     return NextResponse.json(
       { error: "signature_persist_failed" },
       { status: 500 }
@@ -332,13 +371,23 @@ export async function POST(
     const services = parseServices(consumed.services_json)
     const title = deriveTitle(services)
 
-    await dispatchNotification({
+    // Best-effort confirmation email — never blocks or rolls back the signature
+    // (already persisted). But a delivery failure (missing RESEND_API_KEY, Resend
+    // rejection) must be recorded, not swallowed, so it surfaces for follow-up.
+    const notified = await dispatchNotification({
       type: "proposal_signed",
       client_name: clientRow?.name ?? "",
       client_email: clientRow?.contact_email ?? "",
       proposal_title: title,
       signed_at: now,
     })
+    if (!notified.ok) {
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "proposal_signed_email",
+        error_message: notified.error ?? "unknown dispatch failure",
+        payload: { proposalId: consumed.id, client_id: consumed.client_id },
+      })
+    }
   } catch (err) {
     console.error("[sign/[token]] Notification dispatch failed:", err)
   }
