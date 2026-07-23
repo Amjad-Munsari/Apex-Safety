@@ -2,7 +2,7 @@
 
 import { adminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/auth-helpers"
-import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { dispatchNotification } from "@/lib/notifications/dispatch"
 
 export async function getComplianceDocSignedUrl(
   docId: string,

@@ -159,7 +159,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 // REPORT-11 / D-06 verification depends on its mock.calls.length staying 0
 // across both draft-path branches.
 
-vi.mock("@/lib/notifications/n8n-dispatch", () => ({
+vi.mock("@/lib/notifications/dispatch", () => ({
   dispatchNotification: (...args: unknown[]) => {
     callLog.push({ kind: "dispatchNotification", payload: args[0] as Record<string, unknown> })
     return dispatchNotificationSpy(...args)

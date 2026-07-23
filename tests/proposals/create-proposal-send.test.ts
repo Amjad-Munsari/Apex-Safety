@@ -52,7 +52,7 @@ vi.mock("@/lib/signing", () => ({
   hashDocument: (...args: unknown[]) => hashDocumentSpy(...args),
 }))
 
-vi.mock("@/lib/notifications/n8n-dispatch", () => ({
+vi.mock("@/lib/notifications/dispatch", () => ({
   dispatchNotification: (...args: unknown[]) => dispatchNotificationSpy(...args),
 }))
 

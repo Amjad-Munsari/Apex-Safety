@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
-import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getAppSettings } from "@/lib/settings/app-settings"
 
 export async function GET(request: Request) {

@@ -18,7 +18,7 @@ import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sec
 import { extractPAS79Summary } from "@/lib/form-builder/risk/pas79"
 import { YELLOW_BROOM_EXEMPLAR } from "@/lib/ai/exemplars/yellow-broom-fra"
 import { buildReportPrompt } from "@/lib/ai/prompt-builder"
-import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { dispatchNotification } from "@/lib/notifications/dispatch"
 
 // Authorize a caller to act on a specific submission. Admins always pass; a
 // client may only act on a submission owned by their OWN org. Returns the
@@ -453,7 +453,7 @@ export async function submitAssessmentAction(
   // the only webhook-firing path. Distinct from the AI-draft pipeline in
   // the after() callback above — both are post-response background tasks;
   // neither blocks Matt's submit redirect.
-  // Inline (not extracted to lib/notifications/n8n-dispatch.ts) per
+  // Inline (not extracted to lib/notifications/dispatch.ts) per
   // RESEARCH §Q5: that helper's typed union targets a DIFFERENT n8n URL
   // (N8N_WEBHOOK_URL → Proton Mail routing); the assessment webhook
   // targets N8N_ASSESSMENT_WEBHOOK_URL which is a separate workflow.

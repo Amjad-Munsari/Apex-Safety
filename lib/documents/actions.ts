@@ -6,7 +6,7 @@ import { isAdmin } from "@/lib/auth-helpers"
 import { assertClientActive } from "@/lib/clients/require-active"
 import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
-import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getAppSettings } from "@/lib/settings/app-settings"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

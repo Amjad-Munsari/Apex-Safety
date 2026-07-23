@@ -2,7 +2,7 @@
 // lib/notifications/client-form-events.ts → dispatchNotification.
 //
 // Mirrors the fetch-mock + env-stub pattern of n8n-proposal-dispatch.test.ts.
-// dispatchClientFormEvent dynamically imports ./n8n-dispatch (which pulls in
+// dispatchClientFormEvent dynamically imports ./dispatch (which pulls in
 // "server-only"); we mock server-only to a no-op so the import resolves in jsdom.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"

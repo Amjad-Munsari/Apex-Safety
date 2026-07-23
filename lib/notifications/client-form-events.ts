@@ -17,7 +17,7 @@
 //      report_ready path (D-08): the user's action is the artefact of record,
 //      the notification is best-effort.
 
-import type { NotificationPayload } from "./n8n-dispatch"
+import type { NotificationPayload } from "./dispatch"
 
 /** The client-surface subset of NotificationPayload. */
 export type ClientFormEventPayload = Extract<
@@ -29,7 +29,7 @@ export async function dispatchClientFormEvent(
   payload: ClientFormEventPayload
 ): Promise<void> {
   try {
-    const { dispatchNotification } = await import("./n8n-dispatch")
+    const { dispatchNotification } = await import("./dispatch")
     const result = await dispatchNotification(payload)
     if (!result.ok) {
       console.error(`[n8n] ${payload.type} dispatch failed:`, result.error)

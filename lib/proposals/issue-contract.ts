@@ -2,7 +2,7 @@ import "server-only"
 
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
-import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { dispatchNotification } from "@/lib/notifications/dispatch"
 
 const VAT_RATE = 0.2
 

@@ -1,5 +1,20 @@
 import "server-only"
 
+import { Resend } from "resend"
+
+import { buildEmail, EMAIL_TYPES } from "./email-templates"
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notification dispatch.
+//
+// Eight of the payload variants are customer emails — these are rendered from
+// templates and sent via Resend (from the verified send.888safetyandtraining.com
+// domain). The three client_form_* variants are NOT emails: they are events for
+// a partner (Finley) n8n Switch, keyed on client_id, and still POST to the n8n
+// webhook. dispatchNotification is the single entry point for both; call sites
+// never need to know which transport runs.
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type NotificationPayload =
   | {
       type: "expiry_alert"
@@ -33,7 +48,7 @@ export type NotificationPayload =
       client_name: string
       report_url: string         // 7-day signed URL
       assessment_date: string    // en-GB formatted, matches PDF header
-      report_storage_path: string // for n8n logging / dedup
+      report_storage_path: string // for logging / dedup
     }
   | {
       type: "proposal_signature_request"
@@ -70,10 +85,9 @@ export type NotificationPayload =
       status: "invited" | "resent"
     }
   // ── Two-way form builder: client-surface events (for Finley's n8n Switch) ──
-  // These are keyed on client_id (the org UUID) rather than client_email/name —
-  // the client surface fires them from RLS-scoped server actions where the org
-  // id is always in context. n8n resolves name/email from client_id via the
-  // service-role connection when composing any downstream email.
+  // Keyed on client_id (the org UUID) rather than client_email/name — the client
+  // surface fires them from RLS-scoped server actions where the org id is always
+  // in context. n8n resolves name/email from client_id when composing downstream.
   | {
       type: "client_form_created"
       client_id: string          // org UUID (form_templates.owner_id)
@@ -104,6 +118,12 @@ export interface DispatchResult {
   error?: string
 }
 
+const DEFAULT_FROM = "Merlin Safety System <notifications@send.888safetyandtraining.com>"
+
+function isProd(): boolean {
+  return process.env.NODE_ENV === "production"
+}
+
 function redactSigningUrl(url: string): string {
   try {
     const parsed = new URL(url)
@@ -113,30 +133,88 @@ function redactSigningUrl(url: string): string {
   }
 }
 
-export async function dispatchNotification(payload: NotificationPayload): Promise<DispatchResult> {
+/** Structured, secret-safe log line — never emits full signing/invite/contract
+ *  URLs (they grant access). Applies to both transports. */
+function logDispatch(payload: NotificationPayload): void {
   const safePayload = {
     ...payload,
     ...("signing_url" in payload
       ? { signing_url: redactSigningUrl(payload.signing_url) }
       : {}),
-    ...("invite_url" in payload
-      ? { invite_url: "[REDACTED]" }
-      : {}),
-    ...("contract_url" in payload
-      ? { contract_url: "[REDACTED]" }
-      : {}),
+    ...("invite_url" in payload ? { invite_url: "[REDACTED]" } : {}),
+    ...("contract_url" in payload ? { contract_url: "[REDACTED]" } : {}),
+    ...("report_url" in payload ? { report_url: "[REDACTED]" } : {}),
   }
-  console.log("[n8n] dispatch", JSON.stringify({ type: payload.type, payload: safePayload }))
+  console.log(
+    "[dispatch]",
+    JSON.stringify({ type: payload.type, payload: safePayload })
+  )
+}
 
+let resendClient: Resend | null = null
+function getResend(apiKey: string): Resend {
+  if (!resendClient) resendClient = new Resend(apiKey)
+  return resendClient
+}
+
+/** Send an email-shaped payload via Resend. */
+async function sendEmail(payload: NotificationPayload): Promise<DispatchResult> {
+  const apiKey = process.env.RESEND_API_KEY
+
+  if (!apiKey) {
+    if (isProd()) {
+      return { ok: false, error: "RESEND_API_KEY not configured" }
+    }
+    console.warn(
+      `[dispatch] RESEND_API_KEY missing — email skipped (type: ${payload.type}). Set RESEND_API_KEY to enable in dev.`
+    )
+    return { ok: true, status: 0 }
+  }
+
+  const email = buildEmail(payload)
+  if (!email) {
+    return { ok: false, error: `no email template for type ${payload.type}` }
+  }
+  if (!email.to || !email.to.includes("@")) {
+    return { ok: false, error: `missing/invalid recipient for ${payload.type}` }
+  }
+
+  const from = process.env.EMAIL_FROM ?? DEFAULT_FROM
+  const replyTo = process.env.EMAIL_REPLY_TO
+
+  try {
+    const { error } = await getResend(apiKey).emails.send({
+      from,
+      to: email.to,
+      subject: email.subject,
+      html: email.html,
+      ...(replyTo ? { replyTo } : {}),
+    })
+    if (error) {
+      return { ok: false, error: error.message }
+    }
+    return { ok: true, status: 200 }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}
+
+/** POST a client-surface event to the partner n8n webhook. */
+async function dispatchToN8n(
+  payload: NotificationPayload
+): Promise<DispatchResult> {
   const url = process.env.N8N_WEBHOOK_URL
   const secret = process.env.N8N_WEBHOOK_SECRET
 
   if (!url || !secret) {
-    if (process.env.NODE_ENV === "production") {
-      return { ok: false, error: "N8N_WEBHOOK_URL / N8N_WEBHOOK_SECRET not configured" }
+    if (isProd()) {
+      return {
+        ok: false,
+        error: "N8N_WEBHOOK_URL / N8N_WEBHOOK_SECRET not configured",
+      }
     }
     console.warn(
-      `[n8n] webhook URL or secret missing — dispatch skipped (type: ${payload.type}). Set N8N_WEBHOOK_URL and N8N_WEBHOOK_SECRET to enable in dev.`
+      `[dispatch] n8n webhook not configured — event skipped (type: ${payload.type}).`
     )
     return { ok: true, status: 0 }
   }
@@ -157,4 +235,20 @@ export async function dispatchNotification(payload: NotificationPayload): Promis
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
   }
+}
+
+/**
+ * Single dispatch entry point. Routes email-shaped payloads to Resend and the
+ * client_form_* events to the n8n webhook. Never throws — always resolves a
+ * DispatchResult so callers can log to workflow_errors and fall back.
+ */
+export async function dispatchNotification(
+  payload: NotificationPayload
+): Promise<DispatchResult> {
+  logDispatch(payload)
+
+  if (EMAIL_TYPES.has(payload.type)) {
+    return sendEmail(payload)
+  }
+  return dispatchToN8n(payload)
 }

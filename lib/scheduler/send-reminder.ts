@@ -1,4 +1,4 @@
-import { dispatchNotification } from "@/lib/notifications/n8n-dispatch";
+import { dispatchNotification } from "@/lib/notifications/dispatch";
 import { getSiteUrl } from "@/lib/site-url";
 
 export async function sendAssignmentReminder(args: {

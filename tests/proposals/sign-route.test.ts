@@ -114,7 +114,7 @@ vi.mock("@/lib/signing", () => ({
 }))
 
 const dispatchSpy = vi.fn()
-vi.mock("@/lib/notifications/n8n-dispatch", () => ({
+vi.mock("@/lib/notifications/dispatch", () => ({
   dispatchNotification: (...args: unknown[]) => dispatchSpy(...args),
 }))
 
@@ -470,7 +470,7 @@ describe("POST /api/sign/[token]", () => {
     expect(json).toEqual({ success: true })
   })
 
-  it("returns 200 even when signature insert fails — does not 500 after successful consume", async () => {
+  it("rolls back the Signed transition and 500s when the signature insert fails", async () => {
     const pdfBlob = await makeMinimalPdfBlob()
 
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
@@ -481,7 +481,7 @@ describe("POST /api/sign/[token]", () => {
       },
       error: null,
     })
-    // Insert fails
+    // Insert of the signature-evidence row fails.
     signaturesInsertSpy.mockResolvedValue({
       data: null,
       error: { message: "DB error" },
@@ -495,10 +495,14 @@ describe("POST /api/sign/[token]", () => {
     storageUploadSpy.mockResolvedValue({ data: {}, error: null })
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
-    // Still succeeds — consume was atomic, insert failure is logged not 500d
-    expect(res.status).toBe(200)
+    // The signature row IS the evidence: if it can't be persisted, the Signed
+    // transition is rolled back and the request 500s, rather than leaving a
+    // Signed proposal (and an auto-issued contract) with no signature.
+    expect(res.status).toBe(500)
     const json = await res.json()
-    expect(json).toEqual({ success: true })
+    expect(json).toEqual({ error: "signature_persist_failed" })
+    // The contract must NOT be auto-issued when evidence failed to persist.
+    expect(issueContractCoreSpy).not.toHaveBeenCalled()
   })
 
   it("defaults ip_address to '0.0.0.0' when x-forwarded-for header is absent", async () => {

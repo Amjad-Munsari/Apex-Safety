@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 // ── Spy (declared before vi.mock so hoisting can close over it) ────────────
 const dispatchSpy = vi.fn();
 
-vi.mock("@/lib/notifications/n8n-dispatch", () => ({
+vi.mock("@/lib/notifications/dispatch", () => ({
   dispatchNotification: (...args: unknown[]) => dispatchSpy(...args),
 }));
 

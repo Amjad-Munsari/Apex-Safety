@@ -5,7 +5,7 @@ import { isAdmin } from "@/lib/auth-helpers"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth-helpers"
 import { assertClientActive, clientIsActive, CLIENT_DEACTIVATED_MESSAGE } from "@/lib/clients/require-active"
-import { dispatchNotification } from "@/lib/notifications/n8n-dispatch"
+import { dispatchNotification } from "@/lib/notifications/dispatch"
 
 export type NewClientInput = {
   name: string
