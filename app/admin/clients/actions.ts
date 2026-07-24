@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth-helpers"
 import { assertClientActive, clientIsActive, CLIENT_DEACTIVATED_MESSAGE } from "@/lib/clients/require-active"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
+import { getSiteUrl } from "@/lib/site-url"
 
 export type NewClientInput = {
   name: string
@@ -20,7 +21,9 @@ export type NewClientInput = {
  * client list page, etc.) decides what to do with the id — usually advance
  * to the next step or revalidate the list.
  */
-export async function createClient(input: NewClientInput): Promise<{ id: string }> {
+export async function createClient(
+  input: NewClientInput
+): Promise<{ id: string; inviteEmailed: boolean | null }> {
   // Admin-role gate — inserts via the service-role adminClient (RLS bypassed),
   // so without this any authenticated user could create client orgs.
   // requireAdmin() enforces admin_users membership and stays demo-compatible.
@@ -52,16 +55,20 @@ export async function createClient(input: NewClientInput): Promise<{ id: string 
   // and email them the set-password link (the New Client dialog promises this).
   // Best-effort: a failure here must NOT abort client creation — the admin can
   // still invite manually from the client's Access tab. inviteClientUser logs
-  // its own dispatch failures to workflow_errors.
+  // its own dispatch failures to workflow_errors. The outcome is surfaced so
+  // the dialog's toast doesn't claim an email was sent when it wasn't.
+  let inviteEmailed: boolean | null = null
   if (input.contactEmail?.trim()) {
     try {
-      await inviteClientUser(data.id, {
+      const invite = await inviteClientUser(data.id, {
         name: input.contactName?.trim() || name,
         email: input.contactEmail.trim(),
         role: "owner",
       })
+      inviteEmailed = invite.ok ? invite.emailed : false
     } catch (err) {
       console.error("createClient: portal invite failed", { clientId: data.id, err })
+      inviteEmailed = false
     }
   }
 
@@ -69,7 +76,7 @@ export async function createClient(input: NewClientInput): Promise<{ id: string 
   revalidatePath("/admin/proposals/new")
   revalidatePath("/admin")
 
-  return { id: data.id }
+  return { id: data.id, inviteEmailed }
 }
 
 /**
@@ -171,13 +178,13 @@ export async function deleteClient(
 }
 
 /**
- * Remove all Storage objects written under a client's prefix in the `reports`
- * and `form-media` buckets. Storage has no FK to the DB, so this is the only
- * thing that reclaims a deleted client's files. Recurses one level because
- * form-media nests as `${clientId}/signatures|photos/${submissionId}/...`.
+ * Remove all Storage objects written under a client's prefix in the `reports`,
+ * `form-media`, and `client-documents` buckets. Storage has no FK to the DB, so
+ * this is the only thing that reclaims a deleted client's files. Recurses one
+ * level because form-media nests as `${clientId}/signatures|photos/${submissionId}/...`.
  */
 async function removeClientStorage(clientId: string): Promise<void> {
-  for (const bucket of ["reports", "form-media"] as const) {
+  for (const bucket of ["reports", "form-media", "client-documents"] as const) {
     const paths = await listAllUnder(bucket, clientId)
     if (paths.length > 0) {
       const { error } = await adminClient.storage.from(bucket).remove(paths)
@@ -280,14 +287,14 @@ export async function updateClientHours(clientId: string, adjustment: number) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function portalRedirectTo(): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
-  return `${base.replace(/\/$/, "")}/auth/confirm?next=/auth/set-password`
+  const base = getSiteUrl()
+  return `${base}/auth/confirm?next=/auth/set-password`
 }
 
 // Build the emailed confirmation link from a generateLink hashed_token. This is
 // what the invitee actually clicks — NOT the raw action_link.
 function portalConfirmLink(hashedToken: string, type: "invite" | "recovery"): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "")
+  const base = getSiteUrl()
   const params = new URLSearchParams({
     token_hash: hashedToken,
     type,

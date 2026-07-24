@@ -25,6 +25,18 @@ export type NotificationPayload =
       days_until_expiry: number
     }
   | {
+      // Admin copy of the staged expiry alerts — one digest per cron run
+      // summarising every alert that went out, instead of one email per doc.
+      type: "expiry_admin_digest"
+      admin_email: string
+      items: Array<{
+        client_name: string
+        document_name: string
+        expiry_date: string
+        days_until_expiry: number
+      }>
+    }
+  | {
       type: "document_uploaded"
       client_email: string
       client_name: string

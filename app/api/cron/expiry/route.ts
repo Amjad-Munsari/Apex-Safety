@@ -87,6 +87,12 @@ export async function GET(request: Request) {
   }
 
   const notificationsSent = []
+  const adminDigestItems: Array<{
+    client_name: string
+    document_name: string
+    expiry_date: string
+    days_until_expiry: number
+  }> = []
 
   // 2. Process each document
   for (const doc of documents) {
@@ -158,9 +164,40 @@ export async function GET(request: Request) {
       })
 
     notificationsSent.push({ docId: doc.id, window: alertWindow })
+
+    const org = doc.clients as { name?: string } | { name?: string }[] | null
+    const orgName = (Array.isArray(org) ? org[0]?.name : org?.name) ?? contactName
+    adminDigestItems.push({
+      client_name: orgName,
+      document_name: doc.filename,
+      expiry_date: doc.expiry_date as string,
+      days_until_expiry: alertWindow,
+    })
   }
 
-  return NextResponse.json({ 
+  // 3. Copy the admin team on what went out — one digest per run, best-effort.
+  if (adminDigestItems.length > 0) {
+    const { data: admins } = await supabase.from("admin_users").select("email")
+    for (const admin of admins ?? []) {
+      if (!admin.email) continue
+      const digest = {
+        type: "expiry_admin_digest" as const,
+        admin_email: admin.email,
+        items: adminDigestItems,
+      }
+      const digestResult = await dispatchNotification(digest)
+      if (!digestResult.ok) {
+        console.error(`[cron/expiry] admin digest failed for ${admin.email}: ${digestResult.error}`)
+        await supabase.from("workflow_errors").insert({
+          workflow_name: "expiry_admin_digest",
+          error_message: digestResult.error ?? "unknown dispatch failure",
+          payload: digest,
+        })
+      }
+    }
+  }
+
+  return NextResponse.json({
     success: true, 
     processed: documents.length,
     notificationsSent: notificationsSent.length

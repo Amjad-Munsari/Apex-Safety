@@ -2,6 +2,7 @@
 
 import { adminClient } from "@/lib/supabase/admin"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
+import { getSiteUrl } from "@/lib/site-url"
 
 // Self-serve password reset. Mints a recovery link exactly the way admin
 // invites do (generateLink → our own /auth/confirm?token_hash link, see
@@ -20,7 +21,7 @@ export async function requestPasswordReset(rawEmail: string): Promise<{ ok: bool
   // Unknown account: generateLink errors. Say nothing — same response either way.
   if (error || !data?.properties?.hashed_token) return { ok: true }
 
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "")
+  const base = getSiteUrl()
   const params = new URLSearchParams({
     token_hash: data.properties.hashed_token,
     type: "recovery",

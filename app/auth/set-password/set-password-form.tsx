@@ -19,9 +19,9 @@ export function SetPasswordForm() {
   const [done, setDone] = useState(false)
   const [hasSession, setHasSession] = useState<boolean | null>(null)
 
-  // The invite link routes through /auth/callback, which exchanges the code for
-  // a session before redirecting here. If there's no session, the link was
-  // already used or expired.
+  // The invite link routes through /auth/confirm, which verifies the token_hash
+  // (verifyOtp) and sets session cookies before redirecting here. If there's no
+  // session, the link was already used or expired.
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setHasSession(!!data.user))
   }, [supabase])

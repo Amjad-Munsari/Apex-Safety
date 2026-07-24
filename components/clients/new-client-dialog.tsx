@@ -39,7 +39,7 @@ export function NewClientButton({
     if (!canSubmit) return
     setSubmitting(true)
     try {
-      const { id } = await createClient({
+      const { id, inviteEmailed } = await createClient({
         name: form.businessName,
         contactName: form.contactName,
         contactEmail: form.email,
@@ -47,9 +47,17 @@ export function NewClientButton({
       })
       setOpen(false)
       reset()
-      toast.success("Client added", {
-        description: `${form.businessName} is in the client list — a portal invite has been emailed to ${form.email}.`,
-      })
+      if (inviteEmailed === false) {
+        toast.warning("Client added — invite email failed", {
+          description: `${form.businessName} is in the client list, but the portal invite could not be emailed to ${form.email}. Resend it from the client's Access tab.`,
+        })
+      } else {
+        toast.success("Client added", {
+          description: inviteEmailed
+            ? `${form.businessName} is in the client list — a portal invite has been emailed to ${form.email}.`
+            : `${form.businessName} is in the client list.`,
+        })
+      }
       onCreated?.(id)
     } catch (err: any) {
       toast.error(err?.message || "Failed to add client")

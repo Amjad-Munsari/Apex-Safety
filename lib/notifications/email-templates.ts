@@ -21,6 +21,7 @@ const BRAND = process.env.EMAIL_BRAND_NAME ?? "Merlin Safety System"
 /** Types that become an email. Everything else routes to n8n. */
 export const EMAIL_TYPES = new Set<NotificationPayload["type"]>([
   "expiry_alert",
+  "expiry_admin_digest",
   "document_uploaded",
   "assignment_reminder",
   "report_ready",
@@ -169,6 +170,25 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         html: layout({
           heading: "A compliance document needs attention",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(`Your document `)}<strong>${escapeHtml(payload.document_name)}</strong> ${p(urgency)}. ${p("Please arrange a renewal to stay compliant.")}`,
+        }),
+      }
+    }
+
+    case "expiry_admin_digest": {
+      const rows = payload.items
+        .map((item) => {
+          const days = item.days_until_expiry
+          const when = formatDate(item.expiry_date)
+          return `<li><strong>${escapeHtml(item.client_name)}</strong> — ${escapeHtml(item.document_name)} expires in ${days} day${days === 1 ? "" : "s"} (${when})</li>`
+        })
+        .join("")
+      const count = payload.items.length
+      return {
+        to: payload.admin_email,
+        subject: `Expiry alerts sent today: ${count} document${count === 1 ? "" : "s"}`,
+        html: layout({
+          heading: "Expiry alerts went out to clients today",
+          bodyHtml: `${p(`The daily expiry check emailed clients about ${count} document${count === 1 ? "" : "s"}:`)}<ul>${rows}</ul>`,
         }),
       }
     }
