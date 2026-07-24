@@ -53,3 +53,7 @@ node_modules.nosync
 # iCloud-evicted contents stall git's untracked scan)
 .planning/
 .claude/
+
+# pulled Vercel env snapshots — never commit
+prod.env
+*.env

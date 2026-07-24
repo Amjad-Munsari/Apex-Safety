@@ -110,19 +110,24 @@ export async function setClientActive(
  * IRREVERSIBLE. Guarded by a server-side name match (the dialog also gates the
  * button client-side, but that is UX only — this check is the real boundary).
  *
- * Order is load-bearing — clientId must stay resolvable through the cleanup, so
- * the row delete is LAST:
+ * Order is load-bearing:
  *   1. requireAdmin()
  *   2. re-fetch name; reject if missing or confirmationName !== name
- *   3. best-effort Storage cleanup (reports + form-media under `${clientId}/`).
- *      A failure here is logged to workflow_errors and does NOT abort — orphaned
- *      bucket objects are lower-risk than a half-deleted client (mirrors the
- *      report-delivery philosophy in assessments/actions.ts).
- *   4. delete customer-owned form_templates (polymorphic owner_id, no DB FK —
- *      see AGENTS.md; their template_versions cascade).
+ *   3. best-effort Storage cleanup (reports, form-media, client-documents under
+ *      `${clientId}/`). A failure here is logged to workflow_errors and does NOT
+ *      abort — orphaned bucket objects are lower-risk than a half-deleted client
+ *      (mirrors the report-delivery philosophy in assessments/actions.ts).
+ *   4. snapshot portal user ids (client_users) for the auth cleanup in step 7.
  *   5. delete the clients row — migration 021 cascades assignments, submissions,
  *      field_media, documents, hours_transactions, proposals, signatures,
- *      client_users, and notifications_sent atomically.
+ *      client_users, and notifications_sent atomically. Must come BEFORE the
+ *      template delete: form_submissions.template_version_id has no cascade, so
+ *      removing templates while the org's own submissions still reference their
+ *      versions dies on the FK.
+ *   6. delete customer-owned form_templates (polymorphic owner_id, no DB FK —
+ *      see AGENTS.md; their template_versions cascade). Best-effort once the
+ *      org row is gone.
+ *   7. best-effort auth.users deletion for the snapshotted portal users.
  */
 export async function deleteClient(
   clientId: string,
@@ -157,20 +162,62 @@ export async function deleteClient(
     // continue — do NOT abort the delete
   }
 
-  // Step 4: customer-owned templates (no FK to clients; versions cascade).
-  const { error: tplError } = await adminClient
-    .from("form_templates")
-    .delete()
-    .eq("owner_type", "customer")
-    .eq("owner_id", clientId)
-  if (tplError) return { ok: false, error: `Failed to remove client templates: ${tplError.message}` }
+  // Step 4: snapshot the portal users BEFORE the cascade removes client_users —
+  // their auth.users entries have no FK to anything here and must be deleted
+  // explicitly afterwards or they orphan (and block re-inviting the same email
+  // to a future org via the "already linked" duplicate-email path).
+  const { data: portalUsers } = await adminClient
+    .from("client_users")
+    .select("id")
+    .eq("client_id", clientId)
 
-  // Step 5: delete the client — DB cascades the relational subtree.
+  // Step 5: delete the client FIRST — migration 021 cascades assignments,
+  // form_submissions, field_media, documents, hours_transactions, proposals,
+  // signatures, client_users, and notifications_sent atomically.
+  //
+  // Order is load-bearing: form_submissions.template_version_id references
+  // template_versions WITHOUT a cascade, so deleting the customer's templates
+  // first (whose template_versions DO cascade) dies on that FK for any client
+  // that ever submitted their own template — leaving the org half-deleted
+  // (storage already purged in step 3, records still present). The clients
+  // cascade removes the submissions, after which the templates are safe.
   const { error: delError } = await adminClient
     .from("clients")
     .delete()
     .eq("id", clientId)
   if (delError) return { ok: false, error: delError.message }
+
+  // Step 6: customer-owned templates (polymorphic owner_id, no DB FK to
+  // clients — see AGENTS.md; their template_versions cascade). Best-effort at
+  // this point: the org row is already gone, so a failure here is an invisible
+  // orphan, not a half-deleted client — log it rather than confusing the admin
+  // with an error for a client that no longer exists.
+  const { error: tplError } = await adminClient
+    .from("form_templates")
+    .delete()
+    .eq("owner_type", "customer")
+    .eq("owner_id", clientId)
+  if (tplError) {
+    console.error("client delete: template cleanup failed", { clientId, tplError })
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: "client_delete_templates",
+      error_message: tplError.message,
+      payload: { clientId },
+    })
+  }
+
+  // Step 7: best-effort auth.users cleanup for the org's portal users.
+  for (const u of portalUsers ?? []) {
+    const { error: authErr } = await adminClient.auth.admin.deleteUser(u.id)
+    if (authErr) {
+      console.error("client delete: auth user cleanup failed", { clientId, userId: u.id, authErr })
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "client_delete_auth_users",
+        error_message: authErr.message,
+        payload: { clientId, userId: u.id },
+      })
+    }
+  }
 
   revalidatePath("/admin/clients")
   revalidatePath("/admin")

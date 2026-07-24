@@ -1,7 +1,8 @@
 // Tests for the admin client lifecycle actions (app/admin/clients/actions.ts):
 //   - setClientActive  — reversible active flag toggle
 //   - deleteClient      — irreversible hard delete with server-side name guard,
-//                         Storage cleanup, customer-template cleanup, row delete
+//                         Storage cleanup, row delete (cascades submissions),
+//                         then customer-template + auth-user cleanup
 //
 // Vitest + JSDOM; no real Supabase or auth — all I/O is mocked. The adminClient
 // mock records which tables were deleted (and in what order), storage list/remove
@@ -18,6 +19,8 @@ const deletedTables: string[] = []
 const updateArgs: Record<string, unknown>[] = []
 const removeCalls: { bucket: string; paths: string[] }[] = []
 const workflowInserts: Record<string, unknown>[] = []
+let portalUserRows: { id: string }[]
+const deletedAuthUsers: string[] = []
 // bucket -> (prefix -> entries). Entry with id=null is a folder (recurse).
 let storageTree: Record<string, Record<string, { name: string; id: string | null }[]>>
 let storageListError: { message: string } | null
@@ -61,6 +64,13 @@ vi.mock("@/lib/supabase/admin", () => ({
           },
         }
       }
+      if (table === "client_users") {
+        return {
+          select: () => ({
+            eq: () => Promise.resolve({ data: portalUserRows, error: null }),
+          }),
+        }
+      }
       if (table === "workflow_errors") {
         return {
           insert: (arg: Record<string, unknown>) => {
@@ -70,6 +80,14 @@ vi.mock("@/lib/supabase/admin", () => ({
         }
       }
       return {}
+    },
+    auth: {
+      admin: {
+        deleteUser: (id: string) => {
+          deletedAuthUsers.push(id)
+          return Promise.resolve({ data: null, error: null })
+        },
+      },
     },
     storage: {
       from: (bucket: string) => ({
@@ -97,6 +115,8 @@ beforeEach(() => {
   updateArgs.length = 0
   removeCalls.length = 0
   workflowInserts.length = 0
+  portalUserRows = [{ id: "user-1" }]
+  deletedAuthUsers.length = 0
   storageListError = null
   // Default: one report file, and a nested form-media file (exercises recursion).
   storageTree = {
@@ -152,7 +172,7 @@ describe("deleteClient — name guard", () => {
 })
 
 describe("deleteClient — happy path", () => {
-  it("cleans storage in both buckets, removes customer templates before the client row, and returns ok", async () => {
+  it("cleans storage, deletes the client row BEFORE customer templates, removes portal auth users, and returns ok", async () => {
     const { deleteClient } = await import("@/app/admin/clients/actions")
     const res = await deleteClient(CLIENT_ID, "Acme Properties Ltd")
 
@@ -165,9 +185,13 @@ describe("deleteClient — happy path", () => {
     // Nested folder walk resolves the deep file path.
     expect(mediaRemove?.paths).toEqual([`${CLIENT_ID}/signatures/sub-1/field.png`])
 
-    // Order: customer templates deleted BEFORE the client row (clientId must
-    // stay resolvable through cleanup; row delete is the final atomic step).
-    expect(deletedTables).toEqual(["form_templates", "clients"])
+    // Order: client row FIRST — its cascade removes form_submissions, whose
+    // template_version_id FK (no cascade) otherwise blocks the template delete
+    // for any client that submitted their own template.
+    expect(deletedTables).toEqual(["clients", "form_templates"])
+
+    // Portal users' auth accounts are cleaned up.
+    expect(deletedAuthUsers).toEqual(["user-1"])
 
     // No workflow_errors on the happy path.
     expect(workflowInserts).toHaveLength(0)
@@ -188,6 +212,6 @@ describe("deleteClient — storage failure is non-blocking", () => {
       payload: { clientId: CLIENT_ID },
     })
     // …and the delete still proceeded.
-    expect(deletedTables).toEqual(["form_templates", "clients"])
+    expect(deletedTables).toEqual(["clients", "form_templates"])
   })
 })
