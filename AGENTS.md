@@ -22,10 +22,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `parent_template_id UUID NULL REFERENCES form_templates(id)` — set on forked rows, NULL on originals and customer-built-from-scratch.
 - RLS scopes customers to their own templates (full CRUD) plus read on Matt's published masters.
 
-**What's done now:** schema + RLS in migration 003. Form builder code MUST NOT be hardcoded to admin-only — keep the component reusable across surfaces.
+**What's done now (verified 2026-07-24):** schema + RLS in migration 003, fork-on-fill (`app/client/assignments/actions.ts` sets `parent_template_id` when a customer edits structure during fill), and the customer "Templates" surface at `app/client/templates` with its nav entry. Form builder code MUST NOT be hardcoded to admin-only — the component is shared across surfaces.
 
-**What's NOT done yet (deferred):**
-- Fork-on-fill UI (the "you've changed the structure → we're saving this as your version" flow).
-- Customer "Form Builder" / "My Templates" nav entry on the client surface.
-
-When you build either of those, this is the contract to honour. Don't reshape the schema without re-checking with Finley.
+Don't reshape the schema without re-checking with Finley.
