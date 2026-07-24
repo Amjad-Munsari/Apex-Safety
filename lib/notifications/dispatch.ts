@@ -84,6 +84,13 @@ export type NotificationPayload =
       invite_url: string         // single-use set-password/sign-in action link
       status: "invited" | "resent"
     }
+  | {
+      // Self-serve password reset — requested from /login/forgot. Carries the
+      // single-use recovery link (same /auth/confirm verifyOtp path as invites).
+      type: "password_reset"
+      recipient_email: string
+      reset_url: string
+    }
   // ── Two-way form builder: client-surface events (for Finley's n8n Switch) ──
   // Keyed on client_id (the org UUID) rather than client_email/name — the client
   // surface fires them from RLS-scoped server actions where the org id is always
@@ -142,6 +149,7 @@ function logDispatch(payload: NotificationPayload): void {
       ? { signing_url: redactSigningUrl(payload.signing_url) }
       : {}),
     ...("invite_url" in payload ? { invite_url: "[REDACTED]" } : {}),
+    ...("reset_url" in payload ? { reset_url: "[REDACTED]" } : {}),
     ...("contract_url" in payload ? { contract_url: "[REDACTED]" } : {}),
     ...("report_url" in payload ? { report_url: "[REDACTED]" } : {}),
   }

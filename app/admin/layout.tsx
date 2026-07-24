@@ -7,12 +7,20 @@ import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
 import ThemeSwitch from "@/components/ui/theme-switch";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { isAdmin, isDemoMode } from "@/lib/auth-helpers";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Defense-in-depth: proxy.ts already gates /admin, but the layout must not
+  // trust the matcher regex alone. Demo mode keeps its dev-only bypass.
+  if (!(await isDemoMode()) && !(await isAdmin())) {
+    redirect("/login/admin");
+  }
+
   const today = new Date().toLocaleDateString("en-GB", {
     weekday: "long",
     day: "numeric",

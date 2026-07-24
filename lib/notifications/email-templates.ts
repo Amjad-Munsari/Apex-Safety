@@ -28,6 +28,7 @@ export const EMAIL_TYPES = new Set<NotificationPayload["type"]>([
   "proposal_signed",
   "contract_issued",
   "client_portal_invite",
+  "password_reset",
 ])
 
 export interface BuiltEmail {
@@ -271,6 +272,20 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
           bodyHtml: `${p(`Hi ${payload.recipient_name},`)}<br/><br/>${p(`You have portal access for `)}<strong>${escapeHtml(payload.client_name)}</strong>. ${p("Click below to set your password and sign in.")}`,
           cta: { label: "Set password & sign in", url: payload.invite_url },
           footerNote: "This link is single-use and expires. If it lapses, ask your administrator to resend it.",
+        }),
+      }
+    }
+
+    case "password_reset": {
+      return {
+        to: payload.recipient_email,
+        subject: `Reset your password — ${BRAND}`,
+        html: layout({
+          heading: "Reset your password",
+          bodyHtml: `${p("We received a request to reset the password for this email address. Click below to choose a new one.")}<br/><br/>${p("If you didn't request this, you can safely ignore this email — your password is unchanged.")}`,
+          cta: { label: "Choose a new password", url: payload.reset_url },
+          footerNote: "This link is single-use and expires. You can request another from the sign-in page.",
+          preheader: "Choose a new password for your portal account",
         }),
       }
     }

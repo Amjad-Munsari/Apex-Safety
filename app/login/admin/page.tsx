@@ -19,10 +19,25 @@ export default function AdminLoginPage() {
     setError(null)
     setSubmitting(true)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
       setError(error.message)
+      setSubmitting(false)
+      return
+    }
+
+    // Only admin_users members belong on the console; client accounts are
+    // signed straight back out so the wrong-surface session never sticks.
+    const { data: adminRow } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("id", data.user.id)
+      .maybeSingle()
+
+    if (!adminRow) {
+      await supabase.auth.signOut()
+      setError("This account doesn't have operator access. Use the client portal sign in.")
       setSubmitting(false)
       return
     }
@@ -100,12 +115,20 @@ export default function AdminLoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label
-                htmlFor="password"
-                className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#999] font-bold"
-              >
-                Password
-              </label>
+              <div className="flex items-baseline justify-between">
+                <label
+                  htmlFor="password"
+                  className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#999] font-bold"
+                >
+                  Password
+                </label>
+                <a
+                  href="/login/forgot"
+                  className="text-[12px] text-[#999] border-b border-white/10 transition-colors hover:text-white hover:border-white/40"
+                >
+                  Forgot?
+                </a>
+              </div>
               <input
                 id="password"
                 type="password"

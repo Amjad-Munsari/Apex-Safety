@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import Image from "next/image";
+import { redirect } from "next/navigation";
 import { BrandingProvider } from "@/components/branding-provider";
+import { getClientContext, isDemoMode } from "@/lib/auth-helpers";
 import { getAppSettings } from "@/lib/settings/app-settings";
 import { ClientPortalNav } from "./_components/client-portal-nav";
 import { ClientIdentityNav } from "./_components/client-identity-nav";
@@ -12,6 +14,13 @@ export default async function ClientLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Defense-in-depth: proxy.ts already gates /client, but the layout must not
+  // trust the matcher regex alone. Demo mode keeps its dev-only bypass;
+  // getClientContext is request-cached, so pages reusing it pay no extra query.
+  if (!(await isDemoMode()) && !(await getClientContext())) {
+    redirect("/login");
+  }
+
   const { logoUrl } = await getAppSettings();
 
   return (

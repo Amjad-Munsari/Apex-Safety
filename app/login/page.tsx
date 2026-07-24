@@ -1,75 +1,150 @@
 "use client"
 
+import { useState, useTransition } from "react"
 import Link from "next/link"
-import { ShieldCheck, UserCircle, ShieldAlert } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ShieldCheck } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
-export default function LoginGatewayPage() {
+export default function LoginPage() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const router = useRouter()
+  const supabase = createClient()
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setSubmitting(true)
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+    if (error) {
+      setError(error.message)
+      setSubmitting(false)
+      return
+    }
+
+    // Operator accounts don't belong on the client portal: same admin_users
+    // membership check the middleware uses, enforced here so the wrong-surface
+    // session never sticks.
+    const { data: adminRow } = await supabase
+      .from("admin_users")
+      .select("id")
+      .eq("id", data.user.id)
+      .maybeSingle()
+
+    if (adminRow) {
+      await supabase.auth.signOut()
+      setError("This is the client portal — operator accounts sign in via Operator access below.")
+      setSubmitting(false)
+      return
+    }
+
+    startTransition(() => {
+      router.push("/client")
+      router.refresh()
+    })
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fbfaf5] p-6 relative overflow-hidden">
-      
-      {/* Background accents */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-[0.03]">
-         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-black blur-[120px]" />
+    <div className="min-h-screen flex flex-col items-center bg-[#fbfaf5] px-6 py-10">
+      <div className="w-full max-w-[360px] flex-1 flex flex-col justify-center animate-in-fade">
+
+        {/* Wordmark */}
+        <div className="text-center mb-12">
+          <div className="w-12 h-12 mx-auto rounded-full border border-black/10 bg-white shadow-sm flex items-center justify-center mb-5">
+            <ShieldCheck className="w-6 h-6 text-[#1a1a1a]" />
+          </div>
+          <h1 className="font-serif text-[32px] text-[#1a1a1a] tracking-tight leading-tight">
+            888 Safety &amp; Training
+          </h1>
+          <p className="font-mono text-[9px] tracking-[0.3em] text-[#3b8273] uppercase font-bold mt-3">
+            Client Portal
+          </p>
+        </div>
+
+        {/* Login form */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="email"
+              className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#888] font-bold"
+            >
+              Email address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              placeholder="you@company.com"
+              className="w-full h-12 border border-[#e5e1d8] bg-white rounded-sm px-4 text-[14px] text-[#1a1a1a] placeholder:text-[#b6b0a6] outline-none focus:border-[#1a1a1a] transition-colors"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-baseline justify-between">
+              <label
+                htmlFor="password"
+                className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#888] font-bold"
+              >
+                Password
+              </label>
+              <Link
+                href="/login/forgot"
+                className="text-[12px] text-[#888] border-b border-[#e5e1d8] transition-colors hover:text-[#1a1a1a] hover:border-[#1a1a1a]"
+              >
+                Forgot?
+              </Link>
+            </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              placeholder="••••••••"
+              className="w-full h-12 border border-[#e5e1d8] bg-white rounded-sm px-4 text-[14px] text-[#1a1a1a] placeholder:text-[#b6b0a6] outline-none focus:border-[#1a1a1a] transition-colors"
+            />
+          </div>
+
+          {error && <p className="text-[12px] text-[oklch(0.50_0.16_25)]">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={submitting || isPending}
+            className="group w-full h-12 bg-[#1a1a1a] hover:bg-black text-[#fbfaf5] rounded-sm text-[13px] font-bold tracking-tight transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {submitting || isPending ? "Signing in…" : "Sign in"}
+            {!(submitting || isPending) && (
+              <span
+                aria-hidden
+                className="transition-transform duration-200 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-[3px]"
+              >
+                →
+              </span>
+            )}
+          </button>
+        </form>
+
       </div>
 
-      <div className="w-full max-w-4xl relative z-10 flex flex-col items-center">
-        
-        {/* Header */}
-        <div className="text-center mb-16 space-y-4">
-           <div className="w-12 h-12 mx-auto rounded-full border border-black/10 flex items-center justify-center bg-white shadow-sm">
-              <ShieldCheck className="w-6 h-6 text-black" />
-           </div>
-           <div>
-             <h1 className="font-serif text-[42px] text-[#1a1a1a] leading-tight tracking-tight">
-               888 Safety & Training
-             </h1>
-             <p className="font-mono text-[10px] tracking-[0.25em] text-[#999] uppercase font-bold mt-2">
-               Access Gateway
-             </p>
-           </div>
-        </div>
-
-        {/* Selection Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-           
-           {/* Client Portal Card */}
-           <Link href="/login/client" className="group">
-             <div className="h-full bg-white border border-[#e5e1d8] rounded-md p-8 shadow-sm transition-all duration-300 hover:shadow-md hover:border-black/20 flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-[#fbfaf5] border border-[#e5e1d8] flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300">
-                   <UserCircle className="w-8 h-8 text-[#1a1a1a]" />
-                </div>
-                <h2 className="font-serif text-[24px] text-[#1a1a1a] mb-3">Client Portal</h2>
-                <p className="text-[#888] font-sans text-[13px] leading-relaxed">
-                  Access your compliance documentation, assessment reports, and track your retained consulting hours.
-                </p>
-                <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.2em] font-bold text-[#1a1a1a] flex items-center gap-2 group-hover:gap-3 transition-all">
-                  Client Login <span className="text-[14px]">→</span>
-                </div>
-             </div>
-           </Link>
-
-           {/* Admin Portal Card */}
-           <Link href="/login/admin" className="group">
-             <div className="h-full bg-[#111] border border-black rounded-md p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-black/20 flex flex-col items-center text-center">
-                <div className="w-16 h-16 rounded-full bg-[#1a1a1a] border border-white/10 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300">
-                   <ShieldAlert className="w-8 h-8 text-white" />
-                </div>
-                <h2 className="font-serif text-[24px] text-white mb-3">Admin Console</h2>
-                <p className="text-white/50 font-sans text-[13px] leading-relaxed">
-                  Manage clients, upload documentation, track upcoming expiries, and generate compliance reports.
-                </p>
-                <div className="mt-8 font-mono text-[10px] uppercase tracking-[0.2em] font-bold text-white flex items-center gap-2 group-hover:gap-3 transition-all">
-                  Admin Login <span className="text-[14px] text-white/50 group-hover:text-white">→</span>
-                </div>
-             </div>
-           </Link>
-
-        </div>
-
-        <div className="mt-20 font-sans text-[11px] text-[#bbb]">
-          &copy; {new Date().getFullYear()} 888 Safety & Training Limited. All rights reserved.
-        </div>
-
+      {/* Footer — operator access stays deliberately quiet */}
+      <div className="w-full flex items-center justify-between text-[11px] text-[#bbb]">
+        <span>© {new Date().getFullYear()} 888 Safety &amp; Training Ltd</span>
+        <Link
+          href="/login/admin"
+          className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-[#bbb] transition-colors hover:text-[#1a1a1a]"
+        >
+          Operator access
+        </Link>
       </div>
     </div>
   )

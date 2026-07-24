@@ -41,9 +41,9 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Unexpected errors — treat as auth failure only when message suggests it,
-    // otherwise surface as 401 (requireAdmin throws before any DB work).
+    // Genuinely unexpected failures are server errors — reporting them as 401
+    // hides real faults behind an auth story (auth failures are caught above).
     console.error("[send-for-signature] unexpected error:", err)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    return NextResponse.json({ error: "internal_error" }, { status: 500 })
   }
 }

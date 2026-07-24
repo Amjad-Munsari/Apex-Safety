@@ -307,9 +307,9 @@ export type InviteResult =
   | { ok: false; error: string }
 
 /**
- * Email a portal invite link through the n8n bridge. Best-effort: a failure is
- * logged to workflow_errors and reflected via the returned `emailed` flag so the
- * admin UI can fall back to showing the copyable link. Never throws.
+ * Email a portal invite link via Resend (dispatchNotification). Best-effort: a
+ * failure is logged to workflow_errors and reflected via the returned `emailed`
+ * flag so the admin UI can fall back to showing the copyable link. Never throws.
  */
 async function emailPortalInvite(args: {
   clientId: string

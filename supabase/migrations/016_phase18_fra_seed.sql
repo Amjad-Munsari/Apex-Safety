@@ -169,7 +169,12 @@ BEGIN
   -- Without a valid admin_users row this migration should fail loudly, not silently.
   SELECT id INTO v_admin_id FROM admin_users LIMIT 1;
   IF v_admin_id IS NULL THEN
-    RAISE EXCEPTION 'Phase 18 seed requires at least one admin_users row. Seed admin first.';
+    -- No self-seeded bootstrap admin here: silently inserting a passwordless
+    -- auth.users + admin_users row is a full-admin backdoor if this migration
+    -- ever replays against a database with an empty admin_users table. A fresh
+    -- environment must create its first admin explicitly before replaying this
+    -- seed (production had one before this ran).
+    RAISE EXCEPTION 'migration 016 requires at least one admin_users row (owner_type=admin seeds need a real owner); create your first admin before replaying this migration';
   END IF;
 
   v_schema := jsonb_build_object(
