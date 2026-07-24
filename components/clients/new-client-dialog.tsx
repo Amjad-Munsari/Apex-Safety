@@ -85,7 +85,7 @@ export function NewClientButton({
               Onboard a new client.
             </DialogTitle>
             <p className="text-muted-foreground text-xs font-sans tracking-wide mt-1">
-              They&apos;ll receive a portal invite and start with a 0h hours balance.
+              They&apos;ll receive a portal invite and start with a 0 credit balance.
             </p>
           </DialogHeader>
 

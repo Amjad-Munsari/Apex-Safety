@@ -12,31 +12,32 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { HOURS_PACKAGES } from "@/lib/billing/packages";
+import { CREDIT_PACKAGES } from "@/lib/billing/packages";
 import type { TransactionView } from "@/lib/billing/history";
 
 interface BillingClientProps {
   balance: number;
   lastTopUpLabel: string | null;
-  usedThisYearHours: number;
+  usedThisYearCredits: number;
   transactions: TransactionView[];
   /** When false, the checkout is disabled and shows "Payments coming soon". */
   paypalEnabled: boolean;
 }
 
-function formatBalanceDisplay(hours: number): string {
-  return Number.isInteger(hours) ? hours.toString() : hours.toFixed(1);
+/** Credit balances are whole integers; round defensively for display. */
+function formatCredits(credits: number): string {
+  return Math.abs(Math.round(credits)).toString();
 }
 
-function formatHours(hours: number): string {
-  const abs = Math.abs(hours);
-  return Number.isInteger(abs) ? abs.toString() : abs.toFixed(1);
+/** Display-only per-credit price for a pack, e.g. 495 / 20 → "£24.75". */
+function perCreditLabel(priceGBP: number, credits: number): string {
+  return `£${(priceGBP / credits).toFixed(2)}/credit`;
 }
 
 export default function BillingClient({
   balance: initialBalance,
   lastTopUpLabel,
-  usedThisYearHours,
+  usedThisYearCredits,
   transactions,
   paypalEnabled,
 }: BillingClientProps) {
@@ -44,7 +45,7 @@ export default function BillingClient({
   const [balance, setBalance] = useState(initialBalance);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selected, setSelected] = useState<number>(1); // default to 10h (popular)
+  const [selected, setSelected] = useState<number>(1); // default to 40c (popular)
   const [redirecting, setRedirecting] = useState(false);
 
   const handledReturn = useRef(false);
@@ -65,7 +66,7 @@ export default function BillingClient({
       toast.success(
         data.alreadyProcessed
           ? "Payment already confirmed — your balance is up to date."
-          : "Payment received — hours added to your balance.",
+          : "Payment received — credits added to your balance.",
         { id: toastId }
       );
       router.refresh(); // re-pull the server-rendered ledger + summary
@@ -96,7 +97,7 @@ export default function BillingClient({
       // only after the network call resolves, never as a synchronous re-render.
       queueMicrotask(() => void captureOrder(orderId, clearQuery));
     } else {
-      toast("Payment cancelled — no hours were purchased.");
+      toast("Payment cancelled — no credits were purchased.");
       clearQuery();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,7 +112,7 @@ export default function BillingClient({
   };
 
   const handlePay = async () => {
-    const pkg = HOURS_PACKAGES[selected];
+    const pkg = CREDIT_PACKAGES[selected];
     setRedirecting(true);
     try {
       const res = await fetch("/api/paypal/create-order", {
@@ -140,7 +141,7 @@ export default function BillingClient({
           </span>
         </div>
         <h2 className="font-serif text-[44px] text-foreground font-normal tracking-tight leading-[1.05]">
-          Hours &amp; billing.
+          Credits &amp; billing.
         </h2>
       </section>
 
@@ -154,17 +155,17 @@ export default function BillingClient({
             <span
               className={cn(
                 "font-serif text-[54px] leading-none tracking-tight transition-colors",
-                balance < 5 ? "text-danger" : "text-foreground"
+                balance < 20 ? "text-danger" : "text-foreground"
               )}
             >
-              {formatBalanceDisplay(balance)}
+              {formatCredits(balance)}
             </span>
             <span className="text-[18px] font-sans font-normal text-muted-foreground tracking-tight">
-              hours remaining
+              credits remaining
             </span>
           </div>
           <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.1em] text-muted-foreground uppercase font-medium">
-            <span>{formatHours(usedThisYearHours)}h used this year</span>
+            <span>{formatCredits(usedThisYearCredits)} credits used this year</span>
             {lastTopUpLabel && (
               <>
                 <span className="opacity-60 font-sans tracking-normal">&middot;</span>
@@ -179,7 +180,7 @@ export default function BillingClient({
             onClick={openCheckout}
             className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm h-10 px-6 font-sans text-[11px] font-bold tracking-tight shadow-none flex items-center gap-3 transition-colors group"
           >
-            Buy more hours{" "}
+            Buy more credits{" "}
             <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-1 transition-transform" />
           </Button>
         ) : (
@@ -202,7 +203,7 @@ export default function BillingClient({
           <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
             <p className="font-serif text-[20px] text-foreground mb-3">No transactions yet.</p>
             <p className="font-sans text-[13px] text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Top-ups and hours drawn down against site visits will be itemised here. For a
+              Top-ups and credits drawn down against site visits will be itemised here. For a
               statement in the meantime, message your consultant.
             </p>
           </div>
@@ -228,7 +229,7 @@ export default function BillingClient({
                     )}
                   >
                     {credit ? "+" : "−"}
-                    {formatHours(tx.hoursAmount)}h
+                    {formatCredits(tx.hoursAmount)}
                   </span>
                 </div>
               );
@@ -262,15 +263,15 @@ export default function BillingClient({
                   Step 1 of 1 &middot; Top-up
                 </div>
                 <DialogTitle className="font-serif text-[22px] text-foreground font-medium tracking-tight leading-tight">
-                  Buy more hours.
+                  Buy more credits.
                 </DialogTitle>
                 <DialogDescription className="text-[12px] text-muted-foreground font-sans tracking-tight">
-                  Pick a package. Hours are credited to your balance the moment payment clears.
+                  Pick a package. Credits are added to your balance the moment payment clears.
                 </DialogDescription>
               </div>
 
               <div className="space-y-2.5">
-                {HOURS_PACKAGES.map((pkg, index) => {
+                {CREDIT_PACKAGES.map((pkg, index) => {
                   const isSelected = selected === index;
                   return (
                     <button
@@ -291,15 +292,15 @@ export default function BillingClient({
                             isSelected ? "text-amber-700" : "text-foreground"
                           )}
                         >
-                          {pkg.hours}
+                          {pkg.credits}
                         </span>
-                        <span className="font-sans text-[11px] text-muted-foreground font-medium">hours</span>
+                        <span className="font-sans text-[11px] text-muted-foreground font-medium">credits</span>
                       </div>
 
                       <div className="flex-1 flex flex-col gap-1">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-[9px] uppercase tracking-[0.2em] font-bold text-muted-foreground">
-                            £{pkg.perHour}/hour
+                            {perCreditLabel(pkg.priceGBP, pkg.credits)}
                           </span>
                           {pkg.popular && (
                             <span className="font-mono text-[10px] uppercase tracking-[0.2em] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-sm">
@@ -353,7 +354,7 @@ export default function BillingClient({
                   onClick={handlePay}
                   className="bg-amber-600 hover:bg-amber-500 text-white rounded-sm h-10 px-6 text-[10px] uppercase tracking-[0.2em] font-bold shadow-none flex items-center gap-2"
                 >
-                  Pay £{HOURS_PACKAGES[selected].priceGBP.toLocaleString()} via PayPal
+                  Pay £{CREDIT_PACKAGES[selected].priceGBP.toLocaleString()} via PayPal
                   <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </DialogFooter>

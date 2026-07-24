@@ -12,6 +12,8 @@ export interface SaveNotificationSettingsInput {
   senderName: string
   expiryRemindersEnabled: boolean
   notifyOnUpload: boolean
+  /** Reference rate for the hours⇄credits conversion (credits per hour). */
+  creditsPerHour: number
 }
 
 /**
@@ -29,6 +31,11 @@ export async function saveNotificationSettings(
   const sender = input.senderName.trim()
   if (!signOff) return { ok: false, error: "Sign-off name is required." }
   if (!sender) return { ok: false, error: "Sender name is required." }
+  // Reference rate must be a positive integer (matches the DB CHECK >= 1).
+  const creditsPerHour = input.creditsPerHour
+  if (!Number.isInteger(creditsPerHour) || creditsPerHour < 1) {
+    return { ok: false, error: "Credits per hour must be a whole number of 1 or more." }
+  }
 
   const { error } = await adminClient
     .from("app_settings")
@@ -37,6 +44,7 @@ export async function saveNotificationSettings(
       sender_name: sender,
       expiry_reminders_enabled: input.expiryRemindersEnabled,
       notify_on_upload: input.notifyOnUpload,
+      credits_per_hour: creditsPerHour,
       updated_at: new Date().toISOString(),
     })
     .eq("id", 1)

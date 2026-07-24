@@ -17,14 +17,14 @@
 
 INSERT INTO clients (id, name, site_address, hours_balance, active)
 VALUES 
-  ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Merlin Print Works Ltd', 'Unit 7, Ardwick Industrial Estate', 3.5, TRUE),
-  ('b2c3d4e5-f6a7-4b6c-9d0e-1f2a3b4c5d6e', 'Argyll Self-Storage', 'Loch Road, Argyll', 4.0, TRUE),
-  ('c3d4e5f6-a7b8-4c7d-0e1f-2a3b4c5d6e7f', 'Brooklyn Bakery', 'Beach Rd, Chorlton', 6.0, TRUE),
-  ('d4e5f6a7-b8c9-4d8e-1f2a-3b4c5d6e7f8a', 'Hallam House Care Home', '12 Hallam St, Manchester', 0.5, TRUE),
-  ('e5f6a7b8-c9d0-4e9f-2a3b-4c5d6e7f8a9b', 'Oakwood Letting Agency', 'Oakwood Square, Leeds', 2.8, TRUE),
-  ('f6a7b8c9-d0e1-4f0a-3b4c-5d6e7f8a9b0c', 'Parkgate Primary School', 'Parkgate Lane, Cheshire', 8.5, TRUE),
-  ('a1b2c3d4-b8c9-4d8e-1f2a-3b4c5d6e7f8b', 'Rowan & Ashe Solicitors', 'Rowan House, Manchester', 14.0, TRUE),
-  ('b2c3d4e5-c9d0-4e9f-2a3b-4c5d6e7f8a9c', 'Stockley Joinery', 'Stockley Way, Salford', 18.5, TRUE)
+  ('a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d', 'Merlin Print Works Ltd', 'Unit 7, Ardwick Industrial Estate', 14, TRUE),
+  ('b2c3d4e5-f6a7-4b6c-9d0e-1f2a3b4c5d6e', 'Argyll Self-Storage', 'Loch Road, Argyll', 16, TRUE),
+  ('c3d4e5f6-a7b8-4c7d-0e1f-2a3b4c5d6e7f', 'Brooklyn Bakery', 'Beach Rd, Chorlton', 24, TRUE),
+  ('d4e5f6a7-b8c9-4d8e-1f2a-3b4c5d6e7f8a', 'Hallam House Care Home', '12 Hallam St, Manchester', 2, TRUE),
+  ('e5f6a7b8-c9d0-4e9f-2a3b-4c5d6e7f8a9b', 'Oakwood Letting Agency', 'Oakwood Square, Leeds', 11, TRUE),
+  ('f6a7b8c9-d0e1-4f0a-3b4c-5d6e7f8a9b0c', 'Parkgate Primary School', 'Parkgate Lane, Cheshire', 34, TRUE),
+  ('a1b2c3d4-b8c9-4d8e-1f2a-3b4c5d6e7f8b', 'Rowan & Ashe Solicitors', 'Rowan House, Manchester', 56, TRUE),
+  ('b2c3d4e5-c9d0-4e9f-2a3b-4c5d6e7f8a9c', 'Stockley Joinery', 'Stockley Way, Salford', 74, TRUE)
 ON CONFLICT (id) DO UPDATE 
 SET name = EXCLUDED.name, 
     hours_balance = EXCLUDED.hours_balance;

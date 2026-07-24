@@ -4,7 +4,7 @@ import { adminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/auth-helpers"
 import { revalidatePath } from "next/cache"
 import { requireAdmin } from "@/lib/auth-helpers"
-import { assertClientActive, clientIsActive, CLIENT_DEACTIVATED_MESSAGE } from "@/lib/clients/require-active"
+import { clientIsActive, CLIENT_DEACTIVATED_MESSAGE } from "@/lib/clients/require-active"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getSiteUrl } from "@/lib/site-url"
 
@@ -261,62 +261,76 @@ async function listAllUnder(bucket: string, prefix: string): Promise<string[]> {
   return files
 }
 
-export async function updateClientHours(clientId: string, adjustment: number) {
-  // Admin-role gate — adjusts billable hours_balance via the service-role
-  // adminClient. Without this any authenticated user could top up / drain any
-  // client's hours. requireAdmin() enforces admin_users membership.
+export type UpdateClientHoursResult =
+  | { ok: true; balance: number }
+  | { ok: false; error: string }
+
+/**
+ * Apply a manual credit adjustment to a client's retained balance.
+ *
+ * Returns expected errors as values (not throws) — per Next's server-action
+ * error-handling guidance, a thrown error is treated as unexpected and its
+ * message is masked in production. The adjust dialog checks the returned union.
+ *
+ * The balance movement + ledger insert run inside the adjust_client_credits RPC
+ * (migration 026), which locks the client row FOR UPDATE and applies a RELATIVE
+ * update, so a concurrent PayPal capture can't be lost and the balance never
+ * moves without an audit row. The RPC is the authoritative gate; the shape
+ * pre-check here just saves a round trip and can't decide overdraft from a stale
+ * read.
+ */
+export async function updateClientHours(
+  clientId: string,
+  adjustment: number
+): Promise<UpdateClientHoursResult> {
+  // Admin-role gate — adjusts the billable credit balance (hours_balance carries
+  // credits since migration 026) via the service-role adminClient. Without this
+  // any authenticated user could top up / drain any client's credits.
   await requireAdmin()
-  // Frozen-client guard — no hours changes on a deactivated client.
-  await assertClientActive(clientId)
 
-  // 1. Get current balance
-  const { data: client, error: fetchError } = await adminClient
-    .from("clients")
-    .select("hours_balance")
-    .eq("id", clientId)
-    .single()
-
-  if (fetchError || !client) {
-    throw new Error("Client not found")
+  // Frozen-client guard — no balance changes on a deactivated client. Returned
+  // as a value (not thrown) to match the union contract.
+  if (!(await clientIsActive(clientId))) {
+    return { ok: false, error: CLIENT_DEACTIVATED_MESSAGE }
   }
 
-  const currentBalance = client.hours_balance || 0
-  const newBalance = Math.max(0, currentBalance + adjustment)
-  // Clamp at zero means the applied delta can differ from the requested one
-  // (e.g. deducting 5h from a 2h balance only removes 2h). Log the actual
-  // movement so the ledger never disagrees with the balance.
-  const appliedDelta = newBalance - currentBalance
-
-  // 2. Update balance
-  const { error: updateError } = await adminClient
-    .from("clients")
-    .update({ hours_balance: newBalance })
-    .eq("id", clientId)
-
-  if (updateError) {
-    throw new Error(`Failed to update hours: ${updateError.message}`)
+  // Fast shape check for values Postgres can't take as a whole-credit adjustment
+  // (NaN/Infinity/fractional/zero). The RPC re-checks under the row lock.
+  if (!Number.isInteger(adjustment) || adjustment === 0) {
+    return { ok: false, error: "Adjustment must be a non-zero whole number of credits." }
   }
 
-  // 3. Ledger entry — the Hours-log tab reads hours_transactions, so every admin
-  // adjustment must leave an audit row (mirrors the PayPal purchase ledger).
-  // Best-effort: the balance is already updated; a ledger failure is logged but
-  // does not throw (the balance write is the source of truth).
-  if (appliedDelta !== 0) {
-    const { error: txError } = await adminClient.from("hours_transactions").insert({
-      client_id: clientId,
-      transaction_type: "manual_adjustment",
-      hours_amount: appliedDelta,
-      notes: appliedDelta > 0 ? "Manual top-up by admin" : "Manual deduction by admin",
-    })
-    if (txError) {
-      console.error("updateClientHours: ledger insert failed", { clientId, appliedDelta, txError })
+  const description = adjustment > 0 ? "Manual top-up by admin" : "Manual deduction by admin"
+
+  const { data, error } = await adminClient.rpc("adjust_client_credits", {
+    p_client_id: clientId,
+    p_adjustment: adjustment,
+    p_description: description,
+  })
+
+  if (error) {
+    // Map the RPC's distinct exception tokens to admin-facing messages.
+    switch (error.message) {
+      case "credits_overdraft":
+        return { ok: false, error: `Cannot deduct ${Math.abs(adjustment)} credits — balance is insufficient.` }
+      case "credits_not_integer":
+      case "credits_zero":
+        return { ok: false, error: "Adjustment must be a non-zero whole number of credits." }
+      case "client_inactive":
+        // Deactivation that raced past the fast-path clientIsActive() check.
+        return { ok: false, error: CLIENT_DEACTIVATED_MESSAGE }
+      case "client_not_found":
+        return { ok: false, error: "Client not found." }
+      default:
+        console.error("updateClientHours: adjust_client_credits failed", { clientId, adjustment, error })
+        return { ok: false, error: "Failed to update credits." }
     }
   }
 
   revalidatePath(`/admin/clients/${clientId}`)
   revalidatePath("/admin")
 
-  return { success: true, newBalance }
+  return { ok: true, balance: Number(data) }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

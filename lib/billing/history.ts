@@ -1,6 +1,8 @@
 /**
- * Pure presentation helpers for the client billing page's hours ledger.
+ * Pure presentation helpers for the client billing page's credits ledger.
  * No I/O — the server component fetches rows, these shape them for display.
+ * hours_transactions.hours_amount is denominated in credits (see migration
+ * 026); the row/field names are kept for compatibility.
  */
 
 export interface HoursTransactionRow {
@@ -18,14 +20,14 @@ export interface TransactionView {
   /** e.g. "10 Apr 2026" */
   dateLabel: string
   title: string
-  /** Signed hours movement (+5, -1.5). */
+  /** Signed credit movement (+20, -8). Field name kept for compatibility. */
   hoursAmount: number
   gbpAmount: number | null
 }
 
 export interface BillingSummary {
-  /** Total hours drawn down in the current calendar year (absolute). */
-  usedThisYearHours: number
+  /** Total credits drawn down in the current calendar year (absolute). */
+  usedThisYearCredits: number
   /** Short "10 Apr" label of the most recent credit, or null. */
   lastTopUpLabel: string | null
 }
@@ -51,12 +53,12 @@ function shortDate(iso: string): string {
 function titleFor(row: HoursTransactionRow): string {
   switch (row.transaction_type) {
     case "purchase":
-      return "Hours purchase"
+      return "Credit purchase"
     case "manual_adjustment":
-      return row.hours_amount >= 0 ? "Account top-up" : "Hours used"
+      return row.hours_amount >= 0 ? "Account top-up" : "Credits used"
     case "usage":
     case "deduction":
-      return "Hours used"
+      return "Credits used"
     default:
       return row.notes ?? row.transaction_type
   }
@@ -78,7 +80,7 @@ export function deriveBillingSummary(
 ): BillingSummary {
   const nowYear = new Date(nowIso).getUTCFullYear()
 
-  const usedThisYearHours = rows.reduce((sum, r) => {
+  const usedThisYearCredits = rows.reduce((sum, r) => {
     if (r.hours_amount < 0 && new Date(r.created_at).getUTCFullYear() === nowYear) {
       return sum + Math.abs(r.hours_amount)
     }
@@ -97,7 +99,7 @@ export function deriveBillingSummary(
   }
 
   return {
-    usedThisYearHours: Math.round(usedThisYearHours * 100) / 100,
+    usedThisYearCredits: Math.round(usedThisYearCredits),
     lastTopUpLabel: lastTopUp ? shortDate(lastTopUp.created_at) : null,
   }
 }

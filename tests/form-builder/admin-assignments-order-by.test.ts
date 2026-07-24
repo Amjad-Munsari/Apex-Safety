@@ -64,6 +64,12 @@ vi.mock("@/lib/supabase/dashboard", () => ({
   calculateProposalTotal: vi.fn(() => 0),
 }));
 
+// The page reads app settings for the adjust-balance dialog's credits rate;
+// stub it so the test's adminClient mock needn't model app_settings.
+vi.mock("@/lib/settings/app-settings", () => ({
+  getAppSettings: vi.fn().mockResolvedValue({ creditsPerHour: 4 }),
+}));
+
 vi.mock("next/navigation", () => ({
   notFound: vi.fn(() => { throw new Error("notFound"); }),
   redirect: vi.fn(),

@@ -43,7 +43,7 @@ export default async function BillingPage() {
     <BillingClient
       balance={Number(client?.hours_balance ?? 0)}
       lastTopUpLabel={summary.lastTopUpLabel}
-      usedThisYearHours={summary.usedThisYearHours}
+      usedThisYearCredits={summary.usedThisYearCredits}
       transactions={rows.map(toTransactionView)}
       paypalEnabled={isPayPalEnabled()}
     />

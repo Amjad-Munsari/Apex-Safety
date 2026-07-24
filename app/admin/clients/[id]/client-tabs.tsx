@@ -279,7 +279,7 @@ export function ClientTabs({
             <FileSignature className="w-3.5 h-3.5" /> Proposals <span className="text-muted-foreground">{proposals.length}</span>
           </TabsTrigger>
           <TabsTrigger value="hours" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
-            <Clock className="w-3.5 h-3.5" /> Hours log
+            <Clock className="w-3.5 h-3.5" /> Credits log
           </TabsTrigger>
           <TabsTrigger value="assignments" className="font-mono text-[10px] uppercase tracking-widest gap-2 px-1 pb-3 pt-0 data-active:text-foreground text-foreground/40">
             <ClipboardList className="w-3.5 h-3.5" /> Assigned Forms{activeAssignmentCount > 0 ? ` (${activeAssignmentCount})` : ""}
@@ -555,17 +555,17 @@ export function ClientTabs({
             <div className="px-6 py-4 flex justify-between items-center border-b border-border">
               <div className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-foreground/40" />
-                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Hours transactions</h3>
+                <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Credit transactions</h3>
               </div>
               <div className="font-mono text-[10px] text-foreground/40 uppercase tracking-widest">
                 Current balance:&nbsp;
-                <span className="text-foreground font-serif text-base">{hoursBalance}h</span>
+                <span className="text-foreground font-serif text-base">{hoursBalance}</span>
               </div>
             </div>
             {hoursLog.length === 0 ? (
               <div className="p-10 text-center flex flex-col items-center justify-center">
                 <Clock className="w-8 h-8 text-foreground/20 mb-3" />
-                <p className="text-muted-foreground text-sm">No hours transactions yet.</p>
+                <p className="text-muted-foreground text-sm">No credit transactions yet.</p>
                 <p className="text-muted-foreground text-xs mt-1">Adjustments and purchases will appear here.</p>
               </div>
             ) : (
@@ -586,9 +586,9 @@ export function ClientTabs({
                       </td>
                       <td className="px-4 py-4 text-foreground">{txn.description}</td>
                       <td className={`px-4 py-4 font-mono text-xs text-right ${txn.delta >= 0 ? "text-success" : "text-danger"}`}>
-                        {txn.delta >= 0 ? "+" : ""}{txn.delta}h
+                        {txn.delta >= 0 ? "+" : ""}{txn.delta}
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs text-right text-foreground">{txn.balance}h</td>
+                      <td className="px-6 py-4 font-mono text-xs text-right text-foreground">{txn.balance}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -46,7 +46,7 @@ describe("POST /api/paypal/create-order", () => {
   it("returns 403 and makes no PayPal call when the feature flag is off", async () => {
     isEnabledSpy.mockReturnValue(false)
 
-    const res = await POST(makeRequest({ packageId: "5h" }))
+    const res = await POST(makeRequest({ packageId: "20c" }))
 
     expect(res.status).toBe(403)
     expect(createOrderSpy).not.toHaveBeenCalled()
@@ -55,14 +55,14 @@ describe("POST /api/paypal/create-order", () => {
   it("returns 401 when there is no authenticated client", async () => {
     getClientContextSpy.mockResolvedValue(null)
 
-    const res = await POST(makeRequest({ packageId: "5h" }))
+    const res = await POST(makeRequest({ packageId: "20c" }))
 
     expect(res.status).toBe(401)
     expect(createOrderSpy).not.toHaveBeenCalled()
   })
 
   it("returns 400 for an unknown packageId (price-tamper guard)", async () => {
-    const res = await POST(makeRequest({ packageId: "999h" }))
+    const res = await POST(makeRequest({ packageId: "999c" }))
 
     expect(res.status).toBe(400)
     const body = await res.json()
@@ -77,8 +77,8 @@ describe("POST /api/paypal/create-order", () => {
     expect(createOrderSpy).not.toHaveBeenCalled()
   })
 
-  it("creates a £495.00 GBP order for the 5h package bound to the client, returns orderId + approveUrl", async () => {
-    const res = await POST(makeRequest({ packageId: "5h" }))
+  it("creates a £495.00 GBP order for the 20c package bound to the client, returns orderId + approveUrl", async () => {
+    const res = await POST(makeRequest({ packageId: "20c" }))
 
     expect(res.status).toBe(200)
     const body = await res.json()
@@ -94,8 +94,8 @@ describe("POST /api/paypal/create-order", () => {
       expect.objectContaining({
         amount: "495.00",
         currency: "GBP",
-        description: "888 Safety — 5 Consulting Hours",
-        referenceId: "5h",
+        description: "888 Safety — 20 Consulting Credits",
+        referenceId: "20c",
         customId: CLIENT_ID,
         returnUrl: "https://app.test/client/billing",
         cancelUrl: "https://app.test/client/billing",
@@ -103,18 +103,18 @@ describe("POST /api/paypal/create-order", () => {
     )
   })
 
-  it("prices the 20h package at £1,800.00", async () => {
-    await POST(makeRequest({ packageId: "20h" }))
+  it("prices the 80c package at £1,800.00", async () => {
+    await POST(makeRequest({ packageId: "80c" }))
 
     expect(createOrderSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ amount: "1800.00", referenceId: "20h" })
+      expect.objectContaining({ amount: "1800.00", referenceId: "80c" })
     )
   })
 
   it("returns 500 (not a crash) when PayPal order creation throws", async () => {
     createOrderSpy.mockRejectedValueOnce(new Error("paypal down"))
 
-    const res = await POST(makeRequest({ packageId: "5h" }))
+    const res = await POST(makeRequest({ packageId: "20c" }))
 
     expect(res.status).toBe(500)
   })

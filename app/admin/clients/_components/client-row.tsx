@@ -68,7 +68,7 @@ export function ClientRow({
           <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor} shrink-0`} /> {ragLabel}
         </div>
       </td>
-      <td className="px-4 py-4 font-mono text-xs text-foreground/70 text-center">{hoursBalance}h</td>
+      <td className="px-4 py-4 font-mono text-xs text-foreground/70 text-center">{hoursBalance}</td>
       <td className="px-4 py-4">
         <div className="text-foreground text-sm mb-0.5 truncate">{nextExpiryLabel}</div>
         <div className="text-xs text-muted-foreground truncate">{nextExpiryCategory}</div>

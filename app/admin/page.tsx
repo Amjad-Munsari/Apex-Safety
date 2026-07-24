@@ -115,7 +115,7 @@ export default async function AdminDashboardPage() {
                   <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
                     <th className="font-normal px-6 py-3 border-b border-border text-left w-[34%]">Client</th>
                     <th className="font-normal px-4 py-3 border-b border-border text-center w-[15%]">Rag</th>
-                    <th className="font-normal px-4 py-3 border-b border-border text-center w-[9%]">Hours</th>
+                    <th className="font-normal px-4 py-3 border-b border-border text-center w-[9%]">Credits</th>
                     <th className="font-normal px-4 py-3 border-b border-border text-left w-[19%]">Next Expiry</th>
                     <th className="font-normal px-4 py-3 border-b border-border text-center w-[14%]">Proposal</th>
                     <th className="font-normal px-4 py-3 border-b border-border text-center w-[9%]">Docs</th>
@@ -290,7 +290,7 @@ export default async function AdminDashboardPage() {
           <div className="flex justify-between items-center mb-6">
             <div className="flex items-center gap-3">
               <span className="font-mono text-xs text-muted-foreground">05</span>
-              <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Hours balances</h3>
+              <h3 className="font-sans font-medium text-foreground tracking-wide text-lg">Credit balances</h3>
             </div>
             <Link href="/admin/hours" className="font-mono text-[10px] uppercase tracking-widest text-foreground/70 hover:text-foreground underline underline-offset-4 decoration-foreground/20">See all</Link>
           </div>
@@ -298,11 +298,11 @@ export default async function AdminDashboardPage() {
           <div className="flex flex-col gap-3 mb-4">
             {clients?.slice(0, 8).map((client) => {
               const balance = client.hours_balance || 0;
-              const isDanger = balance < 3;
-              const isWarning = balance < 10;
+              const isDanger = balance < 12;
+              const isWarning = balance < 40;
               const barColor = isDanger ? "bg-danger" : isWarning ? "bg-gold" : "bg-muted-foreground";
               const textColor = isDanger ? "text-danger" : isWarning ? "text-gold" : "text-muted-foreground";
-              const progressWidth = Math.min(100, (balance / 20) * 100);
+              const progressWidth = Math.min(100, (balance / 80) * 100);
 
               return (
                 <div key={client.id} className="flex items-center text-xs">
@@ -310,15 +310,15 @@ export default async function AdminDashboardPage() {
                   <div className="flex-1 h-1.5 bg-muted rounded-full mx-3 overflow-hidden">
                     <div className={`h-full ${barColor}`} style={{ width: `${progressWidth}%` }}></div>
                   </div>
-                  <span className={`font-mono ${textColor} w-8 text-right`}>{balance}h</span>
+                  <span className={`font-mono ${textColor} w-8 text-right`}>{balance}</span>
                 </div>
               );
             })}
           </div>
 
           <div className="flex gap-4 items-center mt-auto text-[10px] font-mono text-muted-foreground pt-4">
-            <div className="flex items-center gap-2"><div className="w-2 h-2 bg-gold"></div> &lt;10h</div>
-            <div className="flex items-center gap-2"><div className="w-2 h-2 bg-danger"></div> &lt;3h</div>
+            <div className="flex items-center gap-2"><div className="w-2 h-2 bg-gold"></div> &lt;40</div>
+            <div className="flex items-center gap-2"><div className="w-2 h-2 bg-danger"></div> &lt;12</div>
           </div>
         </Card>
 
@@ -423,7 +423,7 @@ export default async function AdminDashboardPage() {
             </div>
             <div>
               <div className="font-serif text-3xl text-foreground mb-2">{clients?.reduce((acc, c) => acc + (c.hours_balance || 0), 0).toFixed(0)}</div>
-              <div className="font-mono text-[10px] uppercase text-muted-foreground tracking-widest leading-relaxed">Current Total<br />Hours</div>
+              <div className="font-mono text-[10px] uppercase text-muted-foreground tracking-widest leading-relaxed">Current Total<br />Credits</div>
             </div>
             <div>
               <div className="font-serif text-3xl text-foreground mb-2">{monthly.proposalsSigned}</div>

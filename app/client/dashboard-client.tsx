@@ -36,7 +36,7 @@ export function ClientDashboard({ data, greeting }: Props) {
   };
 
   const hasAlerts = data.expired > 0 || data.expiring > 0;
-  const balanceLow = data.hoursBalance > 0 && data.hoursBalance < 5;
+  const balanceLow = data.hoursBalance > 0 && data.hoursBalance < 20;
   const balanceZero = data.hoursBalance <= 0;
 
   return (
@@ -135,7 +135,7 @@ export function ClientDashboard({ data, greeting }: Props) {
         <section className="bg-card border border-border rounded-sm p-6 flex flex-col h-full shadow-sm">
           <div className="flex items-center gap-3 mb-6">
              <span className="font-mono text-[8px] text-muted-foreground tracking-[0.3em] font-bold uppercase">03</span>
-             <h3 className="font-sans font-bold text-[8.5px] uppercase tracking-[0.25em] text-foreground">Consulting hours</h3>
+             <h3 className="font-sans font-bold text-[8.5px] uppercase tracking-[0.25em] text-foreground">Consulting credits</h3>
           </div>
 
           <div className="flex-1 flex flex-col">
@@ -146,9 +146,9 @@ export function ClientDashboard({ data, greeting }: Props) {
                   "font-serif text-[46px] leading-none",
                   balanceZero ? "text-danger" : balanceLow ? "text-gold" : "text-foreground"
                 )}>
-                  {data.hoursBalance.toFixed(1)}
+                  {Math.round(data.hoursBalance)}
                 </span>
-                <span className="font-serif text-[18px] text-muted-foreground font-light">hours</span>
+                <span className="font-serif text-[18px] text-muted-foreground font-light">credits</span>
               </div>
             </div>
 
@@ -157,7 +157,7 @@ export function ClientDashboard({ data, greeting }: Props) {
               <div className="bg-danger/10 border border-danger/20 rounded-sm px-3.5 py-2.5 mb-6">
                 <p className="text-danger text-[11px] font-medium tracking-tight leading-relaxed">
                   {balanceZero
-                    ? "No consulting hours remaining. Top up to schedule a visit."
+                    ? "No consulting credits remaining. Top up to schedule a visit."
                     : "Your balance is low. Matt can't schedule a full visit with this remaining."}
                 </p>
               </div>
@@ -166,7 +166,7 @@ export function ClientDashboard({ data, greeting }: Props) {
             <div className="mt-auto flex gap-2.5">
               <Link href="/client/billing" className="flex-1">
                 <Button className="w-full rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground text-[8.5px] uppercase tracking-[0.25em] font-bold h-10 shadow-none transition-all">
-                  Buy more hours &rarr;
+                  Buy more credits &rarr;
                 </Button>
               </Link>
               <Link href="/client/billing#history">

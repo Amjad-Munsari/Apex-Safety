@@ -16,7 +16,7 @@ export const runtime = "nodejs"
 /**
  * POST /api/paypal/create-order
  *
- * Body: { packageId: "5h" | "10h" | "20h" }
+ * Body: { packageId: "20c" | "40c" | "80c" }
  *
  * Auth: the caller must be a logged-in client. The amount is derived
  * server-side from the package catalogue — the browser never names a price.

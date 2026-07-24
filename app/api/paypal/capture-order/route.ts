@@ -62,8 +62,10 @@ async function currentBalance(clientId: string): Promise<number | null> {
  *
  * Body: { orderId: string }
  *
- * Captures an approved order and credits the buyer's hours balance via the
- * atomic credit_hours_from_paypal RPC. Idempotent on three levels:
+ * Captures an approved order and credits the buyer's credit balance via the
+ * atomic credit_hours_from_paypal RPC (p_hours now carries credits — the RPC
+ * name and column are unchanged; the retained balance is denominated in
+ * credits since the 2026-07 credits model). Idempotent on three levels:
  *  1. a pre-check against hours_transactions.paypal_order_id (already credited),
  *  2. recovery from PayPal's ORDER_ALREADY_CAPTURED (captured but not yet
  *     credited — e.g. a prior DB write failed), and
@@ -147,10 +149,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
 
   // 4. Credit atomically (insert ledger row + bump balance) via the RPC.
+  // p_hours carries credits (the RPC signature is unchanged; the unit is now
+  // credits — see migration 026).
   const { error: rpcError } = await adminClient.rpc("credit_hours_from_paypal", {
     p_client_id: ctx.client_id,
     p_order_id: orderId,
-    p_hours: pkg.hours,
+    p_hours: pkg.credits,
     p_gbp: pkg.priceGBP,
   })
 
@@ -164,6 +168,6 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     success: true,
     balance: await currentBalance(ctx.client_id),
-    hours: pkg.hours,
+    credits: pkg.credits,
   })
 }

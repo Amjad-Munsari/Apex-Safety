@@ -8,6 +8,7 @@ import { ClientTabs } from "./client-tabs"
 import { ClientDangerZone } from "./client-danger-zone"
 import { normalizeClientTemplateRows } from "./client-templates"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
+import { getAppSettings } from "@/lib/settings/app-settings"
 
 export default async function ClientDetailsPage({
   params,
@@ -105,6 +106,8 @@ export default async function ClientDetailsPage({
       .eq("client_id", id)
       .order("created_at", { ascending: false }),
   ])
+
+  const settings = await getAppSettings()
 
   const { data: documents } = documentsRes
   const { data: proposalRows } = proposalRes
@@ -288,7 +291,7 @@ export default async function ClientDetailsPage({
           </span>
           <span className="text-foreground/70">
             This client is frozen. Uploading documents, creating proposals or
-            assessments, assigning forms, adjusting hours, and inviting users are
+            assessments, assigning forms, adjusting credits, and inviting users are
             disabled. Existing records stay intact — reactivate to make changes.
           </span>
         </div>
@@ -330,15 +333,19 @@ export default async function ClientDetailsPage({
         <Card className="bg-card border-border rounded-sm p-6 flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2 text-muted-foreground font-mono text-[10px] uppercase tracking-widest mb-2">
             <div className="flex items-center gap-2">
-              <Clock className="w-3 h-3" /> Retained Hours
+              <Clock className="w-3 h-3" /> Retained Credits
             </div>
             {!isInactive && (
-              <AdjustHoursDialog clientId={client.id} currentBalance={client.hours_balance || 0} />
+              <AdjustHoursDialog
+                clientId={client.id}
+                currentBalance={client.hours_balance || 0}
+                creditsPerHour={settings.creditsPerHour}
+              />
             )}
           </div>
           <div className="text-foreground font-serif text-3xl">
             {client.hours_balance || 0}{" "}
-            <span className="text-sm font-sans text-foreground/40">hrs</span>
+            <span className="text-sm font-sans text-foreground/40">credits</span>
           </div>
         </Card>
 

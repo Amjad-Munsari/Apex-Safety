@@ -65,7 +65,7 @@ export default async function ClientsPage() {
             <tr className="text-[10px] font-mono tracking-widest uppercase text-muted-foreground">
               <th className="font-normal px-6 py-4 border-b border-border">Client</th>
               <th className="font-normal px-4 py-4 border-b border-border">RAG</th>
-              <th className="font-normal px-4 py-4 border-b border-border text-right">Hours</th>
+              <th className="font-normal px-4 py-4 border-b border-border text-right">Credits</th>
               <th className="font-normal px-4 py-4 border-b border-border">Next Expiry</th>
               <th className="font-normal px-4 py-4 border-b border-border">Proposal</th>
               <th className="font-normal px-6 py-4 border-b border-border text-right">Docs</th>

@@ -60,7 +60,7 @@ function makeRequest(body: unknown): NextRequest {
   })
 }
 
-function completedCapture(value = "495.00", customId = CLIENT_ID, referenceId = "5h") {
+function completedCapture(value = "495.00", customId = CLIENT_ID, referenceId = "20c") {
   return {
     id: ORDER_ID,
     status: "COMPLETED",
@@ -84,7 +84,7 @@ describe("POST /api/paypal/capture-order", () => {
     txMaybeSingleSpy.mockResolvedValue({ data: null, error: null }) // no prior tx
     captureSpy.mockResolvedValue(completedCapture())
     rpcSpy.mockResolvedValue({ error: null })
-    clientSingleSpy.mockResolvedValue({ data: { hours_balance: 9.5 }, error: null })
+    clientSingleSpy.mockResolvedValue({ data: { hours_balance: 20 }, error: null })
   })
 
   it("returns 403 and captures nothing when the feature flag is off", async () => {
@@ -118,7 +118,7 @@ describe("POST /api/paypal/capture-order", () => {
 
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body).toMatchObject({ success: true, balance: 9.5, alreadyProcessed: true })
+    expect(body).toMatchObject({ success: true, balance: 20, alreadyProcessed: true })
     expect(captureSpy).not.toHaveBeenCalled()
     expect(rpcSpy).not.toHaveBeenCalled()
   })
@@ -141,16 +141,29 @@ describe("POST /api/paypal/capture-order", () => {
 
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body).toMatchObject({ success: true, balance: 9.5 })
+    expect(body).toMatchObject({ success: true, balance: 20, credits: 20 })
 
     expect(captureSpy).toHaveBeenCalledWith(ORDER_ID)
     expect(rpcSpy).toHaveBeenCalledTimes(1)
+    // p_hours carries credits (RPC signature unchanged — see migration 026).
     expect(rpcSpy).toHaveBeenCalledWith("credit_hours_from_paypal", {
       p_client_id: CLIENT_ID,
       p_order_id: ORDER_ID,
-      p_hours: 5,
+      p_hours: 20,
       p_gbp: 495,
     })
+  })
+
+  it("deploy-window: a stale captured order carrying reference_id '5h' resolves to the 20c pack and credits exactly 20", async () => {
+    captureSpy.mockResolvedValue(completedCapture("495.00", CLIENT_ID, "5h"))
+
+    const res = await POST(makeRequest({ orderId: ORDER_ID }))
+
+    expect(res.status).toBe(200)
+    expect(rpcSpy).toHaveBeenCalledWith(
+      "credit_hours_from_paypal",
+      expect.objectContaining({ p_hours: 20, p_gbp: 495 })
+    )
   })
 
   it("rejects a tampered amount: captured value != package price → 400, no credit", async () => {
@@ -204,7 +217,7 @@ describe("POST /api/paypal/capture-order", () => {
     expect(getOrderSpy).toHaveBeenCalledWith(ORDER_ID)
     expect(rpcSpy).toHaveBeenCalledWith(
       "credit_hours_from_paypal",
-      expect.objectContaining({ p_hours: 5, p_order_id: ORDER_ID })
+      expect.objectContaining({ p_hours: 20, p_order_id: ORDER_ID })
     )
   })
 

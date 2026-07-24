@@ -33,6 +33,7 @@ export default async function SettingsPage() {
           expiryRemindersEnabled: settings.expiryRemindersEnabled,
           notifyOnUpload: settings.notifyOnUpload,
           logoUrl: settings.logoUrl,
+          creditsPerHour: settings.creditsPerHour,
         }}
       />
 

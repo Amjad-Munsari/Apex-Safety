@@ -10,6 +10,8 @@ export interface AppSettings {
   logoPath: string | null
   /** Public URL for the branding logo, derived from logoPath (null when unset). */
   logoUrl: string | null
+  /** Reference rate for the hours⇄credits conversion (credits per hour). */
+  creditsPerHour: number
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -19,6 +21,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   notifyOnUpload: true,
   logoPath: null,
   logoUrl: null,
+  creditsPerHour: 4,
 }
 
 /**
@@ -29,7 +32,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 export async function getAppSettings(): Promise<AppSettings> {
   const { data } = await adminClient
     .from("app_settings")
-    .select("sign_off_name, sender_name, expiry_reminders_enabled, notify_on_upload, logo_path")
+    .select("sign_off_name, sender_name, expiry_reminders_enabled, notify_on_upload, logo_path, credits_per_hour")
     .eq("id", 1)
     .maybeSingle()
 
@@ -47,5 +50,6 @@ export async function getAppSettings(): Promise<AppSettings> {
     notifyOnUpload: data.notify_on_upload ?? true,
     logoPath,
     logoUrl,
+    creditsPerHour: data.credits_per_hour ?? DEFAULT_APP_SETTINGS.creditsPerHour,
   }
 }

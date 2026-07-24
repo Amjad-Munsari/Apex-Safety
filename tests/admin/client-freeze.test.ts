@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 let activeValue: boolean | null | undefined
 let clientExists: boolean
 const updateArgs: Record<string, unknown>[] = []
+const rpcCalls: unknown[][] = []
 
 vi.mock("@/lib/auth-helpers", () => ({
   requireAdmin: vi.fn().mockResolvedValue("admin-1"),
@@ -48,6 +49,12 @@ vi.mock("@/lib/supabase/admin", () => ({
         insert: () => Promise.resolve({ error: null }),
       }
     },
+    // updateClientHours now delegates the atomic balance move + ledger insert to
+    // the adjust_client_credits RPC (migration 026).
+    rpc: (...a: unknown[]) => {
+      rpcCalls.push(a)
+      return Promise.resolve({ data: 10, error: null })
+    },
   },
 }))
 
@@ -58,6 +65,7 @@ beforeEach(() => {
   activeValue = true
   clientExists = true
   updateArgs.length = 0
+  rpcCalls.length = 0
 })
 
 describe("clientIsActive / assertClientActive", () => {
@@ -98,15 +106,17 @@ describe("write action respects the freeze", () => {
   it("updateClientHours refuses to write when the client is deactivated", async () => {
     activeValue = false
     const { updateClientHours } = await import("@/app/admin/clients/actions")
-    await expect(updateClientHours(CLIENT_ID, 5)).rejects.toThrow(/deactivated/i)
-    expect(updateArgs).toHaveLength(0) // no balance write happened
+    const res = await updateClientHours(CLIENT_ID, 5)
+    expect(res).toEqual({ ok: false, error: expect.stringMatching(/deactivated/i) })
+    expect(rpcCalls).toHaveLength(0) // no balance write happened
   })
 
   it("updateClientHours proceeds when the client is active", async () => {
     activeValue = true
     const { updateClientHours } = await import("@/app/admin/clients/actions")
     const res = await updateClientHours(CLIENT_ID, 5)
-    expect(res).toMatchObject({ success: true })
-    expect(updateArgs.some((a) => "hours_balance" in a)).toBe(true)
+    expect(res).toMatchObject({ ok: true, balance: 10 })
+    expect(rpcCalls).toHaveLength(1)
+    expect(rpcCalls[0][0]).toBe("adjust_client_credits")
   })
 })

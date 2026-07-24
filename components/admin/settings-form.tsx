@@ -16,6 +16,7 @@ export interface SettingsFormInitial {
   expiryRemindersEnabled: boolean
   notifyOnUpload: boolean
   logoUrl: string | null
+  creditsPerHour: number
 }
 
 export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
@@ -25,6 +26,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
   const [senderName, setSenderName] = React.useState(initial.senderName)
   const [expiryReminders, setExpiryReminders] = React.useState(initial.expiryRemindersEnabled)
   const [notifyUpload, setNotifyUpload] = React.useState(initial.notifyOnUpload)
+  const [creditsPerHour, setCreditsPerHour] = React.useState(String(initial.creditsPerHour))
   const [logoUrl, setLogoUrl] = React.useState<string | null>(initial.logoUrl)
   const [uploadingLogo, setUploadingLogo] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
@@ -83,6 +85,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
       senderName,
       expiryRemindersEnabled: expiryReminders,
       notifyOnUpload: notifyUpload,
+      creditsPerHour: Number(creditsPerHour),
     })
     setSaving(false)
 
@@ -208,11 +211,39 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
         </div>
       </Card>
 
-      {/* Appearance */}
+      {/* Billing */}
       <Card className="bg-card border-border rounded-sm p-8">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">03</div>
+            <h3 className="font-serif text-[22px] text-foreground leading-tight">Billing</h3>
+            <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
+              The reference rate used to convert hours to credits when adjusting a client&apos;s balance.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-6">
+            <label className="flex flex-col gap-2 max-w-[220px]">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Credits per Hour</span>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={creditsPerHour}
+                onChange={(e) => setCreditsPerHour(e.target.value)}
+                className="bg-background border border-border rounded-sm h-9 px-3 text-sm text-foreground outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20 transition-all"
+              />
+              <span className="text-muted-foreground text-xs">Whole number, 1 or more. Existing balances are unaffected.</span>
+            </label>
+          </div>
+        </div>
+      </Card>
+
+      {/* Appearance */}
+      <Card className="bg-card border-border rounded-sm p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">04</div>
             <h3 className="font-serif text-[22px] text-foreground leading-tight">Appearance</h3>
             <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
               Display preferences for the admin interface.
