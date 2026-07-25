@@ -2,7 +2,7 @@
 
 Working state for the next session. Everything below is verified against prod/repo at the time of writing. Repo: `/Users/aymanbaig/dev/fire-safety-platform`. Prod: `https://www.merlinsafetysystem.com` (Vercel project `fire-safety-platform`, `prj_NEX03VTgkZmD4SIfxXf7BPhNi569`). System name **Merlin**; public brand **888 Safety & Training** (Matt's UK fire-safety consultancy).
 
-Git: `main` clean, all pushed. HEAD `b11ad37` (deployed to prod as `dpl_7xnarLUzQHMa4jY7GD4EkiuL5KPr`, READY). Prod Supabase ref `lksxdpgkbiuorjdvebdz` (single project, no staging — prod is the only environment).
+Git: `main` clean, all pushed. HEAD `4cd3b1f`.
 
 ---
 
@@ -36,6 +36,22 @@ Fix: delete the **client row first** (migration 021's cascade removes `form_subm
 - `e479342` — pre-handover review fixes: email links use `getSiteUrl()` (prod fallback is the real domain, never localhost/vercel.app); expiry cron now sends an admin digest; `deleteClient` also purges `client-documents` bucket; New Client dialog no longer claims "invite emailed" on failure.
 - Fixed prod env `NEXT_PUBLIC_SITE_URL` (was the stale `fire-safety-platform.vercel.app`, now `https://www.merlinsafetysystem.com`).
 - Auth/invite + role-gate chain verified working on prod via HTTP (invite→confirm→set-password→login→gates; single-use links; `/login/forgot`→Resend delivered).
+
+---
+
+## 1b. Client-handover readiness (checked against prod 2026-07-25)
+
+### FIXED: `app_settings` was empty on prod → Settings page silently discarded every save (commit `4cd3b1f`)
+Zero rows in `app_settings` despite migration 023 seeding `id=1`; `credits_per_hour` (from 026) was present, so both migrations applied and the row was deleted afterwards — collateral from this session's test-data cleanup. All writes were `.update().eq("id",1)`, and an UPDATE matching no rows isn't an error, so saves returned `ok:true` and persisted nothing while `getAppSettings()` masked it with `DEFAULT_APP_SETTINGS`. Sign-off name, sender name, both toggles and the credits rate were all unsaveable.
+Fix: all three writes upsert on `id=1` (self-heals), migration **028** restores the seed row, and the row was **restored on prod directly** (verified: defaults `Matt Robinson` / `888 Safety & Training` / both toggles true / `credits_per_hour 4`). Test mock now exposes only `upsert` so a regression to `update` fails loudly. **Migration 028 still needs applying to prod** for the record — it's a no-op now that the row exists.
+
+### Prod is an empty shell — Matt can't do a job on day one
+Verified counts: `form_templates` **0**, `clients` 0, `services` **0**, `contractors` 0, `proposals` 0. Only real row is Matt in `admin_users`.
+- **No FRA / site-risk master template** — the core loop (assign → client fills → report) has nothing to assign. `seed.sql` does NOT seed templates at all. Needs Matt's real FRA questions: either a session with him or he builds them in the builder.
+- **No services price list** — proposals have no line items to draw from. `seed.sql` DOES contain Matt's full catalogue (25 training courses + 10 services, real prices incl. Class 1 £3900, PAT £1/item) with an idempotent `ON CONFLICT DO UPDATE`. **Deliberately NOT loaded into prod:** those are customer-facing quoted prices, so Matt must confirm they're current first. Once he does, that block runs as-is.
+
+### Also raise with Matt/Finley
+Checkout UI displays "VAT included" but nothing emails a receipt or invoice — for a UK business taking real money that's more than the LOW it was filed as in §2B.
 
 ---
 
