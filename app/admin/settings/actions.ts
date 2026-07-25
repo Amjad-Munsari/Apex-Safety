@@ -37,17 +37,25 @@ export async function saveNotificationSettings(
     return { ok: false, error: "Credits per hour must be a whole number of 1 or more." }
   }
 
+  // UPSERT, not UPDATE: app_settings is a singleton seeded by migration 023, but
+  // an UPDATE that matches no row is NOT an error — if the row is ever absent
+  // (it was deleted from prod by a test-data sweep in Jul 2026) every save
+  // silently no-ops while still returning ok:true, and getAppSettings masks it
+  // by falling back to DEFAULT_APP_SETTINGS. Upserting id=1 self-heals instead.
   const { error } = await adminClient
     .from("app_settings")
-    .update({
-      sign_off_name: signOff,
-      sender_name: sender,
-      expiry_reminders_enabled: input.expiryRemindersEnabled,
-      notify_on_upload: input.notifyOnUpload,
-      credits_per_hour: creditsPerHour,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("id", 1)
+    .upsert(
+      {
+        id: 1,
+        sign_off_name: signOff,
+        sender_name: sender,
+        expiry_reminders_enabled: input.expiryRemindersEnabled,
+        notify_on_upload: input.notifyOnUpload,
+        credits_per_hour: creditsPerHour,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "id" }
+    )
 
   if (error) return { ok: false, error: error.message }
 
@@ -89,10 +97,14 @@ export async function uploadBrandingLogo(
     .eq("id", 1)
     .maybeSingle()
 
+  // Upsert for the same reason as saveNotificationSettings: a missing singleton
+  // row would make the upload appear to succeed while the path was never stored.
   const { error: updateError } = await adminClient
     .from("app_settings")
-    .update({ logo_path: path, updated_at: new Date().toISOString() })
-    .eq("id", 1)
+    .upsert(
+      { id: 1, logo_path: path, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    )
 
   if (updateError) return { ok: false, error: updateError.message }
 
@@ -120,8 +132,10 @@ export async function removeBrandingLogo(): Promise<{ ok: boolean; error?: strin
 
   const { error } = await adminClient
     .from("app_settings")
-    .update({ logo_path: null, updated_at: new Date().toISOString() })
-    .eq("id", 1)
+    .upsert(
+      { id: 1, logo_path: null, updated_at: new Date().toISOString() },
+      { onConflict: "id" }
+    )
 
   if (error) return { ok: false, error: error.message }
 

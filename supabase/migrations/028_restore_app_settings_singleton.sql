@@ -1,0 +1,31 @@
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 028_restore_app_settings_singleton.sql
+--
+-- BUG (found 2026-07-25 during handover readiness check): app_settings was
+-- EMPTY on prod — zero rows — even though migration 023 seeds `INSERT INTO
+-- app_settings (id) VALUES (1)`. The credits_per_hour column added by 026 is
+-- present, so both migrations applied and the row was deleted afterwards,
+-- almost certainly collateral from the test-data cleanup sweep in the same
+-- session.
+--
+-- Why it mattered: every write in app/admin/settings/actions.ts was
+-- `.update({...}).eq("id", 1)`, and an UPDATE that matches no rows is not an
+-- error. The Settings page therefore reported a successful save and persisted
+-- nothing, while getAppSettings() masked the absence by falling back to
+-- DEFAULT_APP_SETTINGS — so the page rendered plausible values that silently
+-- reverted on reload. Matt's sign-off name, sender name, notification toggles
+-- and the credits-per-hour rate were all unsaveable.
+--
+-- The durable fix is in application code (those writes are now upserts on id=1,
+-- so a missing row self-heals). This migration restores the intended seed state
+-- so no environment depends on an admin save to recreate it.
+--
+-- Idempotent: ON CONFLICT DO NOTHING, and the CHECK (id = 1) on the table keeps
+-- the row genuinely singular. Safe to re-run. Column defaults supply the seed
+-- values (sign_off_name 'Matt Robinson', sender_name '888 Safety & Training',
+-- both toggles true, credits_per_hour 4) — deliberately not restated here so
+-- this migration can never drift from the column defaults.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+insert into public.app_settings (id) values (1)
+on conflict (id) do nothing;
