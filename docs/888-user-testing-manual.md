@@ -130,7 +130,8 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 
 - PayPal cannot complete a purchase because the current production credentials are invalid. Do not test with real money until the correct live credentials are supplied and a controlled purchase plan is agreed.
 - Email delivery is live and owner-confirmed as working. The system still has no complete sent-message outbox or automatic retry for every failed message, so use Workflow Errors and the recipient's inbox when investigating an individual send.
-- Partner automation is held: both production n8n secrets are empty or absent, so the platform blocks the three client-form events and the separate assessment event. Matching secrets must be configured and enforced in the platform and n8n; the form-event workflow then still needs its organisation-to-recipient lookup fixed.
+- Partner automation is not healthy. The protected client-form webhook is live, but its template-created, form-submitted, and template-cloned emails all have an invalid To address and no client-name lookup. Two production executions have already failed for this exact reason. The separate Matt-submitted assessment notice is blocked by a missing platform secret, while its live webhook is publicly callable without checking a secret.
+- The sole n8n account does not have MFA enabled, two unused mail credentials remain stored there, and n8n reports one available bug-fix update. The audit key was shared in chat and can read the general webhook secret from retained failed executions, so both credentials must be rotated. These are n8n account-hardening tasks, separate from the working platform email service.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
 - A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
 - Saved photos reload after refresh using temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
@@ -162,7 +163,9 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 | Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
 | Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
 | One public brand, phone number, sender, and monitored reply mailbox | Consistent portal, PDF, and email identity | Delivery works; identity is inconsistent |
-| Partner recipient fix and matching secrets for both n8n webhook paths | Working partner automation after the platform sends an event | Both event paths are blocked by empty or missing secrets; recipient lookup also remains pending |
+| Real admin recipient, client-name lookup, failure alert, and controlled replay for the three client-form n8n branches | Working client activity notices | Required; the webhook accepts events and then the mail step fails |
+| Protect the assessment n8n webhook and add the matching platform secret | Safe Matt-submitted assessment notice | Required; the platform blocks its event while the live endpoint is public |
+| Enable n8n MFA, rotate both the audit API key and the general webhook secret, remove unused mail credentials after ownership confirmation, and take the available bug-fix update | Reduce partner-automation account and credential exposure | Required before handover; failed n8n executions retain the webhook secret |
 | Approved first-party signing approach | Formal acceptance of the in-app signature method | Unverified |
 | Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
@@ -275,7 +278,7 @@ Starting an assessment creates a draft. Required and conditional fields are chec
 
 ### What's live vs. what's pending
 
-**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, fork-on-fill, client-submission report handoff, private photo previews, and complete photo removal. **Not built:** speech-to-text and offline work.
+**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, fork-on-fill, client-submission report handoff, private photo previews, and complete photo removal. **Broken external notice:** a client create, submit, or clone is saved correctly, but the current n8n email to Matt fails after the webhook accepts it. **Not built:** speech-to-text and offline work.
 
 ### Common situations
 
@@ -283,6 +286,7 @@ Starting an assessment creates a draft. Required and conditional fields are chec
 - A completed assignment cannot be edited.
 - A second submit is rejected instead of creating a duplicate.
 - A completed client assignment should move through drafting and appear in Review Queue or AI Draft Failed. It may remain Submitted briefly while the background step runs.
+- The client-form n8n notice is only an internal activity email to Matt. It does not generate the report, change the submission, contact the client, or back up files.
 - A Photos field marked Required is shown as recommended and does not block submission.
 - The review panel is labelled Raw Answers. There is no speech recording.
 
@@ -580,11 +584,11 @@ Settings in the admin sidebar.
 
 ### What it does
 
-Workflow Errors shows the latest failures recorded by report drafting, email delivery, reminders, signing, contracts, and partner events.
+Workflow Errors shows the latest failures recorded inside the platform by report drafting, email delivery, reminders, signing, contracts, and partner-event transport.
 
 ### How it works
 
-Each row explains the failure type and any recognised client, form, proposal, or assignment detail. The page is read-only.
+Each row explains the failure type and any recognised client, form, proposal, or assignment detail. The page is read-only. It cannot see a failure that happens inside n8n after n8n has already returned “accepted.”
 
 ### Your daily workflow
 
@@ -592,11 +596,12 @@ Each row explains the failure type and any recognised client, form, proposal, or
 
 ### What's live vs. what's pending
 
-**Live:** recent recorded failures. **Not built:** acknowledge, resolve, retry, assignment to an owner, or a complete view of failures inside an external partner workflow.
+**Partial:** recent rows are readable, but only a minority of failure names have tailored explanations. **Not built:** acknowledge, resolve, retry, assignment to an owner, or a complete view of failures inside an external partner workflow.
 
 ### Common situations
 
-- “No operational errors detected” means no rows were returned. It does not prove PayPal, inbox delivery, or the partner's internal workflow is healthy.
+- “No operational errors detected” can mean either that no rows were returned or that the error log itself could not be read. It does not prove PayPal, inbox delivery, or n8n is healthy.
+- The live n8n history currently contains two client-form email failures that do not appear on this page.
 - Avoid repeating a payment or signature action until its current state is checked.
 
 ### Where to find things
@@ -944,7 +949,9 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - Matt-approved service catalogue and prices.
 - Valid PayPal live credentials and controlled payment test plan.
 - One agreed public brand/sender; email delivery itself is working.
-- Partner automation recipient lookup and matching secrets for both protected n8n webhook paths.
+- Repair and replay the three n8n client-form mail branches: real admin recipient, client-name lookup, and downstream failure alerting.
+- Protect the assessment n8n webhook, then set the matching platform secret.
+- Enable n8n MFA, rotate the exposed audit API key and general webhook secret together, remove confirmed-unused mail credentials, and apply the available n8n bug-fix update.
 - Formal first-party signing acceptance.
 - Upload/report recipient rule; expiry reminders already use the organisation contact.
 - Speech-to-text.
@@ -961,7 +968,7 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 
 **Platform support:** The named technical contact is **UNVERIFIED**. Matt should ask whoever controls deployment, live data, email, and PayPal for configuration or security faults.
 
-**Finley / partner automation:** Ask Finley about the n8n recipient lookup and matching assessment-webhook secret.
+**Finley / partner automation:** Ask Finley to repair the confirmed client-form mail failures and protect the assessment webhook. The exact live workflow and execution IDs are recorded in the research brief.
 
 # Part 4 — QA Walkthroughs
 
@@ -1186,7 +1193,8 @@ A published master and valid drafting-service key are required. Use deliberately
 7. **Matt:** Stop before Approve & Generate PDF. Up to this point no final client report exists.
 8. **Matt:** Approve, confirm a PDF opens, and confirm the submission leaves Awaiting Review.
 9. **Client:** Open Reports and download the final PDF.
-10. **Matt and Client:** Compare the PDF with Matt's approved edits, not with the first AI draft.
+10. **Matt:** Compare the PDF with your approved edits, not with the first AI draft.
+11. **Client:** Open the completed report in the portal and confirm it matches the final PDF Matt approved.
 
 ### Errors / exception states you might see
 
@@ -1362,8 +1370,8 @@ Record all current Settings values so they can be restored. Use a controlled tes
 
 - A Settings success message does not mean the sender label changed real email.
 - SVG logos and files whose real header does not match PNG, JPEG, or WebP are rejected.
-- Partner automation can fail after accepting the platform's event and leave no platform error.
-- An empty Workflow Errors page is not proof that email or PayPal is healthy.
+- n8n currently accepts client-form events and then fails its email step. This is a confirmed known fault, not a new QA discovery.
+- An empty Workflow Errors page is not proof that email, PayPal, or the error-log read itself is healthy.
 
 ### When nothing looks wrong but you want to be sure
 
@@ -1375,7 +1383,7 @@ Restore the original settings first, then record which device/browser, action, c
 
 ### Known gaps until dependencies land
 
-PDF colours and email identity are configured elsewhere, partner workflow visibility is incomplete, and Workflow Errors is read-only.
+PDF colours and email identity are configured elsewhere. The three client-form n8n mail branches are already known-broken, the separate assessment webhook is not safely enabled, and Workflow Errors is read-only.
 
 ## QA 13 — Dashboard and queue reconciliation
 
@@ -1443,3 +1451,37 @@ Record device, operating-system version, browser, orientation, route, and whethe
 ### Known gaps until dependencies land
 
 There is no offline/PWA mode, background sync, SMS, or speech-to-text.
+
+## QA 15 — Partner activity notices
+
+### Before you start
+
+Do not run this in production yet. Platform support or Finley must first replace the three invalid n8n recipients, add client-name lookup and downstream failure alerting, disable the eight obsolete customer-email branches, protect the assessment webhook, deploy its matching platform secret, rotate both the audit API key and general webhook secret, and enable n8n MFA. Use a throwaway organisation and controlled admin inbox.
+
+1. **Matt:** Confirm every setup gate above. Stop here without creating anything if one remains open.
+2. **Client:** Prepare a named test template. **Create** is the commit point; create it once, then confirm it appears in the portal.
+3. **Matt:** Match that action to one successful n8n execution and one “client created a form” inbox message.
+4. **Client:** Self-fill the template. Stop before **Submit** until the record is safe to commit, then submit once and confirm report drafting starts.
+5. **Matt:** Match the submission to one successful n8n execution and one inbox message. Do not resubmit to chase email.
+6. **Client:** On a throwaway assignment, choose **Customise first** once and confirm Matt's master is unchanged.
+7. **Matt:** Match the fork to one successful n8n execution and one inbox message.
+8. **Matt:** Submit one throwaway admin assessment only after the assessment-notice gate is approved. Confirm report drafting starts and one separate admin assessment email arrives.
+
+### Errors / exception states you might see
+
+- The client record can save while n8n fails later; the portal record remains the source of truth.
+- A webhook HTTP success is insufficient. Confirm the final mail node or controlled inbox.
+- “Invalid recipient” means the known `888 / Matt` placeholder remains. A blank client name means enrichment remains missing.
+- A missing-secret error means the assessment notice is still deliberately blocked.
+
+### When nothing looks wrong but you want to be sure
+
+Match every committed action to exactly one final n8n success and one inbox message, and confirm n8n did not duplicate ordinary customer emails.
+
+### When something looks wrong
+
+Do not repeat the client write or assessment submission. Record the event type, organisation, record reference, time, application result, n8n execution result, and inbox result.
+
+### Known gaps until dependencies land
+
+The client-form branches are currently confirmed broken, and the assessment workflow is public while the application blocks its own call. This walkthrough remains paused until both are fixed.
