@@ -163,7 +163,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 | Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
 | Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
 | One public brand, phone number, sender, and monitored reply mailbox | Consistent portal, PDF, and email identity | Delivery works; identity is inconsistent |
-| Deploy the two matching platform secrets and run one controlled test for each of the four admin notices | Working client activity and Matt-submitted assessment notices | Workflows rebuilt; assessment and failure-alert tests passed; production application cutover pending |
+| Deploy the two matching platform secrets and run one controlled test for each of the four admin notices | Working client activity and Matt-submitted assessment notices | Application release and workflows are live; secret cutover and four application-to-n8n checks remain pending |
 | Rotate the n8n audit key and old general webhook secret, delete only the two historical failures after cutover, enable MFA, remove unused mail credentials after ownership confirmation, and take the available bug-fix update | Reduce partner-automation account and credential exposure | Required before handover |
 | Approved first-party signing approach | Formal acceptance of the in-app signature method | Unverified |
 | Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
@@ -1381,7 +1381,7 @@ Restore the original settings first, then record which device/browser, action, c
 
 ### Known gaps until dependencies land
 
-PDF colours and email identity are configured elsewhere. Workflow Errors is read-only, and partner-notice testing remains paused until the two production secrets and current application release are confirmed.
+PDF colours and email identity are configured elsewhere. Workflow Errors is read-only, and partner-notice testing remains paused until the two production secrets and four controlled application-to-n8n checks are confirmed.
 
 ## QA 13 — Dashboard and queue reconciliation
 
@@ -1454,9 +1454,9 @@ There is no offline/PWA mode, background sync, SMS, or speech-to-text.
 
 ### Before you start
 
-Do not create a test client record until platform support confirms that both production secrets are deployed, the old general secret has been rotated at both ends, and the current application release is live. The partner workflows themselves are rebuilt: both routes are protected, invalid events are rejected, Gmail is retried, success follows final mail acceptance, and the controlled failure alert has passed. Use a throwaway organisation and Matt's controlled admin inbox.
+The current application release is live. Do not create a test client record until platform support confirms that both production secrets are deployed and the old general secret has been rotated at both ends. The partner workflows themselves are rebuilt: both routes are protected, invalid events are rejected, Gmail is retried, success follows final mail acceptance, and the controlled failure alert has passed. Use a throwaway organisation and Matt's controlled admin inbox.
 
-1. **Matt:** Confirm the secret cutover and current production release. Stop here without creating anything if either is still pending.
+1. **Matt:** Confirm the two-secret cutover. Stop here without creating anything if it is still pending.
 2. **Client:** Prepare a named test template. **Create** is the commit point; create it once, then confirm it appears in the portal.
 3. **Matt:** Confirm one “client created a form template” message arrived and that no new related Workflow Error appeared. Successful partner runs are deliberately not retained.
 4. **Client:** Self-fill the template. Stop before **Submit** until the record is safe to commit, then submit once and confirm report drafting starts.
@@ -1483,4 +1483,4 @@ Do not repeat the client write or assessment submission. Record the event type, 
 
 ### Known gaps until dependencies land
 
-MFA, API-key rotation, ownership checks for two unused mail credentials, and the hosted bug-fix update remain handover gates. They do not change the four notice contents, but the production walkthrough stays paused until the two-secret cutover and current application release are confirmed.
+MFA, API-key rotation, ownership checks for two unused mail credentials, and the hosted bug-fix update remain handover gates. They do not change the four notice contents, but the production walkthrough stays paused until the two-secret cutover and all four controlled application-to-n8n notices are confirmed.
