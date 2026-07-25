@@ -4,6 +4,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { calculateProposalTotal } from "@/lib/supabase/dashboard";
 import { StatusPill, type StatusTone } from "@/components/client/status-pill";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -31,12 +32,16 @@ export default async function ClientProposalsPage() {
     );
   }
 
-  const { data: rows } = await adminClient
+  const { data: rows, error } = await adminClient
     .from("proposals")
     .select("id, status, services_json, total_price, created_at, sent_at, proposal_pdf_path")
     .eq("client_id", ctx.client_id)
     .in("status", ["Sent", "Signed", "Contract Issued"])
     .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("[client/proposals] failed to load proposals", error);
+  }
 
   const proposals = (rows ?? []).map((p) => {
     const services = Array.isArray(p.services_json) ? p.services_json : [];
@@ -77,7 +82,9 @@ export default async function ClientProposalsPage() {
 
       {/* List */}
       <section className="space-y-4">
-        {proposals.length === 0 ? (
+        {error ? (
+          <ClientDataLoadError itemName="proposals" />
+        ) : proposals.length === 0 ? (
           <div className="bg-card border border-border rounded-sm p-12 text-center">
             <p className="font-serif text-[20px] text-foreground mb-2">No proposals yet.</p>
             <p className="font-sans text-[13px] text-muted-foreground">

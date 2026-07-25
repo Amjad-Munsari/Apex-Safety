@@ -42,6 +42,7 @@ const versionMaybeSingleSpy = vi.fn();
 
 // Tracks the single result for form_templates (ownership check in requireOwnedTemplate)
 const templateSingleSpy = vi.fn();
+const scheduleReportDraftGenerationSpy = vi.fn();
 
 // ── Supabase mock factory ────────────────────────────────────────────────────
 
@@ -175,6 +176,11 @@ vi.mock("next/navigation", () => ({
 // n8n dispatch — spy so the double-submit-guard test can assert it never fires.
 vi.mock("@/lib/notifications/client-form-events", () => ({
   dispatchClientFormEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/reports/report-draft", () => ({
+  scheduleReportDraftGeneration: (...args: unknown[]) =>
+    scheduleReportDraftGenerationSpy(...args),
 }));
 
 // ── Server-side validation pipeline mocks ─────────────────────────────────────
@@ -364,6 +370,7 @@ describe("customer self-fill submission — Phase 16 D-16 (Plan 16-08 UPDATE arc
 
     // n8n event dispatched exactly once on the success path
     expect(dispatchClientFormEvent).toHaveBeenCalledTimes(1);
+    expect(scheduleReportDraftGenerationSpy).toHaveBeenCalledWith("sub-draft-1");
 
     // Assert redirect to templates list
     expect(redirect).toHaveBeenCalledWith("/client/templates");

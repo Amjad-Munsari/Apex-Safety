@@ -187,7 +187,7 @@ export function ReviewClient({
       // the PDF + status flip succeeded server-side. Wording matches
       // CONTEXT §D-08 verbatim.
       if (result.deliveryEmailFailed) {
-        toast.warning("Report saved, email retry queued")
+        toast.warning("Report saved, but the delivery email failed")
       } else {
         toast.success("PDF generated and saved!")
       }
@@ -251,13 +251,13 @@ export function ReviewClient({
         <p className="text-muted-foreground text-sm">Edit the AI-generated content below before generating the final PDF.</p>
       </div>
 
-      {/* Raw Answers & STT panel (D-04) — collapsible source-of-truth view, ABOVE the editable draft */}
+      {/* Raw answers panel — collapsible source-of-truth view above the editable draft. */}
       <details
         {...(panelDefaultOpen ? { open: true } : {})}
         className="group border border-border rounded-md bg-muted/30"
       >
         <summary className="font-mono uppercase tracking-[0.2em] text-[10px] text-muted-foreground cursor-pointer hover:text-foreground/60 px-4 py-3 list-none flex items-center justify-between">
-          <span>Raw Answers &amp; STT</span>
+          <span>Raw Answers</span>
           <span className="text-muted-foreground group-open:rotate-90 transition-transform">›</span>
         </summary>
         <div className="px-4 pb-4 pt-1 border-t border-border">

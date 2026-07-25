@@ -29,9 +29,9 @@ function formatWindow(days: number | null): string {
 }
 
 export default async function NotificationsPage() {
-  // Reminder log is the notifications_sent dedup ledger written by the cron
-  // route after each successful expiry dispatch (Phase 1, Module 2). Joined
-  // with client + document for readable rows.
+  // Reminder log is the notifications_sent dedup ledger written after automatic
+  // and manual expiry reminder sends. Joined with client + document for
+  // readable rows.
   const { data: rows } = await adminClient
     .from("notifications_sent")
     .select(`
@@ -71,7 +71,7 @@ export default async function NotificationsPage() {
           </div>
           <h2 className="font-serif text-[34px] leading-tight text-foreground">Notifications.</h2>
           <p className="text-muted-foreground text-sm font-sans tracking-wide max-w-xl">
-            Every expiry reminder the cron job has dispatched on Matt&apos;s behalf — newest first.
+            Every expiry reminder sent on Matt&apos;s behalf — newest first.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default async function NotificationsPage() {
             <Bell className="w-8 h-8 text-muted-foreground/50 mb-4" />
             <p className="text-foreground/60 text-base font-serif">No reminders sent yet.</p>
             <p className="text-muted-foreground/70 text-xs mt-2 max-w-md">
-              When the daily cron job dispatches an expiry reminder, it logs the send here so we
+              Automatic and manual expiry reminders are logged here so we
               don&apos;t double-notify on the same document and window.
             </p>
           </div>

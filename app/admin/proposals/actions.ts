@@ -92,7 +92,7 @@ const VAT_RATE = 0.2
  */
 export async function sendProposalForSignature(
   proposalId: string
-): Promise<{ signing_url: string }> {
+): Promise<{ signing_url: string; deliveryEmailFailed: boolean }> {
   await requireAdmin()
 
   // 1. Load proposal
@@ -204,13 +204,22 @@ export async function sendProposalForSignature(
 
   if (!dispatch.ok) {
     console.error("[sendProposalForSignature] n8n dispatch failed:", dispatch.error)
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: "proposal_signature_request",
+      error_message: dispatch.error ?? "unknown dispatch failure",
+      payload: {
+        proposal_id: proposalId,
+        client_id: proposal.client_id,
+        recipient_email: contactEmail,
+      },
+    })
   }
 
   // 12. Revalidate admin views
   revalidatePath("/admin/proposals")
   revalidatePath(`/admin/proposals/${proposalId}`)
 
-  return { signing_url: signingUrl }
+  return { signing_url: signingUrl, deliveryEmailFailed: !dispatch.ok }
 }
 
 export async function createProposal(data: {
@@ -361,12 +370,15 @@ export async function createProposal(data: {
 
   } catch (pdfError) {
     console.error("Error generating/uploading PDF:", pdfError)
-    // PDF generation / upload failed — swallow the error so the row stays
-    // status=Draft with no PDF. The admin can retry from the proposal detail
-    // page. We return early so sendProposalForSignature is NOT called on a
-    // row that has no PDF (it would throw no_pdf anyway).
+    // The Draft row is retained for retry, but the action must fail visibly:
+    // returning its id made every caller show a success toast even though no
+    // document existed and nothing could be sent.
     revalidatePath("/admin/proposals")
-    return id
+    throw new Error(
+      pdfError instanceof Error
+        ? `Proposal saved as Draft, but its PDF could not be generated: ${pdfError.message}`
+        : "Proposal saved as Draft, but its PDF could not be generated."
+    )
   }
 
   // 5. On the Send path: mint a signing token + dispatch notification.
@@ -376,12 +388,15 @@ export async function createProposal(data: {
   //    If this throws (e.g. no_client_email) we let it propagate so the
   //    wizard toasts the error; the row already has a PDF at status=Draft,
   //    ready for the admin to retry from the detail page.
-  if (!data.saveAsDraft) {
-    await sendProposalForSignature(id)
-  }
+  const sendResult = !data.saveAsDraft
+    ? await sendProposalForSignature(id)
+    : null
 
   revalidatePath("/admin/proposals")
-  return id
+  return {
+    proposalId: id,
+    deliveryEmailFailed: sendResult?.deliveryEmailFailed ?? false,
+  }
 }
 
 /**

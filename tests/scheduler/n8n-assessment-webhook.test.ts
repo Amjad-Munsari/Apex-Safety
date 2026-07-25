@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const FAKE_SUBMISSION_ID = "11111111-1111-4111-a111-111111111111"
 const FAKE_WEBHOOK_URL = "https://n8n.example.test/webhook/assessment-submitted"
+const FAKE_WEBHOOK_SECRET = "test-webhook-secret"
 
 // ── next/* mocks — prevent server-only errors in jsdom environment ───────────
 // next/cache, next/navigation, and next/server all import server-only
@@ -165,6 +166,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
     workflowErrorsInsertSpy.mockResolvedValue({ error: null })
     // Stub OPENROUTER_API_KEY so runReportDraftGeneration doesn't throw
     vi.stubEnv("OPENROUTER_API_KEY", "test-key-placeholder")
+    vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_SECRET", FAKE_WEBHOOK_SECRET)
   })
 
   afterEach(() => {
@@ -206,6 +208,9 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
     const init = webhookCall![1] as RequestInit
     expect(init.method).toBe("POST")
     expect((init.headers as Record<string, string>)["Content-Type"]).toBe("application/json")
+    expect((init.headers as Record<string, string>).Authorization).toBe(
+      `Bearer ${FAKE_WEBHOOK_SECRET}`
+    )
     expect(init.body).toBe(JSON.stringify({ submissionId: FAKE_SUBMISSION_ID }))
     expect(init.signal).toBeDefined()
     expect(workflowErrorsInsertSpy).not.toHaveBeenCalled()
@@ -241,5 +246,44 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
 
     expect(workflowErrorsInsertSpy).not.toHaveBeenCalled()
+  })
+
+  it("does not send and records a workflow error when the shared secret is missing", async () => {
+    vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_URL", FAKE_WEBHOOK_URL)
+    vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_SECRET", "")
+    const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(null, { status: 200 })
+    )
+
+    const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
+    await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+
+    expect(fetchSpy).not.toHaveBeenCalledWith(
+      FAKE_WEBHOOK_URL,
+      expect.anything()
+    )
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflow_name: "assessment-submission-webhook",
+        error_message: expect.stringContaining("SECRET"),
+      })
+    )
+  })
+
+  it("records non-2xx webhook responses as workflow errors", async () => {
+    vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_URL", FAKE_WEBHOOK_URL)
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      new Response(null, { status: 503 })
+    )
+
+    const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
+    await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflow_name: "assessment-submission-webhook",
+        error_message: expect.stringContaining("503"),
+      })
+    )
   })
 })

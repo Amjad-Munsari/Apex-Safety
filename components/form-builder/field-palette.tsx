@@ -40,7 +40,7 @@ const BASIC_FIELDS: FieldDef[] = [
   { type: "textField", label: "Short Text", icon: Type, description: "Single-line text input" },
   { type: "numberField", label: "Number", icon: Hash, description: "Numeric input" },
   { type: "dateField", label: "Date", icon: Calendar, description: "Date picker" },
-  { type: "selectField", label: "Select", icon: ChevronDown, description: "Single or multi choice from list" },
+  { type: "selectField", label: "Select", icon: ChevronDown, description: "Single choice from list" },
   { type: "textareaField", label: "Long Text", icon: AlignLeft, description: "Multi-line text" },
   { type: "checkboxField", label: "Checkbox", icon: Check, description: "Single tick or checkbox" },
   { type: "sectionGroup", label: "Section", icon: Layers, description: "Group fields in a section" },

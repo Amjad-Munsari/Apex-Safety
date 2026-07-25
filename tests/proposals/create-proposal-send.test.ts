@@ -36,6 +36,7 @@ const proposalsMaybeSingleSpy = vi.fn()
 const proposalsUpdateSpy = vi.fn() // captures the patch object passed to .update()
 const clientsSingleSpy = vi.fn()
 const storageUploadSpy = vi.fn()
+const workflowErrorsInsertSpy = vi.fn()
 
 // Track every call to proposals.update() separately so we can distinguish
 // the "pdf_path + total" write from the "signing_token + status" write.
@@ -108,6 +109,9 @@ vi.mock("@/lib/supabase/admin", () => ({
             }),
           }),
         }
+      }
+      if (table === "workflow_errors") {
+        return { insert: (...args: unknown[]) => workflowErrorsInsertSpy(...args) }
       }
       return {}
     },
@@ -200,6 +204,7 @@ describe("createProposal — Send path (saveAsDraft omitted / false)", () => {
 
     // Notification dispatch
     dispatchNotificationSpy.mockResolvedValue({ ok: true, status: 200 })
+    workflowErrorsInsertSpy.mockResolvedValue({ error: null })
 
     // Stable NEXT_PUBLIC_SITE_URL (getSiteUrl is mocked but env also set)
     process.env.NEXT_PUBLIC_SITE_URL = "https://test.example.com"
@@ -258,7 +263,32 @@ describe("createProposal — Send path (saveAsDraft omitted / false)", () => {
       scopeText: "Scope.",
     })
 
-    expect(result).toBe(PROPOSAL_ID)
+    expect(result).toEqual({
+      proposalId: PROPOSAL_ID,
+      deliveryEmailFailed: false,
+    })
+  })
+
+  it("returns a delivery warning and logs Workflow Errors when signature email dispatch fails", async () => {
+    dispatchNotificationSpy.mockResolvedValueOnce({ ok: false, error: "webhook 500" })
+
+    const result = await createProposal({
+      clientId: CLIENT_ID,
+      servicesJson: [{ service: { name: "FRA", description: "", unit_price: 500 }, quantity: 1 }],
+      subtotal: 500,
+      scopeText: "Scope.",
+    })
+
+    expect(result).toEqual({
+      proposalId: PROPOSAL_ID,
+      deliveryEmailFailed: true,
+    })
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflow_name: "proposal_signature_request",
+        error_message: "webhook 500",
+      })
+    )
   })
 })
 
@@ -275,6 +305,7 @@ describe("createProposal — Draft path (saveAsDraft: true)", () => {
     proposalsUpdateSpy.mockResolvedValue({ error: null })
     // maybeSingle should NOT be called on the Draft path
     proposalsMaybeSingleSpy.mockResolvedValue({ data: SEND_LOAD_ROW, error: null })
+    workflowErrorsInsertSpy.mockResolvedValue({ error: null })
 
     process.env.NEXT_PUBLIC_SITE_URL = "https://test.example.com"
   })
@@ -343,6 +374,26 @@ describe("createProposal — Draft path (saveAsDraft: true)", () => {
       saveAsDraft: true,
     })
 
-    expect(result).toBe(PROPOSAL_ID)
+    expect(result).toEqual({
+      proposalId: PROPOSAL_ID,
+      deliveryEmailFailed: false,
+    })
+  })
+
+  it("rejects visibly when PDF generation fails and does not send for signature", async () => {
+    generateProposalPdfBufferSpy.mockRejectedValueOnce(new Error("render failed"))
+
+    await expect(
+      createProposal({
+        clientId: CLIENT_ID,
+        servicesJson: [{ service: { name: "FRA", description: "", unit_price: 500 }, quantity: 1 }],
+        subtotal: 500,
+        scopeText: "Draft scope.",
+        saveAsDraft: true,
+      })
+    ).rejects.toThrow(/PDF could not be generated/)
+
+    expect(generateSigningTokenSpy).not.toHaveBeenCalled()
+    expect(dispatchNotificationSpy).not.toHaveBeenCalled()
   })
 })

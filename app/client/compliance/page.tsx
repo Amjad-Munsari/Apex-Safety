@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { ComplianceView, type ComplianceCategory, type ComplianceDoc, type ComplianceStatus } from "./compliance-view";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +63,12 @@ function groupByCategory(docs: DocumentRow[]): ComplianceCategory[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function fetchClientDocuments(): Promise<ComplianceCategory[]> {
+async function fetchClientDocuments(): Promise<{
+  categories: ComplianceCategory[];
+  failed: boolean;
+}> {
   const ctx = await getClientContext();
-  if (!ctx) return [];
+  if (!ctx) return { categories: [], failed: false };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -76,14 +80,17 @@ async function fetchClientDocuments(): Promise<ComplianceCategory[]> {
 
   if (error) {
     console.error("[client/compliance] failed to load documents", error);
-    return [];
+    return { categories: [], failed: true };
   }
 
-  return groupByCategory((data ?? []) as DocumentRow[]);
+  return {
+    categories: groupByCategory((data ?? []) as DocumentRow[]),
+    failed: false,
+  };
 }
 
 export default async function CompliancePage() {
-  const categories = await fetchClientDocuments();
+  const { categories, failed } = await fetchClientDocuments();
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -98,7 +105,9 @@ export default async function CompliancePage() {
         </h2>
       </section>
 
-      {categories.length === 0 ? (
+      {failed ? (
+        <ClientDataLoadError itemName="compliance documents" />
+      ) : categories.length === 0 ? (
         <ComplianceEmpty />
       ) : (
         <Suspense fallback={null}>

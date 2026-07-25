@@ -16,6 +16,8 @@ export type NewClientInput = {
   siteAddress?: string
 }
 
+export type ClientProfileInput = NewClientInput
+
 /**
  * Insert a new client row and return its id. The caller (proposal builder,
  * client list page, etc.) decides what to do with the id — usually advance
@@ -77,6 +79,47 @@ export async function createClient(
   revalidatePath("/admin")
 
   return { id: data.id, inviteEmailed }
+}
+
+/** Update the organisation and primary contact details shown across the app. */
+export async function updateClientProfile(
+  clientId: string,
+  input: ClientProfileInput
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin()
+
+  const name = input.name.trim()
+  if (!name) return { ok: false, error: "Business name is required." }
+
+  const contactEmail = input.contactEmail?.trim() || null
+  if (
+    contactEmail &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)
+  ) {
+    return { ok: false, error: "Enter a valid contact email address." }
+  }
+
+  const { data, error } = await adminClient
+    .from("clients")
+    .update({
+      name,
+      contact_name: input.contactName?.trim() || null,
+      contact_email: contactEmail,
+      contact_phone: input.contactPhone?.trim() || null,
+      site_address: input.siteAddress?.trim() || null,
+    })
+    .eq("id", clientId)
+    .select("id")
+    .maybeSingle()
+
+  if (error) return { ok: false, error: error.message }
+  if (!data) return { ok: false, error: "Client not found." }
+
+  revalidatePath("/admin/clients")
+  revalidatePath(`/admin/clients/${clientId}`)
+  revalidatePath("/admin/proposals/new")
+  revalidatePath("/admin")
+  return { ok: true }
 }
 
 /**

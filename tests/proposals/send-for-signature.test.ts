@@ -23,6 +23,7 @@ const revalidatePathSpy = vi.fn()
 const proposalsMaybeSingleSpy = vi.fn()
 const clientsSingleSpy = vi.fn()
 const proposalsUpdateEqSpy = vi.fn()
+const workflowErrorsInsertSpy = vi.fn()
 
 vi.mock("server-only", () => ({}))
 
@@ -66,6 +67,9 @@ vi.mock("@/lib/supabase/admin", () => ({
             }),
           }),
         }
+      }
+      if (table === "workflow_errors") {
+        return { insert: (...args: unknown[]) => workflowErrorsInsertSpy(...args) }
       }
       return {}
     },
@@ -120,6 +124,7 @@ describe("POST /api/proposals/[id]/send-for-signature", () => {
     hashDocumentSpy.mockResolvedValue("doc-hash-abc")
     proposalsUpdateEqSpy.mockResolvedValue({ error: null })
     dispatchNotificationSpy.mockResolvedValue({ ok: true, status: 200 })
+    workflowErrorsInsertSpy.mockResolvedValue({ error: null })
     process.env.NEXT_PUBLIC_SITE_URL = "https://test.example.com"
   })
 
@@ -277,5 +282,12 @@ describe("POST /api/proposals/[id]/send-for-signature", () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.success).toBe(true)
+    expect(body.delivery_email_failed).toBe(true)
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflow_name: "proposal_signature_request",
+        error_message: "webhook 500",
+      })
+    )
   })
 })

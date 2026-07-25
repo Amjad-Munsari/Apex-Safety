@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { ReportsList } from "./reports-list";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export default async function ReportsPage() {
   }
 
   const supabase = await createClient();
-  const { data: client } = await supabase
+  const { data: client, error: clientError } = await supabase
     .from("clients")
     .select("site_address")
     .eq("id", ctx.client_id)
@@ -38,7 +39,7 @@ export default async function ReportsPage() {
 
   // Surface completed + draft-ready assessments. Submissions still in progress
   // are filtered out — they're not deliverables yet.
-  const { data: submissions } = await supabase
+  const { data: submissions, error: submissionsError } = await supabase
     .from("form_submissions")
     .select(`
       id,
@@ -53,6 +54,14 @@ export default async function ReportsPage() {
     .is("deleted_at", null)
     .order("submitted_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
+
+  const loadFailed = Boolean(clientError || submissionsError);
+  if (loadFailed) {
+    console.error("[client/reports] failed to load report data", {
+      clientError,
+      submissionsError,
+    });
+  }
 
   const reports: Report[] = (submissions ?? []).map((row, idx) => {
     const tpl = (row.template as { form_templates?: { name?: string } | null } | null)?.form_templates?.name ?? "Assessment";
@@ -81,7 +90,9 @@ export default async function ReportsPage() {
         </h2>
       </section>
 
-      {reports.length === 0 ? (
+      {loadFailed ? (
+        <ClientDataLoadError itemName="reports" />
+      ) : reports.length === 0 ? (
         <ReportsEmpty headline="No reports yet." body="Completed assessments your consultant approves will appear here as downloadable PDFs." />
       ) : (
         <ReportsList reports={reports} />

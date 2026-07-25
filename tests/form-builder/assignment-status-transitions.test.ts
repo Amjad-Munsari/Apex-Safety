@@ -38,6 +38,7 @@ const submissionFetchSingleSpy = vi.fn();
 
 // Single-row reads for requireOwnedAssignment
 const maybeSingleSpy = vi.fn();
+const scheduleReportDraftGenerationSpy = vi.fn();
 
 // ── Supabase mock factory ────────────────────────────────────────────────────
 
@@ -205,6 +206,11 @@ vi.mock("@/lib/scheduler/generate-next-occurrence", () => ({
 // n8n dispatch — spy so the double-submit-guard test can assert it never fires.
 vi.mock("@/lib/notifications/client-form-events", () => ({
   dispatchClientFormEvent: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/reports/report-draft", () => ({
+  scheduleReportDraftGeneration: (...args: unknown[]) =>
+    scheduleReportDraftGenerationSpy(...args),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -414,6 +420,7 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
 
     // n8n event dispatched exactly once on the success path
     expect(dispatchClientFormEvent).toHaveBeenCalledTimes(1);
+    expect(scheduleReportDraftGenerationSpy).toHaveBeenCalledWith("sub-draft-1");
 
     // Assert redirect to assignment landing page
     expect(redirect).toHaveBeenCalledWith("/client/assignments/asg-1");

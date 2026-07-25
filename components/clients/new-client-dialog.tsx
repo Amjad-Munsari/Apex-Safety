@@ -25,9 +25,17 @@ export function NewClientButton({
     contactName: "",
     email: "",
     phone: "",
+    siteAddress: "",
   })
 
-  const reset = () => setForm({ businessName: "", contactName: "", email: "", phone: "" })
+  const reset = () =>
+    setForm({
+      businessName: "",
+      contactName: "",
+      email: "",
+      phone: "",
+      siteAddress: "",
+    })
 
   const canSubmit =
     form.businessName.trim().length > 0 &&
@@ -44,6 +52,7 @@ export function NewClientButton({
         contactName: form.contactName,
         contactEmail: form.email,
         contactPhone: form.phone,
+        siteAddress: form.siteAddress,
       })
       setOpen(false)
       reset()
@@ -116,6 +125,13 @@ export function NewClientButton({
               value={form.phone}
               onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
               placeholder="0161 552 0918"
+            />
+            <Field
+              label="Site Address"
+              optional
+              value={form.siteAddress}
+              onChange={(v) => setForm((f) => ({ ...f, siteAddress: v }))}
+              placeholder="Hallam House Care Home, Sheffield"
             />
 
             <div className="flex justify-between items-center pt-3 border-t border-border">

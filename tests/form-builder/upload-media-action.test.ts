@@ -64,19 +64,39 @@ vi.mock("@/lib/supabase/server", () => ({
 // Track upload calls and insert calls
 const mockUpload = vi.fn().mockResolvedValue({ error: null });
 const mockInsert = vi.fn().mockResolvedValue({ error: null });
+const mockRemove = vi.fn().mockResolvedValue({ error: null });
+const mockCreateSignedUrls = vi.fn();
+const mockAuditDeleteResult = vi.fn().mockResolvedValue({ error: null });
+const mockWorkflowInsert = vi.fn().mockResolvedValue({ error: null });
 
 vi.mock("@/lib/supabase/admin", () => ({
   adminClient: {
     storage: {
       from: vi.fn(() => ({
         upload: mockUpload,
-        remove: vi.fn().mockResolvedValue({ error: null }),
+        remove: mockRemove,
+        createSignedUrls: mockCreateSignedUrls,
         createSignedUrl: vi.fn().mockResolvedValue({ data: { signedUrl: "" } }),
       })),
     },
     from: vi.fn((table: string) => {
       if (table === "field_media") {
-        return { insert: mockInsert };
+        return {
+          insert: mockInsert,
+          delete: () => {
+            const chain = {
+              eq: vi.fn(() => chain),
+              then: (
+                resolve: (value: { error: null }) => unknown,
+                reject?: (reason: unknown) => unknown
+              ) => mockAuditDeleteResult().then(resolve, reject),
+            };
+            return chain;
+          },
+        };
+      }
+      if (table === "workflow_errors") {
+        return { insert: mockWorkflowInsert };
       }
       if (table === "form_submissions") {
         // authorizeSubmissionAccess looks up the owning org by submission id.
@@ -508,5 +528,81 @@ describe("uploadMediaAction — input validation", () => {
         "signature"
       )
     ).rejects.toThrow(/Signatures must be PNG/i);
+  });
+});
+
+describe("committed photo preview and removal", () => {
+  const PHOTO_PATH =
+    `${VALID_CLIENT_ID}/photos/${VALID_SUBMISSION_ID}/${VALID_FIELD_ID}/photo.jpg`;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockIsAdmin.mockResolvedValue(true);
+    mockRemove.mockResolvedValue({ error: null });
+    mockAuditDeleteResult.mockResolvedValue({ error: null });
+    mockWorkflowInsert.mockResolvedValue({ error: null });
+    mockCreateSignedUrls.mockResolvedValue({
+      data: [{ path: PHOTO_PATH, signedUrl: "https://signed.example/photo" }],
+      error: null,
+    });
+  });
+
+  it("returns a short-lived signed URL for a photo owned by the submission", async () => {
+    const { getMediaPreviewUrlsAction } = await import(
+      "@/app/admin/assessments/actions"
+    );
+
+    await expect(
+      getMediaPreviewUrlsAction(
+        VALID_SUBMISSION_ID,
+        VALID_FIELD_ID,
+        [PHOTO_PATH]
+      )
+    ).resolves.toEqual({
+      [PHOTO_PATH]: "https://signed.example/photo",
+    });
+    expect(mockCreateSignedUrls).toHaveBeenCalledWith([PHOTO_PATH], 60 * 15);
+  });
+
+  it("rejects a preview path outside the authorised field prefix", async () => {
+    const { getMediaPreviewUrlsAction } = await import(
+      "@/app/admin/assessments/actions"
+    );
+
+    await expect(
+      getMediaPreviewUrlsAction(
+        VALID_SUBMISSION_ID,
+        VALID_FIELD_ID,
+        ["other-client/photos/file.jpg"]
+      )
+    ).rejects.toThrow(/do not belong/);
+    expect(mockCreateSignedUrls).not.toHaveBeenCalled();
+  });
+
+  it("removes the private object before clearing its audit row", async () => {
+    const { deleteMediaAction } = await import(
+      "@/app/admin/assessments/actions"
+    );
+
+    await expect(
+      deleteMediaAction(VALID_SUBMISSION_ID, VALID_FIELD_ID, PHOTO_PATH)
+    ).resolves.toEqual({ ok: true });
+    expect(mockRemove).toHaveBeenCalledWith([PHOTO_PATH]);
+    expect(mockAuditDeleteResult).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects deletion of a path outside the authorised field prefix", async () => {
+    const { deleteMediaAction } = await import(
+      "@/app/admin/assessments/actions"
+    );
+
+    await expect(
+      deleteMediaAction(
+        VALID_SUBMISSION_ID,
+        VALID_FIELD_ID,
+        "other-client/photos/file.jpg"
+      )
+    ).rejects.toThrow(/does not belong/);
+    expect(mockRemove).not.toHaveBeenCalled();
   });
 });

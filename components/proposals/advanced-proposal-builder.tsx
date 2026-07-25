@@ -171,7 +171,7 @@ export function AdvancedProposalBuilder({
       // is still on screen and the admin can save manually.
       if (selectedClientId) {
         try {
-          const id = await createProposal({
+          const result = await createProposal({
             clientId: selectedClientId,
             servicesJson: buildServicesJson(),
             scopeText: draft,
@@ -179,7 +179,7 @@ export function AdvancedProposalBuilder({
             saveAsDraft: true,
             proposalId: proposalId ?? undefined,
           });
-          if (id) setProposalId(id);
+          if (result.proposalId) setProposalId(result.proposalId);
           toast.success("Draft saved", {
             description: "It's in the Draft column of the proposals pipeline.",
           });
@@ -215,7 +215,7 @@ export function AdvancedProposalBuilder({
 
     setIsGenerating(true);
     try {
-      await createProposal({
+      const result = await createProposal({
         clientId: selectedClientId,
         servicesJson: buildServicesJson(),
         scopeText,
@@ -226,8 +226,15 @@ export function AdvancedProposalBuilder({
         proposalId: proposalId ?? undefined,
       });
 
-      toast.success("Proposal sent & PDF Generated!");
-      router.push(`/admin/clients/${selectedClientId}`);
+      if (result.deliveryEmailFailed) {
+        toast.warning("Proposal created, but the signature email was not delivered.", {
+          description: "The proposal is marked Sent. Check Workflow Errors, then resend it.",
+        });
+        router.push(`/admin/proposals/${result.proposalId}`);
+      } else {
+        toast.success("Proposal sent and PDF generated");
+        router.push(`/admin/clients/${selectedClientId}`);
+      }
     } catch (err: any) {
       toast.error(err.message || "Failed to create proposal");
     } finally {

@@ -6,6 +6,7 @@ import { assertClientActive } from "@/lib/clients/require-active";
 import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { scheduleReportDraftGeneration } from "@/lib/reports/report-draft";
 
 // Every export in this file is a WRITE (create/save/publish/delete/fill a
 // customer-owned template), so the deactivated-client freeze belongs here in the
@@ -500,6 +501,11 @@ export async function submitCustomerTemplateFillByIdAction(
     assignment_id: null,
     submitted_at: new Date().toISOString(),
   });
+
+  // Customer-built forms produce the same reviewable report draft as assigned
+  // and admin-filled forms. The template remains customer-owned; only the
+  // committed submission id is passed to the server-only generation helper.
+  scheduleReportDraftGeneration(submissionId);
 
   revalidatePath("/client/templates");
 

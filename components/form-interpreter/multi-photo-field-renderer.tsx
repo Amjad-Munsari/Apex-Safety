@@ -19,11 +19,9 @@
  *   - On success: immediately after the storage path is committed to entity.value.
  *   - On unmount: useEffect cleanup revokes all remaining pending previews.
  *
- * Orphan cleanup deferral:
- *   Removing a photo from the UI only updates entity.value (calls setValue with
- *   the path filtered out). The underlying storage object and field_media row are
- *   NOT deleted — orphan cleanup is a Phase 16 concern. Cost is small in the MVP
- *   admin-only fill flow; photos remain accessible via Supabase Studio if needed.
+ * Committed photos are previewed with short-lived signed URLs. Removing one
+ * deletes the private storage object and its field_media row before updating the
+ * form value, so cancelled uploads do not leave hidden files behind.
  *
  * DoS guard (T-14-04-02):
  *   Only (maxPhotos - currentCount) files are accepted per selection. Excess files
@@ -50,7 +48,11 @@ import { cn } from "@/lib/utils"
 import type { EntityComponentProps } from "@coltorapps/builder-react"
 import type { multiPhotoFieldEntity } from "@/lib/form-builder/entities/multi-photo-field"
 import { useMediaProcessor } from "@/hooks/use-media-processor"
-import { uploadMediaAction } from "@/app/admin/assessments/actions"
+import {
+  deleteMediaAction,
+  getMediaPreviewUrlsAction,
+  uploadMediaAction,
+} from "@/app/admin/assessments/actions"
 
 import { AttachPhotosAffordance } from "./attach-photos-affordance"
 
@@ -126,6 +128,8 @@ export function MultiPhotoFieldRenderer({
 
   // In-flight upload items with object-URL previews
   const [pendingItems, setPendingItems] = useState<PendingPhoto[]>([])
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({})
+  const [removingPaths, setRemovingPaths] = useState<string[]>([])
 
   // Hidden file input ref
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -142,6 +146,31 @@ export function MultiPhotoFieldRenderer({
       })
     }
   }, [])
+
+  const photoPathsKey = photos.join("\u0000")
+  useEffect(() => {
+    let cancelled = false
+    if (photos.length === 0) {
+      return
+    }
+
+    getMediaPreviewUrlsAction(submissionId, entity.id, photos)
+      .then((urls) => {
+        if (!cancelled) setPreviewUrls(urls)
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.error("Photo preview signing failed:", err)
+        toast.error("Saved photos could not be previewed. Refresh and try again.")
+      })
+
+    return () => {
+      cancelled = true
+    }
+    // photos is represented by a stable content key to avoid re-signing on
+    // unrelated renderer updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoPathsKey, submissionId, entity.id])
 
   // ── File handling ──────────────────────────────────────────────────────────
 
@@ -251,10 +280,26 @@ export function MultiPhotoFieldRenderer({
   )
 
   // ── Remove committed photo ─────────────────────────────────────────────────
-  // NOTE: This does NOT delete the storage object or field_media row.
-  // Orphan cleanup is a Phase 16 concern (see JSDoc above).
-  const handleRemove = (index: number) => {
-    setValue(photos.filter((_, i) => i !== index))
+  const handleRemove = async (index: number) => {
+    const storagePath = photos[index]
+    setRemovingPaths((current) => [...current, storagePath])
+    try {
+      await deleteMediaAction(submissionId, entity.id, storagePath)
+      setValue(photos.filter((_, i) => i !== index))
+      setPreviewUrls((current) => {
+        const next = { ...current }
+        delete next[storagePath]
+        return next
+      })
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "The photo could not be removed."
+      )
+    } finally {
+      setRemovingPaths((current) =>
+        current.filter((path) => path !== storagePath)
+      )
+    }
   }
 
   // ── Remove errored pending item ────────────────────────────────────────────
@@ -301,24 +346,33 @@ export function MultiPhotoFieldRenderer({
               t.cell
             )}
           >
-            {/* We show the storage path as src — on the admin surface these are
-                internal paths. Plan 14-06 / Phase 16 may add signed URLs. */}
-            <img
-              src={storagePath}
-              alt={`Photo ${i + 1}`}
-              className="object-cover w-full h-full"
-            />
+            {previewUrls[storagePath] ? (
+              <img
+                src={previewUrls[storagePath]}
+                alt={`Photo ${i + 1}`}
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
             <button
               type="button"
               aria-label={`Remove photo ${i + 1}`}
               onClick={() => handleRemove(i)}
+              disabled={removingPaths.includes(storagePath)}
               className={cn(
                 "absolute top-1 right-1 h-6 w-6 rounded-sm flex items-center justify-center",
-                "opacity-0 group-hover:opacity-100 transition-opacity",
+                "opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity disabled:opacity-50",
                 t.removeBtn
               )}
             >
-              <X className="h-3 w-3" />
+              {removingPaths.includes(storagePath) ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <X className="h-3 w-3" />
+              )}
             </button>
           </div>
         ))}

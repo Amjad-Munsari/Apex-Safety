@@ -9,6 +9,7 @@ import { ClientDangerZone } from "./client-danger-zone"
 import { normalizeClientTemplateRows } from "./client-templates"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { getAppSettings } from "@/lib/settings/app-settings"
+import { EditClientProfileDialog } from "@/components/clients/edit-client-profile-dialog"
 
 export default async function ClientDetailsPage({
   params,
@@ -315,6 +316,16 @@ export default async function ClientDetailsPage({
         </div>
 
         <div className="flex gap-4 items-center">
+          <EditClientProfileDialog
+            clientId={client.id}
+            profile={{
+              name: client.name,
+              contactName: client.contact_name,
+              contactEmail: client.contact_email,
+              contactPhone: client.contact_phone,
+              siteAddress: client.site_address,
+            }}
+          />
           {!isInactive && <UploadDocumentModal clientId={client.id} />}
         </div>
       </div>

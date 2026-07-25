@@ -15,8 +15,12 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
   const { id } = await ctx.params
 
   try {
-    const { signing_url } = await sendProposalForSignature(id)
-    return NextResponse.json({ success: true, signing_url })
+    const { signing_url, deliveryEmailFailed } = await sendProposalForSignature(id)
+    return NextResponse.json({
+      success: true,
+      signing_url,
+      delivery_email_failed: deliveryEmailFailed,
+    })
   } catch (err) {
     // Map SendProposalError codes to the same HTTP responses the route used
     // to return directly, so external contracts (tests, clients) are unchanged.

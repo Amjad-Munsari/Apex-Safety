@@ -44,7 +44,14 @@ export function ProposalCard({
     startTransition(async () => {
       const res = await fetch(`/api/proposals/${id}/send-for-signature`, { method: "POST" })
       if (res.ok) {
-        toast.success(`Proposal sent to ${clientName} for signature`)
+        const body = (await res.json()) as { delivery_email_failed?: boolean }
+        if (body.delivery_email_failed) {
+          toast.warning("Proposal marked Sent, but the signature email was not delivered.", {
+            description: "Check Workflow Errors before retrying.",
+          })
+        } else {
+          toast.success(`Proposal sent to ${clientName} for signature`)
+        }
         router.refresh()
         return
       }

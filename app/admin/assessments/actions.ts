@@ -7,18 +7,15 @@ import { assertClientActive } from "@/lib/clients/require-active"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
-import { generateObject } from "ai"
-import { createOpenAI } from "@ai-sdk/openai"
-import { z } from "zod"
 import {
   buildSignatureStoragePath,
   buildPhotoStoragePath,
 } from "@/lib/form-builder/storage/upload-paths"
-import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections"
-import { extractPAS79Summary } from "@/lib/form-builder/risk/pas79"
-import { YELLOW_BROOM_EXEMPLAR } from "@/lib/ai/exemplars/yellow-broom-fra"
-import { buildReportPrompt } from "@/lib/ai/prompt-builder"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
+import {
+  runReportDraftGeneration,
+  scheduleReportDraftGeneration,
+} from "@/lib/reports/report-draft"
 
 // Authorize a caller to act on a specific submission. Admins always pass; a
 // client may only act on a submission owned by their OWN org. Returns the
@@ -422,29 +419,7 @@ export async function submitAssessmentAction(
   // fast (no AI wait), and the draft is usually ready by the time he opens
   // /admin/assessments/[id]/review. On failure, the manual "Generate AI
   // Draft" button on the review page is the retry surface.
-  after(async () => {
-    try {
-      await runReportDraftGeneration(submissionId)
-    } catch (err) {
-      // runReportDraftGeneration itself logs to workflow_errors and flips
-      // status='ai_draft_failed' before rethrowing (D-10). But if it threw
-      // BEFORE that point (e.g., the status-flip update itself failed), the
-      // submission would be stuck at 'submitted' and the Review page would
-      // show "Generate AI Draft" instead of "Retry Draft" — misleading
-      // because auto-generation did run and fail. Best-effort flip here
-      // closes that window. Code audit 2026-05-29 (M2).
-      console.error("Auto report-draft generation failed", { submissionId, err })
-      try {
-        await adminClient
-          .from("form_submissions")
-          .update({ status: "ai_draft_failed" })
-          .eq("id", submissionId)
-          .eq("status", "submitted")
-      } catch (flipErr) {
-        console.error("Fallback status flip to ai_draft_failed also failed", { submissionId, flipErr })
-      }
-    }
-  })
+  scheduleReportDraftGeneration(submissionId)
 
   // Phase 18 SC#5 — fire the assessment-submission n8n webhook for the
   // Module 1 downstream (Matt's existing n8n workflows that fan out to
@@ -460,13 +435,31 @@ export async function submitAssessmentAction(
   after(async () => {
     const webhookUrl = process.env.N8N_ASSESSMENT_WEBHOOK_URL
     if (!webhookUrl) return
+    const webhookSecret = process.env.N8N_ASSESSMENT_WEBHOOK_SECRET
+    if (!webhookSecret) {
+      const errorMessage =
+        "N8N_ASSESSMENT_WEBHOOK_SECRET is not configured; assessment webhook was not sent."
+      console.error(errorMessage, { submissionId })
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "assessment-submission-webhook",
+        error_message: errorMessage,
+        payload: { submissionId },
+      })
+      return
+    }
     try {
-      await fetch(webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${webhookSecret}`,
+        },
         body: JSON.stringify({ submissionId }),
         signal: AbortSignal.timeout(3000),
       })
+      if (!response.ok) {
+        throw new Error(`n8n returned HTTP ${response.status}`)
+      }
     } catch (err) {
       console.error("Phase 18 SC#5 n8n webhook trigger failed", { submissionId, err })
       await adminClient.from("workflow_errors").insert({
@@ -476,166 +469,6 @@ export async function submitAssessmentAction(
       })
     }
   })
-}
-
-// ── runReportDraftGeneration ─────────────────────────────────────────────────
-
-/**
- * Core AI-draft generation — no auth check, caller is responsible.
- * Used by both the manual generateReportDraft Server Action and the
- * auto-trigger inside submitAssessmentAction's after() callback.
- */
-async function runReportDraftGeneration(submissionId: string) {
-  if (!process.env.OPENROUTER_API_KEY) {
-    throw new Error(
-      "OPENROUTER_API_KEY is not set. Add it to .env.local (dev) or Vercel project env (prod) before generating report drafts."
-    )
-  }
-
-  // Step 1: Fetch form_submissions row — also fetch template_version_id
-  // so we can load the pinned schema for repeatingSection expansion.
-  const { data: submission, error: fetchError } = await adminClient
-    .from("form_submissions")
-    .select("answers_json, template_version_id")
-    .eq("id", submissionId)
-    .single()
-
-  if (fetchError || !submission) {
-    throw new Error("Submission not found or fetch failed")
-  }
-
-  // Step 2: Fetch the PINNED version schema (same two-step pattern as
-  // submitAssessmentAction — NEVER a FK join; Phase 13 RESEARCH Pitfall 2).
-  const { data: version, error: versionError } = await adminClient
-    .from("template_versions")
-    .select("schema_json")
-    .eq("id", submission.template_version_id)
-    .single()
-
-  if (versionError || !version) {
-    throw new Error(
-      `Failed to fetch pinned template version for AI prompt: ${versionError?.message ?? "not found"}`
-    )
-  }
-
-  // Step 3: Expand repeatingSection instances into labelled flat objects per
-  // RESEARCH Pattern 10. The AI sees one labelled object per door / hazard,
-  // not an opaque nested "instances" array.
-  // CONTEXT §specifics: FRA-doors test scenario expects N instances →
-  // N hazards in the generated draft.
-  const expandedAnswers = expandRepeatingSections(
-    version.schema_json as Parameters<typeof expandRepeatingSections>[0],
-    submission.answers_json as Record<string, unknown>
-  )
-
-  // Step 3b: Recompute the PAS 79 risk rating from the PINNED schema + raw
-  // answers. The on-screen renderer computes this badge but deliberately never
-  // persists it (computed-field-renderer.tsx ~128-133), so answers_json carries
-  // the likelihood/consequence inputs but not the derived level. We recompute
-  // here — NOT from expandedAnswers (which relabels repeatingSection children),
-  // but from the raw answers_json the renderer/visibility engine also read, so
-  // the dependency entity IDs resolve. Returns null when there is no PAS 79
-  // field or its inputs are missing/out of range — buildReportPrompt then omits
-  // the line entirely (no "undefined" in the prompt).
-  const pas79Summary = extractPAS79Summary(
-    version.schema_json as Parameters<typeof extractPAS79Summary>[0],
-    submission.answers_json as Record<string, unknown>
-  )
-
-  // Step 4: Initialize createOpenAI
-  const openai = createOpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY,
-  })
-
-  // Step 5: Define the Zod schema (unchanged — only the prompt input changes)
-  const reportSchema = z.object({
-    executiveSummary: z.string(),
-    hazards: z.array(z.object({
-      location: z.string(),
-      description: z.string(),
-      severity: z.enum(["Low", "Medium", "High", "Critical"]),
-      recommendedAction: z.string(),
-    })),
-    complianceStatus: z.enum(["Pass", "Action Required", "Fail"]),
-  })
-
-  // Step 6: Call generateObject with expanded answers
-  try {
-    const { object } = await generateObject({
-      model: openai('openai/gpt-4o-mini'),
-      schema: reportSchema,
-      prompt: buildReportPrompt({
-        exemplar: YELLOW_BROOM_EXEMPLAR,
-        exemplarLabel: "YELLOW BROOM 2023 FRA, anonymised",
-        expandedAnswers,
-        pas79: pas79Summary
-          ? {
-              likelihood: pas79Summary.likelihood,
-              consequence: pas79Summary.consequence,
-              level: pas79Summary.result.level,
-            }
-          : null,
-      }),
-    })
-
-    // Step 7: Update draft_report_json and status
-    const { error: updateError } = await adminClient
-      .from("form_submissions")
-      .update({
-        draft_report_json: object,
-        status: "draft_ready_for_review"
-      })
-      .eq("id", submissionId)
-
-    if (updateError) {
-      throw new Error(`Failed to update draft report: ${updateError.message}`)
-    }
-
-    // Step 8: Revalidate paths
-    revalidatePath("/admin/assessments")
-    revalidatePath(`/admin/assessments/${submissionId}/review`)
-
-    // Return the generated draft so the client can update its local state
-    // immediately — router.refresh() alone won't re-seed the review page's
-    // useState(draft), so without this the regenerated draft only appears
-    // after a full manual reload.
-    return { success: true, draft: object }
-  } catch (err: unknown) {
-    console.error("generateReportDraft failed:", err)
-    const errMessage = err instanceof Error ? err.message : String(err)
-    const errStack = err instanceof Error ? err.stack : null
-
-    // D-10: log to workflow_errors BEFORE flipping status / rethrowing.
-    // adminClient (service-role) bypasses RLS so the insert succeeds even when
-    // the caller is the after-submit background task (no admin JWT in scope).
-    // Schema (migrations/001:188-196): workflow_name + error_message + payload
-    // are the only input columns — there is NO top-level `workflow_type` or
-    // `severity` column; severity nests under payload (PATTERNS.md correction #1).
-    await adminClient.from("workflow_errors").insert({
-      workflow_name: "ai_report_draft",
-      error_message: errMessage,
-      payload: {
-        submission_id: submissionId,
-        stack: errStack,
-        severity: "high",
-      },
-    })
-
-    // D-10: flip status so the Review page can render the retry CTA (Plan 06)
-    // instead of the generic "no draft yet" empty-state. Order: workflow_errors
-    // insert FIRST so the audit row exists even if this update later fails.
-    await adminClient
-      .from("form_submissions")
-      .update({ status: "ai_draft_failed" })
-      .eq("id", submissionId)
-
-    revalidatePath(`/admin/assessments/${submissionId}/review`)
-
-    // Preserve the existing error-message shape used by the manual Server Action
-    // wrapper at generateReportDraft (line ~503).
-    throw new Error(`Failed to generate report draft via AI: ${errMessage}`)
-  }
 }
 
 /**
@@ -810,6 +643,85 @@ export async function uploadMediaAction(
 
   // Step 11: Return path so the renderer can store it in entity.value
   return storagePath
+}
+
+/**
+ * Create short-lived preview URLs for committed photos on a submission the
+ * current admin/client is allowed to access.
+ */
+export async function getMediaPreviewUrlsAction(
+  submissionId: string,
+  fieldId: string,
+  storagePaths: string[]
+): Promise<Record<string, string>> {
+  const clientId = await authorizeSubmissionAccess(submissionId)
+  const prefix = `${clientId}/photos/${submissionId}/${fieldId}/`
+  const safePaths = [
+    ...new Set(storagePaths.filter((path) => path.startsWith(prefix))),
+  ]
+
+  if (safePaths.length !== storagePaths.length) {
+    throw new Error("One or more photo paths do not belong to this field.")
+  }
+  if (safePaths.length === 0) return {}
+
+  const { data, error } = await adminClient.storage
+    .from("form-media")
+    .createSignedUrls(safePaths, 60 * 15)
+
+  if (error) throw new Error(`Could not load photo previews: ${error.message}`)
+
+  return Object.fromEntries(
+    (data ?? [])
+      .filter((item) => item.path && item.signedUrl)
+      .map((item) => [item.path, item.signedUrl])
+  )
+}
+
+/**
+ * Remove a committed photo from private storage and its field_media audit row.
+ * The caller updates the form value only after this succeeds.
+ */
+export async function deleteMediaAction(
+  submissionId: string,
+  fieldId: string,
+  storagePath: string
+): Promise<{ ok: true }> {
+  const clientId = await authorizeSubmissionAccess(submissionId)
+  const prefix = `${clientId}/photos/${submissionId}/${fieldId}/`
+  if (!storagePath.startsWith(prefix)) {
+    throw new Error("This photo does not belong to the selected field.")
+  }
+
+  const { error: removeError } = await adminClient.storage
+    .from("form-media")
+    .remove([storagePath])
+  if (removeError) {
+    throw new Error(`Could not remove photo: ${removeError.message}`)
+  }
+
+  const { error: auditDeleteError } = await adminClient
+    .from("field_media")
+    .delete()
+    .eq("submission_id", submissionId)
+    .eq("field_id", fieldId)
+    .eq("storage_path", storagePath)
+
+  if (auditDeleteError) {
+    console.error("Photo removed but field_media cleanup failed", {
+      submissionId,
+      fieldId,
+      storagePath,
+      auditDeleteError,
+    })
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: "field_media_cleanup",
+      error_message: auditDeleteError.message,
+      payload: { submissionId, fieldId, storagePath },
+    })
+  }
+
+  return { ok: true }
 }
 
 // ── finalizeReport ───────────────────────────────────────────────────────────

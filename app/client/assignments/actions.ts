@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateNextOccurrence } from "@/lib/scheduler/generate-next-occurrence";
+import { scheduleReportDraftGeneration } from "@/lib/reports/report-draft";
 
 // ── Internal auth helpers ────────────────────────────────────────────────────
 
@@ -358,6 +359,11 @@ export async function submitAssignedFillByIdAction(
     assignment_id: updated.assignment_id,
     submitted_at: new Date().toISOString(),
   });
+
+  // Use the same post-response AI pipeline as Matt's own assessment flow so a
+  // client-completed assignment reaches the review queue instead of stopping
+  // indefinitely at status="submitted".
+  scheduleReportDraftGeneration(submissionId);
 
   if (updated.assignment_id) {
     await transitionAssignmentStatus(supabase, updated.assignment_id, "completed");
