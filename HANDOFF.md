@@ -2,7 +2,7 @@
 
 Working state for the next session. Everything below is verified against prod/repo at the time of writing. Repo: `/Users/aymanbaig/dev/fire-safety-platform`. Prod: `https://www.merlinsafetysystem.com` (Vercel project `fire-safety-platform`, `prj_NEX03VTgkZmD4SIfxXf7BPhNi569`). System name **Merlin**; public brand **888 Safety & Training** (Matt's UK fire-safety consultancy).
 
-Git: `main` clean, all pushed. HEAD `4cd3b1f`.
+Git: `main` clean, all pushed. HEAD `39ff311`.
 
 ---
 
@@ -56,6 +56,33 @@ Verified counts: `form_templates` **0**, `clients` 0, `services` **0**, `contrac
 
 ### Also raise with Matt/Finley
 Checkout UI displays "VAT included" but nothing emails a receipt or invoice — for a UK business taking real money that's more than the LOW it was filed as in §2B.
+
+---
+
+## 1c. Hole-hunt 2026-07-25 (post-handover sweep)
+
+**Security surface came back clean** — probed live, not just read: anon key against prod REST is denied on every write (`42501` RLS) and on both money RPCs (`permission denied for function credit_hours_from_paypal` / `adjust_client_credits`, so migration 025 holds); `app_settings` is `42501` (grants revoked); both cron endpoints 401 unauthenticated and reject a wrong `?secret=`; `/api/admin/search` 401s and sanitises PostgREST filter metacharacters; `/api/sign/<bogus>` returns 410 without leaking existence. Every client-facing `createSignedUrl` derives its path from a row already scoped by `.eq("client_id", ctx.client_id)` — no IDOR. Soft-delete filtering on the three tables that actually use it (`form_assignments`, `contractors`, `services`) is enforced, including `requireOwnedAssignment`. Only definer function lacking `search_path` was the one 027 fixed. `auth.users` holds Matt alone — no leftover test users (audit blocker 9).
+
+### FIXED — Month-Summary "Assessments" tile rendered no number (commit `39ff311`)
+Root cause found: the tiles built their colour class by interpolation, `text-${stat.color}`. Tailwind scans source *text* for class candidates, so an interpolated name is never seen by the compiler — it only renders when an unrelated file happens to use the same literal. Assessments' colour was `"white"` → `text-white`, which IS generated (billing uses it), so the count drew white-on-white. Now static class strings, Assessments on `text-foreground` (theme-correct both modes). This closes the walkthrough "nit" as an actual defect.
+**Not fixed — 7 sibling interpolation sites remain** (`app/admin/clients/_components/client-row.tsx`, `app/admin/compliance/compliance-doc-row.tsx`, `app/admin/compliance/page.tsx`, `app/admin/hours/page.tsx`). Some need classes with **zero** static occurrences anywhere — `bg-teal/5` and `text-gold/60` are not in the generated CSS at all, so those badges silently lose their tint. There is no Tailwind safelist (v4, CSS-first config), so the whole pattern is one unrelated deletion away from more breakage. Fixing it is a visual-regression pass of its own.
+
+### OPEN (MEDIUM) — expiry alerts have no catch-up, and nothing fires when a document actually expires
+`app/api/cron/expiry/route.ts` matches `.in("expiry_date", [day30, day14, day7])` — exact calendar days, once daily at 06:00 UTC. Consequences:
+- A document uploaded **less than 7 days** before it expires never equals any window, so it gets **zero** alerts and expires silently.
+- One missed run (Vercel crons are best-effort, a failed deploy, a function error) loses that window **permanently** — the `notifications_sent` table is consulted only to prevent duplicates, never to catch up.
+- Toggling "Send expiry reminders" off returns before any dedup write, so every window crossed while it's off is lost forever.
+- There is **no alert at all once a document is past its expiry date** — the assignment scheduler has an `overdue` catch-all branch (`due_date < today`), expiry has no equivalent.
+Mitigating: the dashboard *does* count expired/expiring documents (`lib/supabase/dashboard.ts`), so it's visible in-app — it just never emails. Fix is cheap and safe: match a range instead of exact dates and let the existing `UNIQUE (document_id, alert_window, notification_type)` constraint do the deduping — that makes it self-healing. For a compliance product where the alert *is* the product, worth doing before Matt's first real client.
+
+### OPEN (MEDIUM) — client form-event dispatch failures are invisible to the app
+`lib/notifications/client-form-events.ts` logs a failed dispatch to `console.error` and nothing else — no `workflow_errors` row, unlike every other dispatch caller (`sendAssignmentReminder`'s cron caller does record and retry correctly). These are exactly the `client_form_created` / `client_form_submitted` / `client_template_cloned` events already known broken downstream (§2C). So there are two stacked blind spots: n8n-internal failures don't fail the POST, and a POST that *does* fail is never recorded. Matt's Workflow Errors page reads "ALL CLEAR" either way.
+
+### OPEN (LOW) — outbound n8n webhook has no timeout, and is awaited on the client's submit path
+`dispatchToN8n` calls `fetch` with no `AbortSignal`/timeout, and `dispatchClientFormEvent` is `await`ed inline in `app/client/assignments/actions.ts` and `app/client/templates/actions.ts`. An n8n endpoint that accepts the connection but never responds stalls the client's submit action until the platform function timeout. No data loss — the submission is committed before dispatch and the wrapper never throws — but the customer watches a spinner for a third party.
+
+### OPEN (LOW) — month-summary month boundary is local-time
+`new Date(now.getFullYear(), now.getMonth(), 1).toISOString()` builds local midnight then serialises as UTC, so during BST the window starts 23:00 on the last day of the previous month and counts an hour of it. Cosmetic on a monthly tile; the crons already use explicit UTC helpers.
 
 ---
 
