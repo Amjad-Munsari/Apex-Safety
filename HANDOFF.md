@@ -2,7 +2,7 @@
 
 Working state for the next session. Everything below is verified against prod/repo at the time of writing. Repo: `/Users/aymanbaig/dev/fire-safety-platform`. Prod: `https://www.merlinsafetysystem.com` (Vercel project `fire-safety-platform`, `prj_NEX03VTgkZmD4SIfxXf7BPhNi569`). System name **Merlin**; public brand **888 Safety & Training** (Matt's UK fire-safety consultancy).
 
-Git: `main` clean, all pushed. HEAD `39ff311`.
+Git: `main` clean, all pushed. HEAD `20aee86`.
 
 ---
 
@@ -66,6 +66,13 @@ Checkout UI displays "VAT included" but nothing emails a receipt or invoice — 
 ### FIXED — Month-Summary "Assessments" tile rendered no number (commit `39ff311`)
 Root cause found: the tiles built their colour class by interpolation, `text-${stat.color}`. Tailwind scans source *text* for class candidates, so an interpolated name is never seen by the compiler — it only renders when an unrelated file happens to use the same literal. Assessments' colour was `"white"` → `text-white`, which IS generated (billing uses it), so the count drew white-on-white. Now static class strings, Assessments on `text-foreground` (theme-correct both modes). This closes the walkthrough "nit" as an actual defect.
 **Not fixed — 7 sibling interpolation sites remain** (`app/admin/clients/_components/client-row.tsx`, `app/admin/compliance/compliance-doc-row.tsx`, `app/admin/compliance/page.tsx`, `app/admin/hours/page.tsx`). Some need classes with **zero** static occurrences anywhere — `bg-teal/5` and `text-gold/60` are not in the generated CSS at all, so those badges silently lose their tint. There is no Tailwind safelist (v4, CSS-first config), so the whole pattern is one unrelated deletion away from more breakage. Fixing it is a visual-regression pass of its own.
+
+### FIXED — the AI prompt-injection sentinel was escapable by a customer answer (commit `20aee86`)
+`buildReportPrompt` wraps answers in `<user_provided_answers>` and instructs the model to treat that block as data. That wrapper was the only boundary, and `JSON.stringify` escapes quotes and backslashes but **not angle brackets** — so a customer typing `</user_provided_answers>` into any free-text field closed the block early and landed in instruction context, right before the tail-anchored rule, in a report Matt signs off as the competent person. The file's own header called this hardening "the precondition" for customer-typed strings reaching the prompt, and that path is live (Phase 16 customer fills), so the assessor is no longer the sole author of the answers. Both tags in either direction are now neutralised before wrapping (whitespace/case tolerant), with the text preserved as inert data rather than deleted so nothing vanishes from a report. Three regression tests, **verified red without the fix**; assertions scope to the real answers block because `INJECTION_GUARD` names both tags literally.
+Note this is a boundary fix, not a claim that the model is now injection-proof — it removes the trivial escape, and Matt reviewing every draft remains the real control.
+
+### OPEN (LOW) — MIME allowlists are skipped when the browser sends no content type
+`lib/documents/actions.ts` and `app/admin/settings/actions.ts` both guard with `if (file.type && !ALLOWED.has(file.type))`, so a request whose file part carries no `Content-Type` bypasses the allowlist entirely; the stored extension also comes from `file.name` unvalidated. Both paths are admin-gated (`isAdmin()`), buckets are private and served via short-lived signed URLs on the Supabase origin rather than the app's, so this is defence-in-depth rather than a live exposure — but the allowlist should be fail-closed.
 
 ### OPEN (MEDIUM) — expiry alerts have no catch-up, and nothing fires when a document actually expires
 `app/api/cron/expiry/route.ts` matches `.in("expiry_date", [day30, day14, day7])` — exact calendar days, once daily at 06:00 UTC. Consequences:
