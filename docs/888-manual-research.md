@@ -1,0 +1,283 @@
+# 888 Safety & Training — Manual Research Brief
+
+**Research snapshot:** 25 July 2026
+**Tracked revision:** `main` at `a7d1ccc`
+**Production URL recorded in the latest handoff:** `https://www.merlinsafetysystem.com`
+
+This brief is the evidence layer for `docs/888-user-testing-manual.md`. It was derived from the current application code, migrations, configuration, current uncommitted files, and the latest production handoff. Uncommitted code is not treated as deployed. Earlier user guides and proposal documents were not used as behavioural sources. The 20 July production-readiness audit was used only as a checklist, then every finding was rechecked against the current checkout.
+
+## State labels
+
+| Label | Meaning in this brief |
+|---|---|
+| **Live** | The screen and its core read/write path are implemented against the live data store. This does not claim that every external dependency is production-ready. |
+| **Partial** | The main path exists, but a material branch, failure state, safety control, or operational dependency remains unfinished or unproven. |
+| **Staged (not live)** | Code or configuration exists locally but is not part of the deployed, confirmed path. |
+| **Not built** | No working implementation exists in the repository. |
+
+## Corrections to older documentation and audit findings
+
+| Claim to correct | Current ground truth | State and evidence |
+|---|---|---|
+| Payments use Stripe. | The only checkout implementation is PayPal Orders v2. Package price, currency, buyer organisation, completion state, and order identity are checked on the server before credits are added. | **Partial:** the flow is built, but production credentials currently fail PayPal authentication. `lib/paypal.ts:14-27`; `app/api/paypal/create-order/route.ts:16-68`; `app/api/paypal/capture-order/route.ts:60-172`; `HANDOFF.md:109-117` |
+| The client portal is hardcoded demo data. | The dashboard, compliance documents, reports, billing ledger, assignments, templates, proposals, contracts list, and directory all query the signed-in organisation's live rows. | **Live:** examples at `app/client/page.tsx:54-87`; `app/client/compliance/page.tsx:65-82`; `app/client/reports/page.tsx:26-70`; `app/client/billing/page.tsx:14-39` |
+| Speech-to-text exists. | Text fields are ordinary typed inputs. Audio is explicitly rejected by the upload action. The review screen still contains a misleading “Raw Answers & STT” label even though no speech capture path exists. | **Not built:** `components/form-interpreter/text-field-renderer.tsx:32-62`; `components/form-interpreter/textarea-field-renderer.tsx:31-49`; `app/admin/assessments/actions.ts:682-725`; `app/admin/assessments/[id]/review/review-client.tsx:254-262` |
+| n8n calls OpenAI and produces the report. | The application sends answers directly to OpenRouter using `openai/gpt-4o-mini`, stores the structured draft, lets Matt edit it, and generates the PDF on the server. | **Live, dependent on OpenRouter:** `app/admin/assessments/actions.ts:488-603`; `app/admin/assessments/actions.ts:817-964` |
+| n8n sends all customer email. | Transactional email is sent directly through Resend. n8n receives three client-form events and a separate assessment-submitted event for partner automation. | **Partial:** the app transport is wired, but the current n8n workflow cannot resolve the `client_id` payload and broader email deliverability is not proven. `.env.example:28-44`; `lib/notifications/dispatch.ts:180-283`; `HANDOFF.md:141-144` |
+| The application needs SMTP to send its account and workflow email. | The current account actions generate invite/recovery links themselves and dispatch them through Resend, which also sends the other application emails. SMTP is not the active application transport. | **Partial:** verify the Resend sender domain, SPF/DKIM/DMARC alignment, Reply-To, and real inbox delivery. `app/admin/clients/actions.ts:337-419`; `app/login/forgot/actions.ts:16-44`; `lib/notifications/dispatch.ts:180-219` |
+| Stored balance is hours and the editable 4:1 credits model is absent. | This became stale after migration 026. Balances and ledger movements are now stored as whole credits. The legacy column names remain, and the default editable reference rate is four credits per hour. Rate changes do not alter existing balances. | **Live:** `supabase/migrations/026_credits_model.sql:4-18`; `supabase/migrations/026_credits_model.sql:50-57`; `components/admin/settings-form.tsx:214-237`; `app/admin/clients/actions.ts:264-333` |
+| The PayPal credit function is publicly callable. | The public, anonymous, and ordinary signed-in roles were revoked; only the server role may call either balance-moving function. The latest production handoff records live denial probes. | **Resolved:** `supabase/migrations/025_revoke_credit_hours_from_paypal_public.sql:21-26`; `supabase/migrations/026_credits_model.sql:123-130`; `supabase/migrations/027_credit_hours_from_paypal_search_path.sql:46-53`; `HANDOFF.md:64-66` |
+| The form builder has Signature and Rating fields. | The active palette has exactly 11 types: Short Text, Number, Date, Select, Long Text, Checkbox, Section, Photos, Location, Computed, and Repeating Section. Signature and Rating were removed from registration. | **Live:** `components/form-builder/field-palette.tsx:19-53`; `lib/form-builder/index.ts:16-30` |
+| Customers cannot create or fork templates. | Customers can build an organisation-owned template from scratch, and can fork an assigned master before filling it. The fork points back to the master through `parent_template_id`; Matt can inspect customer templates read-only. | **Live:** `supabase/migrations/003_form_template_customer_ownership.sql:12-33`; `supabase/migrations/003_form_template_customer_ownership.sql:43-92`; `app/client/templates/actions.ts:49-85`; `app/client/assignments/actions.ts:410-539`; `app/admin/templates/[id]/page.tsx:25-57` |
+| Signing uses DocuSign, SignWell, or PandaDoc. | Signing is first-party. A public, single-use link shows the proposal and accepts a drawn or typed signature after the signer accepts the terms. | **Live with a legal/process decision still required:** `components/sign/sign-flow.tsx:243-320`; `components/sign/sign-flow.tsx:322-377`; `app/api/sign/[token]/route.ts:229-328` |
+| Signing overwrites the exact PDF whose hash was recorded. | The current endpoint leaves the original PDF intact, writes the signature-stamped copy to a separate path, and stores a second hash for that copy. Migration 029 is recorded as applied in production. | **Resolved for new signatures:** `app/api/sign/[token]/route.ts:330-401`; `HANDOFF.md:149-152` |
+| Expiry alerts only fire on exact days and never catch up. | The current job scans a range, chooses the smallest crossed 30/14/7/expired window, retries failed sends, and deduplicates successful sends. | **Resolved, with recipient selection still partial:** `app/api/cron/expiry/route.ts:57-95`; `app/api/cron/expiry/route.ts:113-187`; `lib/notifications/expiry-window.ts:35-48` |
+| Admin protection exists only in the route proxy. | Both admin and client layouts now repeat the server-side role check. | **Partly resolved:** layout defence exists, but the repository still pins the audited framework version `16.2.4`; the dependency upgrade remains pending. `app/admin/layout.tsx:18-22`; `app/client/layout.tsx:17-22`; `package.json:32` |
+| Contractor Directory is not part of the build. | Matt can manage contractors and clients can browse active, non-deleted entries. | **Live code, empty production data:** `app/admin/directory/page.tsx:11-41`; `lib/data/contractors-server.ts:45-82`; `supabase/migrations/024_contractors.sql:9-48`; `HANDOFF.md:52-55` |
+
+The palette's Select description still says “Single or multi choice,” but the active renderer is explicitly single-select and the abandoned multi-select mode was removed. Treat Select as one choice only (`components/form-builder/field-palette.tsx:41-48`; `components/form-interpreter/select-field-renderer.tsx:39-60`).
+
+## Route inventory
+
+There is no `/portal/*` route tree. `/login` is the client sign-in, `/login/admin` is the operator sign-in, and `/login/client` only redirects old bookmarks to `/login` (`app/login/client/page.tsx:1-7`).
+
+### Admin console
+
+| Route | What it actually renders and where the data comes from | State | Evidence |
+|---|---|---|---|
+| `/admin` | Live client list, compliance counts, expiries, proposals, report review queue, monthly headline, and workflow errors. | **Live** | `app/admin/page.tsx:22-52`; `lib/supabase/dashboard.ts:4-78` |
+| `/admin/clients` | Live client organisations with document RAG, credit balance, proposal state, and outstanding assignments. | **Live** | `app/admin/clients/page.tsx:10-40`; `app/admin/clients/page.tsx:43-116` |
+| `/admin/clients/[id]` | One organisation with Contacts, Documents, Compliance, Assessments, Reports, Proposals, Credits, Assigned Forms, and Access tabs. | **Live** | `app/admin/clients/[id]/page.tsx:20-67`; `app/admin/clients/[id]/client-tabs.tsx:264-289` |
+| `/admin/compliance` | All stored compliance documents, split into Current, Expiring, Expired, and No Expiry Date, with an upload action. | **Live** | `app/admin/compliance/page.tsx:33-75`; `app/admin/compliance/page.tsx:77-120` |
+| `/admin/expiries` | Documents expiring within 30 days or already overdue, with a manual reminder button. It is not in the sidebar. | **Live** | `app/admin/expiries/page.tsx:9-26`; `app/admin/expiries/page.tsx:42-85` |
+| `/admin/assessments/new` | Starts a new assessment for an active client using the latest published version of an eligible template. | **Live, blocked by empty production templates** | `app/admin/assessments/new/page.tsx:18-89`; `app/admin/assessments/actions.ts:41-112`; `HANDOFF.md:52-55` |
+| `/admin/assessments/[id]` | The live fill screen for an assessment submission using its pinned template version. | **Live** | `app/admin/assessments/[id]/page.tsx:21-54` |
+| `/admin/assessments/[id]/view` | Read-only view of saved answers against the pinned template version. | **Live** | `app/admin/assessments/[id]/view/page.tsx:21-41` |
+| `/admin/assessments/[id]/review` | Raw answers, editable AI report draft, retry/regenerate, and the final approval action. | **Live, AI-dependent** | `app/admin/assessments/[id]/review/page.tsx:17-30`; `app/admin/assessments/[id]/review/review-client.tsx:160-212` |
+| `/admin/review-queue` | Awaiting-review and completed report lists. It is reached from the dashboard rather than the sidebar. | **Live** | `app/admin/review-queue/page.tsx:20-31`; `app/admin/review-queue/page.tsx:72-127` |
+| `/admin/assignments` | Filterable live assignment queue; Matt can edit due dates/instructions or revoke unfinished work. It is not in the sidebar. | **Live** | `app/admin/assignments/page.tsx:117-150`; `app/admin/assignments/page.tsx:175-288` |
+| `/admin/proposals` | Four-column live pipeline: Draft, Sent, Signed, Contract Issued. | **Live** | `app/admin/proposals/page.tsx:7-18`; `app/admin/proposals/page.tsx:69-119` |
+| `/admin/proposals/new` | Active-client and active-service proposal builder with AI scope drafting, VAT calculation, PDF generation, draft save, and send. | **Partial** | `app/admin/proposals/new/page.tsx:11-41`; `components/proposals/advanced-proposal-builder.tsx:161-229`; `app/admin/proposals/actions.ts:216-384` |
+| `/admin/proposals/[id]` | Proposal detail, current PDF, status action, service lines, and issued contract PDF when present. | **Live** | `app/admin/proposals/[id]/page.tsx:31-69`; `app/admin/proposals/[id]/page.tsx:149-210` |
+| `/admin/hours` | Despite the legacy route name, this is the live credit-balance overview. It is not in the sidebar. | **Live** | `app/admin/hours/page.tsx:8-20`; `app/admin/hours/page.tsx:23-88` |
+| `/admin/month-summary` | Live counts and recent rows for the current UTC month. | **Live** | `app/admin/month-summary/page.tsx:9-60`; `app/admin/month-summary/page.tsx:69-123` |
+| `/admin/templates` | Matt's masters and customer-owned templates, split by owner. | **Live, empty production data** | `app/admin/templates/page.tsx:9-46`; `HANDOFF.md:52-55` |
+| `/admin/templates/[id]` | Full builder for Matt-owned templates; read-only inspection for customer-owned templates; assignment action for Matt's templates. | **Live** | `app/admin/templates/[id]/page.tsx:14-57` |
+| `/admin/services` | Live CRUD catalogue used as proposal line items; inactive items remain visible to Matt and are hidden from new proposals. | **Live code, empty production data** | `app/admin/services/page.tsx:19-55`; `lib/data/services-server.ts:47-66`; `HANDOFF.md:52-55` |
+| `/admin/directory` | Live CRUD directory grouped by contractor category. | **Live code, empty production data** | `app/admin/directory/page.tsx:11-41`; `lib/data/contractors-server.ts:45-59`; `HANDOFF.md:52-55` |
+| `/admin/notifications` | The latest 200 successful automated and manually triggered expiry-reminder ledger rows. It is not a complete outbox for every email or n8n event. | **Live but narrow** | `app/admin/notifications/page.tsx:31-47`; `app/admin/compliance/actions.ts:44-115` |
+| `/admin/settings` | Stored logo, email defaults, reminder toggles, credits reference rate, browser-local colours, theme, and a link to workflow errors. | **Partial** | `app/admin/settings/page.tsx:10-44`; `components/admin/settings-form.tsx:76-97`; `components/admin/settings-form.tsx:182-240` |
+| `/admin/errors` | The 50 most recent recorded workflow errors, rendered read-only. There is no retry or resolve control. | **Live but read-only** | `app/admin/errors/page.tsx:8-35`; `app/admin/errors/page.tsx:35-74` |
+
+The admin sidebar exposes Dashboard, Clients, Compliance, Proposals, Workflow Errors, Month Summary, Form Templates, Service Catalog, Contractors, Notifications, and Settings. Assessments, reports, assignments, credit overview, and expiries are reached from dashboards, client records, or direct links (`components/app-sidebar.tsx:30-45`).
+
+### Client portal
+
+| Route | What it actually renders and where the data comes from | State | Evidence |
+|---|---|---|---|
+| `/client` | The signed-in organisation's compliance totals, urgent documents, and credit balance. | **Live** | `app/client/page.tsx:54-87`; `app/client/page.tsx:89-150` |
+| `/client/compliance` | The organisation's stored documents, grouped by category, with view/download links. | **Live** | `app/client/compliance/page.tsx:65-82`; `app/client/compliance/page.tsx:85-120` |
+| `/client/reports` | Report-stage assessments whose draft is ready, failed, or completed; a merely `submitted` client form is excluded. Final rows can download the stored PDF. | **Live, with client handoff gap** | `app/client/reports/page.tsx:26-70`; `app/client/reports/actions.ts:17-47` |
+| `/client/billing` | Current credit balance, last 50 ledger movements, and the PayPal package selector. | **Partial: live data, checkout blocked by credentials** | `app/client/billing/page.tsx:14-39`; `lib/billing/packages.ts:26-30`; `HANDOFF.md:109-117` |
+| `/client/assignments` | Active and completed assigned forms for the organisation. This is the Forms → Assessments navigation destination. | **Live** | `app/client/assignments/page.tsx:9-27`; `app/client/assignments/page.tsx:44-101` |
+| `/client/assignments/[id]` | Assignment instructions, due date, and the choice to fill the assigned version or customise it first. | **Live** | `app/client/assignments/[id]/page.tsx:91-150` |
+| `/client/assignments/[id]/fill` | Resumable fill using the assignment's pinned template version. | **Live, photo previews partial** | `app/client/assignments/actions.ts:98-178`; `app/client/assignments/[id]/fill/page.tsx:21-61` |
+| `/client/assignments/[id]/submission` | Read-only submitted answers rendered against the pinned template. | **Live** | `app/client/assignments/[id]/submission/page.tsx:35-81` |
+| `/client/templates` | Customer-owned templates created from scratch or forked from an assignment. | **Live** | `app/client/templates/page.tsx:8-25`; `app/client/templates/page.tsx:44-78` |
+| `/client/templates/[id]` | The form builder for a template owned by the signed-in organisation. | **Live** | `app/client/templates/[id]/page.tsx:13-31`; `app/client/templates/actions.ts:89-138` |
+| `/client/templates/[id]/fill` | Self-fill a published customer template without an assignment. | **Live** | `app/client/templates/actions.ts:254-332`; `app/client/templates/[id]/fill/page.tsx:30-63` |
+| `/client/proposals` | Sent, Signed, and Contract Issued proposals for the organisation; Drafts are hidden. | **Live** | `app/client/proposals/page.tsx:24-59` |
+| `/client/proposals/[id]` | Tenant-scoped proposal view/download and Accept & Sign action while the proposal is Sent. | **Live** | `app/client/proposals/[id]/page.tsx:21-85`; `app/client/proposals/[id]/page.tsx:115-180` |
+| `/client/contracts` | Issued contract PDFs derived from proposals whose status is Contract Issued. | **Live list** | `app/client/contracts/page.tsx:22-42`; `app/client/contracts/page.tsx:46-95` |
+| `/client/contracts/[id]` | Always returns a not-found page. The source comment claiming contracts have no data backing is stale; the list above is live. | **Not built** | `app/client/contracts/[id]/page.tsx:1-10`; `app/client/contracts/page.tsx:32-42` |
+| `/client/directory` | Active, non-deleted approved contractors. | **Live code, empty production data** | `app/client/directory/page.tsx:6-27`; `lib/data/contractors-server.ts:62-82`; `HANDOFF.md:52-55` |
+| `/client/assessments` | A second live submission-history view with simplified Scheduled/In Progress/Submitted/Completed labels. It is not the main navigation destination. | **Live but overlapping** | `app/client/assessments/page.tsx:23-63`; `app/client/assessments/status.ts:31-40` |
+| `/client/assessments/[id]` | Detail/status page for a tenant-scoped submission and final-report actions when completed. | **Live** | `app/client/assessments/[id]/page.tsx:48-87`; `app/client/assessments/[id]/page.tsx:130-169` |
+
+The client portal's visible navigation is Dashboard, Documents → Compliance/Reports, Forms → Assessments/Templates, Agreements → Proposals/Contracts, Directory, and Billing. It changes to a menu on smaller screens (`app/client/_components/client-portal-nav.tsx:26-56`; `app/client/_components/client-portal-nav.tsx:85-130`).
+
+## Real data flows
+
+### Assessment to report
+
+1. Matt starts an assessment for an active client and published template. The application creates an assignment and a draft submission pinned to that exact template version (`app/admin/assessments/actions.ts:41-112`).
+2. Matt or the client fills the pinned form. On final submit, the server validates the answers, enforces required fields, removes answers hidden by conditional rules, and saves the submission as `submitted` (`app/admin/assessments/actions.ts:261-418`; `app/client/assignments/actions.ts:221-350`).
+3. After an admin-led submission, a background task sends the cleaned answers directly to OpenRouter using `openai/gpt-4o-mini`. Success stores a structured draft and changes the status to `draft_ready_for_review`; failure records a workflow error and changes it to `ai_draft_failed` (`app/admin/assessments/actions.ts:488-637`).
+4. Matt opens Review Report Draft, compares the source answers with the generated text, edits the summary, status, and hazards, or regenerates. None of that creates a final report until he selects **Approve & Generate PDF** (`app/admin/assessments/[id]/review/review-client.tsx:244-395`).
+5. Approval creates a PDF on the server, stores it privately, saves the approved text, changes the submission to `completed`, emails a seven-day link, and returns a five-minute link for Matt. A failed email does not roll back the final PDF; it creates a workflow error (`app/admin/assessments/actions.ts:817-964`).
+6. The client sees live draft/failure/final status in Reports and can request a five-minute view or download link only for its own stored report (`app/client/reports/page.tsx:39-70`; `app/client/reports/actions.ts:17-47`).
+
+Client-submitted assignments do not currently follow step 3. Their action saves `submitted`, completes the assignment, and sends a `client_form_submitted` partner event, but it does not call the report-drafting function. `submitted` rows are excluded from the Review Queue and the client Reports list, while the admin client record links the row to read-only answers rather than the review workspace. A draft can be started only by manually opening `/admin/assessments/[submission ID]/review`, a route not exposed by that normal workflow. This client-to-report handoff is **Partial**, not an automatic pipeline (`app/client/assignments/actions.ts:323-364`; `lib/supabase/dashboard.ts:84-101`; `app/client/reports/page.tsx:39-55`; `app/admin/clients/[id]/page.tsx:203-247`; `app/admin/assessments/[id]/review/review-client.tsx:218-240`).
+
+The assessment n8n webhook is separate from AI generation. It posts only `{ submissionId }` to `N8N_ASSESSMENT_WEBHOOK_URL` after submit. It has a three-second timeout, but no shared-secret header and no `response.ok` check, so an HTTP error response can be treated as success (`app/admin/assessments/actions.ts:449-478`).
+
+### Assigned forms and customer templates
+
+Matt assigns the latest published version of his template to one or more active clients, with optional instructions and due date (`app/admin/assignments/actions.ts:18-73`). The client can:
+
+- fill the pinned version as-is, with a reusable draft and statuses Pending/Assigned → In Progress → Completed (`app/client/assignments/actions.ts:71-96`; `app/client/assignments/actions.ts:123-178`; `app/client/assignments/actions.ts:323-364`);
+- select **Customise first**, which creates a customer-owned fork linked to the original master and rewires the assignment to the forked version; Matt's master is not changed (`app/client/assignments/actions.ts:410-539`);
+- build an organisation-owned template from scratch, save each change as a new version, publish it, and self-fill it without an assignment (`app/client/templates/actions.ts:49-85`; `app/client/templates/actions.ts:89-244`; `app/client/templates/actions.ts:254-332`).
+
+Customer-template self-fill also stops at `submitted`: it stores the answers and sends the partner form event but does not create an AI draft or report (`app/client/templates/actions.ts:471-505`; `app/client/assessments/status.ts:19-40`).
+
+Assignment reminders run daily at 07:00 UTC, select 7-day, 1-day, and overdue milestones, prefer an organisation owner as recipient, and retry after a failed send. Completed recurring assignments create the next occurrence once (`app/api/cron/assignment-scheduler/route.ts:54-142`; `app/api/cron/assignment-scheduler/route.ts:145-208`; `vercel.json:8-11`).
+
+### Proposal to signature to contract
+
+1. Matt selects an active client and active catalogue items. The AI scope helper calls OpenRouter using `gpt-4o-mini`; production fails visibly if the key is missing (`app/admin/proposals/actions.ts:15-74`).
+2. The server recalculates line totals, adds 20% VAT, generates the proposal PDF, stores it privately, and leaves or reuses a Draft row. On the Send path, it continues into signature delivery (`app/admin/proposals/actions.ts:216-384`).
+3. Sending requires an existing PDF and client contact email. The server creates a random single-use token, stores only its hash, hashes the PDF, sets a 30-day expiry, changes the proposal to Sent, and emails the signing link (`app/admin/proposals/actions.ts:93-213`).
+4. The public signing page shows the proposal and one-hour PDF link. The signer enters name/email, draws or types a signature, accepts the terms, and submits (`app/api/sign/[token]/route.ts:99-165`; `components/sign/sign-flow.tsx:243-377`).
+5. Submission atomically consumes the unexpired token, records the signature, IP, browser information, timestamp, and original document hash, then creates a separate stamped PDF and hash. If the evidence row cannot be written, the Signed transition is rolled back so the same link can be retried (`app/api/sign/[token]/route.ts:250-328`; `app/api/sign/[token]/route.ts:330-401`).
+6. A successful online signature attempts to issue the contract automatically. Contract issuance rebuilds the service agreement, adds 20% VAT, stores the PDF, changes the proposal to Contract Issued, and emails a seven-day link. Failure is recorded for Matt and can be retried with **Issue contract** (`app/api/sign/[token]/route.ts:436-467`; `lib/proposals/issue-contract.ts:35-181`).
+7. Matt can record a paper/email signature manually. That stores a clearly marked offline audit row, consumes the online link, and allows contract issue (`app/admin/proposals/actions.ts:566-653`).
+
+Current exceptions:
+
+- Proposal PDF generation/upload errors are swallowed, leaving a Draft with no PDF; the builder still shows “Proposal sent & PDF Generated!” because it receives an ID. Matt can recover with **Generate PDF**, but this is a false-success state (`app/admin/proposals/actions.ts:362-369`; `components/proposals/advanced-proposal-builder.tsx:210-235`).
+- A proposal becomes Sent before delivery is known. A signature-request email failure is logged only to server output and there is no visible delivery status or retry queue (`app/admin/proposals/actions.ts:168-207`).
+- The first-party signature evidence is substantially stronger after the separate signed-copy change, but whether it is the accepted business/legal signing method is still an external decision. **UNVERIFIED**.
+- The client contract list works; the contract detail route does not (`app/client/contracts/page.tsx:32-95`; `app/client/contracts/[id]/page.tsx:1-10`).
+
+### Credit purchase and manual adjustment
+
+The stored unit is whole credits. The database still calls the columns `hours_balance` and `hours_amount`, but migration 026 changes their meaning and adds an editable `credits_per_hour` reference rate, default 4 (`supabase/migrations/026_credits_model.sql:4-18`; `supabase/migrations/026_credits_model.sql:50-57`).
+
+Clients can select 20 credits for £495, 40 for £950, or 80 for £1,800. The application creates a PayPal order using a server-owned price, redirects the client to PayPal, then verifies the returned order's client, package, GBP amount, and completion state before adding credits atomically. Duplicate capture requests do not add credits twice (`lib/billing/packages.ts:26-46`; `app/api/paypal/create-order/route.ts:16-68`; `app/api/paypal/capture-order/route.ts:99-172`).
+
+Matt can add or deduct whole credits from an active client. The database locks the client row, prevents an overdraft, changes the balance, and writes the ledger movement in one operation (`supabase/migrations/026_credits_model.sql:80-121`; `app/admin/clients/actions.ts:282-333`).
+
+Current exceptions:
+
+- Production has PayPal enabled in sandbox mode but both stored credential pairs fail authentication, so no purchase can complete (`HANDOFF.md:109-117`).
+- The page says VAT is included, but there is no generated receipt or invoice email (`HANDOFF.md:57-58`).
+- Credits are intentionally independent of proposals and contracts; no proposal signing automatically changes a credit balance (`HANDOFF.md:15-23`).
+
+### Compliance and notifications
+
+Matt uploads a PDF or image up to 25 MB, chooses a category, and may supply an expiry date. The file and metadata are stored; upload email follows the Settings toggle. Clients can only mint short-lived links for documents belonging to their organisation (`lib/documents/actions.ts:14-145`; `app/client/compliance/actions.ts:6-40`).
+
+The screen thresholds are:
+
+- **Expired:** expiry is before the current instant.
+- **Expiring:** expiry is from now up to, but not including, 30 days ahead.
+- **Current:** expiry is at least 30 days ahead.
+- **No Expiry Date:** a separate admin bucket. The client dashboard currently counts undated documents as Current, while the admin Compliance screen separates them (`app/admin/compliance/page.tsx:49-72`; `app/client/compliance/page.tsx:32-53`; `app/client/page.tsx:97-125`).
+
+These screen buckets compare the stored date with the current instant. Because a date-only value is parsed at midnight, choosing the calendar date “30 days from today” can be slightly less than 30 full days by the time the page is opened and therefore appear Expiring. Use 31 calendar days ahead for a stable Current QA case.
+
+The daily 06:00 UTC reminder job scans from 30 days overdue to 30 days ahead and can issue one notice at each 30/14/7/expired window. A late run catches the latest missed window rather than sending all missed notices. Failure is recorded and retried; success is deduplicated (`app/api/cron/expiry/route.ts:46-95`; `app/api/cron/expiry/route.ts:113-187`; `vercel.json:3-7`).
+
+The expiry job and document-upload path still choose the first client user without deterministic ordering. Assignment reminders have already been corrected to prefer the owner. Until a primary compliance-contact rule is implemented, the expiry/upload/report recipient may not be the intended person (`app/api/cron/expiry/route.ts:137-150`; `lib/documents/actions.ts:104-112`; `app/admin/assessments/actions.ts:855-864`).
+
+## Providers and configuration
+
+| Provider or service | Actual purpose | Current state | Evidence |
+|---|---|---|---|
+| Live data, authentication, private file storage | Accounts, organisation-scoped records, reports, proposals, documents, and form media. | **Live:** all structural migrations through 029 were verified in production. | `supabase/migrations/001_initial_schema.sql:15-215`; `supabase/migrations/001_initial_schema.sql:443-451`; `HANDOFF.md:149-152` |
+| OpenRouter → `openai/gpt-4o-mini` | Assessment report drafts and proposal scope paragraphs. | **Live when the key is valid; output always needs Matt's review.** | `app/admin/assessments/actions.ts:545-580`; `app/admin/proposals/actions.ts:57-74` |
+| Resend | Invites, password resets, expiry notices/digest, upload notices, assignment reminders, report links, signature requests/confirmation, and contract links. | **Partial:** the configured sender domain worked for a production invite/reset test, but full delivery across Gmail, Outlook, and client domains is **UNVERIFIED**. | `lib/notifications/email-templates.ts:21-33`; `lib/notifications/dispatch.ts:180-219`; `HANDOFF.md:35-38` |
+| n8n | Three partner form events and a separate assessment-submitted event. It does not generate AI content, PDFs, or ordinary customer email. | **Partial:** app failures are now recorded, but current downstream form-event workflow is broken after accepting the request. | `lib/notifications/client-form-events.ts:28-72`; `app/admin/assessments/actions.ts:449-478`; `HANDOFF.md:141-144` |
+| PayPal | Client self-service credit purchases. | **Partial:** code path exists; production credentials are invalid. | `lib/paypal.ts:20-45`; `HANDOFF.md:109-117` |
+| Twilio/SMS | No application integration. Generic local authentication configuration comments are not a product feature. | **Not built** | `package.json:12-45`; `HANDOFF.md:141-145` |
+| Offline/PWA | No service worker, offline store/queue, background sync, or install experience. | **Not built** | `HANDOFF.md:141-145`; no implementation found under `app/`, `components/`, `lib/`, or `public/` |
+
+## Database and access model
+
+The core model is organisation-based. `clients` is the organisation; `client_users` links signed-in people to one organisation; `admin_users` grants operator access. Documents, assignments, submissions, ledger entries, and proposals all carry a `client_id` (`supabase/migrations/001_initial_schema.sql:15-40`; `supabase/migrations/001_initial_schema.sql:72-142`; `supabase/migrations/001_initial_schema.sql:148-170`).
+
+Customer templates use polymorphic ownership:
+
+- `owner_type='admin'` with an admin user ID identifies Matt's master;
+- `owner_type='customer'` with a client organisation ID identifies a customer-built or forked template;
+- `parent_template_id` points a fork back to its master and is null for originals (`supabase/migrations/003_form_template_customer_ownership.sql:12-33`).
+
+All main client-data tables have row-level access controls enabled. Later migrations replace dead role claims with membership checks, correct client-visible proposal/submission statuses, constrain client form writes to their own organisation, and repair storage administration policies (`supabase/migrations/001_initial_schema.sql:198-215`; `supabase/migrations/0201_security_rls_hardening.sql:26-113`; `supabase/migrations/022_client_write_policies_and_admin_claim_fixes.sql:25-76`; `supabase/migrations/022_client_write_policies_and_admin_claim_fixes.sql:84-119`). The latest production handoff records live anonymous-write and cross-role probes as denied (`HANDOFF.md:64-66`).
+
+Template saves currently insert new version rows in application code, but the database still allows a customer to update versions belonging to its organisation, and deleting a template cascades to its versions. The application blocks deleting Matt's templates when referenced, but customer deletion does not inspect the result. Strong database immutability for published/referenced versions remains **Partial** (`app/admin/templates/actions.ts:148-215`; `app/admin/templates/actions.ts:292-320`; `app/client/templates/actions.ts:246-252`; `supabase/migrations/004_form_templates_rls_fixes.sql:34-58`).
+
+## Status vocabularies
+
+These are text values rather than database enums, so the application owns the vocabulary.
+
+| Area | Stored values and display meaning | Evidence |
+|---|---|---|
+| Assignment | `assigned` and legacy `pending` both mean not started; then `in_progress`; then `completed`. Revocation uses `deleted_at`. | `app/client/assignments/actions.ts:71-96`; `app/admin/assignments/actions.ts:117-139` |
+| Submission/report | Matt-led work can move `draft` → `submitted` → `draft_ready_for_review` → `completed`; `ai_draft_failed` is the retry state. Client-assigned and customer self-fill work currently stop at `submitted` unless the review route is opened manually. Some client screens collapse the middle states to In Progress. | `app/admin/month-summary/page.tsx:101-123`; `app/client/assessments/status.ts:19-40`; `app/client/assignments/actions.ts:323-364` |
+| Proposal/agreement | `Draft` → `Sent` → `Signed` → `Contract Issued`. | `app/admin/proposals/page.tsx:7-18`; `app/admin/proposals/page.tsx:69-78` |
+| Template | `is_published=false` displays Draft; `is_published=true` displays Published. A latest unpublished version can coexist with older published versions. | `app/admin/templates/page.tsx:20-46`; `app/admin/templates/[id]/page.tsx:32-45` |
+| Compliance | Current, Expiring, Expired, plus No Expiry Date on the admin screen. Boundary: exactly 30 days is Current. | `app/admin/compliance/page.tsx:49-72`; `app/client/compliance/page.tsx:32-38` |
+
+## Test identities and credentials
+
+No complete, current tester credential pair can truthfully be recovered from the repository.
+
+| Identity | What is confirmed | Login instruction |
+|---|---|---|
+| Matt Robinson | Production contains only `mathew.robinson@888safetyandtraining.com` in `admin_users`. No password is stored in the repository. | Use `/login/admin` with Matt's existing password, or use **Forgot?** to set a new one. Password: **UNVERIFIED**. `HANDOFF.md:159-163` |
+| Sarah Whitfield, Facilities Manager, Hallam House Care Home | The name and organisation appear in test/seed fixtures, but there is no confirmed Sarah authentication account or password. Production currently has zero clients. | Matt must create Hallam House, add Sarah under Access, and send/copy the invite link before QA. Credentials: **UNVERIFIED**. `tests/auth-helpers/client-context-with-identity.test.ts:93-105`; `HANDOFF.md:52-55`; `HANDOFF.md:162-163` |
+| Repository test admin | Seed metadata links `admin@test.com` to Matt, but the seed explicitly says the authentication user must be created separately and supplies no password. | Not a confirmed login. `supabase/seed.sql:132-143` |
+| Repository test client | A helper can create `user@test.com` using `TEST_CLIENT_PASSWORD` or the unsafe fallback `test123`, but only when someone runs it against an environment. It is not Sarah and it is absent from current production. | Staging/local helper only; never assume it exists. `scripts/ensure-client-test-user.mjs:21-35`; `HANDOFF.md:64-66` |
+
+All test passwords, invite links, and helper accounts must be replaced or deleted before handover. The hardcoded fallback `test123` must never be treated as a go-live credential.
+
+Both login pages call the same password authentication service, then check the account's role. The client page signs an operator back out with an operator-access message; the admin page signs a client back out with a client-portal message. An already signed-in user who visits a login URL is redirected by role (`app/login/page.tsx:18-50`; `app/login/admin/page.tsx:17-49`; `lib/supabase/session.ts:64-103`).
+
+## Current readiness ledger
+
+### Live enough for controlled testing
+
+- Live organisation and client-access management, with invite/reset flow production-tested (`app/admin/clients/actions.ts:24-79`; `app/admin/clients/actions.ts:337-519`; `HANDOFF.md:35-38`).
+- Live dashboards, compliance documents, manual expiry reminders, assignments, customer form building/forking, report generation/review, proposal pipeline, first-party signing, contract generation/list, manual credits, and contractor directory.
+- Live tenant and role controls, including a second role check in both protected layouts and production denial probes (`app/admin/layout.tsx:18-22`; `app/client/layout.tsx:17-22`; `HANDOFF.md:64-66`).
+- Live credit denomination and editable reference rate, with both balance functions restricted to the server role (`supabase/migrations/026_credits_model.sql:4-18`; `supabase/migrations/026_credits_model.sql:123-130`; `HANDOFF.md:64-66`).
+
+### Partial or held for controlled testing only
+
+| Area | Why it is not a go-live pass |
+|---|---|
+| Production setup | Production has no clients, templates, service catalogue, contractors, or proposals. Matt cannot run the core assessment or proposal workflow until he supplies and approves the real content (`HANDOFF.md:52-55`). |
+| Client onboarding | The New Client dialog captures business name, primary contact, email, and optional phone, then creates that contact as the portal owner. It has no site-address or job-title field, even though the server action can accept a site address; no client-profile edit action was found. Sarah's “Facilities Manager” title is therefore test context, not stored account data (`components/clients/new-client-dialog.tsx:20-49`; `components/clients/new-client-dialog.tsx:89-124`; `app/admin/clients/actions.ts:11-17`; `app/admin/clients/actions.ts:35-69`). |
+| PayPal | Credentials fail both sandbox and live authentication; real-money test is blocked (`HANDOFF.md:109-117`). |
+| Email | Invite and password-reset delivery were proven once, but delivery across normal client mail systems, domain alignment, monitored replies, and retry operations remain **UNVERIFIED** (`HANDOFF.md:35-38`; `HANDOFF.md:141-144`). |
+| n8n | Client-form events are sent, but the downstream workflow currently errors because it does not resolve `client_id`; the assessment webhook is unauthenticated and ignores HTTP error status (`HANDOFF.md:141-144`; `app/admin/assessments/actions.ts:449-478`). |
+| AI reports | Drafting is wired, but sparse forms can produce invented detail. Matt's review is the controlling safety step, and the local PAS 79 matrix still requires his professional approval (`HANDOFF.md:141-145`; `lib/form-builder/risk/pas79.ts:4-35`). |
+| Client assignment to report | A client submission is saved and completes its assignment, but it does not automatically generate a draft or enter Review Queue/Reports. The client-facing status says Matt is working even though no report task is started (`app/client/assignments/actions.ts:323-364`; `lib/supabase/dashboard.ts:84-101`; `app/client/assessments/[id]/page.tsx:163-174`). |
+| Proposal delivery | PDF failure can surface as success, and signature-request delivery failure is not visible in the application (`app/admin/proposals/actions.ts:362-369`; `components/proposals/advanced-proposal-builder.tsx:210-235`; `app/admin/proposals/actions.ts:195-207`). |
+| First-party signing | Separate immutable original/stamped copies are live for new signatures, but formal acceptance of this signing method is **UNVERIFIED**. |
+| Photos | New photos upload, but a committed thumbnail renders the private storage path directly after upload/reload, and removing a photo leaves its file/audit row behind. A Photos field marked Required is currently presented as “recommended” and does not block submission (`components/form-interpreter/multi-photo-field-renderer.tsx:253-258`; `components/form-interpreter/multi-photo-field-renderer.tsx:272-310`). |
+| Settings | Logo and toggles persist. Colours are browser-local and do not reach clients or PDFs. Sign-off/sender fields persist, but actual email branding/sender comes from environment configuration (`lib/branding.ts:10-13`; `lib/branding.ts:27-67`; `lib/notifications/dispatch.ts:202-211`; `lib/notifications/email-templates.ts:19-33`). |
+| Public brand and contact details | The client footer shows 888 Safety & Training and `0161 552 0918`; generated PDFs show 888 Safety branding with `0114 555 0188`; email defaults to “Merlin Safety System” unless an environment value overrides it. The public identity must be agreed and aligned before handover (`app/client/layout.tsx:52-60`; `components/pdf/report-document.tsx:149-155`; `lib/notifications/email-templates.ts:19-33`; `HANDOFF.md:141-142`). |
+| Client failure states | Several client pages return an empty list after a data error, so an outage can look like “no records” (`app/client/compliance/page.tsx:70-82`; `app/client/reports/page.tsx:41-70`; `app/client/proposals/page.tsx:34-59`). |
+| Dependency security | Layout defence was added, but the repository still uses the audited `16.2.4` application dependency and the upgrade remains pending (`package.json:32`; `app/admin/layout.tsx:18-22`). |
+| Password reset | The public action is enumeration-safe in its response but has no active rate limit. The local `030_rate_limit.sql` and helper are uncommitted and not imported or called by the action, so this is **Staged (not live)** rather than fixed (`app/login/forgot/actions.ts:1-46`; `lib/rate-limit.ts:1-53`; `supabase/migrations/030_rate_limit.sql:32-99`). |
+| Data governance | Processor disclosure, retention, access-audit, export, region, and approved privacy wording are **UNVERIFIED**. Assessment answers leave the platform for OpenRouter (`app/admin/assessments/actions.ts:545-580`; `pre-launch-audit.md:36`). |
+
+### Not built
+
+- Speech-to-text.
+- SMS/Twilio notifications.
+- Offline/PWA operation.
+- Client contract detail page.
+- Billing receipt or invoice generation.
+- A retry/resolve workflow inside Workflow Errors.
+
+## Pending dependencies and decisions
+
+| Dependency or decision | What it unlocks | Current status |
+|---|---|---|
+| Matt's real FRA/site-risk questions and approved risk matrix | A usable master template and trustworthy computed risk wording | **Needed; production has zero templates.** |
+| Client profile fields/editing decision | A saved site address and job title that Matt can correct in the interface | **Not available in the current onboarding UI.** |
+| Matt-approved service list and prices | Proposal creation | **Seed catalogue exists but was deliberately not loaded.** |
+| Valid PayPal Live Client ID and newly generated secret | Real-money purchase test and credit top-up | **Blocked outside the repository.** |
+| One public brand, phone number, sender, verified domain alignment, monitored reply mailbox, and multi-provider delivery tests | Consistent and dependable invites, reports, proposals, contracts, and reminders | **Partly configured; identity is inconsistent and end-to-end deliverability is UNVERIFIED.** |
+| n8n workflow fix for `client_id`, plus an authenticated assessment webhook contract | Dependable partner automation | **App dispatch exists; downstream and webhook hardening pending.** |
+| Client-submission report handoff | Put client-completed assessments into Matt's visible drafting/review workflow | **Not connected in the normal UI.** |
+| Written acceptance of first-party signing | Business/legal sign-off on proposal acceptance | **UNVERIFIED.** |
+| Speech-to-text implementation choice | Sold dictation workflow | **Not built.** |
+| Decision on SMS and offline scope | Mobile/offline field operation and text alerts | **Not built.** |
+| Approved primary compliance contact rule | Deterministic reminder/upload/report recipient | **Not built.** |
+| Password-reset rate-limit design and deployment | Stops reset-email flooding and timing leakage | **Local staging only; not live.** |
+| Dependency upgrade and full release gates | Closes the remaining audited dependency exposure | **Pending.** |
+| Privacy/retention/processor decisions | Responsible handling of client assessment data | **UNVERIFIED.** |
