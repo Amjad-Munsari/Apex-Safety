@@ -4,7 +4,7 @@
 
 **First full draft — 25 July 2026**
 
-This manual describes the current source snapshot. It is suitable for controlled testing, but the production account is not ready for normal client work until the setup and dependency items in Part 1 are completed. Several recent corrections are marked **Staged for deployment**; deploy that fix set, including migration 030, before testing those corrected behaviours.
+This manual describes the source and production state checked on 25 July 2026. It is suitable for controlled testing, but the production account is not ready for normal client work until the setup and dependency items in Part 1 are completed. The recent correction set and migration 030 are deployed.
 
 # Part 1 — Overview
 
@@ -116,7 +116,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - Compliance upload, status, download, and catch-up reminders are working.
 - Matt and clients can build templates; clients can fork a master without changing Matt's original.
 - Assigned forms, resumable drafts, validation, recurrence, and reminders are working.
-- Report drafting, Matt's review step, final PDF creation, storage, and client download are working when the AI service and email are available.
+- Report drafting, Matt's review step, final PDF creation, storage, email delivery, and client download are working when the AI service is available.
 - Proposal creation, first-party signing, separate original/signed PDFs, and contract generation are implemented.
 - Credits are the stored balance unit. The editable default reference rate is four credits per hour.
 - The previously open payment-credit permission fault has been fixed and checked in production.
@@ -124,19 +124,19 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 **Partial or held**
 
 - PayPal cannot complete a purchase because the current production credentials are invalid. Do not test with real money until the correct live credentials are supplied and a controlled purchase plan is agreed.
-- Email invite and reset delivery worked in a production check, but normal delivery to client domains, Gmail, and Outlook has not been proven. The application sends through Resend, not SMTP; its sender domain, SPF/DKIM/DMARC alignment, Reply-To, and inbox delivery still need confirmation. A successful screen message is not proof that the message reached the inbox.
-- The partner automation receives form events, but its current downstream workflow cannot turn the organisation ID into a recipient. **Staged for deployment:** the separate assessment webhook now requires a shared secret, checks the response, and records failures; the same secret must be configured in the deployed platform and n8n.
-- **Staged for deployment:** client-assigned and client-owned form submissions now start the same report-drafting process as Matt's submissions. Do not expect this in production until the fix set is deployed.
-- **Staged for deployment:** a proposal PDF failure now leaves the recoverable Draft but shows an error instead of success. A signature-email failure now creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
-- **Staged for deployment:** saved photos now use temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
+- Email delivery is live and owner-confirmed as working. The system still has no complete sent-message outbox or automatic retry for every failed message, so use Workflow Errors and the recipient's inbox when investigating an individual send.
+- Partner automation is held: both production n8n secrets are empty or absent, so the platform blocks the three client-form events and the separate assessment event. Matching secrets must be configured and enforced in the platform and n8n; the form-event workflow then still needs its organisation-to-recipient lookup fixed.
+- Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
+- A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
+- Saved photos use temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
 - The client Contracts list works, but individual contract detail URLs do not.
-- **Staged for deployment:** New Client accepts a site address and the client record has Edit details for organisation and primary-contact fields. Job title is still not stored, so “Facilities Manager” remains part of Sarah's QA persona only.
-- **Staged for deployment:** Compliance, Reports, and Proposals show a visible load error instead of pretending a failed query returned no records.
+- New Client accepts a site address and the client record has Edit details for organisation and primary-contact fields. Job title is still not stored, so “Facilities Manager” remains part of Sarah's QA persona only.
+- Compliance, Reports, and Proposals show a visible load error instead of pretending a failed query returned no records.
 - Settings colours are saved only in Matt's current browser. They do not follow him to another device, change the client's browser, or recolour PDFs.
 - The displayed sender and sign-off settings are stored, but the real email sender and branding are controlled outside the page.
 - Public contact details are inconsistent: the client footer shows `0161 552 0918`, while generated PDFs show `0114 555 0188`; email also defaults to the Merlin name unless its deployment setting is changed. Agree one public identity before handover.
 - The current risk-score matrix still needs Matt's professional approval. Do not treat the computed wording as approved fire-safety guidance yet.
-- **Staged for deployment:** password reset is limited to three requests per account and 20 per source address each hour. This is not active until migration 030 and the application fix are deployed.
+- Password reset is limited to three requests per account and 20 per source address each hour; the application change and migration 030 are live.
 - The application dependency version identified in the earlier security audit has not been upgraded, although a second server-side role check has been added.
 
 **Not built**
@@ -155,17 +155,15 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 | Matt's approved FRA/site-risk questions | A real master assessment that can be assigned | Required; no production templates |
 | Matt's approved risk matrix and wording | Safe use of the Computed field | Required |
 | Matt-approved service names and current prices | Proposal creation | Required; catalogue deliberately not loaded |
-| Job-title storage decision | Store a contact role such as “Facilities Manager” | Not modelled; site address and profile editing are staged for deployment |
+| Job-title storage decision | Store a contact role such as “Facilities Manager” | Not modelled; site address and profile editing are live |
 | Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
 | Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
-| One public brand and phone number; verified Resend sender domain, SPF/DKIM/DMARC, Reply-To, and inbox tests | Consistent PDFs, portal contact details, and dependable email | Identity is inconsistent; full delivery unverified; SMTP is not the current app transport |
-| Partner recipient fix and matching assessment-webhook secret | Working partner automation after the platform sends an event | Recipient lookup pending; webhook hardening staged for deployment |
-| Deploy client-submission report handoff | Move client-completed forms into Matt's visible draft/review queue | Connected locally; deployment not confirmed |
+| One public brand, phone number, sender, and monitored reply mailbox | Consistent portal, PDF, and email identity | Delivery works; identity is inconsistent |
+| Partner recipient fix and matching secrets for both n8n webhook paths | Working partner automation after the platform sends an event | Both event paths are blocked by empty or missing secrets; recipient lookup also remains pending |
 | Approved first-party signing approach | Formal acceptance of the in-app signature method | Unverified |
 | Primary compliance-contact rule | Predictable reminder recipient | Not built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
 | SMS and offline scope decision | Text alerts and offline field work | Not built |
-| Migration 030 and password-reset deployment | Protection against reset-email flooding | Code integrated; migration/deployment not confirmed |
 | Privacy, processor, retention, and access decisions | Responsible handling of assessment data | Unverified |
 
 # Part 2 — Module Guide
@@ -194,7 +192,7 @@ Counts and lists are read when the page opens. “Items need you today” combin
 
 - If a count differs from a list, refresh once and open the source section.
 - If the page says there is work but no card appears, check Workflow Errors and the full Compliance or Review Queue page.
-- A newly submitted form is not counted as a draft while the background drafting step is still running. After the staged handoff is deployed, it should move to Awaiting Review or AI Draft Failed.
+- A newly submitted form is not counted as a draft while the background drafting step is still running. It should then move to Awaiting Review or AI Draft Failed.
 
 ### Where to find things
 
@@ -216,7 +214,7 @@ Creating a client saves the organisation, primary contact, email, optional phone
 
 ### What's live vs. what's pending
 
-**Live:** organisation, primary contact, access, deactivate, and delete flows. **Staged for deployment:** site address during onboarding and Edit details on the client record. **Pending:** job title is not modelled, and production is empty, so Hallam House and Sarah must be created for QA.
+**Live:** organisation, primary contact, site address, Edit details, access, deactivate, and delete flows. **Pending:** job title is not modelled, and production is empty, so Hallam House and Sarah must be created for QA.
 
 ### Common situations
 
@@ -244,7 +242,7 @@ Matt uploads a PDF or image up to 25 MB, chooses a category, and may set an expi
 
 ### What's live vs. what's pending
 
-**Live:** upload, delete, status, download, daily 30/14/7/expired reminders, and admin digest. **Pending:** the reminder recipient is the first portal user rather than a named compliance contact, and broad email delivery is unverified.
+**Live:** upload, delete, status, download, email delivery, daily 30/14/7/expired reminders, and admin digest. **Pending:** the reminder recipient is the first portal user rather than a named compliance contact.
 
 ### Common situations
 
@@ -264,7 +262,7 @@ Matt can start and complete an assessment, or assign a published form for the cl
 
 ### How it works
 
-Starting an assessment creates a draft. Required and conditional fields are checked when any form is submitted. Matt can submit his own assessment, and a client can fill the assigned version, customise it first, or self-fill a client-owned template. The staged fix sends every committed submission into the same report-drafting process.
+Starting an assessment creates a draft. Required and conditional fields are checked when any form is submitted. Matt can submit his own assessment, and a client can fill the assigned version, customise it first, or self-fill a client-owned template. Every committed submission enters the same report-drafting process.
 
 ### Your daily workflow
 
@@ -274,14 +272,14 @@ Starting an assessment creates a draft. Required and conditional fields are chec
 
 ### What's live vs. what's pending
 
-**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, and fork-on-fill. **Staged for deployment:** client-submission report handoff, private photo previews, and complete photo removal. **Not built:** speech-to-text and offline work.
+**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, fork-on-fill, client-submission report handoff, private photo previews, and complete photo removal. **Not built:** speech-to-text and offline work.
 
 ### Common situations
 
 - A revoked assignment cannot be reopened.
 - A completed assignment cannot be edited.
 - A second submit is rejected instead of creating a duplicate.
-- After the staged handoff is deployed, a completed client assignment should move through drafting and appear in Review Queue or AI Draft Failed. It may remain Submitted briefly while the background step runs.
+- A completed client assignment should move through drafting and appear in Review Queue or AI Draft Failed. It may remain Submitted briefly while the background step runs.
 - A Photos field marked Required is shown as recommended and does not block submission.
 - The review panel is labelled Raw Answers. There is no speech recording.
 
@@ -333,7 +331,7 @@ Matt selects an active client and services. He can write the scope or ask the dr
 
 ### What's live vs. what's pending
 
-**Live:** Draft/Sent/Signed/Issued pipeline, catalogue lines, custom price where needed, VAT, PDF, and signing link. **Staged for deployment:** PDF failures surface as errors and signature-email failures produce a warning plus Workflow Error. **Partial:** delivery failure does not change Sent and there is no automatic retry.
+**Live:** Draft/Sent/Signed/Issued pipeline, catalogue lines, custom price where needed, VAT, PDF, signing link, visible PDF failures, and a warning plus Workflow Error when a signature email fails. **Partial:** delivery failure does not change Sent and there is no automatic retry.
 
 ### Common situations
 
@@ -645,7 +643,7 @@ Each click creates a short-lived link to a private file. The client cannot uploa
 
 ### What's live vs. what's pending
 
-**Live:** organisation-scoped list and short-lived links. **Staged for deployment:** a failed data load now shows an error instead of “No documents yet.”
+**Live:** organisation-scoped list, short-lived links, and a visible error instead of “No documents yet” when data loading fails.
 
 ### Common situations
 
@@ -678,7 +676,7 @@ Only completed rows have a final PDF. Selecting view or download creates a short
 
 - Draft means Matt has not approved the final report.
 - Pending after an AI failure needs Matt's attention; the client cannot retry it.
-- After the staged handoff is deployed, a client-completed form may remain absent briefly while drafting runs. If it never appears, Matt should check Workflow Errors.
+- A client-completed form may remain absent briefly while drafting runs. If it never appears, Matt should check Workflow Errors.
 
 ### Where to find things
 
@@ -720,7 +718,7 @@ Forms → Assessments shows work assigned by Matt, including due dates, instruct
 
 ### How it works
 
-Opening a form creates or resumes one draft. Fill as-is keeps Matt's version; Customise first creates a client-owned fork. Submission completes the assignment, can create the next recurring occurrence, and, in the staged fix, starts report drafting.
+Opening a form creates or resumes one draft. Fill as-is keeps Matt's version; Customise first creates a client-owned fork. Submission completes the assignment, can create the next recurring occurrence, and starts report drafting.
 
 ### Your daily workflow
 
@@ -728,7 +726,7 @@ Opening a form creates or resumes one draft. Fill as-is keeps Matt's version; Cu
 
 ### What's live vs. what's pending
 
-**Live:** assignment, resume, validation, submit, reminders, and recurrence. **Staged for deployment:** report handoff, saved-photo previews, and stored-photo removal. **Not built:** speech and offline.
+**Live:** assignment, resume, validation, submit, reminders, recurrence, report handoff, saved-photo previews, and stored-photo removal. **Not built:** speech and offline.
 
 ### Common situations
 
@@ -748,7 +746,7 @@ Clients can build organisation-owned forms, publish them, and fill them without 
 
 ### How it works
 
-Each save creates a new draft version. Publish creates a published version. A fork shows that it came from Matt's master but remains owned by the client's organisation. In the staged fix, self-fill saves the answers and starts report drafting.
+Each save creates a new draft version. Publish creates a published version. A fork shows that it came from Matt's master but remains owned by the client's organisation. Self-fill saves the answers and starts report drafting.
 
 ### Your daily workflow
 
@@ -756,7 +754,7 @@ Each save creates a new draft version. Publish creates a published version. A fo
 
 ### What's live vs. what's pending
 
-**Live:** create, save, publish, fill, fork, and delete. **Staged for deployment:** self-fill report handoff. **Partial:** deletion is permanent, and referenced-version protection needs further hardening.
+**Live:** create, save, publish, fill, fork, delete, and self-fill report handoff. **Partial:** deletion is permanent, and referenced-version protection needs further hardening.
 
 ### Common situations
 
@@ -866,7 +864,7 @@ Reminder email windows are 30 days, 14 days, 7 days, and expired. If a run was m
 |---|---|
 | **Pending / Assigned** | Matt assigned the form; the client has not started |
 | **In Progress** | A draft exists and can be resumed |
-| **Submitted** | Answers are committed and no longer editable; after the staged handoff is deployed, this is the brief state before drafting succeeds or fails |
+| **Submitted** | Answers are committed and no longer editable; this is normally the brief state before drafting succeeds or fails |
 | **Awaiting Review** | The report draft is ready for Matt |
 | **AI Draft Failed** | Drafting failed; Matt can inspect the error and retry |
 | **Completed / Final** | Matt approved the report and the PDF exists |
@@ -941,14 +939,12 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - Matt's FRA/site-risk questions and approved risk matrix.
 - Matt-approved service catalogue and prices.
 - Valid PayPal live credentials and controlled payment test plan.
-- Proven email delivery and one agreed public brand/sender.
-- Partner automation recipient lookup and deployment of the protected assessment webhook.
-- Deployment of the client-submission-to-report handoff.
+- One agreed public brand/sender; email delivery itself is working.
+- Partner automation recipient lookup and matching secrets for both protected n8n webhook paths.
 - Formal first-party signing acceptance.
 - Primary compliance-contact rule.
 - Speech-to-text.
 - SMS and offline scope.
-- Migration 030 and deployment of the password-reset rate limit.
 - Client contract detail route.
 - Billing receipt/invoice.
 - Privacy, retention, processor, and access decisions.
@@ -1000,7 +996,7 @@ Confirm the exact email, sign out fully, clear the private window, and ask Matt 
 
 ### Known gaps until dependencies land
 
-Sarah has no current production account. Create and invite her before running this walkthrough. The reset-limit expectation requires migration 030 and the staged application deployment; do not flood a real inbox to test the threshold manually.
+Sarah has no current production account. Create and invite her before running this walkthrough. The reset limit is live, but do not flood a real inbox to test the threshold manually.
 
 ## QA 2 — Create Hallam House and invite Sarah
 
@@ -1034,7 +1030,7 @@ Check the Access tab, Sarah's spam folder, Workflow Errors, and the copied fallb
 
 ### Known gaps until dependencies land
 
-Email delivery outside the tested sender path is unverified, so successful receipt is part of QA, not assumed. Job title remains unmodelled; the site-address and Edit details checks require the staged fix deployment.
+Email delivery is working; an individual missing message should still be checked in the recipient inbox and Workflow Errors. Job title remains unmodelled.
 
 ## QA 3 — Compliance document and expiry status
 
@@ -1068,7 +1064,7 @@ Check Compliance filters, the client record's Documents tab, Workflow Errors, an
 
 ### Known gaps until dependencies land
 
-The reminder recipient is not a named compliance contact, and full inbox deliverability is unverified.
+The reminder recipient is not a named compliance contact.
 
 ## QA 4 — Build and publish Matt's master template
 
@@ -1119,7 +1115,7 @@ QA 2 and QA 4 must be complete. Choose a due date at least eight days ahead if r
 8. **Client:** Complete all required fields. Add a test photo, wait until its upload finishes, leave and reopen the draft, confirm the saved preview appears, remove it, reload to confirm it stays removed, then add one final test photo.
 9. **Client:** Stop before Submit and review every answer. Submit is the final commit point and the form becomes read-only.
 10. **Client:** Submit once and confirm the assignment moves to Completed and submitted answers can be opened.
-11. **Matt:** Confirm the assignment and submission appear under Hallam House. After the staged fix is deployed, refresh Review Queue until the submission becomes Awaiting Review or AI Draft Failed; it may remain Submitted briefly while drafting runs.
+11. **Matt:** Confirm the assignment and submission appear under Hallam House. Refresh Review Queue until the submission becomes Awaiting Review or AI Draft Failed; it may remain Submitted briefly while drafting runs.
 
 ### Errors / exception states you might see
 
@@ -1137,7 +1133,7 @@ Return to the assignment list before retrying. If it says Completed, do not subm
 
 ### Known gaps until dependencies land
 
-The corrected handoff and photo checks require the staged fix deployment. Speech-to-text and offline queuing remain absent, and Required Photos remains non-blocking.
+Speech-to-text and offline queuing remain absent, and Required Photos remains non-blocking.
 
 ## QA 6 — Customise first and customer-owned templates
 
@@ -1153,7 +1149,7 @@ Create a fresh second assignment from Matt's master so QA 5's completed assignme
 6. **Client:** Fill and submit the forked form.
 7. **Matt:** Open Form Templates and confirm the client template appears under Client templates and is read-only.
 8. **Matt:** Open the master and confirm its fields did not change.
-9. **Client:** Create a separate template from scratch, publish it, and self-fill it without an assignment. After deployment of the staged handoff, confirm the answers are saved and the submission reaches Review Queue or AI Draft Failed.
+9. **Client:** Create a separate template from scratch, publish it, and self-fill it without an assignment. Confirm the answers are saved and the submission reaches Review Queue or AI Draft Failed.
 
 ### Errors / exception states you might see
 
@@ -1170,7 +1166,7 @@ Do not delete either template. Record the two names and version numbers, then ch
 
 ### Known gaps until dependencies land
 
-The self-fill report check requires the staged fix deployment. Published-version immutability and customer deletion failure handling need further hardening.
+Published-version immutability and customer deletion failure handling need further hardening.
 
 ## QA 7 — Admin assessment, draft review, and final report
 
@@ -1205,7 +1201,7 @@ Do not approve. Copy the raw answers and draft, take a screenshot, and record wh
 
 ### Known gaps until dependencies land
 
-Risk wording is unapproved, sparse answers can lead to invented detail, email delivery is unverified, and dictation is absent.
+Risk wording is unapproved, sparse answers can lead to invented detail, and dictation is absent.
 
 ## QA 8 — Service catalogue and proposal draft
 
@@ -1226,7 +1222,7 @@ Use test services and prices that cannot be mistaken for real quotes. Hallam Hou
 
 - Missing drafting-service configuration should show an error in production.
 - A PDF generation or upload failure should show that the proposal was retained as Draft and could not produce its PDF.
-- If the builder reports success without a working PDF after the staged fix is deployed, log it as a regression.
+- If the builder reports success without a working PDF, log it as a regression.
 
 ### When nothing looks wrong but you want to be sure
 
@@ -1261,7 +1257,7 @@ Use a controlled Sarah inbox and an explicitly test-only proposal. Agree that th
 
 - **Expired:** send a new link.
 - **Already signed:** do not create a second signature.
-- Proposal says Sent but inbox is empty: the staged fix should warn Matt and add a `proposal_signature_request` Workflow Error. Use the portal while delivery is resolved; there is no automatic retry.
+- Proposal says Sent but inbox is empty: Matt should see a warning and a `proposal_signature_request` Workflow Error. Use the portal while that individual delivery is resolved; there is no automatic retry.
 - Auto-issue can fail after signature; the signature remains valid and Matt can retry contract issue.
 
 ### When nothing looks wrong but you want to be sure
@@ -1274,7 +1270,7 @@ Do not mark a proposal manually signed to hide an online failure. Preserve the l
 
 ### Known gaps until dependencies land
 
-First-party signing needs formal acceptance, email delivery is unverified, and the client contract detail route is absent.
+First-party signing needs formal acceptance, and the client contract detail route is absent.
 
 ## QA 10 — Manual credits and PayPal
 
@@ -1386,7 +1382,7 @@ Complete the client, compliance, client-assignment, Matt-led report, proposal, a
 2. **Matt:** Open Clients and confirm Hallam House and its credit balance match the dashboard.
 3. **Matt:** Open Compliance and compare the Expired and Expiring lists with the dashboard cards.
 4. **Matt:** Open Review Queue. Confirm the Matt-led draft or completed report appears in the right tab.
-5. **Matt:** Confirm the client-submitted assignment from QA 5 reached Awaiting Review or AI Draft Failed after the staged handoff ran. A short Submitted period is expected; a submission that stays there needs investigation.
+5. **Matt:** Confirm the client-submitted assignment from QA 5 reached Awaiting Review or AI Draft Failed. A short Submitted period is expected; a submission that stays there needs investigation.
 6. **Matt:** Open Proposals and Workflow Errors and reconcile their current rows with the dashboard.
 7. **Matt:** Open Month Summary and compare records created in the current UTC month with the underlying assessment, upload, proposal, and error lists.
 8. **Client:** Open Dashboard and compare its document totals and credit balance with Documents → Compliance and Billing.
@@ -1394,7 +1390,7 @@ Complete the client, compliance, client-assignment, Matt-led report, proposal, a
 
 ### Errors / exception states you might see
 
-- On Compliance, Reports, and Proposals, a failed client data load should show an error panel after the staged fix. “No records” should be reserved for a successful empty result.
+- On Compliance, Reports, and Proposals, a failed client data load should show an error panel. “No records” should be reserved for a successful empty result.
 - A recently changed background status can need one refresh.
 - An undated document counts as Current on the client dashboard but has its own admin bucket.
 
@@ -1408,7 +1404,7 @@ Check the underlying list, current status, record date, and Workflow Errors. For
 
 ### Known gaps until dependencies land
 
-Dashboard counts do not prove inbox, PayPal, or partner-workflow health. The client-report and load-error expectations require the staged fix deployment.
+Dashboard counts do not prove an individual message reached its inbox or that PayPal and partner workflows are healthy.
 
 ## QA 14 — Tablet and mobile pass
 
@@ -1429,7 +1425,7 @@ Use Matt's Surface Pro or iPad for admin assessment work and a real phone-sized 
 
 - Losing connection can lose unsaved work or leave an upload incomplete.
 - Private-file links can expire and should be opened again from the portal.
-- A saved-photo preview error should produce a visible message; repeated blank spinners or broken images after the staged fix are regressions.
+- A saved-photo preview error should produce a visible message; repeated blank spinners or broken images are regressions.
 
 ### When nothing looks wrong but you want to be sure
 
