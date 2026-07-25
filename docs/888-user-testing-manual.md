@@ -131,6 +131,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 
 - PayPal cannot complete a purchase because the current production credentials are invalid. Do not test with real money until the correct live credentials are supplied and a controlled purchase plan is agreed.
 - Email delivery is live and owner-confirmed as working. The system still has no complete sent-message outbox or automatic retry for every failed message, so use Workflow Errors and the recipient's inbox when investigating an individual send.
+- Partner-notice failure logging is best-effort. An absent assessment webhook address is skipped, and an error while writing the error row can leave Workflow Errors empty. The client event waits up to eight seconds and the assessment event waits up to 15, while the partner workflow may continue for 30 seconds, so a timeout can be followed by a late admin email.
 - The sole n8n account does not have MFA enabled, two unused mail credentials remain stored there, and n8n reports one available bug-fix update. The audit key was shared in chat and still needs rotation. The old general webhook secret has already been rotated at both ends and its two retained failure records were deleted. These are partner-account hardening tasks, separate from the live notice paths.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
 - A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
@@ -586,7 +587,7 @@ Workflow Errors shows the latest failures recorded inside the platform by report
 
 ### How it works
 
-Each row explains the failure type and any recognised client, form, proposal, or assignment detail. The page is read-only. For partner notices, the platform now accepts success only when the final admin email has been accepted; a rejection, timeout, empty success, or missing final receipt is recorded here. The partner service also sends Matt a separate failure alert when one of its workflows fails.
+Each row explains the failure type and any recognised client, form, proposal, or assignment detail. The page is read-only. For partner notices, the platform accepts success only when the final admin email has been accepted; after a rejection, timeout, empty success, or missing final receipt it attempts to add a row here. That audit write is best-effort, and a missing assessment webhook address is skipped. The partner service also sends Matt a separate failure alert when one of its workflows fails.
 
 ### Your daily workflow
 
@@ -599,6 +600,8 @@ Each row explains the failure type and any recognised client, form, proposal, or
 ### Common situations
 
 - “No operational errors detected” can mean either that no rows were returned or that the error log itself could not be read. It does not prove PayPal, inbox delivery, or n8n is healthy.
+- A partner notice can fail without a row if the audit write fails; an assessment notice also leaves no row when its webhook address is absent.
+- A timeout can be followed by a late email because the platform waits less time than the partner workflow is allowed to run. Check the saved record and inbox before repeating anything.
 - The two historical partner failures that retained the old secret were deleted after the coordinated rotation. Execution history is not a success outbox.
 - Avoid repeating a payment or signature action until its current state is checked.
 
@@ -761,12 +764,13 @@ Each save creates a new draft version. Publish creates a published version. A fo
 
 ### What's live vs. what's pending
 
-**Live:** create, append-only save/publish, fill, fork, soft delete, protected referenced versions, and self-fill report handoff.
+**Partial:** create, append-only save/publish, fill, fork, soft delete, protected referenced versions, and self-fill report handoff work. Create-from-scratch does not verify that its first blank version was stored before returning and sending Matt's activity notice, so always open and save a new template once before relying on it.
 
 ### Common situations
 
 - A template must have a published version before self-fill.
 - Matt can view a client template but cannot edit it.
+- If a newly created template is listed but will not open or save, stop instead of recreating it repeatedly. Its first blank version may not have been stored even though Matt received the activity notice.
 
 ### Where to find things
 
@@ -1172,7 +1176,7 @@ Do not delete either template. Record the two names and version numbers, then ch
 
 ### Known gaps until dependencies land
 
-No additional template-integrity gap is known in this walkthrough; the remaining dependency is approved production content.
+Create-from-scratch does not verify its first blank-version write. After step 9, reopen and save the new template once; if that fails, keep the listed record and report it rather than creating duplicates. Approved production content remains the other dependency.
 
 ## QA 7 — Admin assessment, draft review, and final report
 
@@ -1468,7 +1472,9 @@ The current application release and both production secrets are live. The old ge
 - The client record can save while its admin notice fails; the portal record remains the source of truth.
 - **403 / unauthorised:** the two ends do not have the same secret, or the request omitted it.
 - **422 / invalid event:** a required event field is missing; record the event type and action, then check the current application release.
-- **Success without delivery confirmation:** the partner route answered without proving the Gmail step; the application correctly records this as a failure.
+- **Success without delivery confirmation:** the partner route answered without proving the Gmail step; the application treats this as a failure and attempts to record it.
+- **Timeout followed by an email:** the platform stopped waiting after eight seconds for a client event or 15 seconds for Matt's assessment, but the partner workflow completed later. Do not repeat the committed action.
+- **No Workflow Error row:** the error-row write may itself have failed. A missing assessment webhook address is also skipped, although that address is currently present in production.
 - An “[888] Automation failed” message means the failure workflow worked. Use its workflow, step, and execution link to investigate.
 
 ### When nothing looks wrong but you want to be sure
