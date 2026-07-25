@@ -2,7 +2,7 @@
 
 Working state for the next session. Everything below is verified against prod/repo at the time of writing. Repo: `/Users/aymanbaig/dev/fire-safety-platform`. Prod: `https://www.merlinsafetysystem.com` (Vercel project `fire-safety-platform`, `prj_NEX03VTgkZmD4SIfxXf7BPhNi569`). System name **Merlin**; public brand **888 Safety & Training** (Matt's UK fire-safety consultancy).
 
-Git: `main` clean, all pushed. HEAD `359f115`. Prod Supabase ref `lksxdpgkbiuorjdvebdz` (single project, no staging — prod is the only environment).
+Git: `main` clean, all pushed. HEAD `b11ad37` (deployed to prod as `dpl_7xnarLUzQHMa4jY7GD4EkiuL5KPr`, READY). Prod Supabase ref `lksxdpgkbiuorjdvebdz` (single project, no staging — prod is the only environment).
 
 ---
 
@@ -55,9 +55,9 @@ The stored `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` fail PayPal OAuth (`inval
 - MEDIUM — `billing-client.tsx` `captureOrder` no longer clears `?token=` in a `finally`. The URL is cleaned only on a settled order (credited / already credited) or cancel; a **failed** capture keeps its token so a reload re-drives the idempotent capture, and the error toast is persistent with a **Retry** action. The server-side idempotency this leans on is already covered by `tests/paypal/capture-order-route.test.ts` (ORDER_ALREADY_CAPTURED recovery + `credit_failed` 500 — the money-taken-but-uncredited case).
   - **No unit test added for the component:** the repo has no `@testing-library/react` / effect-level client test infra (component tests use `renderToStaticMarkup` only), so this control-flow change is unverified by tests. Verified by reading + build/test gates.
 - LOW — `supabase/migrations/027_credit_hours_from_paypal_search_path.sql`: `CREATE OR REPLACE` of `credit_hours_from_paypal` with `set search_path = ''` and schema-qualified references, plus a re-assert of 025's REVOKE/GRANT. Behaviour unchanged.
-  - ⚠️ **NOT yet applied to prod** — needs the user to run it in the Supabase dashboard SQL editor (no DDL access from here, see §3). Harmless to deploy the code before it: nothing in the app depends on 027.
+  - **User reports 027 applied to prod** via the dashboard SQL editor. Unverified from here — no DDL/catalog access (see §3), so `pg_proc.proconfig` was never read back. To confirm: `select proname, proconfig from pg_proc where proname = 'credit_hours_from_paypal';` should show `{search_path=}`. Nothing in the app depends on it either way.
 
-622 tests green, `npm run build` clean. **Not pushed/deployed yet** — awaiting the user's call.
+622 tests green, `npm run build` clean, **pushed and deployed to prod** (`b11ad37` → `dpl_7xnar…`, READY).
 
 The LOW/product items below remain open for Matt/Finley.
 
