@@ -125,13 +125,13 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - The previously open payment-credit permission fault has been fixed and checked in production.
 - Portal brand colours are stored centrally and follow Matt and clients across devices.
 - The audited application dependency is upgraded to 16.2.11; the production build, 701 runnable tests, automation-change lint, and production dependency audit pass.
+- All four partner notices are live. Both incoming routes are protected, Gmail is retried up to three times, and controlled tests for client template creation, form submission, template customisation, and Matt's assessment submission each returned final delivery confirmation.
 
 **Partial or held**
 
 - PayPal cannot complete a purchase because the current production credentials are invalid. Do not test with real money until the correct live credentials are supplied and a controlled purchase plan is agreed.
 - Email delivery is live and owner-confirmed as working. The system still has no complete sent-message outbox or automatic retry for every failed message, so use Workflow Errors and the recipient's inbox when investigating an individual send.
-- The partner workflows have been rebuilt. Both incoming routes are protected; events are checked before sending; email is retried up to three times; success is returned only after the admin message is accepted; and a separate failure workflow alerts Matt. The assessment and failure-alert canaries passed. The matching production secrets and the three client-activity canaries are the remaining release gate.
-- The sole n8n account does not have MFA enabled, two unused mail credentials remain stored there, and n8n reports one available bug-fix update. The audit key was shared in chat, and two historical failures still expose the old general webhook secret to that key. Rotate both, delete only those two historical records, and confirm ownership before removing either unused mail credential. These are partner-account hardening tasks, separate from the working customer email service.
+- The sole n8n account does not have MFA enabled, two unused mail credentials remain stored there, and n8n reports one available bug-fix update. The audit key was shared in chat and still needs rotation. The old general webhook secret has already been rotated at both ends and its two retained failure records were deleted. These are partner-account hardening tasks, separate from the live notice paths.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
 - A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
 - Saved photos reload after refresh using temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
@@ -163,8 +163,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 | Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
 | Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
 | One public brand, phone number, sender, and monitored reply mailbox | Consistent portal, PDF, and email identity | Delivery works; identity is inconsistent |
-| Deploy the two matching platform secrets and run one controlled test for each of the four admin notices | Working client activity and Matt-submitted assessment notices | Application release and workflows are live; secret cutover and four application-to-n8n checks remain pending |
-| Rotate the n8n audit key and old general webhook secret, delete only the two historical failures after cutover, enable MFA, remove unused mail credentials after ownership confirmation, and take the available bug-fix update | Reduce partner-automation account and credential exposure | Required before handover |
+| Rotate the n8n audit key, enable MFA, remove unused mail credentials after ownership confirmation, and take the available bug-fix update | Reduce partner-automation account exposure | Required account hardening; webhook-secret rotation, four canaries, and retained-execution cleanup are complete |
 | Approved first-party signing approach | Formal acceptance of the in-app signature method | Unverified |
 | Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
@@ -277,7 +276,7 @@ Starting an assessment creates a draft. Required and conditional fields are chec
 
 ### What's live vs. what's pending
 
-**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, fork-on-fill, client-submission report handoff, private photo previews, and complete photo removal. **Staged admin notices:** the four partner workflows are rebuilt and protected; the remaining gate is the production secret cutover and the three client-activity canaries. **Not built:** speech-to-text and offline work.
+**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, fork-on-fill, client-submission report handoff, private photo previews, complete photo removal, and all four protected admin notices. **Not built:** speech-to-text and offline work.
 
 ### Common situations
 
@@ -600,7 +599,7 @@ Each row explains the failure type and any recognised client, form, proposal, or
 ### Common situations
 
 - “No operational errors detected” can mean either that no rows were returned or that the error log itself could not be read. It does not prove PayPal, inbox delivery, or n8n is healthy.
-- Two historical partner failures remain only until the old exposed secret is rotated; do not treat them as current workflow behaviour.
+- The two historical partner failures that retained the old secret were deleted after the coordinated rotation. Execution history is not a success outbox.
 - Avoid repeating a payment or signature action until its current state is checked.
 
 ### Where to find things
@@ -948,8 +947,7 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - Matt-approved service catalogue and prices.
 - Valid PayPal live credentials and controlled payment test plan.
 - One agreed public brand/sender; email delivery itself is working.
-- Complete the two-secret production cutover and run the three client-activity canaries; the assessment and failure-alert canaries already pass.
-- Enable n8n MFA, rotate the exposed audit API key and old general webhook secret together, delete only the two historical failures after cutover, remove confirmed-unused mail credentials, and apply the available n8n bug-fix update.
+- Enable n8n MFA, rotate the exposed audit API key, remove confirmed-unused mail credentials, and apply the available n8n bug-fix update. The webhook-secret cutover, four notice canaries, and historical-execution cleanup are complete.
 - Formal first-party signing acceptance.
 - Upload/report recipient rule; expiry reminders already use the organisation contact.
 - Speech-to-text.
@@ -966,7 +964,7 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 
 **Platform support:** The named technical contact is **UNVERIFIED**. Matt should ask whoever controls deployment, live data, email, and PayPal for configuration or security faults.
 
-**Finley / partner automation:** The workflows are rebuilt. Ask the partner owner for MFA, API-key rotation, unused-credential confirmation, and the hosted update; the exact live workflow IDs, remaining cutover, and canary results are recorded in the research brief.
+**Finley / partner automation:** The workflows and production cutover are live. Ask the partner owner for MFA, API-key rotation, unused-credential confirmation, and the hosted update; the exact live workflow IDs and canary results are recorded in the research brief.
 
 # Part 4 — QA Walkthroughs
 
@@ -1368,7 +1366,7 @@ Record all current Settings values so they can be restored. Use a controlled tes
 
 - A Settings success message does not mean the sender label changed real email.
 - SVG logos and files whose real header does not match PNG, JPEG, or WebP are rejected.
-- Partner notices are not tested from Settings. The rebuilt n8n routes reject unauthorised or incomplete events and confirm success only after the admin email is accepted; use QA 15 after the production secret cutover.
+- Partner notices are not tested from Settings. The live n8n routes reject unauthorised or incomplete events and confirm success only after the admin email is accepted; use QA 15.
 - An empty Workflow Errors page is not proof that email, PayPal, or the error-log read itself is healthy.
 
 ### When nothing looks wrong but you want to be sure
@@ -1381,7 +1379,7 @@ Restore the original settings first, then record which device/browser, action, c
 
 ### Known gaps until dependencies land
 
-PDF colours and email identity are configured elsewhere. Workflow Errors is read-only, and partner-notice testing remains paused until the two production secrets and four controlled application-to-n8n checks are confirmed.
+PDF colours and email identity are configured elsewhere. Workflow Errors is read-only. Partner-notice testing is open through QA 15 because the production secrets and four controlled checks now pass.
 
 ## QA 13 — Dashboard and queue reconciliation
 
@@ -1454,9 +1452,9 @@ There is no offline/PWA mode, background sync, SMS, or speech-to-text.
 
 ### Before you start
 
-The current application release is live. Do not create a test client record until platform support confirms that both production secrets are deployed and the old general secret has been rotated at both ends. The partner workflows themselves are rebuilt: both routes are protected, invalid events are rejected, Gmail is retried, success follows final mail acceptance, and the controlled failure alert has passed. Use a throwaway organisation and Matt's controlled admin inbox.
+The current application release and both production secrets are live. The old general secret has been rotated at both ends, all four controlled event payloads passed, and the old secret-bearing execution records were deleted. Both routes are protected, invalid events are rejected, Gmail is retried, success follows final mail acceptance, and the controlled failure alert has passed. Use a throwaway organisation and Matt's controlled admin inbox; this walkthrough proves the user-action triggers and inbox content.
 
-1. **Matt:** Confirm the two-secret cutover. Stop here without creating anything if it is still pending.
+1. **Matt:** Confirm you can use the controlled admin inbox, then agree the throwaway organisation and record names before creating anything.
 2. **Client:** Prepare a named test template. **Create** is the commit point; create it once, then confirm it appears in the portal.
 3. **Matt:** Confirm one “client created a form template” message arrived and that no new related Workflow Error appeared. Successful partner runs are deliberately not retained.
 4. **Client:** Self-fill the template. Stop before **Submit** until the record is safe to commit, then submit once and confirm report drafting starts.
@@ -1483,4 +1481,4 @@ Do not repeat the client write or assessment submission. Record the event type, 
 
 ### Known gaps until dependencies land
 
-MFA, API-key rotation, ownership checks for two unused mail credentials, and the hosted bug-fix update remain handover gates. They do not change the four notice contents, but the production walkthrough stays paused until the two-secret cutover and all four controlled application-to-n8n notices are confirmed.
+MFA, API-key rotation, ownership checks for two unused mail credentials, and the hosted bug-fix update remain handover gates. They do not block this walkthrough or change the four notice contents.
