@@ -2,7 +2,7 @@
 
 Working state for the next session. Everything below is verified against prod/repo at the time of writing. Repo: `/Users/aymanbaig/dev/fire-safety-platform`. Prod: `https://www.merlinsafetysystem.com` (Vercel project `fire-safety-platform`, `prj_NEX03VTgkZmD4SIfxXf7BPhNi569`). System name **Merlin**; public brand **888 Safety & Training** (Matt's UK fire-safety consultancy).
 
-Git: `main` clean, all pushed. HEAD `20aee86`.
+Git: `main` clean, all pushed. HEAD `2e58cee`. **Migration 029 pending on prod.**
 
 ---
 
@@ -61,17 +61,19 @@ Checkout UI displays "VAT included" but nothing emails a receipt or invoice — 
 
 ## 1c. Hole-hunt 2026-07-25 (post-handover sweep)
 
+> **Status after the fix pass:** everything found in this sweep is fixed and pushed except the password-reset rate limit (below), which needs a rate-limiting approach chosen rather than a code tweak. **Migration 029 needs applying to prod** — it is the only outstanding operational step. 647 tests green, build clean. HEAD `2e58cee`.
+
 **Security surface came back clean** — probed live, not just read: anon key against prod REST is denied on every write (`42501` RLS) and on both money RPCs (`permission denied for function credit_hours_from_paypal` / `adjust_client_credits`, so migration 025 holds); `app_settings` is `42501` (grants revoked); both cron endpoints 401 unauthenticated and reject a wrong `?secret=`; `/api/admin/search` 401s and sanitises PostgREST filter metacharacters; `/api/sign/<bogus>` returns 410 without leaking existence. Every client-facing `createSignedUrl` derives its path from a row already scoped by `.eq("client_id", ctx.client_id)` — no IDOR. Soft-delete filtering on the three tables that actually use it (`form_assignments`, `contractors`, `services`) is enforced, including `requireOwnedAssignment`. Only definer function lacking `search_path` was the one 027 fixed. `auth.users` holds Matt alone — no leftover test users (audit blocker 9).
 
 ### FIXED — Month-Summary "Assessments" tile rendered no number (commit `39ff311`)
 Root cause found: the tiles built their colour class by interpolation, `text-${stat.color}`. Tailwind scans source *text* for class candidates, so an interpolated name is never seen by the compiler — it only renders when an unrelated file happens to use the same literal. Assessments' colour was `"white"` → `text-white`, which IS generated (billing uses it), so the count drew white-on-white. Now static class strings, Assessments on `text-foreground` (theme-correct both modes). This closes the walkthrough "nit" as an actual defect.
-**Not fixed — 7 sibling interpolation sites remain** (`app/admin/clients/_components/client-row.tsx`, `app/admin/compliance/compliance-doc-row.tsx`, `app/admin/compliance/page.tsx`, `app/admin/hours/page.tsx`). Some need classes with **zero** static occurrences anywhere — `bg-teal/5` and `text-gold/60` are not in the generated CSS at all, so those badges silently lose their tint. There is no Tailwind safelist (v4, CSS-first config), so the whole pattern is one unrelated deletion away from more breakage. Fixing it is a visual-regression pass of its own.
+**Now also fixed (commit `4902cfd`) — all 7 sibling interpolation sites** (`app/admin/clients/_components/client-row.tsx`, `app/admin/compliance/compliance-doc-row.tsx`, `app/admin/compliance/page.tsx`, `app/admin/hours/page.tsx`). Some need classes with **zero** static occurrences anywhere — `bg-teal/5` and `text-gold/60` are not in the generated CSS at all, so those badges silently lose their tint. There is no Tailwind safelist (v4, CSS-first config), so the whole pattern is one unrelated deletion away from more breakage. Fixing it is a visual-regression pass of its own.
 
 ### FIXED — the AI prompt-injection sentinel was escapable by a customer answer (commit `20aee86`)
 `buildReportPrompt` wraps answers in `<user_provided_answers>` and instructs the model to treat that block as data. That wrapper was the only boundary, and `JSON.stringify` escapes quotes and backslashes but **not angle brackets** — so a customer typing `</user_provided_answers>` into any free-text field closed the block early and landed in instruction context, right before the tail-anchored rule, in a report Matt signs off as the competent person. The file's own header called this hardening "the precondition" for customer-typed strings reaching the prompt, and that path is live (Phase 16 customer fills), so the assessor is no longer the sole author of the answers. Both tags in either direction are now neutralised before wrapping (whitespace/case tolerant), with the text preserved as inert data rather than deleted so nothing vanishes from a report. Three regression tests, **verified red without the fix**; assertions scope to the real answers block because `INJECTION_GUARD` names both tags literally.
 Note this is a boundary fix, not a claim that the model is now injection-proof — it removes the trivial escape, and Matt reviewing every draft remains the real control.
 
-### OPEN (MEDIUM, legal) — the e-signature document hash is unverifiable: the attested PDF is overwritten in place
+### FIXED (commit `2e58cee`, migration 029) — the e-signature document hash was unverifiable: the attested PDF was overwritten in place
 This is audit **blocker 6** ("repair e-signature immutability and transactional evidence"), still live. The mechanics around it are actually strong — `generateSigningToken` uses 32 random bytes base64url, only the SHA-256 is stored in `proposals.signing_token`, single-use and expiry are enforced, and consumption is a proper claim-first atomic update (`.eq("signing_token_used", false).select().maybeSingle()` → 409 if the claim loses) with rollback on downstream failure. The gap is the artifact:
 - `proposal_signatures.document_hash` records the SHA-256 of the **pre-stamp** PDF (`consumed.signing_document_hash`, captured at send time).
 - Step 8 then re-uploads the **stamped** PDF to `consumed.proposal_pdf_path` with `upsert: true` — **overwriting the very file the hash attests to**. No copy of the original survives.
@@ -79,13 +81,13 @@ This is audit **blocker 6** ("repair e-signature immutability and transactional 
 - Worse for evidential value: step 8 is best-effort inside `try/catch` and only `console.error`s on failure, so whether the stored file matches its recorded hash depends on whether an unlogged step happened to succeed. A mismatch is therefore ambiguous rather than meaningful.
 **Fix direction (needs a decision, not a quiet edit — it changes storage layout and evidence semantics for a legal artifact):** write the stamped PDF to a **new** path (e.g. `<id>-signed.pdf`), leave the original immutable, and store both hashes so verification has something to compare against. Worth raising with Matt/Finley since it bears on whether first-party signing is acceptable at all (an open client decision in the audit).
 
-### OPEN (LOW) — no rate limit on the public password-reset action
+### STILL OPEN (LOW) — no rate limit on the public password-reset action
 `requestPasswordReset` (`app/login/forgot/actions.ts`) is correctly enumeration-safe in its *response* — always `{ ok: true }`, never discloses account existence, and it records dispatch failures to `workflow_errors`. But there is no rate limiting, so a caller can trigger unlimited reset emails to a known address (inbox flooding, Resend quota burn), and the unknown-account path returns early without a `generateLink` round-trip or an email send, leaving a timing side channel that leaks existence despite the identical response body.
 
-### OPEN (LOW) — MIME allowlists are skipped when the browser sends no content type
+### FIXED (commit `49c1f57`) — MIME allowlists were skipped when the browser sent no content type
 `lib/documents/actions.ts` and `app/admin/settings/actions.ts` both guard with `if (file.type && !ALLOWED.has(file.type))`, so a request whose file part carries no `Content-Type` bypasses the allowlist entirely; the stored extension also comes from `file.name` unvalidated. Both paths are admin-gated (`isAdmin()`), buckets are private and served via short-lived signed URLs on the Supabase origin rather than the app's, so this is defence-in-depth rather than a live exposure — but the allowlist should be fail-closed.
 
-### OPEN (MEDIUM) — expiry alerts have no catch-up, and nothing fires when a document actually expires
+### FIXED (commit `49c1f57`) — expiry alerts had no catch-up, and nothing fired when a document actually expired
 `app/api/cron/expiry/route.ts` matches `.in("expiry_date", [day30, day14, day7])` — exact calendar days, once daily at 06:00 UTC. Consequences:
 - A document uploaded **less than 7 days** before it expires never equals any window, so it gets **zero** alerts and expires silently.
 - One missed run (Vercel crons are best-effort, a failed deploy, a function error) loses that window **permanently** — the `notifications_sent` table is consulted only to prevent duplicates, never to catch up.
@@ -93,13 +95,13 @@ This is audit **blocker 6** ("repair e-signature immutability and transactional 
 - There is **no alert at all once a document is past its expiry date** — the assignment scheduler has an `overdue` catch-all branch (`due_date < today`), expiry has no equivalent.
 Mitigating: the dashboard *does* count expired/expiring documents (`lib/supabase/dashboard.ts`), so it's visible in-app — it just never emails. Fix is cheap and safe: match a range instead of exact dates and let the existing `UNIQUE (document_id, alert_window, notification_type)` constraint do the deduping — that makes it self-healing. For a compliance product where the alert *is* the product, worth doing before Matt's first real client.
 
-### OPEN (MEDIUM) — client form-event dispatch failures are invisible to the app
+### FIXED (commit `49c1f57`) — client form-event dispatch failures were invisible to the app
 `lib/notifications/client-form-events.ts` logs a failed dispatch to `console.error` and nothing else — no `workflow_errors` row, unlike every other dispatch caller (`sendAssignmentReminder`'s cron caller does record and retry correctly). These are exactly the `client_form_created` / `client_form_submitted` / `client_template_cloned` events already known broken downstream (§2C). So there are two stacked blind spots: n8n-internal failures don't fail the POST, and a POST that *does* fail is never recorded. Matt's Workflow Errors page reads "ALL CLEAR" either way.
 
-### OPEN (LOW) — outbound n8n webhook has no timeout, and is awaited on the client's submit path
+### FIXED (commit `49c1f57`) — outbound n8n webhook had no timeout while awaited on the client's submit path
 `dispatchToN8n` calls `fetch` with no `AbortSignal`/timeout, and `dispatchClientFormEvent` is `await`ed inline in `app/client/assignments/actions.ts` and `app/client/templates/actions.ts`. An n8n endpoint that accepts the connection but never responds stalls the client's submit action until the platform function timeout. No data loss — the submission is committed before dispatch and the wrapper never throws — but the customer watches a spinner for a third party.
 
-### OPEN (LOW) — month-summary month boundary is local-time
+### FIXED (commit `49c1f57`) — month-summary month boundary was local-time
 `new Date(now.getFullYear(), now.getMonth(), 1).toISOString()` builds local midnight then serialises as UTC, so during BST the window starts 23:00 on the last day of the previous month and counts an hour of it. Cosmetic on a monthly tile; the crons already use explicit UTC helpers.
 
 ---
