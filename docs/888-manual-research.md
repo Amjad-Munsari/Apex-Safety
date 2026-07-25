@@ -1,7 +1,7 @@
 # 888 Safety & Training — Manual Research Brief
 
 **Research snapshot:** 25 July 2026
-**Source basis:** `main` at `25d5ce2`, confirmed as the production deployment, plus live production configuration and database checks
+**Source basis:** application behaviour at `25d5ce2`, followed only by documentation corrections, plus live production configuration and database checks
 **Production URL:** `https://www.merlinsafetysystem.com`
 
 This brief is the evidence layer for `docs/888-user-testing-manual.md`. It was derived from the current application code, committed migrations, configuration, the latest production handoff, and a production-state check on 25 July 2026. Earlier user guides and proposal documents were not used as behavioural sources. The 20 July production-readiness audit was used only as a checklist, then every finding was rechecked against the current checkout.
