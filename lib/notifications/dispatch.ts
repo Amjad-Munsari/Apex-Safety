@@ -7,11 +7,11 @@ import { buildEmail, EMAIL_TYPES } from "./email-templates"
 // ─────────────────────────────────────────────────────────────────────────────
 // Notification dispatch.
 //
-// Eight of the payload variants are customer emails — these are rendered from
+// Ten of the payload variants are customer/admin emails — these are rendered from
 // templates and sent via Resend (from the verified merlinsafetysystem.com
-// domain). The three client_form_* variants are NOT emails: they are events for
-// a partner (Finley) n8n Switch, keyed on client_id, and still POST to the n8n
-// webhook. dispatchNotification is the single entry point for both; call sites
+// domain). The three client_form_* variants are activity events for Matt's n8n
+// workflow. n8n sends the final admin email and only acknowledges after Gmail
+// succeeds. dispatchNotification is the single entry point for both; call sites
 // never need to know which transport runs.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -103,13 +103,11 @@ export type NotificationPayload =
       recipient_email: string
       reset_url: string
     }
-  // ── Two-way form builder: client-surface events (for Finley's n8n Switch) ──
-  // Keyed on client_id (the org UUID) rather than client_email/name — the client
-  // surface fires them from RLS-scoped server actions where the org id is always
-  // in context. n8n resolves name/email from client_id when composing downstream.
+  // ── Two-way form builder: client-surface activity events for Matt ──
   | {
       type: "client_form_created"
       client_id: string          // org UUID (form_templates.owner_id)
+      client_name: string
       template_id: string
       template_name: string
       template_type: string
@@ -118,6 +116,7 @@ export type NotificationPayload =
   | {
       type: "client_form_submitted"
       client_id: string          // org UUID (form_submissions.client_id)
+      client_name: string
       submission_id: string
       assignment_id: string | null // null = customer-built self-fill (no assignment)
       submitted_at: string       // ISO timestamp
@@ -125,6 +124,7 @@ export type NotificationPayload =
   | {
       type: "client_template_cloned"
       client_id: string          // org UUID that now owns the fork
+      client_name: string
       template_id: string        // the new forked template
       template_name: string
       parent_template_id: string // the master template it was cloned from
@@ -235,6 +235,37 @@ async function sendEmail(
 /** Outbound webhook budget. Kept short: this sits on a user-facing submit. */
 const WEBHOOK_TIMEOUT_MS = 8_000
 
+/**
+ * A 2xx only proves that an HTTP endpoint answered. The production n8n
+ * workflows return this acknowledgement after Gmail succeeds; anything else is
+ * a dispatch failure that must reach workflow_errors.
+ */
+export async function assertN8nDeliveryAcknowledged(
+  response: Response
+): Promise<void> {
+  if (!response.ok) {
+    throw new Error(`n8n returned HTTP ${response.status}`)
+  }
+
+  let body: unknown
+  try {
+    body = await response.json()
+  } catch {
+    throw new Error("n8n returned success without a delivery acknowledgement")
+  }
+
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !("ok" in body) ||
+    body.ok !== true ||
+    !("delivered" in body) ||
+    body.delivered !== true
+  ) {
+    throw new Error("n8n did not confirm Gmail delivery")
+  }
+}
+
 /** POST a client-surface event to the partner n8n webhook. */
 async function dispatchToN8n(
   payload: NotificationPayload
@@ -271,9 +302,7 @@ async function dispatchToN8n(
       // notification, which the caller records.
       signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     })
-    if (!res.ok) {
-      return { ok: false, status: res.status, error: `webhook returned ${res.status}` }
-    }
+    await assertN8nDeliveryAcknowledged(res)
     return { ok: true, status: res.status }
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) }

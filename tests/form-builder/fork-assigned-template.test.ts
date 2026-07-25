@@ -17,7 +17,6 @@ const MASTER_VERSION_ID = "ver-master-2222-4222-8222-222222222222";
 const FORK_ID = "fork-3333-3333-4333-8333-333333333333";
 const V1_ID = "ver-fork-4444-4444-4444-8444-444444444444";
 const CLIENT_ORG_ID = "client-org-001";
-const USER_ID = "user-001";
 
 const assignmentRow = {
   id: ASSIGNMENT_ID,
@@ -68,6 +67,7 @@ vi.mock("@/lib/auth-helpers", () => ({
   getClientContext: vi.fn().mockResolvedValue({
     user_id: "user-001",
     client_id: "client-org-001",
+    client_name: "Hallam House Care Home",
     role: "client",
   }),
 }));
@@ -140,7 +140,6 @@ function buildSupabaseMock() {
 
     if (table === "template_versions") {
       // First call is READ (schema_json), second is INSERT (v1)
-      let readCallCount = 0;
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockImplementation((col: string, val: string) => {
@@ -155,7 +154,6 @@ function buildSupabaseMock() {
         }),
         insert: vi.fn().mockImplementation((payload: Record<string, unknown>) => {
           insertPayloads.push({ _table: "template_versions", ...payload });
-          readCallCount++;
           return {
             select: vi.fn().mockReturnValue({
               single: vi.fn().mockResolvedValue({

@@ -192,6 +192,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 vi.mock("@/lib/auth-helpers", () => ({
   getClientContext: vi.fn().mockResolvedValue({
     client_id: "client-org-001",
+    client_name: "Hallam House Care Home",
     role: "client",
   }),
   requireActorUserId: vi.fn().mockResolvedValue("user-001"),
@@ -260,14 +261,6 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events";
-
-// ── Helper: get a fresh supabase mock ────────────────────────────────────────
-
-async function getSupabase() {
-  return (createClient as ReturnType<typeof vi.fn>).mock.results[
-    (createClient as ReturnType<typeof vi.fn>).mock.results.length - 1
-  ]?.value ?? await createClient();
-}
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

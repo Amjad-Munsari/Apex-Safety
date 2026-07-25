@@ -1,0 +1,618 @@
+{
+  "name": "Email Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "888-notifications",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7daa3c49-ee09-4870-9c87-8d064063bd24",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        300
+      ],
+      "webhookId": "9a64e7f9-64ae-4979-85a7-12dca5a81a6b",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z6RPqtJjKx8udmWt",
+          "name": "888 Webhook Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "event-type-1",
+                    "leftValue": "={{ $json.body.type }}",
+                    "rightValue": "client_form_created",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Client Form Created"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "event-type-2",
+                    "leftValue": "={{ $json.body.type }}",
+                    "rightValue": "client_form_submitted",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Client Form Submitted"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "event-type-3",
+                    "leftValue": "={{ $json.body.type }}",
+                    "rightValue": "client_template_cloned",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Client Template Cloned"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "general-event-switch",
+      "name": "Route Supported Event",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "validate-client-form-created-condition-1",
+              "leftValue": "={{ $json.body.client_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-created-condition-2",
+              "leftValue": "={{ $json.body.client_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-created-condition-3",
+              "leftValue": "={{ $json.body.template_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-created-condition-4",
+              "leftValue": "={{ $json.body.template_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-created-condition-5",
+              "leftValue": "={{ $json.body.template_type }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-created-condition-6",
+              "leftValue": "={{ $json.body.created_at }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-client-form-created",
+      "name": "Validate Form Created",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        500,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "validate-client-form-submitted-condition-1",
+              "leftValue": "={{ $json.body.client_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-submitted-condition-2",
+              "leftValue": "={{ $json.body.client_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-submitted-condition-3",
+              "leftValue": "={{ $json.body.submission_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-form-submitted-condition-4",
+              "leftValue": "={{ $json.body.submitted_at }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-client-form-submitted",
+      "name": "Validate Form Submitted",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "validate-client-template-cloned-condition-1",
+              "leftValue": "={{ $json.body.client_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-template-cloned-condition-2",
+              "leftValue": "={{ $json.body.client_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-template-cloned-condition-3",
+              "leftValue": "={{ $json.body.template_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-template-cloned-condition-4",
+              "leftValue": "={{ $json.body.template_name }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-template-cloned-condition-5",
+              "leftValue": "={{ $json.body.parent_template_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "validate-client-template-cloned-condition-6",
+              "leftValue": "={{ $json.body.cloned_at }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-client-template-cloned",
+      "name": "Validate Template Cloned",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        500,
+        520
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "888FST@proton.me",
+        "subject": "[888] Client created a form template",
+        "emailType": "text",
+        "message": "={{ \"A client created a new form template.\\n\\nClient: \" + ($json.body.client_name || $json.body.client_id) + \"\\nClient ID: \" + $json.body.client_id + \"\\nTemplate: \" + $json.body.template_name + \"\\nType: \" + $json.body.template_type + \"\\nCreated: \" + $json.body.created_at + \"\\n\\nOpen client record: https://www.merlinsafetysystem.com/admin/clients/\" + $json.body.client_id }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "888 Safety & Training",
+          "replyTo": "888FST@proton.me"
+        }
+      },
+      "id": "send-client-form-created",
+      "name": "Email Form Created",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        80
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wXTxwZTNPy3gYNsA",
+          "name": "Info@ Account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "sendTo": "888FST@proton.me",
+        "subject": "[888] Client submitted a form",
+        "emailType": "text",
+        "message": "={{ \"A client submitted a completed form.\\n\\nClient: \" + ($json.body.client_name || $json.body.client_id) + \"\\nClient ID: \" + $json.body.client_id + \"\\nSubmission ID: \" + $json.body.submission_id + \"\\nAssignment: \" + ($json.body.assignment_id || \"Self-fill (no assignment)\") + \"\\nSubmitted: \" + $json.body.submitted_at + \"\\n\\nReview submission: https://www.merlinsafetysystem.com/admin/assessments/\" + $json.body.submission_id + \"/review\" }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "888 Safety & Training",
+          "replyTo": "888FST@proton.me"
+        }
+      },
+      "id": "send-client-form-submitted",
+      "name": "Email Form Submitted",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        300
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wXTxwZTNPy3gYNsA",
+          "name": "Info@ Account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "sendTo": "888FST@proton.me",
+        "subject": "[888] Client customised a form template",
+        "emailType": "text",
+        "message": "={{ \"A client copied one of the master templates into its own editable version. The master was not changed.\\n\\nClient: \" + ($json.body.client_name || $json.body.client_id) + \"\\nClient ID: \" + $json.body.client_id + \"\\nNew template: \" + $json.body.template_name + \"\\nNew template ID: \" + $json.body.template_id + \"\\nCopied from: \" + $json.body.parent_template_id + \"\\nCopied: \" + $json.body.cloned_at + \"\\n\\nOpen client record: https://www.merlinsafetysystem.com/admin/clients/\" + $json.body.client_id }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "888 Safety & Training",
+          "replyTo": "888FST@proton.me"
+        }
+      },
+      "id": "send-client-template-cloned",
+      "name": "Email Template Cloned",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        780,
+        520
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wXTxwZTNPy3gYNsA",
+          "name": "Info@ Account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"ok\": true,\n  \"delivered\": true\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "confirm-general-delivery",
+      "name": "Confirm Delivery",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1060,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"ok\": false,\n  \"delivered\": false,\n  \"error\": \"invalid_event\"\n}",
+        "options": {
+          "responseCode": 422
+        }
+      },
+      "id": "reject-invalid-general-event",
+      "name": "Reject Invalid Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        780,
+        740
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Route Supported Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Supported Event": {
+      "main": [
+        [
+          {
+            "node": "Validate Form Created",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate Form Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validate Template Cloned",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Form Created": {
+      "main": [
+        [
+          {
+            "node": "Email Form Created",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Form Submitted": {
+      "main": [
+        [
+          {
+            "node": "Email Form Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Template Cloned": {
+      "main": [
+        [
+          {
+            "node": "Email Template Cloned",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Form Created": {
+      "main": [
+        [
+          {
+            "node": "Confirm Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Form Submitted": {
+      "main": [
+        [
+          {
+            "node": "Confirm Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Template Cloned": {
+      "main": [
+        [
+          {
+            "node": "Confirm Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 30,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "timezone": "Europe/London",
+    "callerPolicy": "none",
+    "availableInMCP": false,
+    "errorWorkflow": "fzflrF6ByBnfRhxN"
+  }
+}

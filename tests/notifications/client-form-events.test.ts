@@ -27,6 +27,11 @@ const FAKE_WEBHOOK_URL = "https://n8n.example.test/webhook/notifications"
 const FAKE_SECRET = "super-secret-token"
 
 const CLIENT_ID = "client-org-0000-4000-8000-000000000001"
+const CLIENT_NAME = "Hallam House Care Home"
+
+function deliveryAcknowledgement(): Response {
+  return Response.json({ ok: true, delivered: true }, { status: 200 })
+}
 
 describe("dispatchClientFormEvent — two-way form builder events", () => {
   beforeEach(() => {
@@ -43,13 +48,14 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
 
   it("POSTs a client_form_created payload with the org id and template fields", async () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(null, { status: 200 })
+      deliveryAcknowledgement()
     )
     const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
 
     await dispatchClientFormEvent({
       type: "client_form_created",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       template_id: "tpl-1",
       template_name: "Site Risk Walkthrough",
       template_type: "site_risk",
@@ -67,6 +73,7 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
     expect(body).toMatchObject({
       type: "client_form_created",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       template_id: "tpl-1",
       template_name: "Site Risk Walkthrough",
       template_type: "site_risk",
@@ -76,13 +83,14 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
 
   it("POSTs a client_form_submitted payload (assignment_id null for self-fill)", async () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(null, { status: 200 })
+      deliveryAcknowledgement()
     )
     const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
 
     await dispatchClientFormEvent({
       type: "client_form_submitted",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       submission_id: "sub-9",
       assignment_id: null,
       submitted_at: "2026-06-08T11:00:00.000Z",
@@ -93,6 +101,7 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
     expect(body).toMatchObject({
       type: "client_form_submitted",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       submission_id: "sub-9",
       assignment_id: null,
     })
@@ -100,13 +109,14 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
 
   it("POSTs a client_template_cloned payload carrying parent lineage", async () => {
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(null, { status: 200 })
+      deliveryAcknowledgement()
     )
     const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
 
     await dispatchClientFormEvent({
       type: "client_template_cloned",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       template_id: "fork-7",
       template_name: "FRA Type 3",
       parent_template_id: "master-1",
@@ -130,6 +140,7 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
       dispatchClientFormEvent({
         type: "client_form_created",
         client_id: CLIENT_ID,
+        client_name: CLIENT_NAME,
         template_id: "tpl-1",
         template_name: "X",
         template_type: "fra",
@@ -146,6 +157,7 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
       dispatchClientFormEvent({
         type: "client_template_cloned",
         client_id: CLIENT_ID,
+        client_name: CLIENT_NAME,
         template_id: "fork-7",
         template_name: "FRA Type 3",
         parent_template_id: "master-1",
@@ -163,6 +175,7 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
       dispatchClientFormEvent({
         type: "client_form_submitted",
         client_id: CLIENT_ID,
+        client_name: CLIENT_NAME,
         submission_id: "sub-9",
         assignment_id: "asg-2",
         submitted_at: "2026-06-08T11:00:00.000Z",
@@ -178,6 +191,7 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
     await dispatchClientFormEvent({
       type: "client_form_submitted",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       submission_id: "sub-9",
       assignment_id: null,
       submitted_at: "2026-06-08T11:00:00.000Z",
@@ -198,6 +212,7 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
     await dispatchClientFormEvent({
       type: "client_template_cloned",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       template_id: "fork-7",
       template_name: "FRA Type 3",
       parent_template_id: "master-1",
@@ -209,12 +224,13 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
   })
 
   it("records nothing when the dispatch succeeds", async () => {
-    vi.spyOn(global, "fetch").mockResolvedValue(new Response(null, { status: 200 }))
+    vi.spyOn(global, "fetch").mockResolvedValue(deliveryAcknowledgement())
     const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
 
     await dispatchClientFormEvent({
       type: "client_form_created",
       client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
       template_id: "tpl-1",
       template_name: "X",
       template_type: "fra",
@@ -222,5 +238,27 @@ describe("dispatchClientFormEvent — two-way form builder events", () => {
     })
 
     expect(workflowErrorInserts).toHaveLength(0)
+  })
+
+  it("records a 2xx response that does not confirm Gmail delivery", async () => {
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      Response.json({ ok: true }, { status: 200 })
+    )
+    const { dispatchClientFormEvent } = await import("@/lib/notifications/client-form-events")
+
+    await dispatchClientFormEvent({
+      type: "client_form_created",
+      client_id: CLIENT_ID,
+      client_name: CLIENT_NAME,
+      template_id: "tpl-1",
+      template_name: "X",
+      template_type: "fra",
+      created_at: "2026-06-08T10:00:00.000Z",
+    })
+
+    expect(workflowErrorInserts).toHaveLength(1)
+    expect(String(workflowErrorInserts[0].error_message)).toContain(
+      "did not confirm Gmail delivery"
+    )
   })
 })

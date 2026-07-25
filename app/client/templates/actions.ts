@@ -76,6 +76,7 @@ export async function createClientTemplate(name: string) {
   await dispatchClientFormEvent({
     type: "client_form_created",
     client_id: ctx.client_id,
+    client_name: ctx.client_name,
     template_id: data.id,
     template_name: name,
     template_type: CLIENT_TEMPLATE_TYPE,
@@ -507,6 +508,7 @@ export async function submitCustomerTemplateFillByIdAction(
   await dispatchClientFormEvent({
     type: "client_form_submitted",
     client_id: ctx.client_id,
+    client_name: ctx.client_name,
     submission_id: submissionId,
     assignment_id: null,
     submitted_at: new Date().toISOString(),

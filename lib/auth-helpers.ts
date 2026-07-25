@@ -54,6 +54,7 @@ export async function isAdmin() {
  * authorized but unattributed.
  */
 export async function requireActorUserId(_actorType: "admin" | "client"): Promise<string | null> {
+  void _actorType
   if (await isDemoMode()) return null
 
   const user = await getUser()
@@ -63,6 +64,7 @@ export async function requireActorUserId(_actorType: "admin" | "client"): Promis
 
 // Backwards-compat alias — same behavior, never throws.
 export async function getActorUserId(actorType: "admin" | "client"): Promise<string | null> {
+  void actorType
   if (await isDemoMode()) return null
   const user = await getUser()
   return user?.id ?? null
@@ -80,6 +82,13 @@ export interface ClientIdentity {
   orgName: string
   /** Display name from client_users.name, fallback to email, then "—". */
   userName: string
+}
+
+export interface ClientContext {
+  client_id: string
+  role: string
+  /** Authoritative organisation name used in server-to-server activity events. */
+  client_name: string
 }
 
 /**
@@ -167,33 +176,12 @@ export async function requireAdmin(): Promise<string | null> {
   return user.id
 }
 
-export const getClientContext = cache(async () => {
-  const supabase = await createClient()
-
-  if (await isDemoMode()) {
-    // Demo cookie + service-role key bypasses RLS but the demo auth user has
-    // no row in client_users. Synthesize a context by picking the first client
-    // so server-rendered pages under /client work in the demo flow the same
-    // way the hardcoded-fixture client pages do. Skip getUser() — calling it
-    // poisons the supabase-js client with a stale Authorization header (see
-    // requireActorUserId for the same workaround).
-    const { data } = await supabase
-      .from("client_users")
-      .select("client_id, role")
-      .limit(1)
-      .single()
-    return data ?? null
+export const getClientContext = cache(async (): Promise<ClientContext | null> => {
+  const identity = await getClientContextWithIdentity()
+  if (!identity) return null
+  return {
+    client_id: identity.client_id,
+    role: identity.role,
+    client_name: identity.orgName,
   }
-
-  const user = await getUser()
-  if (!user) return null
-
-  const { data, error } = await supabase
-    .from("client_users")
-    .select("client_id, role")
-    .eq("id", user.id)
-    .single()
-
-  if (error || !data) return null
-  return data
 })

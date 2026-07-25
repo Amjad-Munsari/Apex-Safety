@@ -1,0 +1,68 @@
+{
+  "name": "888 Automation Failure Alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "automation-error-trigger",
+      "name": "Automation Failed",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "888FST@proton.me",
+        "subject": "[888] Automation failed",
+        "emailType": "text",
+        "message": "={{ \"An 888 Safety automation failed.\\n\\nWorkflow: \" + ($json.workflow && $json.workflow.name ? $json.workflow.name : \"Unknown workflow\") + \"\\nLast step: \" + ($json.execution && $json.execution.lastNodeExecuted ? $json.execution.lastNodeExecuted : \"Unknown\") + \"\\nError: \" + ($json.execution && $json.execution.error && $json.execution.error.message ? $json.execution.error.message : \"No error message was supplied\") + \"\\nExecution: \" + ($json.execution && $json.execution.url ? $json.execution.url : \"Open n8n and check Executions\") }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "888 Safety & Training",
+          "replyTo": "888FST@proton.me"
+        }
+      },
+      "id": "send-automation-failure-alert",
+      "name": "Alert Matt",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        260,
+        0
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wXTxwZTNPy3gYNsA",
+          "name": "Info@ Account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    }
+  ],
+  "connections": {
+    "Automation Failed": {
+      "main": [
+        [
+          {
+            "node": "Alert Matt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 30,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "timezone": "Europe/London",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  }
+}

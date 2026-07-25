@@ -355,6 +355,7 @@ export async function submitAssignedFillByIdAction(
   await dispatchClientFormEvent({
     type: "client_form_submitted",
     client_id: ctx.client_id,
+    client_name: ctx.client_name,
     submission_id: submissionId,
     assignment_id: updated.assignment_id,
     submitted_at: new Date().toISOString(),
@@ -527,6 +528,7 @@ export async function forkAssignedTemplate(
   await dispatchClientFormEvent({
     type: "client_template_cloned",
     client_id: ctx.client_id,
+    client_name: ctx.client_name,
     template_id: fork.id,
     template_name: master.name,
     parent_template_id: assignment.template_id,

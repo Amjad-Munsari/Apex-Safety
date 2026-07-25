@@ -11,7 +11,10 @@ import {
   buildSignatureStoragePath,
   buildPhotoStoragePath,
 } from "@/lib/form-builder/storage/upload-paths"
-import { dispatchNotification } from "@/lib/notifications/dispatch"
+import {
+  assertN8nDeliveryAcknowledged,
+  dispatchNotification,
+} from "@/lib/notifications/dispatch"
 import {
   runReportDraftGeneration,
   scheduleReportDraftGeneration,
@@ -425,17 +428,11 @@ export async function submitAssessmentAction(
   // Draft" button on the review page is the retry surface.
   scheduleReportDraftGeneration(submissionId)
 
-  // Phase 18 SC#5 — fire the assessment-submission n8n webhook for the
-  // Module 1 downstream (Matt's existing n8n workflows that fan out to
-  // Proton Mail / customer notifications / Drive backups). The legacy
-  // submitAssessment was removed 2026-05-29 (code audit M4); this is now
-  // the only webhook-firing path. Distinct from the AI-draft pipeline in
-  // the after() callback above — both are post-response background tasks;
-  // neither blocks Matt's submit redirect.
-  // Inline (not extracted to lib/notifications/dispatch.ts) per
-  // RESEARCH §Q5: that helper's typed union targets a DIFFERENT n8n URL
-  // (N8N_WEBHOOK_URL → Proton Mail routing); the assessment webhook
-  // targets N8N_ASSESSMENT_WEBHOOK_URL which is a separate workflow.
+  // Send Matt the separate n8n assessment-submitted notice. This workflow
+  // only delivers an admin email; report drafting, PDFs, client email, and
+  // storage all remain in the application. It runs after the response so it
+  // never delays Matt's redirect, but a missing or failed terminal delivery
+  // acknowledgement is recorded in Workflow Errors.
   after(async () => {
     const webhookUrl = process.env.N8N_ASSESSMENT_WEBHOOK_URL
     if (!webhookUrl) return
@@ -459,11 +456,11 @@ export async function submitAssessmentAction(
           Authorization: `Bearer ${webhookSecret}`,
         },
         body: JSON.stringify({ submissionId }),
-        signal: AbortSignal.timeout(3000),
+        // This runs after the user response, so allow the workflow enough time
+        // for its bounded Gmail retries and final delivery acknowledgement.
+        signal: AbortSignal.timeout(15_000),
       })
-      if (!response.ok) {
-        throw new Error(`n8n returned HTTP ${response.status}`)
-      }
+      await assertN8nDeliveryAcknowledged(response)
     } catch (err) {
       console.error("Phase 18 SC#5 n8n webhook trigger failed", { submissionId, err })
       await adminClient.from("workflow_errors").insert({

@@ -1,0 +1,179 @@
+{
+  "name": "Assessment Report Notifications",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assessment-report",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wh-assessment-report",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "assessment-report",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "02UxqMsF6Pm59sYV",
+          "name": "888 Assessment Webhook Secret"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "validate-assessment-submission-condition-1",
+              "leftValue": "={{ $json.body.submissionId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-assessment-submission",
+      "name": "Validate Submission",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        260,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "888FST@proton.me",
+        "subject": "[888] New assessment submitted",
+        "emailType": "text",
+        "message": "={{ \"A new assessment has been submitted and is ready for review.\\n\\nSubmission ID: \" + $json.body.submissionId + \"\\n\\nReview assessment: https://www.merlinsafetysystem.com/admin/assessments/\" + $json.body.submissionId + \"/review\" }}",
+        "options": {
+          "appendAttribution": false,
+          "senderName": "888 Safety & Training",
+          "replyTo": "888FST@proton.me"
+        }
+      },
+      "id": "send-assessment-notification",
+      "name": "Email Assessment Submitted",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        540,
+        -80
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "wXTxwZTNPy3gYNsA",
+          "name": "Info@ Account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"ok\": true,\n  \"delivered\": true\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "confirm-assessment-delivery",
+      "name": "Confirm Delivery",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        820,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"ok\": false,\n  \"delivered\": false,\n  \"error\": \"invalid_event\"\n}",
+        "options": {
+          "responseCode": 422
+        }
+      },
+      "id": "reject-invalid-assessment",
+      "name": "Reject Invalid Event",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        540,
+        120
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Submission": {
+      "main": [
+        [
+          {
+            "node": "Email Assessment Submitted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reject Invalid Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Assessment Submitted": {
+      "main": [
+        [
+          {
+            "node": "Confirm Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "executionTimeout": 30,
+    "saveDataErrorExecution": "none",
+    "saveDataSuccessExecution": "none",
+    "timezone": "Europe/London",
+    "callerPolicy": "none",
+    "availableInMCP": false,
+    "errorWorkflow": "fzflrF6ByBnfRhxN"
+  }
+}

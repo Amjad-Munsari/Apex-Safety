@@ -16,6 +16,10 @@ const FAKE_SUBMISSION_ID = "11111111-1111-4111-a111-111111111111"
 const FAKE_WEBHOOK_URL = "https://n8n.example.test/webhook/assessment-submitted"
 const FAKE_WEBHOOK_SECRET = "test-webhook-secret"
 
+function deliveryAcknowledgement(): Response {
+  return Response.json({ ok: true, delivered: true }, { status: 200 })
+}
+
 // ── next/* mocks — prevent server-only errors in jsdom environment ───────────
 // next/cache, next/navigation, and next/server all import server-only
 // transitively. Mock before any SUT import.
@@ -69,9 +73,15 @@ vi.mock("@/lib/supabase/admin", () => ({
           // Step 4: .update(...).eq("id").eq("status")[.eq("submitted_by")].select("id")
           // Self-chaining eq() supports the optional submitted_by predicate; the
           // terminal select() resolves the result.
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           update: () => {
-            const chain: any = { eq: () => chain, select: () => submissionsUpdateEqEqSpy() }
+            type UpdateChain = {
+              eq: () => UpdateChain
+              select: () => ReturnType<typeof submissionsUpdateEqEqSpy>
+            }
+            const chain: UpdateChain = {
+              eq: () => chain,
+              select: () => submissionsUpdateEqEqSpy(),
+            }
             return chain
           },
         }
@@ -176,7 +186,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
   it("skips the webhook when N8N_ASSESSMENT_WEBHOOK_URL is unset", async () => {
     vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_URL", "")
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(null, { status: 200 })
+      deliveryAcknowledgement()
     )
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
@@ -191,10 +201,10 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
     expect(workflowErrorsInsertSpy).not.toHaveBeenCalled()
   })
 
-  it("POSTs { submissionId } to the configured webhook URL with content-type JSON and a 3s timeout", async () => {
+  it("POSTs { submissionId } and requires the delivery acknowledgement", async () => {
     vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_URL", FAKE_WEBHOOK_URL)
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(null, { status: 200 })
+      deliveryAcknowledgement()
     )
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
@@ -224,7 +234,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
       if (url === FAKE_WEBHOOK_URL) {
         return Promise.reject(new TypeError("network error"))
       }
-      return Promise.resolve(new Response(null, { status: 200 }))
+      return Promise.resolve(deliveryAcknowledgement())
     })
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
@@ -240,7 +250,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
 
   it("does not insert workflow_errors when fetch resolves successfully", async () => {
     vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_URL", FAKE_WEBHOOK_URL)
-    vi.spyOn(global, "fetch").mockResolvedValue(new Response(null, { status: 200 }))
+    vi.spyOn(global, "fetch").mockResolvedValue(deliveryAcknowledgement())
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
@@ -252,7 +262,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
     vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_URL", FAKE_WEBHOOK_URL)
     vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_SECRET", "")
     const fetchSpy = vi.spyOn(global, "fetch").mockResolvedValue(
-      new Response(null, { status: 200 })
+      deliveryAcknowledgement()
     )
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
@@ -279,11 +289,32 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
 
-    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workflow_name: "assessment-submission-webhook",
-        error_message: expect.stringContaining("503"),
-      })
+    await vi.waitFor(() => {
+      expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workflow_name: "assessment-submission-webhook",
+          error_message: expect.stringContaining("503"),
+        })
+      )
+    })
+  })
+
+  it("records a 2xx response that does not confirm Gmail delivery", async () => {
+    vi.stubEnv("N8N_ASSESSMENT_WEBHOOK_URL", FAKE_WEBHOOK_URL)
+    vi.spyOn(global, "fetch").mockResolvedValue(
+      Response.json({ ok: true }, { status: 200 })
     )
+
+    const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
+    await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+
+    await vi.waitFor(() => {
+      expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workflow_name: "assessment-submission-webhook",
+          error_message: expect.stringContaining("did not confirm Gmail delivery"),
+        })
+      )
+    })
   })
 })

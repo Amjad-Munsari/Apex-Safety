@@ -157,6 +157,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 vi.mock("@/lib/auth-helpers", () => ({
   getClientContext: vi.fn().mockResolvedValue({
     client_id: "client-org-001",
+    client_name: "Hallam House Care Home",
     user_id: "user-001",
     role: "client",
   }),

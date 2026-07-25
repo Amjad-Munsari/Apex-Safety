@@ -132,12 +132,15 @@ describe("dispatchNotification — Resend email transport", () => {
     vi.stubEnv("N8N_WEBHOOK_SECRET", "secret-token")
     const fetchSpy = vi
       .spyOn(global, "fetch")
-      .mockResolvedValue(new Response(null, { status: 200 }))
+      .mockResolvedValue(
+        Response.json({ ok: true, delivered: true }, { status: 200 })
+      )
 
     const { dispatchNotification } = await import("@/lib/notifications/dispatch")
     const result = await dispatchNotification({
       type: "client_form_submitted",
       client_id: "00000000-0000-0000-0000-000000000000",
+      client_name: "Hallam House Care Home",
       submission_id: "11111111-1111-1111-1111-111111111111",
       assignment_id: null,
       submitted_at: "2026-07-23T10:00:00.000Z",
