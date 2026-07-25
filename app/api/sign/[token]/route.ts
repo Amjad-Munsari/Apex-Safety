@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
 import { hashToken } from "@/lib/signing"
 import { signedPdfPathFor } from "@/lib/signing-paths"
+import { validateSigningInput } from "@/lib/signing-input"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { embedSignatureInPdf } from "@/lib/pdf/embed-signature"
@@ -46,54 +47,6 @@ function deriveTitle(services: ServiceItem[]): string {
 
 function parseServices(servicesJson: unknown): ServiceItem[] {
   return Array.isArray(servicesJson) ? (servicesJson as ServiceItem[]) : []
-}
-
-/**
- * Undo a Signed/token-consumed transition when the post-consume work can't
- * complete (missing document hash, signature-evidence insert failure). Returns
- * the proposal to its pre-signing state so it is never left Signed without
- * evidence and the single-use link stays usable for a retry.
- *
- * The UPDATE is guarded on the exact state this request set
- * (status='Signed' AND signing_token_used=true) so a concurrent admin change
- * (e.g. withdrawing the proposal) is never clobbered. If the rollback itself
- * fails, a durable workflow_errors row is written — a console log alone would
- * leave a stuck proposal with no recovery trail.
- */
-async function rollbackSignedConsume(
-  proposalId: string,
-  priorStatus: string,
-  reason: string
-): Promise<void> {
-  const { error: rollbackError } = await adminClient
-    .from("proposals")
-    .update({
-      signing_token_used: false,
-      status: priorStatus,
-      signed_at: null,
-    })
-    .eq("id", proposalId)
-    .eq("status", "Signed")
-    .eq("signing_token_used", true)
-
-  if (rollbackError) {
-    console.error(
-      "[sign/[token]] CRITICAL: rollback failed — proposal may be Signed with no evidence, manual recovery needed:",
-      { proposalId, reason, rollbackError }
-    )
-    try {
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "sign_rollback_failed",
-        error_message: `${reason}: ${rollbackError.message ?? "unknown rollback error"}`,
-        payload: { proposalId },
-      })
-    } catch (logErr) {
-      console.error(
-        "[sign/[token]] Failed to persist sign_rollback_failed record:",
-        { proposalId, logErr }
-      )
-    }
-  }
 }
 
 // ── GET /api/sign/[token] ─────────────────────────────────────────────────────
@@ -166,14 +119,6 @@ export async function GET(
 
 // ── POST /api/sign/[token] ────────────────────────────────────────────────────
 
-interface SignBody {
-  signer_name: string
-  signer_email: string
-  signature_image: string
-}
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
 export async function POST(
   req: NextRequest,
   ctx: SignTokenCtx
@@ -181,50 +126,24 @@ export async function POST(
   const { token } = await ctx.params
 
   // 1. Parse body
-  let body: SignBody
+  let body: unknown
   try {
-    body = (await req.json()) as SignBody
+    body = await req.json()
   } catch {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 })
   }
 
-  if (!body || typeof body !== "object") {
-    return NextResponse.json({ error: "invalid_body" }, { status: 400 })
-  }
-
   // 2. Validate fields
-  const signerName =
-    typeof body.signer_name === "string" ? body.signer_name.trim() : ""
-  const signerEmail =
-    typeof body.signer_email === "string" ? body.signer_email.trim() : ""
-  const signatureImage = body.signature_image ?? ""
-
-  if (!signerName) {
+  const validated = validateSigningInput(body)
+  if (!validated.ok) {
     return NextResponse.json(
-      { error: "validation", message: "signer_name is required" },
+      { error: "validation", message: validated.message },
       { status: 400 }
     )
   }
-
-  if (!EMAIL_REGEX.test(signerEmail)) {
-    return NextResponse.json(
-      { error: "validation", message: "signer_email is invalid" },
-      { status: 400 }
-    )
-  }
-
-  if (
-    typeof signatureImage !== "string" ||
-    !signatureImage.startsWith("data:image/png;base64,")
-  ) {
-    return NextResponse.json(
-      {
-        error: "validation",
-        message: "signature_image must be a PNG data URL",
-      },
-      { status: 400 }
-    )
-  }
+  const signerName = validated.value.signer_name
+  const signerEmail = validated.value.signer_email
+  const signatureImage = validated.value.signature_image
 
   // 3. Hash + look up the proposal
   const hash = hashToken(token)
@@ -247,161 +166,156 @@ export async function POST(
     return NextResponse.json({ error: "already_signed" }, { status: 409 })
   }
 
-  // 4. Atomic single-use consume — guarded on not-yet-used
+  // 4. The signer must accept the exact PDF that was hashed when the link was
+  // sent. Prepare the stamped, content-addressed artefact before changing any
+  // lifecycle state; a download, hash, stamp, or upload failure leaves the token
+  // unused and no contract can be issued.
   const now = new Date().toISOString()
-
-  const { data: consumed, error: consumeError } = await adminClient
-    .from("proposals")
-    .update({
-      signing_token_used: true,
-      status: "Signed",
-      signed_at: now,
+  if (!row.signing_document_hash || !row.proposal_pdf_path) {
+    console.error("[sign/[token]] Proposal has incomplete signing evidence", {
+      proposalId: row.id,
     })
-    .eq("signing_token", hash)
-    .eq("signing_token_used", false)
-    .gt("signing_token_expires_at", new Date().toISOString())
-    .select("id, client_id, signing_document_hash, services_json, proposal_pdf_path")
-    .maybeSingle<{
-      id: string
-      client_id: string
-      signing_document_hash: string | null
-      services_json: unknown
-      proposal_pdf_path: string | null
-    }>()
-
-  if (consumeError) {
-    return NextResponse.json({ error: "internal" }, { status: 500 })
-  }
-
-  if (!consumed) {
-    // Lost the race — another request already consumed the token
-    return NextResponse.json({ error: "already_signed" }, { status: 409 })
-  }
-
-  // 5. Guard: document hash must be present — fail loudly if missing.
-  // Same failure class as a signature-insert failure: the token was just
-  // consumed and the row set Signed, so roll that back before 500ing rather
-  // than leaving a Signed proposal with no evidence.
-  if (!consumed.signing_document_hash) {
-    console.error(
-      "[sign/[token]] Proposal consumed but has no stored document hash — rolling back:",
-      { proposalId: consumed.id }
-    )
-    await rollbackSignedConsume(consumed.id, row.status, "missing_document_hash")
     return NextResponse.json({ error: "server_error" }, { status: 500 })
   }
 
-  // 6. Capture IP + UA
+  let stampedBytes: Uint8Array
+  let signedDocumentHash: string
+  let signedPath: string
+  try {
+    const { data: pdfBlob, error: downloadError } = await adminClient.storage
+      .from("proposals")
+      .download(row.proposal_pdf_path)
+
+    if (downloadError || !pdfBlob) {
+      throw new Error(downloadError?.message ?? "download returned null blob")
+    }
+
+    const pdfBytes = new Uint8Array(await pdfBlob.arrayBuffer())
+    const currentDocumentHash = createHash("sha256")
+      .update(pdfBytes)
+      .digest("hex")
+
+    if (currentDocumentHash !== row.signing_document_hash) {
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "proposal_signing_document_changed",
+        error_message:
+          "The proposal PDF no longer matches the document sent for signature.",
+        payload: { proposalId: row.id },
+      })
+      return NextResponse.json(
+        { error: "document_changed" },
+        { status: 409 }
+      )
+    }
+
+    stampedBytes = await embedSignatureInPdf(pdfBytes, signatureImage, {
+      signerName,
+      signedAt: now,
+    })
+    signedDocumentHash = createHash("sha256")
+      .update(stampedBytes)
+      .digest("hex")
+    signedPath = signedPdfPathFor(
+      row.proposal_pdf_path,
+      signedDocumentHash
+    )
+
+    const { error: stampUploadError } = await adminClient.storage
+      .from("proposals")
+      .upload(signedPath, stampedBytes, {
+        contentType: "application/pdf",
+        // The key contains the content hash. Replacing that same key is safe:
+        // identical keys represent identical bytes, while concurrent signatures
+        // produce different keys and cannot overwrite one another.
+        upsert: true,
+      })
+
+    if (stampUploadError) {
+      throw new Error(stampUploadError.message)
+    }
+  } catch (err) {
+    console.error(
+      `[sign] proposal evidence preparation failed for ${row.id}:`,
+      err
+    )
+    return NextResponse.json(
+      { error: "evidence_unavailable" },
+      { status: 503 }
+    )
+  }
+
+  // 5. Capture IP + UA
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "0.0.0.0"
   const ua = req.headers.get("user-agent") ?? null
 
-  // 7. Insert signature record
-  const { error: insertError } = await adminClient
-    .from("proposal_signatures")
-    .insert({
-      proposal_id: consumed.id,
-      signer_name: signerName,
-      signer_email: signerEmail,
-      signature_image: signatureImage,
-      ip_address: ip,
-      user_agent: ua,
-      document_hash: consumed.signing_document_hash,
-      signed_at: now,
-    })
+  // 6. This RPC is the database commit point: it consumes the token, advances
+  // the proposal, links the stamped artefact, and inserts the signature audit
+  // row in one transaction. It also guards the original path/hash values so an
+  // admin edit racing this request cannot be signed accidentally.
+  const { data: redeemedRows, error: redeemError } = await adminClient.rpc(
+    "redeem_proposal_signature",
+    {
+      p_token_hash: hash,
+      p_expected_document_hash: row.signing_document_hash,
+      p_expected_pdf_path: row.proposal_pdf_path,
+      p_signer_name: signerName,
+      p_signer_email: signerEmail,
+      p_signature_image: signatureImage,
+      p_ip_address: ip,
+      p_user_agent: ua,
+      p_signed_pdf_path: signedPath,
+      p_signed_document_hash: signedDocumentHash,
+      p_signed_at: now,
+    }
+  )
+  const redeemed = Array.isArray(redeemedRows) ? redeemedRows[0] : null
 
-  if (insertError) {
-    console.error(
-      "[sign/[token]] Failed to insert proposal_signatures row — rolling back the Signed transition:",
-      insertError
-    )
-    // The signature row IS the evidence the transition exists to capture. If it
-    // can't be persisted we must not leave the proposal Signed (which would also
-    // auto-issue a contract at step 10) with no signature. Roll back the consume
-    // so the state is atomic; restoring signing_token_used=false lets the client
-    // retry with the same link.
-    await rollbackSignedConsume(consumed.id, row.status, "signature_insert_failed")
-    return NextResponse.json(
-      { error: "signature_persist_failed" },
-      { status: 500 }
-    )
-  }
-
-  // 8. Embed the signature into a COPY of the PDF (best-effort — must not fail
-  //     the request).
-  //
-  //     The original at proposal_pdf_path is IMMUTABLE from here on. It used to
-  //     be overwritten in place with `upsert: true`, which destroyed the exact
-  //     bytes proposal_signatures.document_hash attests to — so re-hashing the
-  //     stored file could never match the recorded hash, and a mismatch could not
-  //     tell "stamped as designed" from "document swapped". The hash was
-  //     unusable as evidence, which is the only reason to store it. See
-  //     migration 029.
-  //
-  //     The stamped copy therefore gets its own key, and its own hash is stored
-  //     so the delivered artefact is independently verifiable too. If any of this
-  //     fails, signed_pdf_path stays NULL and readers fall back to the original —
-  //     an unstamped-but-verifiable PDF beats a stamped-but-unattestable one.
-  if (consumed.proposal_pdf_path) {
-    try {
-      const { data: pdfBlob, error: downloadError } = await adminClient.storage
-        .from("proposals")
-        .download(consumed.proposal_pdf_path)
-
-      if (downloadError || !pdfBlob) {
-        throw new Error(
-          downloadError?.message ?? "download returned null blob"
-        )
-      }
-
-      const pdfArrayBuffer = await pdfBlob.arrayBuffer()
-      const pdfBytes = new Uint8Array(pdfArrayBuffer)
-
-      const stampedBytes = await embedSignatureInPdf(pdfBytes, signatureImage, {
-        signerName,
-        signedAt: now,
+  if (redeemError || !redeemed) {
+    // The generated object is ours and no database row points at it when the
+    // transaction fails or loses the single-use race, so remove that orphan.
+    const { error: cleanupError } = await adminClient.storage
+      .from("proposals")
+      .remove([signedPath])
+    if (cleanupError) {
+      console.error("[sign/[token]] failed to remove uncommitted artefact", {
+        proposalId: row.id,
+        signedPath,
+        cleanupError,
       })
+    }
 
-      const signedPath = signedPdfPathFor(consumed.proposal_pdf_path)
-
-      const { error: stampUploadError } = await adminClient.storage
-        .from("proposals")
-        .upload(signedPath, stampedBytes, {
-          contentType: "application/pdf",
-          // upsert only so a retry of the SAME signature is not blocked; the key
-          // is distinct from the original, which is never written again.
-          upsert: true,
-        })
-
-      if (stampUploadError) {
-        throw new Error(stampUploadError.message)
-      }
-
-      const { error: pathError } = await adminClient
-        .from("proposals")
-        .update({
-          signed_pdf_path: signedPath,
-          signed_document_hash: createHash("sha256").update(stampedBytes).digest("hex"),
-        })
-        .eq("id", consumed.id)
-
-      if (pathError) {
-        // The stamped file exists but nothing points at it — readers keep serving
-        // the original, which is still the attested artefact. Log loudly.
-        console.error(
-          `[sign] stamped PDF stored at ${signedPath} but signed_pdf_path was not persisted for ${consumed.id}:`,
-          pathError
-        )
-      }
-    } catch (err) {
-      console.error(
-        `[sign] PDF signature embed failed for proposal ${consumed.id} — original left intact, signed_pdf_path stays NULL:`,
-        err
+    if (redeemError) {
+      console.error("[sign/[token]] atomic evidence commit failed", redeemError)
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "proposal_signature_commit",
+        error_message: redeemError.message ?? "unknown database error",
+        payload: { proposalId: row.id },
+      })
+      return NextResponse.json(
+        { error: "signature_persist_failed" },
+        { status: 500 }
       )
     }
+    return NextResponse.json(
+      { error: "already_signed" },
+      { status: 409 }
+    )
   }
 
-  // 9. Load client + dispatch notification
+  const consumed = redeemed as {
+    proposal_id: string
+    client_id: string
+    services_json: unknown
+    proposal_pdf_path: string
+    signing_document_hash: string
+  }
+
+  // The remaining work is downstream delivery. The signing evidence and
+  // artefact are already committed together at this point.
+  const proposalId = consumed.proposal_id
+
+  // 7. Load client + dispatch notification
   try {
     const { data: clientRow } = await adminClient
       .from("clients")
@@ -412,9 +326,6 @@ export async function POST(
     const services = parseServices(consumed.services_json)
     const title = deriveTitle(services)
 
-    // Best-effort confirmation email — never blocks or rolls back the signature
-    // (already persisted). But a delivery failure (missing RESEND_API_KEY, Resend
-    // rejection) must be recorded, not swallowed, so it surfaces for follow-up.
     const notified = await dispatchNotification({
       type: "proposal_signed",
       client_name: clientRow?.name ?? "",
@@ -426,14 +337,14 @@ export async function POST(
       await adminClient.from("workflow_errors").insert({
         workflow_name: "proposal_signed_email",
         error_message: notified.error ?? "unknown dispatch failure",
-        payload: { proposalId: consumed.id, client_id: consumed.client_id },
+        payload: { proposalId, client_id: consumed.client_id },
       })
     }
   } catch (err) {
     console.error("[sign/[token]] Notification dispatch failed:", err)
   }
 
-  // 10. Auto-issue the Service Agreement now that the proposal is "Signed".
+  // 8. Auto-issue the Service Agreement now that the proposal is "Signed".
   //     Best-effort: the signature row is already persisted and the single-use
   //     token consumed, so a contract failure must NEVER roll that back or 500
   //     the request. Failures are logged to workflow_errors (surfaced on the
@@ -442,24 +353,24 @@ export async function POST(
   //     requireAdmin() gate — there is no admin session on this public route, and
   //     the client proved authority by redeeming the single-use signing token.
   try {
-    const issued = await issueContractCore(consumed.id)
+    const issued = await issueContractCore(proposalId)
     if (!issued.ok) {
       await adminClient.from("workflow_errors").insert({
         workflow_name: "auto_issue_contract",
         error_message: issued.error,
-        payload: { proposalId: consumed.id, client_id: consumed.client_id },
+        payload: { proposalId, client_id: consumed.client_id },
       })
     }
   } catch (err) {
     console.error(
-      `[sign/[token]] Auto-issue contract failed for proposal ${consumed.id}:`,
+      `[sign/[token]] Auto-issue contract failed for proposal ${proposalId}:`,
       err
     )
     try {
       await adminClient.from("workflow_errors").insert({
         workflow_name: "auto_issue_contract",
         error_message: err instanceof Error ? err.message : String(err),
-        payload: { proposalId: consumed.id, client_id: consumed.client_id },
+        payload: { proposalId, client_id: consumed.client_id },
       })
     } catch (logErr) {
       console.error("[sign/[token]] Failed to log auto-issue error:", logErr)

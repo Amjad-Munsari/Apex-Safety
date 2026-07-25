@@ -58,7 +58,8 @@ function makeFromMock(table: string) {
       },
       error: null,
     });
-    const eqSpy = vi.fn().mockReturnValue({ single: templateSingleSpy });
+    const isSpy = vi.fn().mockReturnValue({ single: templateSingleSpy });
+    const eqSpy = vi.fn().mockReturnValue({ is: isSpy });
     const selectSpy = vi.fn().mockReturnValue({ eq: eqSpy });
     return { select: selectSpy };
   }

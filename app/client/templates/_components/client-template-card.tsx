@@ -47,7 +47,7 @@ export function ClientTemplateCard({
         toast.success(`Template "${name}" deleted`)
         setConfirmOpen(false)
         router.refresh()
-      } catch (err) {
+      } catch {
         toast.error("Could not delete template. Please try again.")
       }
     })
@@ -97,7 +97,8 @@ export function ClientTemplateCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this template?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete &ldquo;{name}&rdquo;? This cannot be undone.
+              &ldquo;{name}&rdquo; will be removed from future use. Existing
+              submissions will not be changed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

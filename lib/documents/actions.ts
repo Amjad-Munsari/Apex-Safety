@@ -8,6 +8,10 @@ import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getAppSettings } from "@/lib/settings/app-settings"
+import {
+  detectAllowedDocumentType,
+  mimeMatchesDetectedType,
+} from "@/lib/files/file-signature"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -60,6 +64,9 @@ export async function uploadClientDocumentAction(formData: FormData) {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error("File exceeds the 25 MB limit")
   }
+  if (file.size === 0) {
+    throw new Error("The selected file is empty")
+  }
   // Fail CLOSED. The old `file.type && !ALLOWED_MIME.has(...)` skipped the
   // allowlist entirely when the part carried no Content-Type, so omitting the
   // header was enough to opt out of it.
@@ -67,8 +74,13 @@ export async function uploadClientDocumentAction(formData: FormData) {
     throw new Error("Unsupported file type — upload a PDF or image")
   }
 
-  const fileExt = file.name.split(".").pop()
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+  const fileBytes = new Uint8Array(await file.arrayBuffer())
+  const detectedType = detectAllowedDocumentType(fileBytes)
+  if (!detectedType || !mimeMatchesDetectedType(file.type, detectedType.mime)) {
+    throw new Error("The file contents do not match an allowed PDF or image type")
+  }
+
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${detectedType.extension}`
   const filePath = `${clientId}/${fileName}`
 
   const { error: uploadError } = await supabase.storage

@@ -2,6 +2,8 @@ import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { calculateProposalTotal } from "@/lib/supabase/dashboard";
 import { FileDownloadUrl } from "@/components/client/file-download-url";
+import Link from "next/link";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +35,7 @@ export default async function ClientContractsPage() {
   // D-11: stored status is title-case "Contract Issued" — NOT "contract_signed".
   // adminClient bypasses RLS (RLS uses lowercase values that never match stored
   // title-case); the .eq("client_id") scope is the sole IDOR boundary (T-19-11).
-  const { data: rows } = await adminClient
+  const { data: rows, error: queryError } = await adminClient
     .from("proposals")
     .select("id, contract_pdf_path, services_json, total_price, created_at, sent_at")
     .eq("client_id", ctx.client_id)
@@ -109,7 +111,9 @@ export default async function ClientContractsPage() {
       </section>
 
       {/* List or empty state */}
-      {mappedContracts.length === 0 ? (
+      {queryError ? (
+        <ClientDataLoadError itemName="contracts" />
+      ) : mappedContracts.length === 0 ? (
         /* Existing editorial empty-state card — verbatim */
         <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">
           <p className="font-serif text-[20px] text-foreground mb-3">No contracts yet.</p>
@@ -129,13 +133,21 @@ export default async function ClientContractsPage() {
                 {/* Left */}
                 <div className="flex-1 min-w-0 space-y-2">
                   <div className="flex items-center gap-3 font-mono text-[9px] tracking-[0.25em] text-muted-foreground uppercase font-bold">
-                    <span>{c.reference}</span>
+                    <Link
+                      href={`/client/contracts/${c.id}`}
+                      className="text-teal hover:text-teal/80 transition-colors"
+                    >
+                      {c.reference}
+                    </Link>
                     <span className="opacity-50">·</span>
                     <span>Issued {c.issuedAt}</span>
                   </div>
-                  <h3 className="font-serif text-[24px] text-foreground tracking-tight leading-tight">
+                  <Link
+                    href={`/client/contracts/${c.id}`}
+                    className="block font-serif text-[24px] text-foreground hover:text-teal transition-colors tracking-tight leading-tight"
+                  >
                     {c.title}
-                  </h3>
+                  </Link>
                   <p className="font-sans text-[13px] text-muted-foreground">
                     {c.serviceCount} {c.serviceCount === 1 ? "service" : "services"} · £
                     {Math.round(c.total).toLocaleString()}

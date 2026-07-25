@@ -16,6 +16,10 @@ import {
   runReportDraftGeneration,
   scheduleReportDraftGeneration,
 } from "@/lib/reports/report-draft"
+import {
+  detectAllowedDocumentType,
+  mimeMatchesDetectedType,
+} from "@/lib/files/file-signature"
 
 // Authorize a caller to act on a specific submission. Admins always pass; a
 // client may only act on a submission owned by their OWN org. Returns the
@@ -580,6 +584,17 @@ export async function uploadMediaAction(
     )
   }
 
+  // Reject oversized input before inspecting its contents, then verify the
+  // caller-supplied MIME against the file's actual header.
+  const detected = detectAllowedDocumentType(buffer)
+  if (
+    !detected ||
+    !detected.mime.startsWith("image/") ||
+    !mimeMatchesDetectedType(mime, detected.mime)
+  ) {
+    throw new Error("The uploaded bytes do not match the declared image type.")
+  }
+
   // Step 7: Derive extension from MIME
   const extMap: Record<string, string> = {
     "image/png": "png",
@@ -638,6 +653,16 @@ export async function uploadMediaAction(
       storagePath,
       error: insertError,
     })
+    const { error: cleanupError } = await adminClient.storage
+      .from("form-media")
+      .remove([storagePath])
+    if (cleanupError) {
+      await adminClient.from("workflow_errors").insert({
+        workflow_name: "field_media_upload_cleanup",
+        error_message: cleanupError.message,
+        payload: { submissionId, fieldId, storagePath },
+      })
+    }
     throw new Error(`field_media insert failed: ${insertError.message}`)
   }
 
@@ -676,6 +701,50 @@ export async function getMediaPreviewUrlsAction(
       .filter((item) => item.path && item.signedUrl)
       .map((item) => [item.path, item.signedUrl])
   )
+}
+
+/**
+ * Load photos attached through the per-field affordance after a page refresh.
+ * Paths come from field_media, then receive short-lived URLs only after the
+ * submission ownership check succeeds.
+ */
+export async function getAttachedMediaAction(
+  submissionId: string,
+  fieldId: string
+): Promise<Array<{ path: string; url: string }>> {
+  const clientId = await authorizeSubmissionAccess(submissionId)
+  const prefix = `${clientId}/photos/${submissionId}/${fieldId}/`
+  const { data, error } = await adminClient
+    .from("field_media")
+    .select("storage_path")
+    .eq("submission_id", submissionId)
+    .eq("field_id", fieldId)
+    .eq("media_type", "image")
+
+  if (error) throw new Error(`Could not load attached photos: ${error.message}`)
+
+  const paths = [
+    ...new Set(
+      (data ?? [])
+        .map((row) => row.storage_path)
+        .filter((path): path is string => path.startsWith(prefix))
+    ),
+  ]
+  if (paths.length === 0) return []
+
+  const { data: signed, error: signedError } = await adminClient.storage
+    .from("form-media")
+    .createSignedUrls(paths, 60 * 15)
+  if (signedError) {
+    throw new Error(`Could not preview attached photos: ${signedError.message}`)
+  }
+
+  return (signed ?? [])
+    .filter(
+      (item): item is typeof item & { path: string; signedUrl: string } =>
+        Boolean(item.path && item.signedUrl)
+    )
+    .map((item) => ({ path: item.path, url: item.signedUrl }))
 }
 
 /**

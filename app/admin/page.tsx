@@ -1,5 +1,4 @@
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -7,6 +6,10 @@ import { ComplianceChart } from "./compliance-chart";
 import { ClientRow } from "./clients/_components/client-row";
 import { ragToneFromDays } from "@/lib/ui/rag-tone";
 import { describeWorkflowError } from "@/lib/workflow-errors";
+import {
+  daysUntilExpiry,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status";
 import {
   getDashboardStats,
   getReportsAwaitingReview,
@@ -18,6 +21,15 @@ import {
 } from "@/lib/supabase/dashboard";
 
 export const dynamic = "force-dynamic";
+
+function formatWorkflowTimestamp(value: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value))
+}
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
@@ -44,6 +56,9 @@ export default async function AdminDashboardPage() {
           status
         )
       `)
+      .is("deleted_at", null)
+      .eq("documents.active", true)
+      .is("documents.deleted_at", null)
       .order("name", { ascending: true })
       .limit(50),
     supabase
@@ -53,6 +68,7 @@ export default async function AdminDashboardPage() {
 
   const clients = clientsRes.data;
   const allProposals = allProposalsRes.data;
+  const todayIso = todayIsoInTimeZone();
 
   const complianceData = [
     { name: 'Current', value: compliance.current, color: 'var(--teal)' },
@@ -127,7 +143,11 @@ export default async function AdminDashboardPage() {
                     // Calculate next expiry
                     type DocRow = { expiry_date: string | null; document_category: string | null };
                     const expiries = (client.documents as DocRow[] | null)
-                      ?.map((d) => ({ date: new Date(d.expiry_date ?? ""), cat: d.document_category }))
+                      ?.map((d) => ({
+                        iso: d.expiry_date,
+                        date: new Date(d.expiry_date ?? ""),
+                        cat: d.document_category,
+                      }))
                       .filter((d) => !isNaN(d.date.getTime()))
                       .sort((a, b) => a.date.getTime() - b.date.getTime());
 
@@ -135,13 +155,14 @@ export default async function AdminDashboardPage() {
                     const proposalStatus = client.proposals?.[0]?.status;
 
                     // Calculate RAG status based on expiry
-                    const today = new Date();
-                    const daysUntil = nextExpiry ? Math.ceil((nextExpiry.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                    const daysUntil = nextExpiry?.iso
+                      ? daysUntilExpiry(nextExpiry.iso, todayIso)
+                      : null;
 
                     // Shared tone → class mapping (lib/ui/rag-tone.ts). Both
                     // producers previously open-coded this and disagreed on the
                     // neutral "no documents" token.
-                    const ragTone = ragToneFromDays(nextExpiry ? daysUntil : null);
+                    const ragTone = ragToneFromDays(daysUntil);
                     const ragLabel = !nextExpiry
                       ? "Incomplete"
                       : ragTone === "expired"
@@ -239,14 +260,17 @@ export default async function AdminDashboardPage() {
                 </div>
                 <div className="flex flex-col gap-5">
                   {upcomingExpiries.map((doc) => {
-                    const daysLeft = Math.ceil((new Date(doc.expiry_date || "").getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                    const daysLeft = daysUntilExpiry(
+                      doc.expiry_date as string,
+                      todayIso
+                    );
                     return (
                       <div key={doc.id} className="flex justify-between items-start gap-4 border-b border-border pb-5 last:border-0 last:pb-0">
                         <div>
                           <div className="text-foreground text-sm font-medium mb-1">{doc.filename}</div>
                           <div className="text-xs text-muted-foreground">{(doc.client as { name?: string } | null)?.name} <span className="font-mono ml-1 uppercase">{new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
                         </div>
-                        {daysLeft < 0 ? (
+                        {daysLeft <= 0 ? (
                           <div className="inline-flex items-center px-2.5 py-1 text-danger border border-danger/40 text-[10px] font-mono uppercase tracking-wider rounded-sm shrink-0 mt-0.5 leading-none">
                             <div className="w-1.5 h-1.5 rounded-full bg-danger mr-1.5 animate-pulse"></div> OVERDUE
                           </div>
@@ -338,7 +362,7 @@ export default async function AdminDashboardPage() {
           </div>
 
           <div className="flex flex-col relative before:absolute before:left-3.5 before:top-4 before:bottom-6 before:w-[1px] before:bg-border gap-8 ml-2">
-            {['draft', 'sent', 'signed', 'contract_sent'].map((statusKey, idx) => {
+            {['draft', 'sent', 'signed', 'contract_sent'].map((statusKey) => {
               // Normalize status for matching (handle spaces, underscores, and casing)
               const count = allProposals?.filter(p => {
                 const normalized = p.status.toLowerCase().replace(/ /g, '_');
@@ -384,7 +408,7 @@ export default async function AdminDashboardPage() {
               return (
                 <div key={error.id} className="flex items-start md:items-center gap-4 py-4 first:pt-0 last:pb-0">
                   <span className="w-24 shrink-0 text-muted-foreground font-mono">
-                    {Math.floor((Date.now() - new Date(error.created_at).getTime()) / (1000 * 60 * 60))} h ago
+                    {formatWorkflowTimestamp(error.created_at)}
                   </span>
                   <div className="w-12 shrink-0 px-2 py-0.5 border border-danger/20 rounded-[2px] text-danger text-[10px] text-center font-bold font-mono">ERR</div>
                   <span className="flex-1 truncate text-foreground/90 font-sans">

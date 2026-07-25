@@ -7,6 +7,7 @@ import {
   type HoursTransactionRow,
 } from "@/lib/billing/history";
 import BillingClient from "./billing-client";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,10 @@ export default async function BillingPage() {
 
   const supabase = await createClient();
 
-  const [{ data: client }, { data: txRows }] = await Promise.all([
+  const [
+    { data: client, error: clientError },
+    { data: txRows, error: transactionsError },
+  ] = await Promise.all([
     supabase.from("clients").select("hours_balance").eq("id", ctx.client_id).single(),
     supabase
       .from("hours_transactions")
@@ -35,6 +39,14 @@ export default async function BillingPage() {
       .order("created_at", { ascending: false })
       .limit(50),
   ]);
+
+  if (clientError || transactionsError) {
+    console.error("[client/billing] failed to load billing data", {
+      clientError,
+      transactionsError,
+    });
+    return <ClientDataLoadError itemName="billing history" />;
+  }
 
   const rows = (txRows ?? []) as HoursTransactionRow[];
   const summary = deriveBillingSummary(rows, new Date().toISOString());

@@ -1,6 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext, getUser } from "@/lib/auth-helpers";
 import { ClientDashboard } from "./dashboard-client";
+import {
+  complianceStatusForDate,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status";
 
 export const dynamic = "force-dynamic";
 
@@ -87,7 +91,7 @@ export default async function ClientDashboardPage() {
   ]);
 
   const now = new Date();
-  const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const todayIso = todayIsoInTimeZone(now);
 
   let current = 0;
   let expiring = 0;
@@ -99,8 +103,8 @@ export default async function ClientDashboardPage() {
       current += 1;
       continue;
     }
-    const exp = new Date(d.expiry_date);
-    if (exp < now) {
+    const status = complianceStatusForDate(d.expiry_date, todayIso);
+    if (status === "expired") {
       expired += 1;
       attentionDocs.push({
         id: d.id,
@@ -110,7 +114,7 @@ export default async function ClientDashboardPage() {
         date: formatDate(d.expiry_date),
         type: "expired",
       });
-    } else if (exp < thirtyDays) {
+    } else if (status === "expiring") {
       expiring += 1;
       attentionDocs.push({
         id: d.id,

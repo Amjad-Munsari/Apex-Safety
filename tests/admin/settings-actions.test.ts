@@ -19,7 +19,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }))
 // silently matches zero rows when the singleton row is absent.
 vi.mock("@/lib/supabase/admin", () => ({
   adminClient: {
-    from: (_table: string) => ({
+    from: () => ({
       upsert: (arg: Record<string, unknown>, opts?: Record<string, unknown>) => {
         updateArgs.push(arg)
         upsertOptions.push(opts)
@@ -34,6 +34,8 @@ const base = {
   senderName: "888 Safety & Training",
   expiryRemindersEnabled: true,
   notifyOnUpload: true,
+  brandingPrimary: "#3b8273",
+  brandingSecondary: "#d97706",
 }
 
 beforeEach(() => {
@@ -63,7 +65,11 @@ describe("saveNotificationSettings — credits_per_hour validation", () => {
     const { saveNotificationSettings } = await import("@/app/admin/settings/actions")
     const res = await saveNotificationSettings({ ...base, creditsPerHour: 4 })
     expect(res.ok).toBe(true)
-    expect(updateArgs[0]).toMatchObject({ credits_per_hour: 4 })
+    expect(updateArgs[0]).toMatchObject({
+      credits_per_hour: 4,
+      branding_primary: "#3b8273",
+      branding_secondary: "#d97706",
+    })
   })
 })
 

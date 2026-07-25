@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { AssessmentsList } from "./assessments-list";
 import { statusForSubmission, type AssessmentRow } from "./status";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export default async function AssessmentListPage() {
   const supabase = await createClient();
 
   // RLS-scoped client. Defense-in-depth: also filter by client_id explicitly.
-  const { data: submissions } = await supabase
+  const { data: submissions, error } = await supabase
     .from("form_submissions")
     .select(`
       id,
@@ -64,7 +65,9 @@ export default async function AssessmentListPage() {
 
   return (
     <AssessmentsListShell>
-      {rows.length === 0 ? (
+      {error ? (
+        <ClientDataLoadError itemName="assessments" />
+      ) : rows.length === 0 ? (
         <AssessmentsEmpty
           headline="No assessments yet."
           body="When Matt carries out a fire-safety inspection on-site, the report will appear here for you to review and download."

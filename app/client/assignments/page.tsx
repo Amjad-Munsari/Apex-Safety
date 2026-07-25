@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AssignmentCard } from "./_components/assignment-card";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export default async function ClientAssignmentsPage() {
   const supabase = await createClient();
   const ctx = await getClientContext();
 
-  const { data: rows } = ctx
+  const { data: rows, error } = ctx
     ? await supabase
         .from("form_assignments")
         .select(
@@ -20,7 +21,7 @@ export default async function ClientAssignmentsPage() {
         .is("deleted_at", null)
         .order("due_date", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false })
-    : { data: null };
+    : { data: null, error: null };
 
   const active = (rows ?? []).filter((r) => r.status !== "completed");
   const completed = (rows ?? []).filter((r) => r.status === "completed");
@@ -42,6 +43,9 @@ export default async function ClientAssignmentsPage() {
       </section>
 
       {/* Tabs */}
+      {error ? (
+        <ClientDataLoadError itemName="assigned assessments" />
+      ) : (
       <Tabs defaultValue="active" className="w-full">
         <TabsList className="border-b border-border w-full justify-start rounded-none bg-transparent gap-6 px-0 h-auto py-0">
           <TabsTrigger
@@ -98,6 +102,7 @@ export default async function ClientAssignmentsPage() {
           )}
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }

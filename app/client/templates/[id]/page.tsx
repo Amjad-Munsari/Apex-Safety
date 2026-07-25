@@ -19,6 +19,7 @@ export default async function ClientTemplateBuilderPage({ params }: Props) {
     .from("form_templates")
     .select("id, name, template_type, is_published, owner_type, owner_id")
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   // Belt-and-braces: RLS already enforces this, but if a client somehow lands

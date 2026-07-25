@@ -34,6 +34,8 @@ export default async function SettingsPage() {
           notifyOnUpload: settings.notifyOnUpload,
           logoUrl: settings.logoUrl,
           creditsPerHour: settings.creditsPerHour,
+          brandingPrimary: settings.brandingPrimary,
+          brandingSecondary: settings.brandingSecondary,
         }}
       />
 

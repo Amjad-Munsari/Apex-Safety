@@ -1,10 +1,19 @@
 import { fetchActiveContractors } from "@/lib/data/contractors-server";
+import type { Contractor } from "@/lib/data/contractors";
 import { DirectoryBrowser } from "./_components/directory-browser";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
 export default async function DirectoryPage() {
-  const contractors = await fetchActiveContractors();
+  let contractors: Contractor[]
+  let loadFailed = false
+  try {
+    contractors = await fetchActiveContractors();
+  } catch {
+    contractors = []
+    loadFailed = true
+  }
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -23,7 +32,11 @@ export default async function DirectoryPage() {
         </p>
       </section>
 
-      <DirectoryBrowser contractors={contractors} />
+      {loadFailed ? (
+        <ClientDataLoadError itemName="contractor directory" />
+      ) : (
+        <DirectoryBrowser contractors={contractors} />
+      )}
     </div>
   );
 }

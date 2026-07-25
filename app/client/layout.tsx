@@ -1,7 +1,6 @@
-import { Suspense } from "react";
+import { Suspense, type CSSProperties } from "react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { BrandingProvider } from "@/components/branding-provider";
 import { getClientContext, isDemoMode } from "@/lib/auth-helpers";
 import { getAppSettings } from "@/lib/settings/app-settings";
 import { ClientPortalNav } from "./_components/client-portal-nav";
@@ -21,11 +20,18 @@ export default async function ClientLayout({
     redirect("/login");
   }
 
-  const { logoUrl } = await getAppSettings();
+  const { logoUrl, brandingPrimary, brandingSecondary } =
+    await getAppSettings();
 
   return (
-    <div data-surface="client" className="min-h-screen bg-background text-foreground font-sans antialiased text-sm">
-      <BrandingProvider />
+    <div
+      data-surface="client"
+      style={{
+        "--teal": brandingPrimary,
+        "--gold": brandingSecondary,
+      } as CSSProperties}
+      className="min-h-screen bg-background text-foreground font-sans antialiased text-sm"
+    >
       <Suspense fallback={<ClientPortalNav orgName="—" userName="—" userRole="—" />}>
         <ClientIdentityNav />
       </Suspense>

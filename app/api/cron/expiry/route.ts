@@ -3,6 +3,10 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getAppSettings } from "@/lib/settings/app-settings"
 import { daysUntilExpiry, selectExpiryAlertWindow } from "@/lib/notifications/expiry-window"
+import {
+  addDaysToIsoDate,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status"
 
 export async function GET(request: Request) {
   // Simple cron secret protection (Header or Query Param for manual testing)
@@ -43,22 +47,13 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Alert-range bounds. UTC math: setUTCDate + toISOString agree on the same calendar day. The old
-  // setDate/getDate (LOCAL) followed by toISOString (UTC) could shift the target
-  // by a day near midnight on a non-UTC host, diverging from the assignment
-  // scheduler's UTC iso() helper and matching the wrong documents.
-  const today = new Date()
-  const addDays = (d: Date, days: number) => {
-    const nd = new Date(d)
-    nd.setUTCDate(nd.getUTCDate() + days)
-    return nd.toISOString().split('T')[0]
-  }
-
-  const day30 = addDays(today, 30)
-  const todayIso = addDays(today, 0)
+  // The expiry date is a UK business calendar date. Build all bounds from that
+  // date so a Vercel host in UTC cannot disagree with the portal around midnight.
+  const todayIso = todayIsoInTimeZone()
+  const day30 = addDaysToIsoDate(todayIso, 30)
   // Expired documents are alerted too, but only within a 30-day tail so a
   // historic import can't trigger a burst of notices for long-dead documents.
-  const expiredFloor = addDays(today, -30)
+  const expiredFloor = addDaysToIsoDate(todayIso, -30)
 
   // 1. Fetch documents anywhere inside the alert range.
   //
@@ -82,7 +77,7 @@ export async function GET(request: Request) {
       document_category,
       expiry_date,
       client_id,
-      clients ( name )
+      clients ( name, contact_name, contact_email )
     `)
     .lte("expiry_date", day30)
     .gte("expiry_date", expiredFloor)
@@ -134,16 +129,17 @@ export async function GET(request: Request) {
       continue
     }
 
-    // Fetch client contact
-    const { data: clientUsers } = await supabase
-      .from("client_users")
-      .select("name, email")
-      .eq("client_id", doc.client_id)
-      .limit(1)
-
-    const contact = clientUsers?.[0]
-    const contactEmail = contact?.email
-    const contactName = contact?.name || "there"
+    // Use the organisation's designated contact, not an arbitrary first portal
+    // user whose ordering can change as people are invited or removed.
+    const relatedClient = doc.clients as
+      | { name?: string; contact_name?: string; contact_email?: string }
+      | Array<{ name?: string; contact_name?: string; contact_email?: string }>
+      | null
+    const client = Array.isArray(relatedClient)
+      ? relatedClient[0]
+      : relatedClient
+    const contactEmail = client?.contact_email
+    const contactName = client?.contact_name || client?.name || "there"
 
     if (!contactEmail) {
       console.warn(`[cron/expiry] no contact email for client ${doc.client_id}, skipping doc ${doc.id}`)
@@ -162,7 +158,12 @@ export async function GET(request: Request) {
       days_until_expiry: daysLeft,
     }
 
-    const result = await dispatchNotification(payload)
+    const result = await dispatchNotification(payload, {
+      // Resend deduplicates retries/concurrent cron runs at the provider. This
+      // closes the old gap where email succeeded but notifications_sent failed,
+      // causing the next run to send the same threshold again.
+      idempotencyKey: `expiry-${doc.id}-${alertWindow}`,
+    })
 
     if (!result.ok) {
       console.error(`[cron/expiry] dispatch failed for doc ${doc.id}: ${result.error}`)
@@ -175,7 +176,7 @@ export async function GET(request: Request) {
       continue
     }
 
-    await supabase
+    const { error: sentLogError } = await supabase
       .from("notifications_sent")
       .insert({
         client_id: doc.client_id,
@@ -183,13 +184,22 @@ export async function GET(request: Request) {
         document_id: doc.id,
         alert_window: alertWindow
       })
+    if (sentLogError) {
+      console.error(
+        `[cron/expiry] email sent but notification audit insert failed for ${doc.id}:`,
+        sentLogError
+      )
+      await supabase.from("workflow_errors").insert({
+        workflow_name: "expiry_notification_audit",
+        error_message: sentLogError.message,
+        payload: { ...payload, document_id: doc.id, alert_window: alertWindow },
+      })
+    }
 
     notificationsSent.push({ docId: doc.id, window: alertWindow })
 
-    const org = doc.clients as { name?: string } | { name?: string }[] | null
-    const orgName = (Array.isArray(org) ? org[0]?.name : org?.name) ?? contactName
     adminDigestItems.push({
-      client_name: orgName,
+      client_name: client?.name ?? contactName,
       document_name: doc.filename,
       expiry_date: doc.expiry_date as string,
       days_until_expiry: daysLeft,

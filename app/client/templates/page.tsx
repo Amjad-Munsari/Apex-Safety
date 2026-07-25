@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { NewClientTemplateButton } from "./_components/new-client-template-button";
 import { ClientTemplateCard } from "./_components/client-template-card";
+import { ClientDataLoadError } from "@/components/client/data-load-error";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function ClientTemplatesPage() {
   // redirected to /login by proxy.ts.
   const ctx = await getClientContext();
 
-  const { data: mine } = ctx
+  const { data: mine, error } = ctx
     ? await supabase
         .from("form_templates")
         .select(`
@@ -21,8 +22,9 @@ export default async function ClientTemplatesPage() {
         `)
         .eq("owner_type", "customer")
         .eq("owner_id", ctx.client_id)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
-    : { data: null };
+    : { data: null, error: null };
 
   return (
     <div className="space-y-12">
@@ -51,7 +53,9 @@ export default async function ClientTemplatesPage() {
             {mine?.length ?? 0} created
           </span>
         </div>
-        {!mine || mine.length === 0 ? (
+        {error ? (
+          <ClientDataLoadError itemName="templates" />
+        ) : !mine || mine.length === 0 ? (
           <div className="py-6">
             <h3 className="font-serif text-xl">No templates yet</h3>
             <p className="text-sm text-muted-foreground mt-2">Create your own forms or customise an assigned assessment when it arrives.</p>

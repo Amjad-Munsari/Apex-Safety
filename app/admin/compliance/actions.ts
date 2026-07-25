@@ -3,6 +3,10 @@
 import { adminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/auth-helpers"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
+import {
+  daysUntilExpiry,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status"
 
 export async function getComplianceDocSignedUrl(
   docId: string,
@@ -76,9 +80,7 @@ export async function sendManualExpiryReminder(
     return { ok: false, error: "Client has no contact email" }
   }
 
-  const expiry = new Date(doc.expiry_date)
-  const now = new Date()
-  const daysUntilExpiry = Math.ceil((expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  const daysLeft = daysUntilExpiry(doc.expiry_date, todayIsoInTimeZone())
 
   const payload = {
     type: "expiry_alert" as const,
@@ -86,7 +88,7 @@ export async function sendManualExpiryReminder(
     client_name: contact.name || "there",
     document_name: doc.filename,
     expiry_date: doc.expiry_date,
-    days_until_expiry: daysUntilExpiry,
+    days_until_expiry: daysLeft,
   }
 
   const result = await dispatchNotification(payload)
@@ -108,7 +110,7 @@ export async function sendManualExpiryReminder(
     client_id: doc.client_id,
     notification_type: "expiry_warning_manual",
     document_id: doc.id,
-    alert_window: daysUntilExpiry,
+    alert_window: daysLeft,
   })
 
   return { ok: true }

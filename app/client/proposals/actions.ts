@@ -32,7 +32,7 @@ export async function beginProposalSigning(proposalId: string): Promise<void> {
   // RLS, so this query is the trust boundary (same pattern as the detail page).
   const { data, error } = await adminClient
     .from("proposals")
-    .select("id, status, proposal_pdf_path")
+    .select("id, status, proposal_pdf_path, signing_document_hash")
     .eq("id", proposalId)
     .eq("client_id", ctx.client_id)
     .maybeSingle();
@@ -43,6 +43,7 @@ export async function beginProposalSigning(proposalId: string): Promise<void> {
     id: string;
     status: string;
     proposal_pdf_path: string | null;
+    signing_document_hash: string | null;
   };
 
   if (proposal.status !== "Sent") {
@@ -55,7 +56,12 @@ export async function beginProposalSigning(proposalId: string): Promise<void> {
   }
 
   const { raw, hash } = generateSigningToken();
-  const documentHash = await hashDocument(proposal.proposal_pdf_path);
+  // Keep the hash captured when Matt sent the proposal. Re-entering the
+  // signing flow may rotate the link, but must never silently bless different
+  // bytes at the same storage path.
+  const documentHash =
+    proposal.signing_document_hash ??
+    (await hashDocument(proposal.proposal_pdf_path));
   const expiresAt = new Date(
     Date.now() + 30 * 24 * 60 * 60 * 1000
   ).toISOString();

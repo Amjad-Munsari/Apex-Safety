@@ -5,6 +5,11 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { ComplianceDocRowItem, type ComplianceDocRow } from "./compliance-doc-row";
 import { UploadDocumentModal } from "@/components/admin/upload-document-modal";
+import {
+  complianceStatusForDate,
+  daysUntilExpiry,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +40,8 @@ export default async function CompliancePage({
     adminClient
       .from("documents")
       .select(`id, filename, expiry_date, document_category, client:clients(id, name)`)
+      .eq("active", true)
+      .is("deleted_at", null)
       .order("expiry_date", { ascending: true }),
     adminClient
       .from("clients")
@@ -47,18 +54,17 @@ export default async function CompliancePage({
   const clients = (clientsRes.data ?? []) as { id: string; name: string }[];
 
   const docs = (docsRes.data || []) as unknown as ComplianceDocRow[];
-  const now = new Date();
-  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const todayIso = todayIsoInTimeZone();
 
-  const expired = docs.filter((d) => d.expiry_date && new Date(d.expiry_date) < now);
-  const expiring = docs.filter((d) => {
-    const exp = d.expiry_date ? new Date(d.expiry_date) : null;
-    return exp && exp >= now && exp < thirtyDaysFromNow;
-  });
-  const current = docs.filter((d) => {
-    const exp = d.expiry_date ? new Date(d.expiry_date) : null;
-    return exp && exp >= thirtyDaysFromNow;
-  });
+  const expired = docs.filter(
+    (d) => complianceStatusForDate(d.expiry_date, todayIso) === "expired"
+  );
+  const expiring = docs.filter(
+    (d) => complianceStatusForDate(d.expiry_date, todayIso) === "expiring"
+  );
+  const current = docs.filter(
+    (d) => complianceStatusForDate(d.expiry_date, todayIso) === "current"
+  );
   // Documents with no expiry date belong to none of the date buckets above.
   // They were previously counted in "All" (docs.length) but rendered in no
   // table at all — invisible. Surface them in their own section.
@@ -132,30 +138,30 @@ export default async function CompliancePage({
       {/* ─── TABLES (filtered by tab) ─── */}
       {active === "all" && (
         <>
-          {current.length > 0 && <DocTable title="Current" accent="teal" docs={current} now={now} />}
-          {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" accent="gold" docs={expiring} now={now} showReminder />}
-          {expired.length > 0 && <DocTable title="Expired" accent="danger" docs={expired} now={now} showReminder />}
-          {undated.length > 0 && <DocTable title="No Expiry Date" accent="neutral" docs={undated} now={now} />}
+          {current.length > 0 && <DocTable title="Current" accent="teal" docs={current} todayIso={todayIso} />}
+          {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" accent="gold" docs={expiring} todayIso={todayIso} showReminder />}
+          {expired.length > 0 && <DocTable title="Expired" accent="danger" docs={expired} todayIso={todayIso} showReminder />}
+          {undated.length > 0 && <DocTable title="No Expiry Date" accent="neutral" docs={undated} todayIso={todayIso} />}
         </>
       )}
       {active === "expired" && (
         expired.length > 0
-          ? <DocTable title="Expired" accent="danger" docs={expired} now={now} showReminder />
+          ? <DocTable title="Expired" accent="danger" docs={expired} todayIso={todayIso} showReminder />
           : <EmptyTab label="No expired documents" />
       )}
       {active === "expiring" && (
         expiring.length > 0
-          ? <DocTable title="Expiring Soon (next 30 days)" accent="gold" docs={expiring} now={now} showReminder />
+          ? <DocTable title="Expiring Soon (next 30 days)" accent="gold" docs={expiring} todayIso={todayIso} showReminder />
           : <EmptyTab label="No documents expiring in the next 30 days" />
       )}
       {active === "current" && (
         current.length > 0
-          ? <DocTable title="Current" accent="teal" docs={current} now={now} />
+          ? <DocTable title="Current" accent="teal" docs={current} todayIso={todayIso} />
           : <EmptyTab label="No current documents" />
       )}
       {active === "undated" && (
         undated.length > 0
-          ? <DocTable title="No Expiry Date" accent="neutral" docs={undated} now={now} />
+          ? <DocTable title="No Expiry Date" accent="neutral" docs={undated} todayIso={todayIso} />
           : <EmptyTab label="No documents without an expiry date" />
       )}
     </div>
@@ -174,13 +180,13 @@ function DocTable({
   title,
   accent,
   docs,
-  now,
+  todayIso,
   showReminder = false,
 }: {
   title: string;
   accent: Accent;
   docs: ComplianceDocRow[];
-  now: Date;
+  todayIso: string;
   showReminder?: boolean;
 }) {
   return (
@@ -203,7 +209,9 @@ function DocTable({
         <tbody className="divide-y divide-border">
           {docs.map((doc) => {
             const expDate = doc.expiry_date ? new Date(doc.expiry_date) : null;
-            const daysLeft = expDate ? Math.ceil((expDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+            const daysLeft = doc.expiry_date
+              ? daysUntilExpiry(doc.expiry_date, todayIso)
+              : null;
             const expDateLabel = expDate
               ? expDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
               : "—";

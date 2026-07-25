@@ -3,6 +3,10 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { ComplianceView, type ComplianceCategory, type ComplianceDoc, type ComplianceStatus } from "./compliance-view";
 import { ClientDataLoadError } from "@/components/client/data-load-error";
+import {
+  complianceStatusForDate,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status";
 
 export const dynamic = "force-dynamic";
 
@@ -30,17 +34,15 @@ function formatSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-function computeStatus(expiryIso: string | null, now: Date, thirtyDays: Date): ComplianceStatus {
-  if (!expiryIso) return "CURRENT";
-  const exp = new Date(expiryIso);
-  if (exp < now) return "EXPIRED";
-  if (exp < thirtyDays) return "EXPIRING";
-  return "CURRENT";
+function computeStatus(expiryIso: string | null, todayIso: string): ComplianceStatus {
+  const status = complianceStatusForDate(expiryIso, todayIso);
+  // Undated documents remain usable records and are shown as Current on the
+  // client surface; the admin compliance screen separates them.
+  return status === "undated" ? "CURRENT" : status.toUpperCase() as ComplianceStatus;
 }
 
 function groupByCategory(docs: DocumentRow[]): ComplianceCategory[] {
-  const now = new Date();
-  const thirtyDays = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const todayIso = todayIsoInTimeZone();
   const buckets = new Map<string, ComplianceDoc[]>();
 
   for (const d of docs) {
@@ -51,7 +53,7 @@ function groupByCategory(docs: DocumentRow[]): ComplianceCategory[] {
       size: formatSize(d.file_size_bytes),
       issued: formatDate(d.uploaded_at),
       expires: d.expiry_date ? formatDate(d.expiry_date) : null,
-      status: computeStatus(d.expiry_date, now, thirtyDays),
+      status: computeStatus(d.expiry_date, todayIso),
     };
     const arr = buckets.get(category);
     if (arr) arr.push(ui);

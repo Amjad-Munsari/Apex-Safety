@@ -16,18 +16,9 @@
  *       → uploadMediaAction(submissionId, entityId, dataUrl, "image", clientId, "photo")
  *       → storagePath stored in local state strip
  *
- * Session-local trade-off (Phase 14 MVP):
- *   Storage paths are NOT mirrored to the parent renderer's entity.value.
- *   The field_media row insert (via uploadMediaAction) is the authoritative record.
- *   The thumbnail strip is session-local — on page reload it shows 0 attached photos
- *   until a Phase 16+ fetcher queries field_media by (submission_id, field_id).
- *   Preview URLs are kept in local state after upload (not revoked immediately) so
- *   thumbnails remain visible during the session. All previewUrls are revoked on unmount.
- *
- * Remove trade-off:
- *   handleRemove removes the entry from local state and revokes the previewUrl.
- *   It does NOT delete the storage object or the field_media row —
- *   orphan cleanup is a Phase 16+ concern.
+ * The field_media row is authoritative. Existing attachments are reloaded with
+ * short-lived signed URLs, and removal deletes both the private object and its
+ * audit row before the thumbnail disappears.
  *
  * @see D-05 (per-field attachPhotos affordance semantics — NOT a bottom gallery)
  * @see D-06 (attachPhotos attribute)
@@ -36,23 +27,31 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from "react"
+import Image from "next/image"
 import { Paperclip, Plus, AlertCircle, Loader2, X } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { useMediaProcessor } from "@/hooks/use-media-processor"
-import { uploadMediaAction } from "@/app/admin/assessments/actions"
+import {
+  deleteMediaAction,
+  getAttachedMediaAction,
+  uploadMediaAction,
+} from "@/app/admin/assessments/actions"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type PhotoStatus = "uploading" | "uploaded" | "error"
+type PhotoStatus = "uploading" | "uploaded" | "error" | "removing"
 
 interface PhotoEntry {
   id: string
   path?: string
   /** Object URL kept alive for the session so the thumbnail is visible after upload. */
   previewUrl?: string
+  isObjectUrl?: boolean
   status: PhotoStatus
 }
+
+const MAX_ATTACHMENTS = 5
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -104,17 +103,47 @@ export function AttachPhotosAffordance({
 
   const [photos, setPhotos] = useState<PhotoEntry[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const objectUrlsRef = useRef(new Set<string>())
   const { processImage } = useMediaProcessor()
+
+  useEffect(() => {
+    let cancelled = false
+    getAttachedMediaAction(submissionId, entityId)
+      .then((saved) => {
+        if (cancelled) return
+        setPhotos((current) => {
+          const known = new Set(current.map((photo) => photo.path))
+          return [
+            ...current,
+            ...saved
+              .filter((photo) => !known.has(photo.path))
+              .map((photo) => ({
+                id: photo.path,
+                path: photo.path,
+                previewUrl: photo.url,
+                isObjectUrl: false,
+                status: "uploaded" as const,
+              })),
+          ]
+        })
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error("Attached photo load failed:", err)
+          toast.error("Saved photo attachments could not be loaded.")
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [submissionId, entityId])
 
   // Revoke all previewUrls on unmount to prevent memory leaks (T-14-06-04)
   useEffect(() => {
+    const objectUrls = objectUrlsRef.current
     return () => {
-      setPhotos((prev) => {
-        prev.forEach((p) => {
-          if (p.previewUrl) URL.revokeObjectURL(p.previewUrl)
-        })
-        return []
-      })
+      objectUrls.forEach((url) => URL.revokeObjectURL(url))
+      objectUrls.clear()
     }
   }, [])
 
@@ -125,11 +154,23 @@ export function AttachPhotosAffordance({
       if (fileInputRef.current) fileInputRef.current.value = ""
       if (selected.length === 0) return
 
-      for (const file of selected) {
+      const available = Math.max(0, MAX_ATTACHMENTS - photos.length)
+      const accepted = selected.slice(0, available)
+      if (accepted.length < selected.length) {
+        toast.error(`A maximum of ${MAX_ATTACHMENTS} photos can be attached.`)
+      }
+
+      for (const file of accepted) {
         // Create a pending entry immediately with an object-URL preview
         const id = crypto.randomUUID()
         const previewUrl = URL.createObjectURL(file)
-        const pending: PhotoEntry = { id, previewUrl, status: "uploading" }
+        objectUrlsRef.current.add(previewUrl)
+        const pending: PhotoEntry = {
+          id,
+          previewUrl,
+          isObjectUrl: true,
+          status: "uploading",
+        }
 
         setPhotos((prev) => [...prev, pending])
 
@@ -170,17 +211,37 @@ export function AttachPhotosAffordance({
         }
       }
     },
-    [submissionId, entityId, clientId, processImage]
+    [submissionId, entityId, clientId, processImage, photos.length]
   )
 
-  // Remove entry from strip. Revokes previewUrl.
-  // NOTE: does NOT delete the storage object or field_media row — Phase 16+ orphan cleanup.
-  const handleRemove = (id: string) => {
-    setPhotos((prev) => {
-      const entry = prev.find((p) => p.id === id)
-      if (entry?.previewUrl) URL.revokeObjectURL(entry.previewUrl)
-      return prev.filter((p) => p.id !== id)
-    })
+  const handleRemove = async (id: string) => {
+    const entry = photos.find((photo) => photo.id === id)
+    if (!entry) return
+    if (entry.path) {
+      setPhotos((current) =>
+        current.map((photo) =>
+          photo.id === id ? { ...photo, status: "removing" } : photo
+        )
+      )
+      try {
+        await deleteMediaAction(submissionId, entityId, entry.path)
+      } catch (err) {
+        setPhotos((current) =>
+          current.map((photo) =>
+            photo.id === id ? { ...photo, status: "uploaded" } : photo
+          )
+        )
+        toast.error(
+          err instanceof Error ? err.message : "The photo could not be removed."
+        )
+        return
+      }
+    }
+    if (entry.previewUrl && entry.isObjectUrl) {
+      URL.revokeObjectURL(entry.previewUrl)
+      objectUrlsRef.current.delete(entry.previewUrl)
+    }
+    setPhotos((current) => current.filter((photo) => photo.id !== id))
   }
 
   const uploadedCount = photos.filter((p) => p.status === "uploaded").length
@@ -237,15 +298,18 @@ export function AttachPhotosAffordance({
             >
               {/* Preview thumbnail — object URL (safe blob: scheme, T-14-06-04) */}
               {photo.previewUrl && (
-                <img
+                <Image
                   src={photo.previewUrl}
                   alt={`Attached photo ${i + 1}`}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="40px"
+                  unoptimized
+                  className="object-cover"
                 />
               )}
 
               {/* Uploading overlay */}
-              {photo.status === "uploading" && (
+              {(photo.status === "uploading" || photo.status === "removing") && (
                 <div
                   className={cn(
                     "absolute inset-0 flex items-center justify-center",
@@ -269,11 +333,11 @@ export function AttachPhotosAffordance({
               )}
 
               {/* Remove button — top-right, shown on all non-uploading items */}
-              {photo.status !== "uploading" && (
+              {photo.status !== "uploading" && photo.status !== "removing" && (
                 <button
                   type="button"
                   aria-label={`Remove attached photo ${i + 1}`}
-                  onClick={() => handleRemove(photo.id)}
+                  onClick={() => void handleRemove(photo.id)}
                   className={cn(
                     "absolute top-0 right-0 h-4 w-4 flex items-center justify-center",
                     "rounded-bl-sm",

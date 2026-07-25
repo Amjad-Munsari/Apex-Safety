@@ -2,13 +2,13 @@ import { Suspense, type CSSProperties } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarStats } from "@/components/admin/sidebar-stats";
-import { BrandingProvider } from "@/components/branding-provider";
 import { AdminSearch } from "@/components/admin/admin-search";
 import { Button } from "@/components/ui/button";
 import ThemeSwitch from "@/components/ui/theme-switch";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdmin, isDemoMode } from "@/lib/auth-helpers";
+import { getAppSettings } from "@/lib/settings/app-settings";
 
 export default async function AdminLayout({
   children,
@@ -27,6 +27,7 @@ export default async function AdminLayout({
     month: "long",
     year: "numeric",
   });
+  const { brandingPrimary, brandingSecondary } = await getAppSettings();
 
   return (
     <SidebarProvider
@@ -34,8 +35,14 @@ export default async function AdminLayout({
       // more horizontal room. Overrides the shared 16rem default for this surface.
       style={{ "--sidebar-width": "13rem" } as CSSProperties}
     >
-      <div data-surface="admin" className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased">
-        <BrandingProvider />
+      <div
+        data-surface="admin"
+        style={{
+          "--teal": brandingPrimary,
+          "--gold": brandingSecondary,
+        } as CSSProperties}
+        className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased"
+      >
         <Suspense fallback={<AppSidebar stats={{ clients: 0, expiries: 0, reports: 0, compliance: 0, proposals: 0, errors: 0 }} />}>
           <SidebarStats />
         </Suspense>

@@ -20,6 +20,7 @@ export default async function TemplateBuilderPage({ params }: Props) {
     .from("form_templates")
     .select("id, name, template_type, is_published, owner_type")
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   if (!template) notFound();

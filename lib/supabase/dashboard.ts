@@ -1,9 +1,14 @@
 import { cache } from "react"
 import { adminClient } from "./admin"
+import {
+  addDaysToIsoDate,
+  complianceStatusForDate,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status"
 
 export const getDashboardStats = cache(async () => {
-  const now = new Date().toISOString()
-  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const todayIso = todayIsoInTimeZone()
+  const thirtyDaysFromNow = addDaysToIsoDate(todayIso, 30)
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
 
   const [
@@ -19,13 +24,17 @@ export const getDashboardStats = cache(async () => {
     adminClient
       .from("documents")
       .select("*", { count: "exact", head: true })
-      .lt("expiry_date", now),
+      .lte("expiry_date", todayIso)
+      .eq("active", true)
+      .is("deleted_at", null),
     // 2. Expiring Docs (next 30 days)
     adminClient
       .from("documents")
       .select("*", { count: "exact", head: true })
-      .gte("expiry_date", now)
-      .lt("expiry_date", thirtyDaysFromNow),
+      .gt("expiry_date", todayIso)
+      .lte("expiry_date", thirtyDaysFromNow)
+      .eq("active", true)
+      .is("deleted_at", null),
     // 3. Drafts to Review
     adminClient
       .from("form_submissions")
@@ -39,7 +48,8 @@ export const getDashboardStats = cache(async () => {
     // 5. Total Clients
     adminClient
       .from("clients")
-      .select("*", { count: "exact", head: true }),
+      .select("*", { count: "exact", head: true })
+      .is("deleted_at", null),
     // 6. Total Proposals
     adminClient
       .from("proposals")
@@ -47,7 +57,9 @@ export const getDashboardStats = cache(async () => {
     // 7. Total Documents (for compliance badge)
     adminClient
       .from("documents")
-      .select("*", { count: "exact", head: true }),
+      .select("*", { count: "exact", head: true })
+      .eq("active", true)
+      .is("deleted_at", null),
   ])
 
   const overdueCount = overdueRes.count
@@ -128,8 +140,8 @@ export async function getCompletedReports(limit: number = 50) {
 }
 
 export async function getUpcomingExpiries(limit: number = 100) {
-  const now = new Date().toISOString()
-  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const todayIso = todayIsoInTimeZone()
+  const thirtyDaysFromNow = addDaysToIsoDate(todayIso, 30)
 
   const { data, error } = await adminClient
     .from("documents")
@@ -140,7 +152,9 @@ export async function getUpcomingExpiries(limit: number = 100) {
       document_category,
       client:clients(name)
     `)
-    .lt("expiry_date", thirtyDaysFromNow)
+    .lte("expiry_date", thirtyDaysFromNow)
+    .eq("active", true)
+    .is("deleted_at", null)
     .order("expiry_date", { ascending: true })
     .limit(limit)
 
@@ -152,17 +166,17 @@ export async function getUpcomingExpiries(limit: number = 100) {
 }
 
 export async function getComplianceAggregates() {
-  const now = new Date().toISOString()
-  const thirtyDaysFromNow = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const todayIso = todayIsoInTimeZone()
+  const thirtyDaysFromNow = addDaysToIsoDate(todayIso, 30)
 
   // Run counts in parallel. Each bucket is counted directly so documents with a
   // NULL expiry_date land in their own `undated` bucket instead of being folded
   // into `current` (which is what `total - expired - expiring` used to do).
   const [expiredRes, expiringRes, currentRes, totalRes] = await Promise.all([
-    adminClient.from("documents").select("*", { count: "exact", head: true }).lt("expiry_date", now),
-    adminClient.from("documents").select("*", { count: "exact", head: true }).gte("expiry_date", now).lt("expiry_date", thirtyDaysFromNow),
-    adminClient.from("documents").select("*", { count: "exact", head: true }).gte("expiry_date", thirtyDaysFromNow),
-    adminClient.from("documents").select("*", { count: "exact", head: true })
+    adminClient.from("documents").select("*", { count: "exact", head: true }).lte("expiry_date", todayIso).eq("active", true).is("deleted_at", null),
+    adminClient.from("documents").select("*", { count: "exact", head: true }).gt("expiry_date", todayIso).lte("expiry_date", thirtyDaysFromNow).eq("active", true).is("deleted_at", null),
+    adminClient.from("documents").select("*", { count: "exact", head: true }).gt("expiry_date", thirtyDaysFromNow).eq("active", true).is("deleted_at", null),
+    adminClient.from("documents").select("*", { count: "exact", head: true }).eq("active", true).is("deleted_at", null)
   ])
 
   const expired = expiredRes.count || 0
@@ -202,13 +216,14 @@ export type ComplianceBreakdown = {
  * now+30d <= current); undated documents are excluded, matching the chart.
  */
 export const getComplianceBreakdown = cache(async (): Promise<ComplianceBreakdown> => {
-  const now = Date.now()
-  const thirtyDaysFromNow = now + 30 * 24 * 60 * 60 * 1000
+  const todayIso = todayIsoInTimeZone()
 
   const { data, error } = await adminClient
     .from("documents")
     .select("id, filename, expiry_date, client:clients(name)")
     .not("expiry_date", "is", null)
+    .eq("active", true)
+    .is("deleted_at", null)
     .order("expiry_date", { ascending: true })
 
   const breakdown: ComplianceBreakdown = { Current: [], Expiring: [], Expired: [] }
@@ -219,9 +234,21 @@ export const getComplianceBreakdown = cache(async (): Promise<ComplianceBreakdow
   }
 
   for (const row of data ?? []) {
-    const t = new Date(row.expiry_date as string).getTime()
-    if (isNaN(t)) continue
-    const bucket = t < now ? "Expired" : t < thirtyDaysFromNow ? "Expiring" : "Current"
+    let bucket: keyof ComplianceBreakdown
+    try {
+      const status = complianceStatusForDate(
+        row.expiry_date as string,
+        todayIso
+      )
+      bucket =
+        status === "expired"
+          ? "Expired"
+          : status === "expiring"
+            ? "Expiring"
+            : "Current"
+    } catch {
+      continue
+    }
     breakdown[bucket].push({
       id: row.id as string,
       filename: (row.filename as string | null) || "Untitled document",
@@ -423,15 +450,24 @@ const VAT_RATE = 0.2
  * Returns the total *including VAT* so it stays consistent with
  * `proposals.total_price`, which stores the VAT-inclusive headline.
  */
-export function calculateProposalTotal(servicesJson: any): number {
+type ProposalServiceRecord = {
+  price?: unknown
+  unit_price?: unknown
+  quantity?: unknown
+  service?: { unit_price?: unknown } | null
+}
+
+export function calculateProposalTotal(servicesJson: unknown): number {
   if (!servicesJson || !Array.isArray(servicesJson)) return 0
-  const subtotal = servicesJson.reduce((acc: number, item: any) => {
+  const subtotal = (servicesJson as unknown[]).reduce((acc: number, value) => {
+    if (!value || typeof value !== "object") return acc
+    const item = value as ProposalServiceRecord
     const price =
-      Number(item?.price) ||
-      Number(item?.unit_price) ||
-      Number(item?.service?.unit_price) ||
+      Number(item.price) ||
+      Number(item.unit_price) ||
+      Number(item.service?.unit_price) ||
       0
-    const qty = Number(item?.quantity) || 1
+    const qty = Number(item.quantity) || 1
     return acc + price * qty
   }, 0)
   return subtotal * (1 + VAT_RATE)

@@ -3,11 +3,16 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Building2 } from "lucide-react"
 import { RemindButton } from "./remind-button"
+import {
+  daysUntilExpiry,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status"
 
 export const dynamic = "force-dynamic"
 
 export default async function ExpiriesPage() {
   const expiries = await getUpcomingExpiries()
+  const todayIso = todayIsoInTimeZone()
 
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -40,7 +45,10 @@ export default async function ExpiriesPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {expiries.map((doc) => {
-              const daysLeft = Math.ceil((new Date(doc.expiry_date || "").getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+              const daysLeft = daysUntilExpiry(
+                doc.expiry_date as string,
+                todayIso
+              )
               return (
                 <tr key={doc.id} className="group hover:bg-muted transition-colors">
                   <td className="px-6 py-4">
@@ -62,7 +70,7 @@ export default async function ExpiriesPage() {
                     {new Date(doc.expiry_date || "").toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </td>
                   <td className="px-6 py-4">
-                    {daysLeft < 0 ? (
+                    {daysLeft <= 0 ? (
                       <Badge variant="outline" className="border-danger/40 text-danger bg-danger/5 font-mono text-[10px] uppercase tracking-widest gap-2">
                         <div className="w-1 h-1 rounded-full bg-danger animate-pulse" />
                         OVERDUE

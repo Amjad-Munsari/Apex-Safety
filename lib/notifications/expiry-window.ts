@@ -15,22 +15,7 @@
 /** Alert buckets. 0 is the post-expiry final notice. */
 export type ExpiryAlertWindow = 0 | 7 | 14 | 30
 
-/**
- * Whole days from `todayIso` to `expiryIso`, both `YYYY-MM-DD`. Negative when
- * the document has already expired, 0 on the expiry day itself.
- *
- * Both dates are pinned to UTC midnight so the result is a clean day count and
- * never drifts by one on a non-UTC host — the same reason the caller builds its
- * range bounds with setUTCDate.
- */
-export function daysUntilExpiry(expiryIso: string, todayIso: string): number {
-  const expiry = Date.parse(`${expiryIso}T00:00:00Z`)
-  const today = Date.parse(`${todayIso}T00:00:00Z`)
-  if (Number.isNaN(expiry) || Number.isNaN(today)) {
-    throw new Error(`daysUntilExpiry: unparseable date (${expiryIso}, ${todayIso})`)
-  }
-  return Math.round((expiry - today) / 86_400_000)
-}
+export { daysUntilExpiry } from "@/lib/compliance/expiry-status"
 
 /**
  * The SMALLEST window this document has already crossed.

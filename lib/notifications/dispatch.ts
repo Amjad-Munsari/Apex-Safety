@@ -137,6 +137,11 @@ export interface DispatchResult {
   error?: string
 }
 
+export interface DispatchOptions {
+  /** Stable provider key for retry-safe email sends. */
+  idempotencyKey?: string
+}
+
 const DEFAULT_FROM = "Merlin Safety System <notifications@merlinsafetysystem.com>"
 
 function isProd(): boolean {
@@ -178,7 +183,10 @@ function getResend(apiKey: string): Resend {
 }
 
 /** Send an email-shaped payload via Resend. */
-async function sendEmail(payload: NotificationPayload): Promise<DispatchResult> {
+async function sendEmail(
+  payload: NotificationPayload,
+  options: DispatchOptions
+): Promise<DispatchResult> {
   const apiKey = process.env.RESEND_API_KEY
 
   if (!apiKey) {
@@ -203,13 +211,18 @@ async function sendEmail(payload: NotificationPayload): Promise<DispatchResult> 
   const replyTo = process.env.EMAIL_REPLY_TO
 
   try {
-    const { error } = await getResend(apiKey).emails.send({
-      from,
-      to: email.to,
-      subject: email.subject,
-      html: email.html,
-      ...(replyTo ? { replyTo } : {}),
-    })
+    const { error } = await getResend(apiKey).emails.send(
+      {
+        from,
+        to: email.to,
+        subject: email.subject,
+        html: email.html,
+        ...(replyTo ? { replyTo } : {}),
+      },
+      options.idempotencyKey
+        ? { idempotencyKey: options.idempotencyKey }
+        : undefined
+    )
     if (error) {
       return { ok: false, error: error.message }
     }
@@ -273,12 +286,13 @@ async function dispatchToN8n(
  * DispatchResult so callers can log to workflow_errors and fall back.
  */
 export async function dispatchNotification(
-  payload: NotificationPayload
+  payload: NotificationPayload,
+  options: DispatchOptions = {}
 ): Promise<DispatchResult> {
   logDispatch(payload)
 
   if (EMAIL_TYPES.has(payload.type)) {
-    return sendEmail(payload)
+    return sendEmail(payload, options)
   }
   return dispatchToN8n(payload)
 }

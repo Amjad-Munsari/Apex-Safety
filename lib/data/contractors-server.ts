@@ -76,7 +76,7 @@ export async function fetchActiveContractors(): Promise<Contractor[]> {
 
   if (error) {
     console.error("fetchActiveContractors failed:", error)
-    return []
+    throw new Error("Could not load the contractor directory")
   }
 
   return (data ?? []).map(normalizeRow)

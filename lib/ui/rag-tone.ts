@@ -54,7 +54,7 @@ export function proposalTone(status: string | null): ProposalTone {
  */
 export function ragToneFromDays(daysUntil: number | null): RagTone {
   if (daysUntil === null) return "none"
-  if (daysUntil < 0) return "expired"
-  if (daysUntil < 30) return "expiring"
+  if (daysUntil <= 0) return "expired"
+  if (daysUntil <= 30) return "expiring"
   return "ok"
 }

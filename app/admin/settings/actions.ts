@@ -3,9 +3,13 @@
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
 import { requireAdmin } from "@/lib/auth-helpers"
+import {
+  detectAllowedDocumentType,
+  mimeMatchesDetectedType,
+} from "@/lib/files/file-signature"
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2 MB (matches the dropzone copy)
-const ALLOWED_LOGO_MIME = new Set(["image/png", "image/svg+xml", "image/jpeg", "image/webp"])
+const ALLOWED_LOGO_MIME = new Set(["image/png", "image/jpeg", "image/webp"])
 
 export interface SaveNotificationSettingsInput {
   signOffName: string
@@ -14,13 +18,16 @@ export interface SaveNotificationSettingsInput {
   notifyOnUpload: boolean
   /** Reference rate for the hours⇄credits conversion (credits per hour). */
   creditsPerHour: number
+  brandingPrimary: string
+  brandingSecondary: string
 }
 
 /**
  * Persist the notification defaults from the admin Settings page. These were
  * previously local-only React state that reset on reload. The toggles now gate
- * real dispatch (see lib/documents/actions.ts and the expiry reminder paths);
- * the sign-off / sender names are read by n8n when composing emails.
+ * real dispatch (see lib/documents/actions.ts and the expiry reminder paths).
+ * The sign-off / sender labels are retained for the agreed future email-brand
+ * cutover; the current Resend identity still comes from deployment settings.
  */
 export async function saveNotificationSettings(
   input: SaveNotificationSettingsInput
@@ -35,6 +42,13 @@ export async function saveNotificationSettings(
   const creditsPerHour = input.creditsPerHour
   if (!Number.isInteger(creditsPerHour) || creditsPerHour < 1) {
     return { ok: false, error: "Credits per hour must be a whole number of 1 or more." }
+  }
+  const HEX_COLOUR = /^#[0-9a-fA-F]{6}$/
+  if (
+    !HEX_COLOUR.test(input.brandingPrimary) ||
+    !HEX_COLOUR.test(input.brandingSecondary)
+  ) {
+    return { ok: false, error: "Brand colours must be six-digit hex values." }
   }
 
   // UPSERT, not UPDATE: app_settings is a singleton seeded by migration 023, but
@@ -52,6 +66,8 @@ export async function saveNotificationSettings(
         expiry_reminders_enabled: input.expiryRemindersEnabled,
         notify_on_upload: input.notifyOnUpload,
         credits_per_hour: creditsPerHour,
+        branding_primary: input.brandingPrimary.toLowerCase(),
+        branding_secondary: input.brandingSecondary.toLowerCase(),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "id" }
@@ -78,16 +94,25 @@ export async function uploadBrandingLogo(
   if (file.size > MAX_LOGO_BYTES) return { ok: false, error: "Logo exceeds the 2 MB limit." }
   // Fail CLOSED — an absent Content-Type must not bypass the allowlist.
   if (!ALLOWED_LOGO_MIME.has(file.type)) {
-    return { ok: false, error: "Upload a PNG, SVG, JPEG or WebP image." }
+    return { ok: false, error: "Upload a PNG, JPEG or WebP image." }
+  }
+  const bytes = new Uint8Array(await file.arrayBuffer())
+  const detected = detectAllowedDocumentType(bytes)
+  if (
+    !detected ||
+    !["image/png", "image/jpeg", "image/webp"].includes(detected.mime) ||
+    !mimeMatchesDetectedType(file.type, detected.mime)
+  ) {
+    return { ok: false, error: "The logo bytes do not match the selected image type." }
   }
 
-  const ext = file.name.split(".").pop()?.toLowerCase() || "png"
+  const ext = detected.extension
   // Stable name per upload so the public URL changes (cache-busts) on replace.
   const path = `logo-${Date.now()}.${ext}`
 
   const { error: uploadError } = await adminClient.storage
     .from("branding")
-    .upload(path, file, { contentType: file.type || "image/png", upsert: true })
+    .upload(path, bytes, { contentType: detected.mime, upsert: true })
 
   if (uploadError) return { ok: false, error: uploadError.message }
 

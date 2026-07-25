@@ -166,7 +166,7 @@ export async function sendProposalForSignature(
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
 
   // 8. Persist signing fields + advance status to Sent
-  await adminClient
+  const { error: signingUpdateError } = await adminClient
     .from("proposals")
     .update({
       signing_token: hash,
@@ -177,6 +177,12 @@ export async function sendProposalForSignature(
       sent_at: new Date().toISOString(),
     })
     .eq("id", proposalId)
+  if (signingUpdateError) {
+    throw new SendProposalError(
+      "persist_failed",
+      "The signing link could not be saved. The proposal was not sent."
+    )
+  }
 
   // 9. Derive proposal title from services_json
   const services: Array<{ service?: { name?: string }; name?: string }> = Array.isArray(
@@ -412,9 +418,18 @@ export async function deleteProposal(proposalId: string) {
   // Fetch the storage path first so we can delete the PDF too.
   const { data: row } = await adminClient
     .from("proposals")
-    .select("proposal_pdf_path, signed_pdf_path")
+    .select("status, proposal_pdf_path, signed_pdf_path")
     .eq("id", proposalId)
     .maybeSingle()
+
+  if (!row) {
+    throw new Error("Proposal not found.")
+  }
+  if (row.status !== "Draft") {
+    throw new Error(
+      "Sent, signed, and issued proposals are retained as audit records and cannot be deleted."
+    )
+  }
 
   const { error } = await adminClient
     .from("proposals")
@@ -451,10 +466,9 @@ export async function deleteProposal(proposalId: string) {
 /**
  * (Re)generate and upload the proposal PDF for an existing proposal row, then
  * persist `proposal_pdf_path` + `total_price`. This is the manual rescue path
- * for proposals whose PDF was never produced — e.g. the generation step in
- * `createProposal` threw and was swallowed (row stays Draft with no PDF), or
- * legacy rows that predate PDF generation but have since advanced to
- * Signed / Contract Issued. Status is NOT changed here; this only fills the PDF.
+ * for Draft proposals whose PDF was never produced. Once a proposal is sent,
+ * its hashed PDF is immutable; changing it requires a new proposal and signing
+ * link rather than overwriting the evidence at the existing path.
  *
  * The scope-of-work paragraph is not persisted on the proposal row, so we use a
  * neutral fallback when regenerating. Everything else (client details, line
@@ -467,13 +481,18 @@ export async function regenerateProposalPdf(proposalId: string) {
 
   const { data: proposal, error } = await adminClient
     .from("proposals")
-    .select("id, client_id, services_json")
+    .select("id, client_id, services_json, status")
     .eq("id", proposalId)
     .single()
 
   if (error || !proposal) {
     console.error("Error loading proposal for PDF regeneration:", error)
     throw new Error("Could not load proposal to generate PDF.")
+  }
+  if (proposal.status !== "Draft") {
+    throw new Error(
+      "Only Draft proposals can be regenerated. Create a new proposal to change a document already sent for signature."
+    )
   }
 
   const servicesJson = Array.isArray(proposal.services_json) ? proposal.services_json : []

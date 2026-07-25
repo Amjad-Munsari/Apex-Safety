@@ -7,6 +7,7 @@ export type SendProposalErrorCode =
   | "already_finalised"
   | "no_pdf"
   | "no_client_email"
+  | "persist_failed"
 
 export class SendProposalError extends Error {
   readonly code: SendProposalErrorCode

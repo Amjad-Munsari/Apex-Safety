@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import ThemeSwitch from "@/components/ui/theme-switch"
-import { DEFAULT_BRANDING, applyBranding, loadBranding, saveBranding } from "@/lib/branding"
+import { applyBranding } from "@/lib/branding"
 import { saveNotificationSettings, uploadBrandingLogo, removeBrandingLogo } from "@/app/admin/settings/actions"
 
 export interface SettingsFormInitial {
@@ -17,11 +17,13 @@ export interface SettingsFormInitial {
   notifyOnUpload: boolean
   logoUrl: string | null
   creditsPerHour: number
+  brandingPrimary: string
+  brandingSecondary: string
 }
 
 export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
-  const [primary, setPrimary] = React.useState(DEFAULT_BRANDING.primary)
-  const [secondary, setSecondary] = React.useState(DEFAULT_BRANDING.secondary)
+  const [primary, setPrimary] = React.useState(initial.brandingPrimary)
+  const [secondary, setSecondary] = React.useState(initial.brandingSecondary)
   const [signOff, setSignOff] = React.useState(initial.signOffName)
   const [senderName, setSenderName] = React.useState(initial.senderName)
   const [expiryReminders, setExpiryReminders] = React.useState(initial.expiryRemindersEnabled)
@@ -32,16 +34,6 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
   const [saving, setSaving] = React.useState(false)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
-
-  // Hydrate the colour pickers from any previously-saved palette so they reflect
-  // the colours currently live on the app.
-  React.useEffect(() => {
-    const saved = loadBranding()
-    if (saved) {
-      setPrimary(saved.primary)
-      setSecondary(saved.secondary)
-    }
-  }, [])
 
   async function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -75,21 +67,19 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
 
   async function handleSave() {
     setSaving(true)
-    // Persist + re-assert the palette so it survives reload (BrandingProvider
-    // re-applies it on every load).
-    saveBranding({ primary, secondary })
-    applyBranding({ primary, secondary })
-
     const res = await saveNotificationSettings({
       signOffName: signOff,
       senderName,
       expiryRemindersEnabled: expiryReminders,
       notifyOnUpload: notifyUpload,
       creditsPerHour: Number(creditsPerHour),
+      brandingPrimary: primary,
+      brandingSecondary: secondary,
     })
     setSaving(false)
 
     if (res.ok) {
+      applyBranding({ primary, secondary })
       toast.success("Settings saved", { description: "Brand colours and notification defaults applied." })
     } else {
       toast.error(res.error || "Could not save settings.")
@@ -105,7 +95,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
             <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">01</div>
             <h3 className="font-serif text-[22px] text-foreground leading-tight">Branding</h3>
             <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
-              Used on the client portal, proposals, contracts, and reports.
+              Colours apply across both portals. The uploaded logo also appears on generated documents.
             </p>
           </div>
 
@@ -142,7 +132,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
                   <Upload className="w-5 h-5 text-muted-foreground" />
                 )}
                 <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                  {uploadingLogo ? "Uploading…" : logoUrl ? "Click to replace" : "Click to upload SVG or PNG"}
+                  {uploadingLogo ? "Uploading…" : logoUrl ? "Click to replace" : "Click to upload PNG, JPEG or WebP"}
                 </span>
                 <span className="font-mono text-[9px] text-muted-foreground tracking-[0.2em]">
                   Recommended 240×60 · max 2MB
@@ -191,8 +181,8 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
           </div>
 
           <div className="flex flex-col gap-6">
-            <TextField label="Sign-off Name" value={signOff} onChange={setSignOff} hint="Used at the bottom of automated emails." />
-            <TextField label="Default Sender Name" value={senderName} onChange={setSenderName} hint="Appears as the From: name in client inboxes." />
+            <TextField label="Saved Sign-off Name" value={signOff} onChange={setSignOff} hint="Stored for the planned email-brand cutover; current emails use deployment settings." />
+            <TextField label="Saved Sender Name" value={senderName} onChange={setSenderName} hint="Stored for the planned email-brand cutover; current From: name uses deployment settings." />
             <div className="flex items-center justify-between bg-background rounded-sm p-4 ring-1 ring-border">
               <div>
                 <div className="text-sm text-foreground">Send expiry reminders</div>

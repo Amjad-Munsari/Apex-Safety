@@ -1,9 +1,12 @@
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
-import Link from "next/link";
 import { NewClientButton } from "@/components/clients/new-client-dialog";
 import { ClientRow } from "./_components/client-row";
 import { ragToneFromDays } from "@/lib/ui/rag-tone";
+import {
+  daysUntilExpiry,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +28,9 @@ export default async function ClientsPage() {
         status
       )
     `)
+    .is("deleted_at", null)
+    .eq("documents.active", true)
+    .is("documents.deleted_at", null)
     .order("name", { ascending: true });
 
   // Aggregate active assignment count per client (single query, no N+1).
@@ -40,7 +46,7 @@ export default async function ClientsPage() {
     activeCountByClient.set(r.client_id, (activeCountByClient.get(r.client_id) ?? 0) + 1);
   }
 
-  const now = new Date();
+  const todayIso = todayIsoInTimeZone();
 
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -77,20 +83,24 @@ export default async function ClientsPage() {
               type DocRow = { expiry_date: string | null; document_category: string | null };
               type ProposalRow = { status: string | null };
               const expiries = (client.documents as DocRow[] | null)
-                ?.map((d) => ({ date: new Date(d.expiry_date ?? ""), cat: d.document_category }))
+                ?.map((d) => ({
+                  iso: d.expiry_date,
+                  date: new Date(d.expiry_date ?? ""),
+                  cat: d.document_category,
+                }))
                 .filter((d) => !isNaN(d.date.getTime()))
                 .sort((a, b) => a.date.getTime() - b.date.getTime());
 
               const nextExpiry = expiries?.[0];
               const proposalStatus = (client.proposals as ProposalRow[] | null)?.[0]?.status;
-              const daysUntil = nextExpiry
-                ? Math.ceil((nextExpiry.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+              const daysUntil = nextExpiry?.iso
+                ? daysUntilExpiry(nextExpiry.iso, todayIso)
                 : null;
 
               // Tone is semantic; the class strings live in lib/ui/rag-tone.ts.
               // The old `ragColor = "[#555]"` was an arbitrary Tailwind value
               // inside an interpolation, so it could never be generated at all.
-              const ragTone = ragToneFromDays(nextExpiry ? daysUntil : null);
+              const ragTone = ragToneFromDays(daysUntil);
               const ragLabel = !nextExpiry
                 ? "No Docs"
                 : ragTone === "expired"

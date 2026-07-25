@@ -32,6 +32,7 @@ async function requireOwnedTemplate(templateId: string, clientId: string) {
     .from("form_templates")
     .select("id, owner_id, owner_type")
     .eq("id", templateId)
+    .is("deleted_at", null)
     .single();
   if (error || !data) throw new Error("Template not found");
   if (data.owner_type !== "customer" || data.owner_id !== clientId) {
@@ -248,7 +249,16 @@ export async function deleteClientTemplate(templateId: string) {
   const supabase = await createClient();
   const ctx = await requireClientContext();
   await requireOwnedTemplate(templateId, ctx.client_id);
-  await supabase.from("form_templates").delete().eq("id", templateId);
+  // Keep published and referenced versions intact for historical submissions.
+  // The normal template queries already exclude deleted_at rows.
+  const { error } = await supabase
+    .from("form_templates")
+    .update({
+      deleted_at: new Date().toISOString(),
+      is_published: false,
+    })
+    .eq("id", templateId);
+  if (error) throw new Error(error.message ?? "Failed to delete template");
   revalidatePath("/client/templates");
 }
 

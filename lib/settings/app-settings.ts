@@ -12,6 +12,8 @@ export interface AppSettings {
   logoUrl: string | null
   /** Reference rate for the hours⇄credits conversion (credits per hour). */
   creditsPerHour: number
+  brandingPrimary: string
+  brandingSecondary: string
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -22,6 +24,8 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   logoPath: null,
   logoUrl: null,
   creditsPerHour: 4,
+  brandingPrimary: "#3b8273",
+  brandingSecondary: "#d97706",
 }
 
 /**
@@ -32,7 +36,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 export async function getAppSettings(): Promise<AppSettings> {
   const { data } = await adminClient
     .from("app_settings")
-    .select("sign_off_name, sender_name, expiry_reminders_enabled, notify_on_upload, logo_path, credits_per_hour")
+    .select("sign_off_name, sender_name, expiry_reminders_enabled, notify_on_upload, logo_path, credits_per_hour, branding_primary, branding_secondary")
     .eq("id", 1)
     .maybeSingle()
 
@@ -51,5 +55,9 @@ export async function getAppSettings(): Promise<AppSettings> {
     logoPath,
     logoUrl,
     creditsPerHour: data.credits_per_hour ?? DEFAULT_APP_SETTINGS.creditsPerHour,
+    brandingPrimary:
+      data.branding_primary ?? DEFAULT_APP_SETTINGS.brandingPrimary,
+    brandingSecondary:
+      data.branding_secondary ?? DEFAULT_APP_SETTINGS.brandingSecondary,
   }
 }

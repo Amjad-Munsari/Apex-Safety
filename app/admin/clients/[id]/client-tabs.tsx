@@ -11,6 +11,10 @@ import { daysOverdue } from "@/lib/assignments/is-overdue"
 import { ClientAccessTab, type ClientUserRow } from "./client-access-tab"
 import { DeleteEntityButton } from "./delete-entity-button"
 import type { ClientBuiltTemplate } from "./client-templates"
+import {
+  complianceStatusForDate,
+  todayIsoInTimeZone,
+} from "@/lib/compliance/expiry-status"
 
 type RagStatus = "CURRENT" | "EXPIRING" | "EXPIRED"
 
@@ -99,10 +103,9 @@ export interface ClientTabsProps {
 }
 
 function ragFromDate(expiry: string | null): RagStatus {
-  if (!expiry) return "CURRENT"
-  const days = Math.ceil((new Date(expiry).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-  if (days < 0) return "EXPIRED"
-  if (days <= 30) return "EXPIRING"
+  const status = complianceStatusForDate(expiry, todayIsoInTimeZone())
+  if (status === "expired") return "EXPIRED"
+  if (status === "expiring") return "EXPIRING"
   return "CURRENT"
 }
 

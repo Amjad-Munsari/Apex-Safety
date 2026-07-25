@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
-import { ArrowRight, ShieldCheck } from "lucide-react"
+import { ShieldCheck } from "lucide-react"
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
@@ -74,9 +74,9 @@ export default function AdminLoginPage() {
         </div>
 
         <div className="space-y-2">
-          <p className="font-mono text-[9px] tracking-widest text-white/20 uppercase font-bold">System Status</p>
+          <p className="font-mono text-[9px] tracking-widest text-white/20 uppercase font-bold">Operator Access</p>
           <div className="flex items-center gap-2 text-white/60 text-[13px] font-sans">
-             <div className="w-2 h-2 rounded-full bg-success"></div> All systems operational
+             <div className="w-2 h-2 rounded-full bg-success"></div> Secure sign-in
           </div>
         </div>
       </div>
@@ -110,7 +110,7 @@ export default function AdminLoginPage() {
                 required
                 autoComplete="email"
                 className="w-full h-12 border border-white/10 bg-[#151515] rounded-sm px-4 text-[14px] text-white placeholder:text-[#555] outline-none focus:border-white/30 transition-colors font-sans"
-                placeholder="admin@test.com"
+                placeholder="matt@yourdomain.com"
               />
             </div>
 

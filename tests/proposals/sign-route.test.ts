@@ -7,20 +7,22 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { signedPdfPathFor } from "@/lib/signing-paths"
 import { NextRequest } from "next/server"
-import { PDFDocument } from "pdf-lib"
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const FIXED_HASH = "aabbcc00" + "0".repeat(56) // 64-char hex
+const FIXED_PDF_BASE64 =
+  "JVBERi0xLjcKJYGBgYEKCjEgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFsgNCAwIFIgXQovQ291bnQgMQo+PgplbmRvYmoKCjIgMCBvYmoKPDwKL1R5cGUgL0NhdGFsb2cKL1BhZ2VzIDEgMCBSCj4+CmVuZG9iagoKMyAwIG9iago8PAovUHJvZHVjZXIgPEZFRkYwMDcwMDA2NDAwNjYwMDJEMDA2QzAwNjkwMDYyMDAyMDAwMjgwMDY4MDA3NDAwNzQwMDcwMDA3MzAwM0EwMDJGMDAyRjAwNjcwMDY5MDA3NDAwNjgwMDc1MDA2MjAwMkUwMDYzMDA2RjAwNkQwMDJGMDA0ODAwNkYwMDcwMDA2NDAwNjkwMDZFMDA2NzAwMkYwMDcwMDA2NDAwNjYwMDJEMDA2QzAwNjkwMDYyMDAyOT4KL01vZERhdGUgKEQ6MjAyMDAxMDEwMDAwMDBaKQovQ3JlYXRvciA8RkVGRjAwNzAwMDY0MDA2NjAwMkQwMDZDMDA2OTAwNjIwMDIwMDAyODAwNjgwMDc0MDA3NDAwNzAwMDczMDAzQTAwMkYwMDJGMDA2NzAwNjkwMDc0MDA2ODAwNzUwMDYyMDAyRTAwNjMwMDZGMDA2RDAwMkYwMDQ4MDA2RjAwNzAwMDY0MDA2OTAwNkUwMDY3MDAyRjAwNzAwMDY0MDA2NjAwMkQwMDZDMDA2OTAwNjIwMDI5PgovQ3JlYXRpb25EYXRlIChEOjIwMjAwMTAxMDAwMDAwWikKPj4KZW5kb2JqCgo0IDAgb2JqCjw8Ci9UeXBlIC9QYWdlCi9QYXJlbnQgMSAwIFIKL1Jlc291cmNlcyA8PAo+PgovTWVkaWFCb3ggWyAwIDAgNTk1LjI4IDg0MS44OSBdCj4+CmVuZG9iagoKeHJlZgowIDUKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDE2IDAwMDAwIG4gCjAwMDAwMDAwNzYgMDAwMDAgbiAKMDAwMDAwMDEyNiAwMDAwMCBuIAowMDAwMDAwNTk2IDAwMDAwIG4gCgp0cmFpbGVyCjw8Ci9TaXplIDUKL1Jvb3QgMiAwIFIKL0luZm8gMyAwIFIKPj4KCnN0YXJ0eHJlZgo2OTMKJSVFT0Y="
+const FIXED_DOCUMENT_HASH =
+  "ed5101ed7fd73825e1772502204f153118265e93c0ee5564e586e922c7e71c92"
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Build a minimal valid PDF Blob for use in download mocks. */
-async function makeMinimalPdfBlob(): Promise<Blob> {
-  const doc = await PDFDocument.create()
-  doc.addPage()
-  const bytes = await doc.save()
-  return new Blob([bytes as BlobPart], { type: "application/pdf" })
+/** Build the same minimal valid PDF on every run so its integrity hash is fixed. */
+function makeMinimalPdfBlob(): Blob {
+  return new Blob([Buffer.from(FIXED_PDF_BASE64, "base64")], {
+    type: "application/pdf",
+  })
 }
 
 // ── Spies (declared before vi.mock so hoisting can close over them) ───────────
@@ -47,6 +49,10 @@ const storageUploadSpy = vi.fn()
 const workflowErrorsInsertSpy = vi.fn()
 // issueContractCore — the route auto-fires this after a successful sign
 const issueContractCoreSpy = vi.fn()
+// atomic signing RPC
+const redeemSignatureSpy = vi.fn()
+// cleanup of a generated artefact when the RPC fails or loses the race
+const storageRemoveSpy = vi.fn()
 
 // ── Module mocks ──────────────────────────────────────────────────────────────
 
@@ -103,22 +109,23 @@ vi.mock("@/lib/supabase/admin", () => ({
       return {}
     },
     storage: {
-      from: (_bucket: string) => ({
-        createSignedUrl: (_path: string, _ttl: number) =>
-          storageSignedUrlSpy(),
-        download: (_path: string) => storageDownloadSpy(_path),
+      from: () => ({
+        createSignedUrl: () => storageSignedUrlSpy(),
+        download: (path: string) => storageDownloadSpy(path),
         upload: (
           path: string,
           data: unknown,
           opts: unknown
         ) => storageUploadSpy(path, data, opts),
+        remove: (paths: string[]) => storageRemoveSpy(paths),
       }),
     },
+    rpc: (name: string, args: unknown) => redeemSignatureSpy(name, args),
   },
 }))
 
 vi.mock("@/lib/signing", () => ({
-  hashToken: (_raw: string) => FIXED_HASH,
+  hashToken: () => FIXED_HASH,
   generateSigningToken: () => ({ raw: "raw", hash: FIXED_HASH }),
   validateSigningToken: vi.fn(),
   hashDocument: vi.fn(),
@@ -184,7 +191,7 @@ const VALID_PROPOSAL_ROW = {
   signing_token_expires_at: FUTURE,
   created_at: "2026-05-01T10:00:00.000Z",
   sent_at: "2026-05-02T09:00:00.000Z",
-  signing_document_hash: "dochashtestvalue",
+  signing_document_hash: FIXED_DOCUMENT_HASH,
 }
 
 const VALID_CLIENT = {
@@ -205,9 +212,9 @@ const VALID_POST_BODY = {
 
 // The consume mock's returned row now includes proposal_pdf_path
 const VALID_CONSUMED_ROW = {
-  id: VALID_PROPOSAL_ROW.id,
+  proposal_id: VALID_PROPOSAL_ROW.id,
   client_id: VALID_PROPOSAL_ROW.client_id,
-  signing_document_hash: "dochashtestvalue",
+  signing_document_hash: FIXED_DOCUMENT_HASH,
   services_json: VALID_PROPOSAL_ROW.services_json,
   proposal_pdf_path: VALID_PROPOSAL_ROW.proposal_pdf_path,
 }
@@ -305,6 +312,16 @@ describe("POST /api/sign/[token]", () => {
     proposalsRollbackSpy.mockResolvedValue({ error: null })
     dispatchSpy.mockResolvedValue({ ok: true })
     workflowErrorsInsertSpy.mockResolvedValue({ error: null })
+    storageDownloadSpy.mockResolvedValue({
+      data: makeMinimalPdfBlob(),
+      error: null,
+    })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+    storageRemoveSpy.mockResolvedValue({ data: [], error: null })
+    redeemSignatureSpy.mockResolvedValue({
+      data: [VALID_CONSUMED_ROW],
+      error: null,
+    })
   })
 
   it("returns 400 when signature_image does not start with correct prefix", async () => {
@@ -340,13 +357,15 @@ describe("POST /api/sign/[token]", () => {
   it("returns 409 when atomic consume returns no row (race / already used)", async () => {
     // First query (lookup) → valid row
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
-    // Update consume → null (lost the race)
-    proposalsUpdateSpy.mockResolvedValue({ data: null, error: null })
+    // Atomic RPC → no row (lost the race)
+    redeemSignatureSpy.mockResolvedValue({ data: [], error: null })
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
     expect(res.status).toBe(409)
     const json = await res.json()
     expect(json).toEqual({ error: "already_signed" })
+    expect(storageRemoveSpy).toHaveBeenCalledTimes(1)
+    expect(issueContractCoreSpy).not.toHaveBeenCalled()
   })
 
   it("returns 200 on success path and re-uploads a stamped PDF", async () => {
@@ -382,21 +401,23 @@ describe("POST /api/sign/[token]", () => {
     // the bytes proposal_signatures.document_hash attests to, so the hash could
     // never be verified against anything (migration 029).
     expect(storageUploadSpy).toHaveBeenCalledTimes(1)
-    const [uploadPath, _uploadData, uploadOpts] =
+    const [uploadPath, , uploadOpts] =
       storageUploadSpy.mock.calls[0] as [string, unknown, Record<string, unknown>]
     const originalPath = VALID_PROPOSAL_ROW.proposal_pdf_path as string
-    expect(uploadPath).toBe(signedPdfPathFor(originalPath))
+    const rpcArgs = redeemSignatureSpy.mock.calls[0][1] as Record<string, unknown>
+    expect(uploadPath).toBe(
+      signedPdfPathFor(
+        originalPath,
+        String(rpcArgs.p_signed_document_hash)
+      )
+    )
     expect(uploadPath).not.toBe(originalPath)
     expect(uploadOpts).toMatchObject({ contentType: "application/pdf", upsert: true })
 
-    // …and the new key is persisted with a hash of the stamped bytes, otherwise
-    // nothing would ever point at the stamped copy.
-    const pathUpdate = proposalsUpdatePayloads
-      .map((arg) => arg as Record<string, unknown> | undefined)
-      .find((arg) => arg && "signed_pdf_path" in arg)
-    expect(pathUpdate).toBeDefined()
-    expect(pathUpdate).toMatchObject({ signed_pdf_path: signedPdfPathFor(originalPath) })
-    expect(String(pathUpdate?.signed_document_hash)).toMatch(/^[0-9a-f]{64}$/)
+    // The atomic commit links that exact content-addressed key and hash.
+    expect(rpcArgs.p_signed_pdf_path).toBe(uploadPath)
+    expect(String(rpcArgs.p_signed_document_hash)).toMatch(/^[0-9a-f]{64}$/)
+    expect(rpcArgs.p_expected_document_hash).toBe(FIXED_DOCUMENT_HASH)
   })
 
   it("returns 200 and inserts signature row with ip + dispatches proposal_signed", async () => {
@@ -425,16 +446,15 @@ describe("POST /api/sign/[token]", () => {
     const json = await res.json()
     expect(json).toEqual({ success: true })
 
-    // Insert called with correct ip (from x-forwarded-for header)
-    expect(signaturesInsertSpy).toHaveBeenCalledTimes(1)
-    const insertArg = signaturesInsertSpy.mock.calls[0][0] as Record<string, unknown>
-    expect(insertArg.proposal_id).toBe(VALID_PROPOSAL_ROW.id)
-    expect(insertArg.signer_name).toBe("John Doe")
-    expect(insertArg.signer_email).toBe("john@example.com")
-    expect(insertArg.ip_address).toBe("1.2.3.4")
-    expect(insertArg.user_agent).toBe("TestAgent/1.0")
-    expect(insertArg.document_hash).toBe("dochashtestvalue")
-    expect(insertArg.signature_image).toBe(TINY_PNG_DATA_URL)
+    // The atomic RPC receives the evidence and request metadata together.
+    expect(redeemSignatureSpy).toHaveBeenCalledTimes(1)
+    const commitArgs = redeemSignatureSpy.mock.calls[0][1] as Record<string, unknown>
+    expect(commitArgs.p_signer_name).toBe("John Doe")
+    expect(commitArgs.p_signer_email).toBe("john@example.com")
+    expect(commitArgs.p_ip_address).toBe("1.2.3.4")
+    expect(commitArgs.p_user_agent).toBe("TestAgent/1.0")
+    expect(commitArgs.p_expected_document_hash).toBe(FIXED_DOCUMENT_HASH)
+    expect(commitArgs.p_signature_image).toBe(TINY_PNG_DATA_URL)
 
     // Notification dispatched with correct type
     expect(dispatchSpy).toHaveBeenCalledTimes(1)
@@ -447,7 +467,7 @@ describe("POST /api/sign/[token]", () => {
     expect(revalidateSpy).toHaveBeenCalledWith("/admin/proposals")
   })
 
-  it("returns 200 even when PDF download fails — graceful best-effort", async () => {
+  it("leaves the token unused when the evidence PDF cannot be downloaded", async () => {
     // Lookup → valid row
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
     // Atomic consume → success
@@ -467,15 +487,15 @@ describe("POST /api/sign/[token]", () => {
     storageDownloadSpy.mockResolvedValue({ data: null, error: { message: "storage error" } })
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
-    // Must still return 200 — signature row is already persisted
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(503)
     const json = await res.json()
-    expect(json).toEqual({ success: true })
-    // Upload must NOT have been called
+    expect(json).toEqual({ error: "evidence_unavailable" })
     expect(storageUploadSpy).not.toHaveBeenCalled()
+    expect(redeemSignatureSpy).not.toHaveBeenCalled()
+    expect(issueContractCoreSpy).not.toHaveBeenCalled()
   })
 
-  it("returns 200 even when PDF upload (re-stamp) throws — graceful best-effort", async () => {
+  it("leaves the token unused when the stamped PDF cannot be stored", async () => {
     const pdfBlob = await makeMinimalPdfBlob()
 
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
@@ -494,24 +514,18 @@ describe("POST /api/sign/[token]", () => {
     storageUploadSpy.mockRejectedValue(new Error("upload timeout"))
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(503)
     const json = await res.json()
-    expect(json).toEqual({ success: true })
+    expect(json).toEqual({ error: "evidence_unavailable" })
+    expect(redeemSignatureSpy).not.toHaveBeenCalled()
+    expect(issueContractCoreSpy).not.toHaveBeenCalled()
   })
 
-  it("rolls back the Signed transition and 500s when the signature insert fails", async () => {
+  it("returns 500 without issuing a contract when the atomic evidence commit fails", async () => {
     const pdfBlob = await makeMinimalPdfBlob()
 
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
-    proposalsUpdateSpy.mockResolvedValue({
-      data: {
-        ...VALID_CONSUMED_ROW,
-        services_json: [],
-      },
-      error: null,
-    })
-    // Insert of the signature-evidence row fails.
-    signaturesInsertSpy.mockResolvedValue({
+    redeemSignatureSpy.mockResolvedValue({
       data: null,
       error: { message: "DB error" },
     })
@@ -524,50 +538,43 @@ describe("POST /api/sign/[token]", () => {
     storageUploadSpy.mockResolvedValue({ data: {}, error: null })
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
-    // The signature row IS the evidence: if it can't be persisted, the Signed
-    // transition is rolled back and the request 500s, rather than leaving a
-    // Signed proposal (and an auto-issued contract) with no signature.
     expect(res.status).toBe(500)
     const json = await res.json()
     expect(json).toEqual({ error: "signature_persist_failed" })
-    // The contract must NOT be auto-issued when evidence failed to persist.
     expect(issueContractCoreSpy).not.toHaveBeenCalled()
-
-    // The rollback UPDATE restores the pre-signing state (second proposals.update).
-    expect(proposalsUpdatePayloads.length).toBe(2)
-    expect(proposalsUpdatePayloads[1]).toMatchObject({
-      signing_token_used: false,
-      status: VALID_PROPOSAL_ROW.status, // restored to prior "Sent", not left "Signed"
-      signed_at: null,
-    })
+    expect(storageRemoveSpy).toHaveBeenCalledTimes(1)
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ workflow_name: "proposal_signature_commit" })
+    )
   })
 
-  it("writes a durable workflow_errors record when the rollback itself fails", async () => {
+  it("records commit failure even when orphan cleanup also fails", async () => {
     const pdfBlob = await makeMinimalPdfBlob()
 
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
-    proposalsUpdateSpy.mockResolvedValue({ data: { ...VALID_CONSUMED_ROW }, error: null })
-    signaturesInsertSpy.mockResolvedValue({ data: null, error: { message: "DB error" } })
-    // The compensating UPDATE also fails — the proposal may be stuck Signed.
-    proposalsRollbackSpy.mockResolvedValue({ error: { message: "rollback boom" } })
+    redeemSignatureSpy.mockResolvedValue({
+      data: null,
+      error: { message: "commit boom" },
+    })
+    storageRemoveSpy.mockResolvedValue({
+      data: null,
+      error: { message: "cleanup boom" },
+    })
     storageDownloadSpy.mockResolvedValue({ data: pdfBlob, error: null })
     storageUploadSpy.mockResolvedValue({ data: {}, error: null })
 
     const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
 
     expect(res.status).toBe(500)
-    // A recovery trail must exist — not just a console log.
     expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ workflow_name: "sign_rollback_failed" })
+      expect.objectContaining({ workflow_name: "proposal_signature_commit" })
     )
     expect(issueContractCoreSpy).not.toHaveBeenCalled()
   })
 
-  it("rolls back and 500s when the consumed row has no document hash", async () => {
-    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
-    // Consume succeeds but the stored document hash is missing.
-    proposalsUpdateSpy.mockResolvedValue({
-      data: { ...VALID_CONSUMED_ROW, signing_document_hash: null },
+  it("fails before storage or commit when the proposal has no document hash", async () => {
+    proposalsSelectSpy.mockResolvedValue({
+      data: { ...VALID_PROPOSAL_ROW, signing_document_hash: null },
       error: null,
     })
 
@@ -576,15 +583,9 @@ describe("POST /api/sign/[token]", () => {
     expect(res.status).toBe(500)
     const json = await res.json()
     expect(json).toEqual({ error: "server_error" })
-    // No signature was inserted, no contract issued, and the Signed transition
-    // was rolled back (a second proposals.update restoring the prior state).
-    expect(signaturesInsertSpy).not.toHaveBeenCalled()
     expect(issueContractCoreSpy).not.toHaveBeenCalled()
-    expect(proposalsUpdatePayloads.length).toBe(2)
-    expect(proposalsUpdatePayloads[1]).toMatchObject({
-      signing_token_used: false,
-      signed_at: null,
-    })
+    expect(storageDownloadSpy).not.toHaveBeenCalled()
+    expect(redeemSignatureSpy).not.toHaveBeenCalled()
   })
 
   it("records a workflow_errors row when the confirmation email fails to send", async () => {
@@ -638,17 +639,36 @@ describe("POST /api/sign/[token]", () => {
 
     await POST(req, makeCtx("tok"))
 
-    const insertArg = signaturesInsertSpy.mock.calls[0][0] as Record<string, unknown>
-    expect(insertArg.ip_address).toBe("0.0.0.0")
+    const commitArgs = redeemSignatureSpy.mock.calls[0][1] as Record<string, unknown>
+    expect(commitArgs.p_ip_address).toBe("0.0.0.0")
   })
 
-  it("returns 500 and does NOT insert when consume returns a row with null signing_document_hash", async () => {
+  it("rejects a proposal PDF that changed after the signing link was sent", async () => {
     proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
-    proposalsUpdateSpy.mockResolvedValue({
+    proposalsSelectSpy.mockResolvedValue({
       data: {
-        ...VALID_CONSUMED_ROW,
-        signing_document_hash: null,
+        ...VALID_PROPOSAL_ROW,
+        signing_document_hash: "f".repeat(64),
       },
+      error: null,
+    })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(409)
+    const json = await res.json()
+    expect(json).toEqual({ error: "document_changed" })
+    expect(redeemSignatureSpy).not.toHaveBeenCalled()
+    expect(issueContractCoreSpy).not.toHaveBeenCalled()
+    expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workflow_name: "proposal_signing_document_changed",
+      })
+    )
+  })
+
+  it("fails before storage or commit when proposal_pdf_path is null", async () => {
+    proposalsSelectSpy.mockResolvedValue({
+      data: { ...VALID_PROPOSAL_ROW, proposal_pdf_path: null },
       error: null,
     })
 
@@ -656,32 +676,9 @@ describe("POST /api/sign/[token]", () => {
     expect(res.status).toBe(500)
     const json = await res.json()
     expect(json).toEqual({ error: "server_error" })
-    expect(signaturesInsertSpy).not.toHaveBeenCalled()
-  })
-
-  it("skips PDF embed when proposal_pdf_path is null — still returns 200", async () => {
-    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
-    proposalsUpdateSpy.mockResolvedValue({
-      data: {
-        ...VALID_CONSUMED_ROW,
-        proposal_pdf_path: null,
-      },
-      error: null,
-    })
-    signaturesInsertSpy.mockResolvedValue({ data: null, error: null })
-    clientsSingleSpy.mockResolvedValue({
-      data: { name: "Z", contact_email: "z@z.com" },
-      error: null,
-    })
-    dispatchSpy.mockResolvedValue({ ok: true })
-
-    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
-    expect(res.status).toBe(200)
-    const json = await res.json()
-    expect(json).toEqual({ success: true })
-    // Neither download nor upload should be called when path is null
     expect(storageDownloadSpy).not.toHaveBeenCalled()
     expect(storageUploadSpy).not.toHaveBeenCalled()
+    expect(redeemSignatureSpy).not.toHaveBeenCalled()
   })
 
   it("auto-issues the contract after a successful sign (calls issueContractCore)", async () => {

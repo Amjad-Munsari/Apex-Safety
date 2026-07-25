@@ -4,7 +4,7 @@
 
 **First full draft — 25 July 2026**
 
-This manual describes the source and production state checked on 25 July 2026. It is suitable for controlled testing, but the production account is not ready for normal client work until the setup and dependency items in Part 1 are completed. The recent correction set and migration 030 are deployed.
+This manual describes the source and production state checked on 25 July 2026. It is suitable for controlled testing, but the production account is not ready for normal client work until the setup and dependency items in Part 1 are completed. Database safeguards through migration 034 are applied in production.
 
 # Part 1 — Overview
 
@@ -49,7 +49,7 @@ Use the production address:
 
 The two forms use the same account system, but each form checks the person's role after the password is accepted. If a client uses the operator form, or Matt uses the client form, the platform signs that session back out and tells the person which sign-in page to use. Someone who is already signed in and opens a login page is sent to the correct area automatically.
 
-The repository also contains `admin@test.com` and a helper for `user@test.com` with an unsafe fallback password of `test123`. Those are setup fixtures, not confirmed current accounts, and they must not be used as production handover credentials. Delete or rotate every temporary account and password before go-live.
+The repository also contains `admin@test.com` seed metadata and a non-production helper for `user@test.com`. The 25 July production check confirms that neither authentication account exists there. The helper refuses to run unless someone explicitly enables it and supplies a password of at least 16 characters. These are setup fixtures, not handover credentials; delete or rotate every temporary account and password before go-live.
 
 ## Where everything lives
 
@@ -100,10 +100,11 @@ Some working pages are reached from dashboard cards or client records rather tha
 | Proposals | `/client/proposals` | Sent, signed, and issued proposals |
 | Proposal detail | `/client/proposals/[proposal ID]` | View/download and sign a proposal |
 | Contracts | `/client/contracts` | Issued service-agreement PDFs |
+| Contract detail | `/client/contracts/[contract ID]` | Tenant-scoped agreement preview, services, total, and download |
 | Directory | `/client/directory` | Active approved contractors |
 | Billing | `/client/billing` | Credit balance, ledger, and PayPal packages |
 
-The separate `/client/assessments` history also exists, but it overlaps with the Forms → Assessments area and is not the main navigation destination. The route `/client/contracts/[contract ID]` is not built and returns a not-found page; clients should open or download the contract from the Contracts list.
+The separate `/client/assessments` history also exists, but it overlaps with the Forms → Assessments area and is not the main navigation destination.
 
 ## Current state — read this first
 
@@ -118,8 +119,12 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - Assigned forms, resumable drafts, validation, recurrence, and reminders are working.
 - Report drafting, Matt's review step, final PDF creation, storage, email delivery, and client download are working when the AI service is available.
 - Proposal creation, first-party signing, separate original/signed PDFs, and contract generation are implemented.
+- Online signing now verifies the exact original PDF and commits the single-use token, Signed status, signed-file link, hashes, and evidence row together.
+- Issued contracts have both a client list and a tenant-scoped detail page.
 - Credits are the stored balance unit. The editable default reference rate is four credits per hour.
 - The previously open payment-credit permission fault has been fixed and checked in production.
+- Portal brand colours are stored centrally and follow Matt and clients across devices.
+- The audited application dependency is upgraded to 16.2.11; the production build, 698 runnable tests, changed-file lint, and production dependency audit pass.
 
 **Partial or held**
 
@@ -128,23 +133,21 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - Partner automation is held: both production n8n secrets are empty or absent, so the platform blocks the three client-form events and the separate assessment event. Matching secrets must be configured and enforced in the platform and n8n; the form-event workflow then still needs its organisation-to-recipient lookup fixed.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
 - A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
-- Saved photos use temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
-- The client Contracts list works, but individual contract detail URLs do not.
+- Saved photos reload after refresh using temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
 - New Client accepts a site address and the client record has Edit details for organisation and primary-contact fields. Job title is still not stored, so “Facilities Manager” remains part of Sarah's QA persona only.
-- Compliance, Reports, and Proposals show a visible load error instead of pretending a failed query returned no records.
-- Settings colours are saved only in Matt's current browser. They do not follow him to another device, change the client's browser, or recolour PDFs.
-- The displayed sender and sign-off settings are stored, but the real email sender and branding are controlled outside the page.
+- Client Compliance, Reports, Proposals, Assignments, Assessments, Templates, Contracts, Billing, and Directory show a visible load error instead of pretending a failed query returned no records.
+- Settings colours apply to both portals on every device, but generated PDF colours remain fixed.
+- Saved sender and sign-off labels are staged for a future email-brand cutover. The real Resend From name and email brand still come from deployment settings, and the page now says so.
 - Public contact details are inconsistent: the client footer shows `0161 552 0918`, while generated PDFs show `0114 555 0188`; email also defaults to the Merlin name unless its deployment setting is changed. Agree one public identity before handover.
 - The current risk-score matrix still needs Matt's professional approval. Do not treat the computed wording as approved fire-safety guidance yet.
 - Password reset is limited to three requests per account and 20 per source address each hour; the application change and migration 030 are live.
-- The application dependency version identified in the earlier security audit has not been upgraded, although a second server-side role check has been added.
+- Repository-wide lint still reports pre-existing issues in vendored developer tooling and older untouched files. The files changed for this release are lint-clean.
 
 **Not built**
 
 - Speech-to-text or dictation.
 - SMS notifications.
 - Offline use, installable app behaviour, or background syncing.
-- Client contract detail page.
 - Automatic payment receipt or VAT invoice.
 - Retry or Resolve buttons in Workflow Errors.
 
@@ -161,7 +164,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 | One public brand, phone number, sender, and monitored reply mailbox | Consistent portal, PDF, and email identity | Delivery works; identity is inconsistent |
 | Partner recipient fix and matching secrets for both n8n webhook paths | Working partner automation after the platform sends an event | Both event paths are blocked by empty or missing secrets; recipient lookup also remains pending |
 | Approved first-party signing approach | Formal acceptance of the in-app signature method | Unverified |
-| Primary compliance-contact rule | Predictable reminder recipient | Not built |
+| Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
 | SMS and offline scope decision | Text alerts and offline field work | Not built |
 | Privacy, processor, retention, and access decisions | Responsible handling of assessment data | Unverified |
@@ -242,11 +245,11 @@ Matt uploads a PDF or image up to 25 MB, chooses a category, and may set an expi
 
 ### What's live vs. what's pending
 
-**Live:** upload, delete, status, download, email delivery, daily 30/14/7/expired reminders, and admin digest. **Pending:** the reminder recipient is the first portal user rather than a named compliance contact.
+**Live:** upload, file-header validation, delete, status, download, email delivery, daily 30/14/7/expired reminders, and admin digest. Expiry reminders use the organisation's saved primary contact. **Pending:** upload notices still need an agreed recipient rule when an organisation has several portal users.
 
 ### Common situations
 
-- The threshold uses the current instant: at least 30 full days is Current and less than 30 is Expiring. A date chosen as “30 calendar days from today” can fall just inside Expiring because the stored date starts at midnight.
+- The threshold uses the UK calendar date: today or earlier is Expired, 1–30 days ahead is Expiring, and more than 30 days ahead is Current.
 - A document without a date appears under No Expiry Date for Matt, but the client dashboard counts it as Current.
 - A successful upload can still have a failed email; check Workflow Errors.
 
@@ -362,13 +365,14 @@ The client opens the link, reviews the proposal, enters name and email, draws or
 
 ### What's live vs. what's pending
 
-**Live:** single-use/expiry controls, first-party signature pad, evidence row, separate signed copy, and automatic contract attempt. **Pending:** Matt and Finley must formally accept the first-party signing approach.
+**Live:** single-use/expiry controls, exact-original verification, first-party signature pad, atomic evidence commit, separate content-addressed signed copy, and automatic contract attempt. **Pending:** Matt and Finley must formally accept the first-party signing approach.
 
 ### Common situations
 
 - **Link expired:** Matt must send a new signing link.
 - **Already signed:** the link has been used and cannot be reused.
-- If the stamped copy fails, the original remains available and the signature evidence remains recorded; Matt should escalate the missing signed copy.
+- If the original cannot be verified or the stamped copy cannot be stored, signing does not commit and the token remains unused. Report the error before retrying.
+- Once a proposal is Sent, its client, service lines, total, original PDF, and recorded original fingerprint cannot be materially changed.
 
 ### Where to find things
 
@@ -378,7 +382,7 @@ The client receives `/sign/[private token]`. Matt manages the record from `/admi
 
 ### What it does
 
-Contracts creates a service-agreement PDF from a signed proposal and places it in Matt's proposal detail and the client's Contracts list.
+Contracts creates a service-agreement PDF from a signed proposal and places it in Matt's proposal detail, the client's Contracts list, and a tenant-scoped detail page.
 
 ### How it works
 
@@ -390,7 +394,7 @@ Online signing attempts contract issue automatically. If that fails, Matt can us
 
 ### What's live vs. what's pending
 
-**Live:** PDF generation, Issued status, list/download, and contract email. **Not built:** `/client/contracts/[id]`; the list is the working client surface.
+**Live:** PDF generation, Issued status, list, detail preview, download, and contract email.
 
 ### Common situations
 
@@ -399,7 +403,7 @@ Online signing attempts contract issue automatically. If that fails, Matt can us
 
 ### Where to find things
 
-Matt: proposal detail. Client: Agreements → Contracts.
+Matt: proposal detail. Client: Agreements → Contracts, then select the agreement.
 
 ## Billing and credits
 
@@ -449,13 +453,13 @@ Every Save draft and Publish creates a new version. Assignments use a published 
 
 ### What's live vs. what's pending
 
-**Live:** 11 field types, conditions, version history, publishing, assignment, customer ownership, fork-on-fill, and self-fill. **Partial:** the underlying access rules still permit some version updates, and customer template deletion needs stronger failure handling. **Pending:** no production master exists.
+**Live:** 11 field types, conditions, append-only version history, published/referenced-version protection, publishing, assignment, customer ownership, fork-on-fill, soft deletion, and self-fill. **Pending:** no production master exists.
 
 ### Common situations
 
 - A Draft is not assignable; publish it first.
 - Changing a published template creates a later version and does not change an existing assignment.
-- Deleting a referenced Matt template is blocked. Treat all template deletion as permanent.
+- Delete hides and unpublishes the template so it cannot be used for new work; existing assignments, submissions, and pinned versions remain intact.
 
 ### Where to find things
 
@@ -548,11 +552,11 @@ Notifications and Workflow Errors in the admin sidebar.
 
 ### What it does
 
-Settings stores the portal logo, reminder choices, displayed email labels, credits-per-hour reference rate, theme, and browser-local colours.
+Settings stores the portal logo, practice-wide portal colours, reminder choices, future email-brand labels, credits-per-hour reference rate, and theme.
 
 ### How it works
 
-The logo, toggles, labels, and rate are stored centrally. Primary and secondary colours are stored only in the current browser. Actual email sender and brand are set outside this screen.
+The logo, colours, toggles, labels, and rate are stored centrally. Both portal layouts read the colours on every load. Generated PDF colours and the active email sender/brand remain controlled elsewhere.
 
 ### Your daily workflow
 
@@ -560,11 +564,11 @@ The logo, toggles, labels, and rate are stored centrally. Primary and secondary 
 
 ### What's live vs. what's pending
 
-**Live:** logo, reminder toggles, upload notice toggle, credits rate, and theme. **Partial:** colours, sender name, and sign-off do less than the screen wording implies.
+**Live:** logo, portal colours across devices, reminder toggles, upload notice toggle, credits rate, and theme. **Staged:** the saved sender and sign-off labels are not applied to current email; the screen labels this limitation.
 
 ### Common situations
 
-- A colour change on Matt's laptop will not appear on his tablet or the client's phone.
+- A saved colour change should appear on Matt's other device and the client's portal after reload; it does not recolour generated PDFs.
 - Changing the credits rate does not alter existing balances.
 - Turning reminders off pauses email; turning them back on lets the range-based job catch the latest crossed window.
 
@@ -754,7 +758,7 @@ Each save creates a new draft version. Publish creates a published version. A fo
 
 ### What's live vs. what's pending
 
-**Live:** create, save, publish, fill, fork, delete, and self-fill report handoff. **Partial:** deletion is permanent, and referenced-version protection needs further hardening.
+**Live:** create, append-only save/publish, fill, fork, soft delete, protected referenced versions, and self-fill report handoff.
 
 ### Common situations
 
@@ -781,7 +785,7 @@ Draft proposals stay hidden. A Sent proposal offers Accept & Sign; Signed and Is
 
 ### What's live vs. what's pending
 
-**Live:** organisation-specific view/download and first-party signing. **Pending:** email delivery and business acceptance of the signing method.
+**Live:** organisation-specific view/download, email delivery, and first-party signing. **Pending:** business acceptance of the signing method.
 
 ### Common situations
 
@@ -800,19 +804,19 @@ Clients can open or download issued service agreements.
 
 ### How it works
 
-The Contracts list reads issued proposals with a contract PDF and creates one-hour view/download links.
+The Contracts list reads issued proposals with a contract PDF. Selecting a contract opens a tenant-scoped detail page with an embedded one-hour preview, download, services, total, and issued date.
 
 ### Your daily workflow
 
-**Client:** Open Contracts and use View or Download on the list item.
+**Client:** Open Contracts, select the agreement, check its services and total, then view or download it.
 
 ### What's live vs. what's pending
 
-**Live:** list, view, and download. **Not built:** individual contract detail route.
+**Live:** tenant-scoped list, detail, embedded preview, and download.
 
 ### Common situations
 
-- Do not paste `/client/contracts/[ID]`; it returns not found.
+- A contract detail URL returns not found if it belongs to another organisation, is not Issued, or has no stored agreement PDF.
 - If the proposal is Signed but no contract appears, Matt must issue or retry the contract.
 
 ### Where to find things
@@ -851,9 +855,9 @@ Directory in the client navigation.
 
 | Badge | Meaning |
 |---|---|
-| **CURRENT** | No expiry date on the client screen, or the expiry is at least 30 full days from the current instant |
-| **EXPIRING** | Expiry has not passed and is fewer than 30 full days from the current instant |
-| **EXPIRED** | Expiry is before now |
+| **CURRENT** | Expiry is more than 30 UK calendar days ahead; the client dashboard's broad Current total also includes undated documents |
+| **EXPIRING** | Expiry is 1–30 UK calendar days ahead, including exactly 30 days |
+| **EXPIRED** | Expiry date is today or earlier |
 | **NO EXPIRY DATE** | Matt's separate admin bucket for documents without a date |
 
 Reminder email windows are 30 days, 14 days, 7 days, and expired. If a run was missed, the platform sends the latest crossed window rather than sending every missed reminder.
@@ -942,13 +946,12 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - One agreed public brand/sender; email delivery itself is working.
 - Partner automation recipient lookup and matching secrets for both protected n8n webhook paths.
 - Formal first-party signing acceptance.
-- Primary compliance-contact rule.
+- Upload/report recipient rule; expiry reminders already use the organisation contact.
 - Speech-to-text.
 - SMS and offline scope.
-- Client contract detail route.
 - Billing receipt/invoice.
 - Privacy, retention, processor, and access decisions.
-- Application dependency upgrade and full release checks.
+- Repository-wide legacy/vendored lint cleanup; changed files and release gates are clean.
 
 ## Who to ask
 
@@ -1042,7 +1045,7 @@ Prepare four harmless PDFs under 25 MB: one expired yesterday, one expiring in 1
 2. **Matt:** Select Hallam House, choose a category, attach the expired file, and set yesterday's date.
 3. **Matt:** Stop before Upload and confirm client, category, file, and date. Upload is the commit point.
 4. **Matt:** Upload the remaining three files with their matching dates.
-5. **Matt:** Confirm the files appear under Expired, Expiring, Current, and No Expiry Date. Use 31 calendar days for the stable Current case; the screen compares exact instants rather than calendar labels.
+5. **Matt:** Confirm the files appear under Expired, Expiring, Current, and No Expiry Date. The screen uses UK calendar dates, so 30 days is Expiring and 31 days is Current.
 6. **Client:** Open Documents → Compliance and confirm all four files appear only for Hallam House.
 7. **Client:** Open and download one file, then wait for its temporary link to expire or reopen later and confirm a fresh click works.
 8. **Matt:** Open Upcoming Expiries and inspect the manual reminder option. Stop before sending if the inbox test has not been approved.
@@ -1050,7 +1053,7 @@ Prepare four harmless PDFs under 25 MB: one expired yesterday, one expiring in 1
 
 ### Errors / exception states you might see
 
-- Unsupported type or file above 25 MB is rejected.
+- Unsupported type, file above 25 MB, or file whose bytes do not match its claimed type is rejected.
 - Upload can succeed while its notification email fails.
 - The client dashboard counts the undated file as Current even though Matt has a separate No Expiry Date bucket.
 
@@ -1064,7 +1067,7 @@ Check Compliance filters, the client record's Documents tab, Workflow Errors, an
 
 ### Known gaps until dependencies land
 
-The reminder recipient is not a named compliance contact.
+Expiry reminders use Hallam House's saved primary contact. Upload notices still need an agreed rule if several portal users exist.
 
 ## QA 4 — Build and publish Matt's master template
 
@@ -1166,7 +1169,7 @@ Do not delete either template. Record the two names and version numbers, then ch
 
 ### Known gaps until dependencies land
 
-Published-version immutability and customer deletion failure handling need further hardening.
+No additional template-integrity gap is known in this walkthrough; the remaining dependency is approved production content.
 
 ## QA 7 — Admin assessment, draft review, and final report
 
@@ -1250,13 +1253,14 @@ Use a controlled Sarah inbox and an explicitly test-only proposal. Agree that th
 6. **Client:** Submit once. Confirm the success screen and that a second use of the link says Already signed.
 7. **Matt:** Confirm the pipeline moved to Signed or Issued and open the signed proposal copy.
 8. **Matt:** If it remains Signed, check Workflow Errors and select Issue contract.
-9. **Client:** Open Agreements → Contracts and view/download the agreement from the list.
-10. **Client:** Confirm that opening `/client/contracts/[ID]` is a known not-found gap, not a missing contract.
+9. **Client:** Open Agreements → Contracts, select the agreement, and confirm the detail page shows the expected services, total, issued date, preview, and download.
+10. **Client:** Copy the detail URL into the same signed-in session and confirm it still opens. A different organisation must receive not found.
 
 ### Errors / exception states you might see
 
 - **Expired:** send a new link.
 - **Already signed:** do not create a second signature.
+- **Document changed / evidence unavailable:** signing did not commit. Keep the proposal and link state intact while Matt checks the original PDF and Workflow Errors.
 - Proposal says Sent but inbox is empty: Matt should see a warning and a `proposal_signature_request` Workflow Error. Use the portal while that individual delivery is resolved; there is no automatic retry.
 - Auto-issue can fail after signature; the signature remains valid and Matt can retry contract issue.
 
@@ -1270,7 +1274,7 @@ Do not mark a proposal manually signed to hide an online failure. Preserve the l
 
 ### Known gaps until dependencies land
 
-First-party signing needs formal acceptance, and the client contract detail route is absent.
+First-party signing still needs formal business acceptance.
 
 ## QA 10 — Manual credits and PayPal
 
@@ -1344,10 +1348,10 @@ Production is empty and the Directory's scope acceptance should be confirmed.
 
 Record all current Settings values so they can be restored. Use a controlled test document and inbox.
 
-1. **Matt:** Change Sign-off Name, Save Changes, reload, and confirm the value persisted.
+1. **Matt:** Change Saved Sign-off Name, Save Changes, reload, and confirm the value persisted. This is a stored future label, not a current email change.
 2. **Matt:** Restore it. Repeat with Credits per Hour, then restore 4. Confirm no existing balance changed.
-3. **Matt:** Change a colour, reload in the same browser, and confirm it persists.
-4. **Matt:** Open a different browser or Sarah's phone and confirm the colour did not follow. Record this as expected current behaviour.
+3. **Matt:** Change a colour, save, reload in the same browser, and confirm it persists.
+4. **Matt:** Open another signed-in admin device and Sarah's portal, reload, and confirm the saved colour follows to both.
 5. **Matt:** Upload a temporary logo, confirm it appears in the client footer, then restore/remove it.
 6. **Matt:** Turn Notify on document upload off, upload a test document, and confirm the document saves without an email.
 7. **Matt:** Turn it back on, upload another test document, and check the controlled inbox and Workflow Errors.
@@ -1357,6 +1361,7 @@ Record all current Settings values so they can be restored. Use a controlled tes
 ### Errors / exception states you might see
 
 - A Settings success message does not mean the sender label changed real email.
+- SVG logos and files whose real header does not match PNG, JPEG, or WebP are rejected.
 - Partner automation can fail after accepting the platform's event and leave no platform error.
 - An empty Workflow Errors page is not proof that email or PayPal is healthy.
 
@@ -1370,7 +1375,7 @@ Restore the original settings first, then record which device/browser, action, c
 
 ### Known gaps until dependencies land
 
-Colours are browser-local, email identity is configured elsewhere, partner workflow visibility is incomplete, and Workflow Errors is read-only.
+PDF colours and email identity are configured elsewhere, partner workflow visibility is incomplete, and Workflow Errors is read-only.
 
 ## QA 13 — Dashboard and queue reconciliation
 

@@ -1,7 +1,7 @@
 # 888 Safety & Training — Manual Research Brief
 
 **Research snapshot:** 25 July 2026
-**Source basis:** application behaviour at `25d5ce2`, followed only by documentation corrections, plus live production configuration and database checks
+**Source basis:** current application source and migrations, plus live production configuration and database checks completed on 25 July 2026
 **Production URL:** `https://www.merlinsafetysystem.com`
 
 This brief is the evidence layer for `docs/888-user-testing-manual.md`. It was derived from the current application code, committed migrations, configuration, the latest production handoff, and a production-state check on 25 July 2026. Earlier user guides and proposal documents were not used as behavioural sources. The 20 July production-readiness audit was used only as a checklist, then every finding was rechecked against the current checkout.
@@ -30,9 +30,9 @@ This brief is the evidence layer for `docs/888-user-testing-manual.md`. It was d
 | The form builder has Signature and Rating fields. | The active palette has exactly 11 types: Short Text, Number, Date, Select, Long Text, Checkbox, Section, Photos, Location, Computed, and Repeating Section. Signature and Rating were removed from registration. | **Live:** `components/form-builder/field-palette.tsx:19-53`; `lib/form-builder/index.ts:16-30` |
 | Customers cannot create or fork templates. | Customers can build an organisation-owned template from scratch, and can fork an assigned master before filling it. The fork points back to the master through `parent_template_id`; Matt can inspect customer templates read-only. | **Live:** `supabase/migrations/003_form_template_customer_ownership.sql:12-33`; `supabase/migrations/003_form_template_customer_ownership.sql:43-92`; `app/client/templates/actions.ts:49-85`; `app/client/assignments/actions.ts:410-539`; `app/admin/templates/[id]/page.tsx:25-57` |
 | Signing uses DocuSign, SignWell, or PandaDoc. | Signing is first-party. A public, single-use link shows the proposal and accepts a drawn or typed signature after the signer accepts the terms. | **Live with a legal/process decision still required:** `components/sign/sign-flow.tsx:243-320`; `components/sign/sign-flow.tsx:322-377`; `app/api/sign/[token]/route.ts:229-328` |
-| Signing overwrites the exact PDF whose hash was recorded. | The current endpoint leaves the original PDF intact, writes the signature-stamped copy to a separate path, and stores a second hash for that copy. Migration 029 is recorded as applied in production. | **Resolved for new signatures:** `app/api/sign/[token]/route.ts:330-401`; `HANDOFF.md:149-152` |
-| Expiry alerts only fire on exact days and never catch up. | The current job scans a range, chooses the smallest crossed 30/14/7/expired window, retries failed sends, and deduplicates successful sends. | **Resolved, with recipient selection still partial:** `app/api/cron/expiry/route.ts:57-95`; `app/api/cron/expiry/route.ts:113-187`; `lib/notifications/expiry-window.ts:35-48` |
-| Admin protection exists only in the route proxy. | Both admin and client layouts now repeat the server-side role check. | **Partly resolved:** layout defence exists, but the repository still pins the audited framework version `16.2.4`; the dependency upgrade remains pending. `app/admin/layout.tsx:18-22`; `app/client/layout.tsx:17-22`; `package.json:32` |
+| Signing overwrites the exact PDF whose hash was recorded. | The endpoint re-downloads and verifies the original PDF, creates and stores a content-addressed stamped copy, then consumes the token, advances the proposal, links the stamped file, and inserts the evidence row in one database transaction. A failed preparation leaves the token unused; a failed commit removes the uncommitted stamped file. | **Resolved for new signatures; migrations 029, 032, and 033 are applied in production:** `app/api/sign/[token]/route.ts:169-304`; `supabase/migrations/032_atomic_proposal_signature_redemption.sql:1-99`; `supabase/migrations/033_sent_proposal_immutability.sql:1-40` |
+| Expiry alerts only fire on exact days and never catch up. | The current job scans a range, chooses the smallest crossed 30/14/7/expired window, sends to the organisation's designated contact, uses a provider idempotency key, retries failed sends, and records an audit-write failure. | **Resolved:** `app/api/cron/expiry/route.ts:50-97`; `app/api/cron/expiry/route.ts:108-197`; `lib/notifications/expiry-window.ts:1-35` |
+| Admin protection exists only in the route proxy. | Both protected layouts repeat the server-side role check, and the audited application dependency was upgraded from 16.2.4 to 16.2.11. | **Resolved in this release:** `app/admin/layout.tsx:18-22`; `app/client/layout.tsx:16-21`; `package.json:32`; `package.json:54-59` |
 | Contractor Directory is not part of the build. | Matt can manage contractors and clients can browse active, non-deleted entries. | **Live code, empty production data:** `app/admin/directory/page.tsx:11-41`; `lib/data/contractors-server.ts:45-82`; `supabase/migrations/024_contractors.sql:9-48`; `HANDOFF.md:52-55` |
 
 The active Select renderer accepts one choice. The deployed palette description is “Single choice from list” (`components/form-builder/field-palette.tsx:41-48`; `components/form-interpreter/select-field-renderer.tsx:39-60`).
@@ -66,7 +66,7 @@ There is no `/portal/*` route tree. `/login` is the client sign-in, `/login/admi
 | `/admin/services` | Live CRUD catalogue used as proposal line items; inactive items remain visible to Matt and are hidden from new proposals. | **Live code, empty production data** | `app/admin/services/page.tsx:19-55`; `lib/data/services-server.ts:47-66`; `HANDOFF.md:52-55` |
 | `/admin/directory` | Live CRUD directory grouped by contractor category. | **Live code, empty production data** | `app/admin/directory/page.tsx:11-41`; `lib/data/contractors-server.ts:45-59`; `HANDOFF.md:52-55` |
 | `/admin/notifications` | The latest 200 successful automated and manually triggered expiry-reminder ledger rows. It is not a complete outbox for every email or n8n event. | **Live but narrow** | `app/admin/notifications/page.tsx:31-47`; `app/admin/compliance/actions.ts:44-115` |
-| `/admin/settings` | Stored logo, email defaults, reminder toggles, credits reference rate, browser-local colours, theme, and a link to workflow errors. | **Partial** | `app/admin/settings/page.tsx:10-44`; `components/admin/settings-form.tsx:76-97`; `components/admin/settings-form.tsx:182-240` |
+| `/admin/settings` | Stored logo, practice-wide portal colours, reminder toggles, credits reference rate, theme, saved future email-brand labels, and a link to workflow errors. | **Partial:** portal branding persists across devices, while the current email From/brand still comes from deployment settings. | `app/admin/settings/page.tsx:10-44`; `app/admin/settings/actions.ts:27-78`; `app/admin/layout.tsx:30-44`; `app/client/layout.tsx:23-33` |
 | `/admin/errors` | The 50 most recent recorded workflow errors, rendered read-only. There is no retry or resolve control. | **Live but read-only** | `app/admin/errors/page.tsx:8-35`; `app/admin/errors/page.tsx:35-74` |
 
 The admin sidebar exposes Dashboard, Clients, Compliance, Proposals, Workflow Errors, Month Summary, Form Templates, Service Catalog, Contractors, Notifications, and Settings. Assessments, reports, assignments, credit overview, and expiries are reached from dashboards, client records, or direct links (`components/app-sidebar.tsx:30-45`).
@@ -89,7 +89,7 @@ The admin sidebar exposes Dashboard, Clients, Compliance, Proposals, Workflow Er
 | `/client/proposals` | Sent, Signed, and Contract Issued proposals for the organisation; Drafts are hidden. | **Live** | `app/client/proposals/page.tsx:24-59` |
 | `/client/proposals/[id]` | Tenant-scoped proposal view/download and Accept & Sign action while the proposal is Sent. | **Live** | `app/client/proposals/[id]/page.tsx:21-85`; `app/client/proposals/[id]/page.tsx:115-180` |
 | `/client/contracts` | Issued contract PDFs derived from proposals whose status is Contract Issued. | **Live list** | `app/client/contracts/page.tsx:22-42`; `app/client/contracts/page.tsx:46-95` |
-| `/client/contracts/[id]` | Always returns a not-found page. The source comment claiming contracts have no data backing is stale; the list above is live. | **Not built** | `app/client/contracts/[id]/page.tsx:1-10`; `app/client/contracts/page.tsx:32-42` |
+| `/client/contracts/[id]` | Tenant-scoped issued-contract detail with embedded one-hour view link, download link, service summary, total, and issued date. | **Live** | `app/client/contracts/[id]/page.tsx:24-78`; `app/client/contracts/[id]/page.tsx:80-158` |
 | `/client/directory` | Active, non-deleted approved contractors. | **Live code, empty production data** | `app/client/directory/page.tsx:6-27`; `lib/data/contractors-server.ts:62-82`; `HANDOFF.md:52-55` |
 | `/client/assessments` | A second live submission-history view with simplified Scheduled/In Progress/Submitted/Completed labels. It is not the main navigation destination. | **Live but overlapping** | `app/client/assessments/page.tsx:23-63`; `app/client/assessments/status.ts:31-40` |
 | `/client/assessments/[id]` | Detail/status page for a tenant-scoped submission and final-report actions when completed. | **Live** | `app/client/assessments/[id]/page.tsx:48-87`; `app/client/assessments/[id]/page.tsx:130-169` |
@@ -129,16 +129,17 @@ Assignment reminders run daily at 07:00 UTC, select 7-day, 1-day, and overdue mi
 2. The server recalculates line totals, adds 20% VAT, generates the proposal PDF, stores it privately, and leaves or reuses a Draft row. On the Send path, it continues into signature delivery (`app/admin/proposals/actions.ts:216-384`).
 3. Sending requires an existing PDF and client contact email. The server creates a random single-use token, stores only its hash, hashes the PDF, sets a 30-day expiry, changes the proposal to Sent, and emails the signing link (`app/admin/proposals/actions.ts:93-213`).
 4. The public signing page shows the proposal and one-hour PDF link. The signer enters name/email, draws or types a signature, accepts the terms, and submits (`app/api/sign/[token]/route.ts:99-165`; `components/sign/sign-flow.tsx:243-377`).
-5. Submission atomically consumes the unexpired token, records the signature, IP, browser information, timestamp, and original document hash, then creates a separate stamped PDF and hash. If the evidence row cannot be written, the Signed transition is rolled back so the same link can be retried (`app/api/sign/[token]/route.ts:250-328`; `app/api/sign/[token]/route.ts:330-401`).
-6. A successful online signature attempts to issue the contract automatically. Contract issuance rebuilds the service agreement, adds 20% VAT, stores the PDF, changes the proposal to Contract Issued, and emails a seven-day link. Failure is recorded for Matt and can be retried with **Issue contract** (`app/api/sign/[token]/route.ts:436-467`; `lib/proposals/issue-contract.ts:35-181`).
+5. Submission re-downloads the exact original PDF and rejects it if its current hash differs from the hash recorded at send time. It creates and stores a separate content-addressed stamped PDF first, then one server-only database operation consumes the unexpired token, changes the proposal to Signed, links both hashes/paths, and inserts the signature evidence row. Preparation failure leaves the token unused; commit failure removes the uncommitted stamped file (`app/api/sign/[token]/route.ts:169-304`; `supabase/migrations/032_atomic_proposal_signature_redemption.sql:45-99`).
+6. A successful online signature attempts to issue the contract automatically. Contract issuance rebuilds the service agreement, adds 20% VAT, stores the PDF, changes the proposal to Contract Issued, and emails a seven-day link. Failure is recorded for Matt and can be retried with **Issue contract** (`app/api/sign/[token]/route.ts:347-383`; `lib/proposals/issue-contract.ts:35-181`).
 7. Matt can record a paper/email signature manually. That stores a clearly marked offline audit row, consumes the online link, and allows contract issue (`app/admin/proposals/actions.ts:590-668`).
 
 Current exceptions:
 
 - The deployed flow leaves the Draft for retry but fails visibly when proposal PDF generation or upload fails, so the builder no longer reports a successful send without a document (`app/admin/proposals/actions.ts:345-381`; `components/proposals/advanced-proposal-builder.tsx:210-240`).
 - A proposal still becomes Sent before delivery is known. The deployed flow records a signature-email failure in Workflow Errors and shows Matt a warning with the proposal link; there is still no automatic retry queue (`app/admin/proposals/actions.ts:195-222`; `components/proposals/advanced-proposal-builder.tsx:229-239`).
-- The first-party signature evidence is substantially stronger after the separate signed-copy change, but whether it is the accepted business/legal signing method is still an external decision. **UNVERIFIED**.
-- The client contract list works; the contract detail route does not (`app/client/contracts/page.tsx:32-95`; `app/client/contracts/[id]/page.tsx:1-10`).
+- Sent proposal terms, client, totals, original PDF path, and original hash are database-protected from later material edits (`supabase/migrations/033_sent_proposal_immutability.sql:1-40`).
+- The first-party signature evidence is now transactional and preserves both exact documents, but whether it is the accepted business/legal signing method is still an external decision. **UNVERIFIED**.
+- The client contract list and tenant-scoped detail route both work (`app/client/contracts/page.tsx:22-95`; `app/client/contracts/[id]/page.tsx:24-158`).
 
 ### Credit purchase and manual adjustment
 
@@ -156,26 +157,24 @@ Current exceptions:
 
 ### Compliance and notifications
 
-Matt uploads a PDF or image up to 25 MB, chooses a category, and may supply an expiry date. The file and metadata are stored; upload email follows the Settings toggle. Clients can only mint short-lived links for documents belonging to their organisation (`lib/documents/actions.ts:14-145`; `app/client/compliance/actions.ts:6-40`).
+Matt uploads a PDF or image up to 25 MB, chooses a category, and may supply an expiry date. The server checks the file's actual header as well as its claimed type before storage; upload email follows the Settings toggle. Clients can only mint short-lived links for documents belonging to their organisation (`lib/documents/actions.ts:14-153`; `lib/files/file-signature.ts:1-66`; `app/client/compliance/actions.ts:6-40`).
 
 The screen thresholds are:
 
-- **Expired:** expiry is before the current instant.
-- **Expiring:** expiry is from now up to, but not including, 30 days ahead.
-- **Current:** expiry is at least 30 days ahead.
-- **No Expiry Date:** a separate admin bucket. The client dashboard currently counts undated documents as Current, while the admin Compliance screen separates them (`app/admin/compliance/page.tsx:49-72`; `app/client/compliance/page.tsx:32-53`; `app/client/page.tsx:97-125`).
-
-These screen buckets compare the stored date with the current instant. Because a date-only value is parsed at midnight, choosing the calendar date “30 days from today” can be slightly less than 30 full days by the time the page is opened and therefore appear Expiring. Use 31 calendar days ahead for a stable Current QA case.
+- **Expired:** the expiry date is today or earlier.
+- **Expiring:** the expiry date is 1–30 UK calendar days ahead, including exactly 30 days.
+- **Current:** the expiry date is more than 30 UK calendar days ahead.
+- **No Expiry Date:** a separate status. The client dashboard includes undated records in its broad Current total, while the document list preserves the separate undated label (`lib/compliance/expiry-status.ts:1-68`; `app/admin/compliance/page.tsx`; `app/client/compliance/page.tsx`; `app/client/page.tsx`).
 
 The daily 06:00 UTC reminder job scans from 30 days overdue to 30 days ahead and can issue one notice at each 30/14/7/expired window. A late run catches the latest missed window rather than sending all missed notices. Failure is recorded and retried; success is deduplicated (`app/api/cron/expiry/route.ts:46-95`; `app/api/cron/expiry/route.ts:113-187`; `vercel.json:3-7`).
 
-The expiry job and document-upload path still choose the first client user without deterministic ordering. Assignment reminders have already been corrected to prefer the owner. Until a primary compliance-contact rule is implemented, the expiry/upload/report recipient may not be the intended person (`app/api/cron/expiry/route.ts:137-150`; `lib/documents/actions.ts:104-112`; `app/admin/assessments/actions.ts:767-776`).
+The expiry job now uses `clients.contact_name` and `clients.contact_email`, so its recipient is deterministic (`app/api/cron/expiry/route.ts:72-89`; `app/api/cron/expiry/route.ts:132-158`). Upload notices and final-report delivery still select a portal user, so the business rule for those recipients remains **Partial** (`lib/documents/actions.ts`; `app/admin/assessments/actions.ts`).
 
 ## Providers and configuration
 
 | Provider or service | Actual purpose | Current state | Evidence |
 |---|---|---|---|
-| Live data, authentication, private file storage | Accounts, organisation-scoped records, reports, proposals, documents, and form media. | **Live:** all structural migrations through 029 were verified in production. | `supabase/migrations/001_initial_schema.sql:15-215`; `supabase/migrations/001_initial_schema.sql:443-451`; `HANDOFF.md:149-152` |
+| Live data, authentication, private file storage | Accounts, organisation-scoped records, reports, proposals, documents, and form media. | **Live:** migrations 031–034 were applied and directly verified in production on 25 July 2026. | `supabase/migrations/031_template_version_immutability.sql`; `supabase/migrations/032_atomic_proposal_signature_redemption.sql`; `supabase/migrations/033_sent_proposal_immutability.sql`; `supabase/migrations/034_persist_brand_colours.sql` |
 | OpenRouter → `openai/gpt-4o-mini` | Assessment report drafts and proposal scope paragraphs. | **Live when the key is valid; output always needs Matt's review.** | `lib/reports/report-draft.ts:60-94`; `app/admin/proposals/actions.ts:57-74` |
 | Resend | Invites, password resets, expiry notices/digest, upload notices, assignment reminders, report links, signature requests/confirmation, and contract links. | **Live:** delivery is owner-confirmed operational as of 25 July 2026. The application records individual send failures, but it does not provide a complete delivery/open-status outbox. | `lib/notifications/email-templates.ts:21-33`; `lib/notifications/dispatch.ts:180-219`; `HANDOFF.md:35-38` |
 | n8n | Three partner form events and a separate assessment-submitted event. It does not generate AI content, PDFs, or ordinary customer email. | **Held:** the production `N8N_WEBHOOK_SECRET` is empty and `N8N_ASSESSMENT_WEBHOOK_SECRET` is absent, so the platform blocks all four events. The downstream form-event workflow also has an unresolved recipient lookup. | `lib/notifications/client-form-events.ts:28-72`; `lib/notifications/dispatch.ts:225-267`; `app/admin/assessments/actions.ts:424-471`; `HANDOFF.md:141-144` |
@@ -195,7 +194,7 @@ Customer templates use polymorphic ownership:
 
 All main client-data tables have row-level access controls enabled. Later migrations replace dead role claims with membership checks, correct client-visible proposal/submission statuses, constrain client form writes to their own organisation, and repair storage administration policies (`supabase/migrations/001_initial_schema.sql:198-215`; `supabase/migrations/0201_security_rls_hardening.sql:26-113`; `supabase/migrations/022_client_write_policies_and_admin_claim_fixes.sql:25-76`; `supabase/migrations/022_client_write_policies_and_admin_claim_fixes.sql:84-119`). The latest production handoff records live anonymous-write and cross-role probes as denied (`HANDOFF.md:64-66`).
 
-Template saves currently insert new version rows in application code, but the database still allows a customer to update versions belonging to its organisation, and deleting a template cascades to its versions. The application blocks deleting Matt's templates when referenced, but customer deletion does not inspect the result. Strong database immutability for published/referenced versions remains **Partial** (`app/admin/templates/actions.ts:148-215`; `app/admin/templates/actions.ts:292-320`; `app/client/templates/actions.ts:246-252`; `supabase/migrations/004_form_templates_rls_fixes.sql:34-58`).
+Template saves append new version rows. Published or referenced versions cannot be updated, signed-in users no longer have hard-delete access to template parents, and both admin and customer delete actions now hide/unpublish the template while preserving every pinned version. Migration 031 was applied and its policies/triggers verified in production on 25 July 2026 (`app/admin/templates/actions.ts:149-215`; `app/admin/templates/actions.ts:293-320`; `app/client/templates/actions.ts`; `supabase/migrations/031_template_version_immutability.sql:1-126`).
 
 ## Status vocabularies
 
@@ -207,7 +206,7 @@ These are text values rather than database enums, so the application owns the vo
 | Submission/report | Work can move `draft` → `submitted` → `draft_ready_for_review` → `completed`; `ai_draft_failed` is the retry state. Matt-led, client-assigned, and customer self-fill submissions use the same draft scheduler. Some client screens collapse the middle states to In Progress. | `app/admin/month-summary/page.tsx:101-123`; `app/client/assessments/status.ts:19-40`; `lib/reports/report-draft.ts:96-136`; `app/client/assignments/actions.ts:331-366` |
 | Proposal/agreement | `Draft` → `Sent` → `Signed` → `Contract Issued`. | `app/admin/proposals/page.tsx:7-18`; `app/admin/proposals/page.tsx:69-78` |
 | Template | `is_published=false` displays Draft; `is_published=true` displays Published. A latest unpublished version can coexist with older published versions. | `app/admin/templates/page.tsx:20-46`; `app/admin/templates/[id]/page.tsx:32-45` |
-| Compliance | Current, Expiring, Expired, plus No Expiry Date on the admin screen. Boundary: exactly 30 days is Current. | `app/admin/compliance/page.tsx:49-72`; `app/client/compliance/page.tsx:32-38` |
+| Compliance | Current, Expiring, Expired, plus No Expiry Date. Expiry day and earlier are Expired; 1–30 UK calendar days are Expiring; more than 30 days is Current. | `lib/compliance/expiry-status.ts:43-68` |
 
 ## Test identities and credentials
 
@@ -217,10 +216,10 @@ No complete, current tester credential pair can truthfully be recovered from the
 |---|---|---|
 | Matt Robinson | Production contains only `mathew.robinson@888safetyandtraining.com` in `admin_users`. No password is stored in the repository. | Use `/login/admin` with Matt's existing password, or use **Forgot?** to set a new one. Password: **UNVERIFIED**. `HANDOFF.md:159-163` |
 | Sarah Whitfield, Facilities Manager, Hallam House Care Home | The name and organisation appear in test/seed fixtures, but there is no confirmed Sarah authentication account or password. Production currently has zero clients. | Matt must create Hallam House, add Sarah under Access, and send/copy the invite link before QA. Credentials: **UNVERIFIED**. `tests/auth-helpers/client-context-with-identity.test.ts:93-105`; `HANDOFF.md:52-55`; `HANDOFF.md:162-163` |
-| Repository test admin | Seed metadata links `admin@test.com` to Matt, but the seed explicitly says the authentication user must be created separately and supplies no password. | Not a confirmed login. `supabase/seed.sql:132-143` |
-| Repository test client | A helper can create `user@test.com` using `TEST_CLIENT_PASSWORD` or the unsafe fallback `test123`, but only when someone runs it against an environment. It is not Sarah and it is absent from current production. | Staging/local helper only; never assume it exists. `scripts/ensure-client-test-user.mjs:21-35`; `HANDOFF.md:64-66` |
+| Repository test admin | Seed metadata links `admin@test.com` to Matt, but the seed explicitly says the authentication user must be created separately and supplies no password. The 25 July live check confirms this authentication account is absent from production. | Not a login. `supabase/seed.sql:132-143` |
+| Repository test client | A helper can create `user@test.com` only after an operator explicitly sets `ALLOW_TEST_USER_SEED=true` and supplies a password of at least 16 characters. It refuses to run without both gates and is intended only for non-production. It is not Sarah; the 25 July live check confirms it is absent from production. | Staging/local helper only; never assume it exists. `scripts/ensure-client-test-user.mjs:8-35` |
 
-All test passwords, invite links, and helper accounts must be replaced or deleted before handover. The hardcoded fallback `test123` must never be treated as a go-live credential.
+All test passwords, invite links, and helper accounts must be replaced or deleted before handover. No test password is stored in the repository.
 
 Both login pages call the same password authentication service, then check the account's role. The client page signs an operator back out with an operator-access message; the admin page signs a client back out with a client-portal message. An already signed-in user who visits a login URL is redirected by role (`app/login/page.tsx:18-50`; `app/login/admin/page.tsx:17-49`; `lib/supabase/session.ts:64-103`).
 
@@ -229,9 +228,11 @@ Both login pages call the same password authentication service, then check the a
 ### Live enough for controlled testing
 
 - Live organisation and client-access management, with invite/reset flow production-tested (`app/admin/clients/actions.ts:26-81`; `app/admin/clients/actions.ts:420-562`; `HANDOFF.md:35-38`).
-- Live dashboards, compliance documents, manual expiry reminders, assignments, customer form building/forking, report generation/review, proposal pipeline, first-party signing, contract generation/list, manual credits, and contractor directory.
+- Live dashboards, compliance documents, manual expiry reminders, assignments, customer form building/forking, report generation/review, proposal pipeline, transactional first-party signing, contract generation/list/detail, manual credits, and contractor directory.
 - Live tenant and role controls, including a second role check in both protected layouts and production denial probes (`app/admin/layout.tsx:18-22`; `app/client/layout.tsx:17-22`; `HANDOFF.md:64-66`).
 - Live credit denomination and editable reference rate, with both balance functions restricted to the server role (`supabase/migrations/026_credits_model.sql:4-18`; `supabase/migrations/026_credits_model.sql:123-130`; `HANDOFF.md:64-66`).
+- Live template and sent-proposal immutability controls plus the atomic signing commit, directly verified in production after migrations 031–034 (`supabase/migrations/031_template_version_immutability.sql`; `supabase/migrations/032_atomic_proposal_signature_redemption.sql`; `supabase/migrations/033_sent_proposal_immutability.sql`).
+- The audited application dependency is upgraded to 16.2.11, the production build passes, all 698 runnable tests pass, changed files are lint-clean, and the production dependency audit reports zero vulnerabilities (`package.json:32`; `package.json:54-67`).
 
 ### Partial or held for controlled testing only
 
@@ -245,12 +246,12 @@ Both login pages call the same password authentication service, then check the a
 | AI reports | Drafting is wired, but sparse forms can produce invented detail. Matt's review is the controlling safety step, and the local PAS 79 matrix still requires his professional approval (`HANDOFF.md:141-145`; `lib/form-builder/risk/pas79.ts:4-35`). |
 | Client assignment to report | **Live:** assigned-form and customer self-fill submissions schedule report drafting after the committed submission (`app/client/assignments/actions.ts:331-366`; `app/client/templates/actions.ts:475-508`). |
 | Proposal delivery | **Live with a recovery limitation:** PDF failure fails visibly while preserving the Draft, and signature-email failure creates a Workflow Error plus an on-screen warning. There is still no automatic retry queue (`app/admin/proposals/actions.ts:345-399`; `app/admin/proposals/actions.ts:195-222`). |
-| First-party signing | Separate immutable original/stamped copies are live for new signatures, but formal acceptance of this signing method is **UNVERIFIED**. |
-| Photos | **Live with a validation limitation:** committed photos use 15-minute signed previews and removal deletes both the private object and its audit row. A Photos field marked Required is still intentionally presented as “recommended” and does not block submission (`app/admin/assessments/actions.ts:648-724`; `components/form-interpreter/multi-photo-field-renderer.tsx:150-173`; `components/form-interpreter/multi-photo-field-renderer.tsx:282-334`). |
-| Settings | Logo and toggles persist. Colours are browser-local and do not reach clients or PDFs. Sign-off/sender fields persist, but actual email branding/sender comes from environment configuration (`lib/branding.ts:10-13`; `lib/branding.ts:27-67`; `lib/notifications/dispatch.ts:202-211`; `lib/notifications/email-templates.ts:19-33`). |
+| First-party signing | The original and stamped copies, hashes, token consumption, status change, and audit row are now committed safely for new signatures, but formal acceptance of this signing method is **UNVERIFIED** (`app/api/sign/[token]/route.ts:169-315`; `supabase/migrations/032_atomic_proposal_signature_redemption.sql:45-99`). |
+| Photos | **Live with a form-rule limitation:** committed per-field photos reload after refresh, use 15-minute signed previews, and removal deletes both the private object and its audit row. Uploads are limited to five per affordance and the server checks the actual image header. A Photos field marked Required is still intentionally presented as “recommended” and does not block submission (`components/form-interpreter/attach-photos-affordance.tsx:109-245`; `app/admin/assessments/actions.ts:567-670`). |
+| Settings | Logo, toggles, reference rate, and practice-wide portal colours persist; both protected layouts apply the colours on every device. PDF colours remain static. Saved sign-off/sender labels are explicitly staged for a later email-brand cutover; the active Resend From/brand still comes from deployment configuration (`app/admin/settings/actions.ts:27-78`; `app/admin/layout.tsx:30-44`; `app/client/layout.tsx:23-33`; `lib/notifications/dispatch.ts:202-224`; `lib/notifications/email-templates.ts:19-33`). |
 | Public brand and contact details | The client footer shows 888 Safety & Training and `0161 552 0918`; generated PDFs show 888 Safety branding with `0114 555 0188`; email defaults to “Merlin Safety System” unless an environment value overrides it. The public identity must be agreed and aligned before handover (`app/client/layout.tsx:52-60`; `components/pdf/report-document.tsx:149-155`; `lib/notifications/email-templates.ts:19-33`; `HANDOFF.md:141-142`). |
-| Client failure states | **Live:** Compliance, Reports, and Proposals show a load-error panel rather than an empty state after a query failure (`components/client/data-load-error.tsx:3-18`; `app/client/compliance/page.tsx:66-88`; `app/client/compliance/page.tsx:92-115`; `app/client/reports/page.tsx:58-64`; `app/client/reports/page.tsx:93-99`; `app/client/proposals/page.tsx:35-44`; `app/client/proposals/page.tsx:83-94`). |
-| Dependency security | Layout defence was added, but the repository still uses the audited `16.2.4` application dependency and the upgrade remains pending (`package.json:32`; `app/admin/layout.tsx:18-22`). |
+| Client failure states | **Live:** Compliance, Reports, Proposals, Assignments, Assessments, Templates, Contracts, Billing, and Directory show a load-error panel rather than treating a failed query as an empty result (`components/client/data-load-error.tsx:3-18`; `app/client/compliance/page.tsx`; `app/client/reports/page.tsx`; `app/client/proposals/page.tsx`; `app/client/assignments/page.tsx`; `app/client/contracts/page.tsx`; `app/client/billing/page.tsx`; `app/client/directory/page.tsx`). |
+| Dependency security | **Resolved for production dependencies:** the application is on 16.2.11 and `npm audit --omit=dev` reports zero vulnerabilities. The repository-wide lint command still includes pre-existing failures in vendored developer tooling and older untouched files; changed application files are clean (`package.json:32`; `package.json:54-67`; `eslint.config.mjs:1-17`). |
 | Password reset | **Live:** the public action keeps the same response but applies hashed per-account (3/hour) and per-IP (20/hour) counters. It fails open if the limiter itself is unavailable. Migration 030 and the application change were confirmed in production on 25 July 2026 (`app/login/forgot/actions.ts:18-40`; `lib/rate-limit.ts:22-59`; `supabase/migrations/030_rate_limit.sql:32-99`). |
 | Data governance | Processor disclosure, retention, access-audit, export, region, and approved privacy wording are **UNVERIFIED**. Assessment answers leave the platform for OpenRouter (`lib/reports/report-draft.ts:60-94`; `pre-launch-audit.md:36`). |
 
@@ -259,7 +260,6 @@ Both login pages call the same password authentication service, then check the a
 - Speech-to-text.
 - SMS/Twilio notifications.
 - Offline/PWA operation.
-- Client contract detail page.
 - Billing receipt or invoice generation.
 - A retry/resolve workflow inside Workflow Errors.
 
@@ -276,6 +276,6 @@ Both login pages call the same password authentication service, then check the a
 | Written acceptance of first-party signing | Business/legal sign-off on proposal acceptance | **UNVERIFIED.** |
 | Speech-to-text implementation choice | Sold dictation workflow | **Not built.** |
 | Decision on SMS and offline scope | Mobile/offline field operation and text alerts | **Not built.** |
-| Approved primary compliance contact rule | Deterministic reminder/upload/report recipient | **Not built.** |
-| Dependency upgrade and full release gates | Closes the remaining audited dependency exposure | **Pending.** |
+| Approved upload/report recipient rule | Deterministic upload-notice and final-report recipient; expiry reminders already use the organisation contact | **Partially built.** |
+| Repository-wide lint baseline cleanup | Makes the broad `npm run lint` gate useful without vendored-tooling and legacy noise | **Pending; changed files are clean.** |
 | Privacy/retention/processor decisions | Responsible handling of client assessment data | **UNVERIFIED.** |

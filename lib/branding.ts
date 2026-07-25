@@ -7,10 +7,9 @@
 // properties — @react-pdf documents, canvas confetti — import the BRAND hexes
 // directly.
 //
-// The admin Settings → Branding form lets Matt override the live `--teal` /
-// `--gold` variables at runtime via applyBranding(); the choice is persisted to
-// localStorage and re-applied on every load by <BrandingProvider>. Server-
-// rendered PDFs keep the static defaults below.
+// The admin Settings → Branding form persists the practice-wide colours in
+// app_settings. Server layouts apply them as CSS variables for both portals.
+// Server-rendered PDFs keep the static defaults below.
 
 export const BRAND = {
   teal: "#3b8273",
@@ -22,33 +21,6 @@ export type Branding = { primary: string; secondary: string }
 export const DEFAULT_BRANDING: Branding = {
   primary: BRAND.teal,
   secondary: BRAND.gold,
-}
-
-const STORAGE_KEY = "branding"
-
-/** The operator's saved brand colours, or null if they've never customised. */
-export function loadBranding(): Branding | null {
-  if (typeof window === "undefined") return null
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<Branding>
-    return {
-      primary: parsed.primary || DEFAULT_BRANDING.primary,
-      secondary: parsed.secondary || DEFAULT_BRANDING.secondary,
-    }
-  } catch {
-    return null
-  }
-}
-
-export function saveBranding(branding: Branding): void {
-  if (typeof window === "undefined") return
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(branding))
-  } catch {
-    /* ignore quota / private-mode write failures */
-  }
 }
 
 /**

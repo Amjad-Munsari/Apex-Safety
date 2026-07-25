@@ -22,6 +22,7 @@ export default async function TemplatesPage() {
       id, name, template_type, is_published, created_at, owner_type, owner_id,
       template_versions(version_number, published_at)
     `)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   // Split by ownership: owner_type='customer' rows are built/forked by clients

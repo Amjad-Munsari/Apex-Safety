@@ -17,13 +17,18 @@ import * as path from "path";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Build a minimal base64 data URL of approximately `sizeBytes` bytes. */
+/** Build a header-valid image fixture of exactly `sizeBytes` decoded bytes. */
 function makeDataUrl(mimeType: string, sizeBytes: number): string {
-  // Each base64 character encodes 6 bits → 3 bytes per 4 chars
-  // We need sizeBytes of decoded data → ceil(sizeBytes * 4 / 3) base64 chars
-  const base64Length = Math.ceil((sizeBytes * 4) / 3);
-  const base64 = "A".repeat(base64Length);
-  return `data:${mimeType};base64,${base64}`;
+  const bytes = Buffer.alloc(sizeBytes);
+  if (mimeType === "image/png") {
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes);
+  } else if (mimeType === "image/jpeg") {
+    Buffer.from([0xff, 0xd8, 0xff]).copy(bytes);
+  } else if (mimeType === "image/webp") {
+    Buffer.from("RIFF").copy(bytes, 0);
+    Buffer.from("WEBP").copy(bytes, 8);
+  }
+  return `data:${mimeType};base64,${bytes.toString("base64")}`;
 }
 
 const VALID_CLIENT_ID = "11111111-1111-1111-1111-111111111111";

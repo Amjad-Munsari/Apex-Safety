@@ -26,6 +26,7 @@ async function requireAdminOwnedTemplate(templateId: string) {
     .from("form_templates")
     .select("id, owner_type")
     .eq("id", templateId)
+    .is("deleted_at", null)
     .single();
   if (error || !data) throw new Error("Template not found");
   if (data.owner_type !== "admin") {
@@ -300,20 +301,18 @@ export async function deleteTemplate(templateId: string) {
   await requireAdminOwnedTemplate(templateId);
   await requireActorUserId("admin");
 
+  // Preserve every version that may already be pinned to an assignment or
+  // submission. Removing the template row would cascade through its version
+  // history; a soft delete hides it from new work without changing old records.
   const { error } = await supabase
     .from("form_templates")
-    .delete()
+    .update({
+      deleted_at: new Date().toISOString(),
+      is_published: false,
+    })
     .eq("id", templateId);
 
   if (error) {
-    // 23503 = foreign_key_violation: template is still referenced by assignments
-    // or submissions. Surface a clear message rather than swallowing the error
-    // and running revalidatePath unconditionally (false success).
-    if (error.code === "23503") {
-      throw new Error(
-        "Cannot delete: this template has assignments or submissions referencing it."
-      );
-    }
     throw new Error(error.message ?? "Failed to delete template");
   }
 
