@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getAppSettings } from "@/lib/settings/app-settings"
+import { daysUntilExpiry, selectExpiryAlertWindow } from "@/lib/notifications/expiry-window"
 
 export async function GET(request: Request) {
   // Simple cron secret protection (Header or Query Param for manual testing)
@@ -42,8 +43,7 @@ export async function GET(request: Request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Calculate the target dates for our alerts (30, 14, 7 days from now).
-  // UTC math: setUTCDate + toISOString agree on the same calendar day. The old
+  // Alert-range bounds. UTC math: setUTCDate + toISOString agree on the same calendar day. The old
   // setDate/getDate (LOCAL) followed by toISOString (UTC) could shift the target
   // by a day near midnight on a non-UTC host, diverging from the assignment
   // scheduler's UTC iso() helper and matching the wrong documents.
@@ -55,21 +55,37 @@ export async function GET(request: Request) {
   }
 
   const day30 = addDays(today, 30)
-  const day14 = addDays(today, 14)
-  const day7 = addDays(today, 7)
+  const todayIso = addDays(today, 0)
+  // Expired documents are alerted too, but only within a 30-day tail so a
+  // historic import can't trigger a burst of notices for long-dead documents.
+  const expiredFloor = addDays(today, -30)
 
-  // 1. Fetch documents that expire on exactly those dates
+  // 1. Fetch documents anywhere inside the alert range.
+  //
+  // This is a RANGE, not the three exact dates it used to be. Exact-date
+  // matching (`.in("expiry_date", [day30, day14, day7])`) meant every alert was
+  // a single-shot on one calendar day, so:
+  //   - a document uploaded fewer than 7 days before expiry matched no window at
+  //     all and was never alerted;
+  //   - one missed run (crons are best-effort, a failed deploy, a function
+  //     error) lost that window forever, since notifications_sent was only ever
+  //     read to suppress duplicates, never to catch up;
+  //   - turning the reminders toggle off dropped every window crossed while off;
+  //   - nothing ever fired once a document was actually past its expiry date.
+  // Matching a range and letting notifications_sent decide makes the job
+  // self-healing: a late run still sends the window it missed, exactly once.
   const { data: documents, error: docsError } = await supabase
     .from("documents")
     .select(`
-      id, 
-      filename, 
-      document_category, 
-      expiry_date, 
+      id,
+      filename,
+      document_category,
+      expiry_date,
       client_id,
       clients ( name )
     `)
-    .in("expiry_date", [day30, day14, day7])
+    .lte("expiry_date", day30)
+    .gte("expiry_date", expiredFloor)
     .eq("active", true)
     // Exclude soft-deleted documents — `active` and `deleted_at` are independent
     // columns, so an archived doc (deleted_at set, active still true) would
@@ -83,7 +99,7 @@ export async function GET(request: Request) {
   }
 
   if (documents.length === 0) {
-    return NextResponse.json({ success: true, message: "No documents expiring on target dates." })
+    return NextResponse.json({ success: true, message: "No documents inside the alert range." })
   }
 
   const notificationsSent = []
@@ -96,11 +112,11 @@ export async function GET(request: Request) {
 
   // 2. Process each document
   for (const doc of documents) {
-    // Determine which window this falls into
-    let alertWindow = 0
-    if (doc.expiry_date === day30) alertWindow = 30
-    if (doc.expiry_date === day14) alertWindow = 14
-    if (doc.expiry_date === day7) alertWindow = 7
+    // See lib/notifications/expiry-window.ts for why only the smallest crossed
+    // window is chosen (no back-fill spam) and why alert_window stays the dedup
+    // key — UNIQUE (document_id, alert_window, notification_type).
+    const daysLeft = daysUntilExpiry(doc.expiry_date as string, todayIso)
+    const alertWindow = selectExpiryAlertWindow(daysLeft)
 
     // Check if we already sent this specific alert
     const { data: existingAlert } = await supabase
@@ -109,7 +125,9 @@ export async function GET(request: Request) {
       .eq("document_id", doc.id)
       .eq("alert_window", alertWindow)
       .eq("notification_type", "expiry_warning")
-      .single()
+      // maybeSingle, not single: "no alert yet" is the normal case and single()
+      // raises PGRST116 for it, which only produced noise in the logs.
+      .maybeSingle()
 
     if (existingAlert) {
       console.log(`Alert already sent for doc ${doc.id} at window ${alertWindow}. Skipping.`)
@@ -138,7 +156,10 @@ export async function GET(request: Request) {
       client_name: contactName,
       document_name: doc.filename,
       expiry_date: doc.expiry_date as string,
-      days_until_expiry: alertWindow,
+      // The REAL day count, not the window bucket — a document first seen 5 days
+      // out must not be emailed "expires in 7 days". <= 0 renders as "has
+      // expired" (see buildEmail, expiry_alert case).
+      days_until_expiry: daysLeft,
     }
 
     const result = await dispatchNotification(payload)
@@ -171,7 +192,7 @@ export async function GET(request: Request) {
       client_name: orgName,
       document_name: doc.filename,
       expiry_date: doc.expiry_date as string,
-      days_until_expiry: alertWindow,
+      days_until_expiry: daysLeft,
     })
   }
 

@@ -179,7 +179,13 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         .map((item) => {
           const days = item.days_until_expiry
           const when = formatDate(item.expiry_date)
-          return `<li><strong>${escapeHtml(item.client_name)}</strong> — ${escapeHtml(item.document_name)} expires in ${days} day${days === 1 ? "" : "s"} (${when})</li>`
+          // days can be <= 0 now that the cron also alerts on already-expired
+          // documents — "expires in -3 days" would be nonsense.
+          const state =
+            days <= 0
+              ? `has expired (${when})`
+              : `expires in ${days} day${days === 1 ? "" : "s"} (${when})`
+          return `<li><strong>${escapeHtml(item.client_name)}</strong> — ${escapeHtml(item.document_name)} ${state}</li>`
         })
         .join("")
       const count = payload.items.length

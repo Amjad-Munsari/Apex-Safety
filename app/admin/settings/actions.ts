@@ -76,7 +76,8 @@ export async function uploadBrandingLogo(
   const file = formData.get("logo") as File | null
   if (!file || file.size === 0) return { ok: false, error: "No file selected." }
   if (file.size > MAX_LOGO_BYTES) return { ok: false, error: "Logo exceeds the 2 MB limit." }
-  if (file.type && !ALLOWED_LOGO_MIME.has(file.type)) {
+  // Fail CLOSED — an absent Content-Type must not bypass the allowlist.
+  if (!ALLOWED_LOGO_MIME.has(file.type)) {
     return { ok: false, error: "Upload a PNG, SVG, JPEG or WebP image." }
   }
 

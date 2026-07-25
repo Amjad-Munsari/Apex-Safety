@@ -25,6 +25,31 @@ export type ClientFormEventPayload = Extract<
   { type: "client_form_created" | "client_form_submitted" | "client_template_cloned" }
 >
 
+/**
+ * Record a failed client-surface dispatch to workflow_errors.
+ *
+ * Every other dispatch caller does this; this one only console.error'd, so these
+ * three events failed into the platform logs where nobody looks. The admin
+ * Workflow Errors page — Matt's only visibility surface — read "ALL CLEAR" while
+ * client form notifications were dropping on the floor. Best-effort and
+ * never-throw: an audit-log write must not break the flow it is describing.
+ */
+async function recordDispatchFailure(
+  payload: ClientFormEventPayload,
+  error: string
+): Promise<void> {
+  try {
+    const { adminClient } = await import("@/lib/supabase/admin")
+    await adminClient.from("workflow_errors").insert({
+      workflow_name: payload.type,
+      error_message: error,
+      payload,
+    })
+  } catch (err) {
+    console.error(`[n8n] could not record ${payload.type} failure:`, err)
+  }
+}
+
 export async function dispatchClientFormEvent(
   payload: ClientFormEventPayload
 ): Promise<void> {
@@ -33,11 +58,16 @@ export async function dispatchClientFormEvent(
     const result = await dispatchNotification(payload)
     if (!result.ok) {
       console.error(`[n8n] ${payload.type} dispatch failed:`, result.error)
+      await recordDispatchFailure(payload, result.error ?? "unknown dispatch failure")
     }
   } catch (err) {
     console.error(
       `[n8n] ${payload.type} dispatch threw — swallowed to protect client flow:`,
       err
+    )
+    await recordDispatchFailure(
+      payload,
+      err instanceof Error ? err.message : String(err)
     )
   }
 }

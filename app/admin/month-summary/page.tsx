@@ -8,7 +8,12 @@ export const dynamic = "force-dynamic";
 
 export default async function MonthSummaryPage() {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  // UTC boundary. The old `new Date(y, m, 1)` built LOCAL midnight and then
+  // serialised as UTC, so during BST the window opened at 23:00 on the last day
+  // of the previous month and counted an hour of it.
+  const startOfMonth = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)
+  ).toISOString();
   const monthName = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
   const [assessmentsRes, documentsRes, proposalsRes, errorsRes, recentErrors] = await Promise.all([

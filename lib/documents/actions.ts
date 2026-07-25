@@ -60,7 +60,10 @@ export async function uploadClientDocumentAction(formData: FormData) {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error("File exceeds the 25 MB limit")
   }
-  if (file.type && !ALLOWED_MIME.has(file.type)) {
+  // Fail CLOSED. The old `file.type && !ALLOWED_MIME.has(...)` skipped the
+  // allowlist entirely when the part carried no Content-Type, so omitting the
+  // header was enough to opt out of it.
+  if (!ALLOWED_MIME.has(file.type)) {
     throw new Error("Unsupported file type — upload a PDF or image")
   }
 

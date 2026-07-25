@@ -219,6 +219,9 @@ async function sendEmail(payload: NotificationPayload): Promise<DispatchResult> 
   }
 }
 
+/** Outbound webhook budget. Kept short: this sits on a user-facing submit. */
+const WEBHOOK_TIMEOUT_MS = 8_000
+
 /** POST a client-surface event to the partner n8n webhook. */
 async function dispatchToN8n(
   payload: NotificationPayload
@@ -247,6 +250,13 @@ async function dispatchToN8n(
         "X-Webhook-Secret": secret,
       },
       body: JSON.stringify(payload),
+      // Bounded wait. dispatchClientFormEvent is awaited inline on the customer's
+      // submit path, so without this an n8n endpoint that accepts the connection
+      // and never answers holds the submission open until the platform function
+      // timeout — the customer watches a spinner for a third party. The DB write
+      // is already committed by then, so failing fast loses nothing but the
+      // notification, which the caller records.
+      signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
     })
     if (!res.ok) {
       return { ok: false, status: res.status, error: `webhook returned ${res.status}` }
