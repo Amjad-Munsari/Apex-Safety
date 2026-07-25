@@ -50,7 +50,18 @@ export default function BillingClient({
 
   const handledReturn = useRef(false);
 
-  async function captureOrder(orderId: string, done: () => void) {
+  /**
+   * Drives POST /api/paypal/capture-order for a returned order.
+   *
+   * `onSettled` clears the `?token=` from the URL and is called ONLY when the
+   * order reached a terminal state (credited, or already credited). A failed
+   * capture deliberately leaves the token in place: the route is idempotent on
+   * three levels (ledger pre-check, ORDER_ALREADY_CAPTURED recovery, UNIQUE on
+   * paypal_order_id), so a reload re-drives the same capture and can still
+   * credit an order PayPal took money for but the DB write missed. Dropping the
+   * token here would strand that money with no client-side recovery path.
+   */
+  async function captureOrder(orderId: string, onSettled: () => void) {
     const toastId = toast.loading("Confirming your payment…");
     try {
       const res = await fetch("/api/paypal/capture-order", {
@@ -70,12 +81,20 @@ export default function BillingClient({
         { id: toastId }
       );
       router.refresh(); // re-pull the server-rendered ledger + summary
+      onSettled();
     } catch {
-      toast.error("We couldn't confirm your payment. Please contact your consultant.", {
-        id: toastId,
-      });
-    } finally {
-      done();
+      toast.error(
+        "We couldn't confirm your payment. Retry below — if it keeps failing, contact your consultant.",
+        {
+          id: toastId,
+          duration: Infinity,
+          action: {
+            label: "Retry",
+            onClick: () => void captureOrder(orderId, onSettled),
+          },
+        }
+      );
+      // Token intentionally left in the URL so a reload retries the capture.
     }
   }
 
@@ -89,7 +108,9 @@ export default function BillingClient({
     if (!orderId) return;
     handledReturn.current = true;
 
-    // Clean the query string so a refresh/back doesn't re-trigger.
+    // Clears the query string so a refresh/back doesn't re-trigger. Only run
+    // once the order is settled — see captureOrder for why a failed capture
+    // keeps its token.
     const clearQuery = () => router.replace("/client/billing");
 
     if (params.get("PayerID")) {
