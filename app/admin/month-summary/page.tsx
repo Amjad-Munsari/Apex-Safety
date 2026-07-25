@@ -55,33 +55,40 @@ export default async function MonthSummaryPage() {
     .limit(10);
   const recentAssessments = (recentAssessmentsRaw ?? []) as unknown as RecentAssessmentRow[];
 
+  // Static class strings, NOT `text-${color}`. Tailwind scans source text for
+  // class candidates, so an interpolated name is never seen by the compiler —
+  // an interpolated utility only renders when some unrelated file happens to use
+  // the same literal, which is how the Assessments tile broke: its colour was
+  // "white" → `text-white`, a class that IS generated (billing uses it), so the
+  // count rendered white-on-white and read as a missing number.
   const stats = [
     {
       num: "01",
       label: "Assessments",
       count: assessmentsRes.count || 0,
-      color: "white",
+      className: "text-foreground",
       sub: "form submissions",
     },
     {
       num: "02",
       label: "Documents Uploaded",
       count: documentsRes.count || 0,
-      color: "teal",
+      className: "text-teal",
       sub: "compliance docs",
     },
     {
       num: "03",
       label: "Proposals Raised",
       count: proposalsRes.count || 0,
-      color: "gold",
+      className: "text-gold",
       sub: "new proposals",
     },
     {
       num: "04",
       label: "Workflow Errors",
       count: errorsRes.count || 0,
-      color: errorsRes.count && errorsRes.count > 0 ? "danger" : "muted-foreground",
+      className:
+        errorsRes.count && errorsRes.count > 0 ? "text-danger" : "text-muted-foreground",
       sub: "n8n errors",
     },
   ];
@@ -131,7 +138,7 @@ export default async function MonthSummaryPage() {
             <div className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
               <span className="text-muted-foreground/50">{stat.num}</span> {stat.label}
             </div>
-            <div className={`font-serif text-5xl text-${stat.color} mb-1`}>{stat.count}</div>
+            <div className={`font-serif text-5xl mb-1 ${stat.className}`}>{stat.count}</div>
             <div className="text-xs text-muted-foreground font-mono">{stat.sub}</div>
           </Card>
         ))}
