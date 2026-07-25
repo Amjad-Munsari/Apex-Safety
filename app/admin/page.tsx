@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ComplianceChart } from "./compliance-chart";
 import { ClientRow } from "./clients/_components/client-row";
+import { ragToneFromDays } from "@/lib/ui/rag-tone";
 import { describeWorkflowError } from "@/lib/workflow-errors";
 import {
   getDashboardStats,
@@ -137,18 +138,17 @@ export default async function AdminDashboardPage() {
                     const today = new Date();
                     const daysUntil = nextExpiry ? Math.ceil((nextExpiry.date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)) : null;
 
-                    let ragLabel = "Current";
-                    let ragColor = "success";
-                    
-                    if (nextExpiry) {
-                      if (daysUntil !== null) {
-                        if (daysUntil < 0) { ragLabel = "Expired"; ragColor = "danger"; }
-                        else if (daysUntil < 30) { ragLabel = "Expiring"; ragColor = "gold"; }
-                      }
-                    } else {
-                      ragLabel = "Incomplete";
-                      ragColor = "muted-foreground"; // We'll use a neutral color for missing docs
-                    }
+                    // Shared tone → class mapping (lib/ui/rag-tone.ts). Both
+                    // producers previously open-coded this and disagreed on the
+                    // neutral "no documents" token.
+                    const ragTone = ragToneFromDays(nextExpiry ? daysUntil : null);
+                    const ragLabel = !nextExpiry
+                      ? "Incomplete"
+                      : ragTone === "expired"
+                        ? "Expired"
+                        : ragTone === "expiring"
+                          ? "Expiring"
+                          : "Current";
 
                     // Same fully-clickable row as /admin/clients (BUG 5 fix) —
                     // replaces the `absolute inset-0` overlay <Link>, whose
@@ -161,7 +161,7 @@ export default async function AdminDashboardPage() {
                         name={client.name}
                         hoursBalance={client.hours_balance}
                         ragLabel={ragLabel}
-                        ragColor={ragColor}
+                        ragTone={ragTone}
                         nextExpiryLabel={nextExpiry ? nextExpiry.date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "—"}
                         nextExpiryCategory={nextExpiry?.cat || "No upcoming"}
                         proposalStatus={proposalStatus || null}

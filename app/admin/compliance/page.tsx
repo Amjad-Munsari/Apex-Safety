@@ -1,4 +1,5 @@
 import { getComplianceAggregates } from "@/lib/supabase/dashboard";
+import { ACCENT_CLASSES, type Accent } from "@/lib/ui/accent";
 import { adminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
@@ -93,12 +94,12 @@ export default async function CompliancePage({
       {/* ─── STAT CARDS ─── */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Current", count: compliance.current, color: "teal", pct: compliance.total > 0 ? Math.round((compliance.current / compliance.total) * 100) : 0 },
-          { label: "Expiring (30 days)", count: compliance.expiring, color: "gold", pct: compliance.total > 0 ? Math.round((compliance.expiring / compliance.total) * 100) : 0 },
-          { label: "Expired", count: compliance.expired, color: "danger", pct: compliance.total > 0 ? Math.round((compliance.expired / compliance.total) * 100) : 0 },
+          { label: "Current", count: compliance.current, accent: "teal" as const, pct: compliance.total > 0 ? Math.round((compliance.current / compliance.total) * 100) : 0 },
+          { label: "Expiring (30 days)", count: compliance.expiring, accent: "gold" as const, pct: compliance.total > 0 ? Math.round((compliance.expiring / compliance.total) * 100) : 0 },
+          { label: "Expired", count: compliance.expired, accent: "danger" as const, pct: compliance.total > 0 ? Math.round((compliance.expired / compliance.total) * 100) : 0 },
         ].map((stat) => (
           <Card key={stat.label} className="bg-card border-border rounded-sm p-6">
-            <div className={`font-mono text-[10px] uppercase tracking-widest text-${stat.color} mb-3`}>{stat.label}</div>
+            <div className={`font-mono text-[10px] uppercase tracking-widest mb-3 ${ACCENT_CLASSES[stat.accent].text}`}>{stat.label}</div>
             <div className="font-serif text-4xl text-foreground mb-1">{stat.count}</div>
             <div className="text-xs text-muted-foreground font-mono">{stat.pct}% of total</div>
           </Card>
@@ -131,30 +132,30 @@ export default async function CompliancePage({
       {/* ─── TABLES (filtered by tab) ─── */}
       {active === "all" && (
         <>
-          {current.length > 0 && <DocTable title="Current" color="teal" docs={current} now={now} />}
-          {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />}
-          {expired.length > 0 && <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />}
-          {undated.length > 0 && <DocTable title="No Expiry Date" color="muted-foreground" docs={undated} now={now} />}
+          {current.length > 0 && <DocTable title="Current" accent="teal" docs={current} now={now} />}
+          {expiring.length > 0 && <DocTable title="Expiring Soon (next 30 days)" accent="gold" docs={expiring} now={now} showReminder />}
+          {expired.length > 0 && <DocTable title="Expired" accent="danger" docs={expired} now={now} showReminder />}
+          {undated.length > 0 && <DocTable title="No Expiry Date" accent="neutral" docs={undated} now={now} />}
         </>
       )}
       {active === "expired" && (
         expired.length > 0
-          ? <DocTable title="Expired" color="danger" docs={expired} now={now} showReminder />
+          ? <DocTable title="Expired" accent="danger" docs={expired} now={now} showReminder />
           : <EmptyTab label="No expired documents" />
       )}
       {active === "expiring" && (
         expiring.length > 0
-          ? <DocTable title="Expiring Soon (next 30 days)" color="gold" docs={expiring} now={now} showReminder />
+          ? <DocTable title="Expiring Soon (next 30 days)" accent="gold" docs={expiring} now={now} showReminder />
           : <EmptyTab label="No documents expiring in the next 30 days" />
       )}
       {active === "current" && (
         current.length > 0
-          ? <DocTable title="Current" color="teal" docs={current} now={now} />
+          ? <DocTable title="Current" accent="teal" docs={current} now={now} />
           : <EmptyTab label="No current documents" />
       )}
       {active === "undated" && (
         undated.length > 0
-          ? <DocTable title="No Expiry Date" color="muted-foreground" docs={undated} now={now} />
+          ? <DocTable title="No Expiry Date" accent="neutral" docs={undated} now={now} />
           : <EmptyTab label="No documents without an expiry date" />
       )}
     </div>
@@ -171,13 +172,13 @@ function EmptyTab({ label }: { label: string }) {
 
 function DocTable({
   title,
-  color,
+  accent,
   docs,
   now,
   showReminder = false,
 }: {
   title: string;
-  color: string;
+  accent: Accent;
   docs: ComplianceDocRow[];
   now: Date;
   showReminder?: boolean;
@@ -185,8 +186,8 @@ function DocTable({
   return (
     <Card className="bg-card border-border rounded-sm overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex items-center gap-3">
-        <div className={`w-2 h-2 rounded-full bg-${color}`} />
-        <span className={`font-mono text-[10px] uppercase tracking-widest text-${color}`}>{title}</span>
+        <div className={`w-2 h-2 rounded-full ${ACCENT_CLASSES[accent].dot}`} />
+        <span className={`font-mono text-[10px] uppercase tracking-widest ${ACCENT_CLASSES[accent].text}`}>{title}</span>
         <span className="font-mono text-[10px] text-muted-foreground/50 ml-auto">{docs.length} docs</span>
       </div>
       <table className="w-full text-left font-sans text-sm">
@@ -210,7 +211,7 @@ function DocTable({
               <ComplianceDocRowItem
                 key={doc.id}
                 doc={doc}
-                color={color}
+                accent={accent}
                 daysLeft={daysLeft}
                 expDateLabel={expDateLabel}
                 showReminder={showReminder}

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { ACCENT_CLASSES, type Accent } from "@/lib/ui/accent"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 import { Building2, Download, Eye, FileText, Send } from "lucide-react"
@@ -17,13 +18,14 @@ export interface ComplianceDocRow {
 
 interface Props {
   doc: ComplianceDocRow
-  color: string
+  accent: Accent
   daysLeft: number | null
   expDateLabel: string
   showReminder: boolean
 }
 
-export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showReminder }: Props) {
+export function ComplianceDocRowItem({ doc, accent, daysLeft, expDateLabel, showReminder }: Props) {
+  const tone = ACCENT_CLASSES[accent]
   const [pending, startTransition] = useTransition()
   const [viewPending, setViewPending] = useState(false)
   const [reminderPending, setReminderPending] = useState(false)
@@ -108,7 +110,10 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
       <td className="px-4 py-4 font-mono text-muted-foreground text-sm">{expDateLabel}</td>
       <td className="px-4 py-4">
         {daysLeft !== null && (
-          <Badge variant="outline" className={`border-${color}/40 text-${color} bg-${color}/5 font-mono text-[10px] uppercase tracking-widest`}>
+          <Badge
+            variant="outline"
+            className={`font-mono text-[10px] uppercase tracking-widest ${tone.badge}`}
+          >
             {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d left`}
           </Badge>
         )}
@@ -120,7 +125,7 @@ export function ComplianceDocRowItem({ doc, color, daysLeft, expDateLabel, showR
               type="button"
               onClick={handleReminder}
               disabled={reminderPending}
-              className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 ring-${color}/30 text-${color} hover:bg-${color}/10 disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest`}
+              className={`inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm ring-1 disabled:opacity-50 disabled:cursor-progress transition-colors font-mono text-[10px] uppercase tracking-widest ${tone.button}`}
               aria-label="Send reminder"
             >
               <Send className="w-3 h-3" />

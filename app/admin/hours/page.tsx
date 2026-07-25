@@ -1,4 +1,5 @@
 import { adminClient } from "@/lib/supabase/admin";
+import { ACCENT_CLASSES } from "@/lib/ui/accent";
 import { Card } from "@/components/ui/card";
 import Link from "next/link";
 
@@ -35,12 +36,12 @@ export default async function HoursPage() {
       {/* ─── STAT CARDS ─── */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Critical (< 12)", count: critical.length, color: "danger" },
-          { label: "Low (12–39)", count: warning.length, color: "gold" },
-          { label: "Healthy (40+)", count: healthy.length, color: "teal" },
+          { label: "Critical (< 12)", count: critical.length, accent: "danger" as const },
+          { label: "Low (12–39)", count: warning.length, accent: "gold" as const },
+          { label: "Healthy (40+)", count: healthy.length, accent: "teal" as const },
         ].map((s) => (
           <Card key={s.label} className="bg-card border-border rounded-sm p-6">
-            <div className={`font-mono text-[10px] uppercase tracking-widest text-${s.color} mb-3`}>{s.label}</div>
+            <div className={`font-mono text-[10px] uppercase tracking-widest mb-3 ${ACCENT_CLASSES[s.accent].text}`}>{s.label}</div>
             <div className="font-serif text-4xl text-foreground">{s.count}</div>
           </Card>
         ))}

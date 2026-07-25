@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import Link from "next/link";
 import { NewClientButton } from "@/components/clients/new-client-dialog";
 import { ClientRow } from "./_components/client-row";
+import { ragToneFromDays } from "@/lib/ui/rag-tone";
 
 export const dynamic = "force-dynamic";
 
@@ -86,18 +87,17 @@ export default async function ClientsPage() {
                 ? Math.ceil((nextExpiry.date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
                 : null;
 
-              let ragLabel = "Current";
-              let ragColor = "success";
-
-              if (nextExpiry) {
-                if (daysUntil !== null) {
-                  if (daysUntil < 0) { ragLabel = "Expired"; ragColor = "danger"; }
-                  else if (daysUntil < 30) { ragLabel = "Expiring"; ragColor = "gold"; }
-                }
-              } else {
-                ragLabel = "No Docs";
-                ragColor = "[#555]";
-              }
+              // Tone is semantic; the class strings live in lib/ui/rag-tone.ts.
+              // The old `ragColor = "[#555]"` was an arbitrary Tailwind value
+              // inside an interpolation, so it could never be generated at all.
+              const ragTone = ragToneFromDays(nextExpiry ? daysUntil : null);
+              const ragLabel = !nextExpiry
+                ? "No Docs"
+                : ragTone === "expired"
+                  ? "Expired"
+                  : ragTone === "expiring"
+                    ? "Expiring"
+                    : "Current";
 
               return (
                 <ClientRow
@@ -106,7 +106,7 @@ export default async function ClientsPage() {
                   name={client.name}
                   hoursBalance={client.hours_balance}
                   ragLabel={ragLabel}
-                  ragColor={ragColor}
+                  ragTone={ragTone}
                   nextExpiryLabel={nextExpiry ? nextExpiry.date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "—"}
                   nextExpiryCategory={nextExpiry?.cat || "No upcoming"}
                   proposalStatus={proposalStatus ?? null}

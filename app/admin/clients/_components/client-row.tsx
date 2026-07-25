@@ -2,13 +2,20 @@
 
 import Link from "next/link";
 import { ActivePill } from "./active-pill";
+import {
+  PROPOSAL_TONE_CLASSES,
+  RAG_TONE_CLASSES,
+  proposalTone,
+  type RagTone,
+} from "@/lib/ui/rag-tone";
 
 export interface ClientRowProps {
   id: string;
   name: string;
   hoursBalance: number | null;
   ragLabel: string;
-  ragColor: string;
+  /** Semantic compliance tone — NOT a colour token (see lib/ui/rag-tone.ts). */
+  ragTone: RagTone;
   nextExpiryLabel: string;
   nextExpiryCategory: string;
   proposalStatus: string | null;
@@ -23,7 +30,7 @@ export function ClientRow({
   name,
   hoursBalance,
   ragLabel,
-  ragColor,
+  ragTone,
   nextExpiryLabel,
   nextExpiryCategory,
   proposalStatus,
@@ -64,8 +71,11 @@ export function ClientRow({
         </div>
       </td>
       <td className="px-4 py-4 text-center">
-        <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 border border-${ragColor}/40 rounded text-${ragColor} text-[10px] font-mono uppercase tracking-wider bg-${ragColor}/5 leading-none whitespace-nowrap`}>
-          <div className={`w-1.5 h-1.5 rounded-full bg-${ragColor} shrink-0`} /> {ragLabel}
+        <div
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 border rounded text-[10px] font-mono uppercase tracking-wider leading-none whitespace-nowrap ${RAG_TONE_CLASSES[ragTone].pill}`}
+        >
+          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${RAG_TONE_CLASSES[ragTone].dot}`} />{" "}
+          {ragLabel}
         </div>
       </td>
       <td className="px-4 py-4 font-mono text-xs text-foreground/70 text-center">{hoursBalance}</td>
@@ -74,7 +84,9 @@ export function ClientRow({
         <div className="text-xs text-muted-foreground truncate">{nextExpiryCategory}</div>
       </td>
       <td className="px-4 py-4 text-center">
-        <div className={`inline-flex whitespace-nowrap px-2.5 py-1 border border-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "foreground"}/40 text-${proposalStatus ? (proposalStatus === "Signed" ? "[#3b8273]" : "gold") : "foreground"}/60 text-[10px] font-mono uppercase tracking-wider rounded leading-none`}>
+        <div
+          className={`inline-flex whitespace-nowrap px-2.5 py-1 border text-[10px] font-mono uppercase tracking-wider rounded leading-none ${PROPOSAL_TONE_CLASSES[proposalTone(proposalStatus)]}`}
+        >
           {proposalStatus ? (proposalStatus === "Contract Issued" ? "Issued" : proposalStatus) : "None"}
         </div>
       </td>
