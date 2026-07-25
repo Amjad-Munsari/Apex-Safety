@@ -397,7 +397,7 @@ export async function deleteProposal(proposalId: string) {
   // Fetch the storage path first so we can delete the PDF too.
   const { data: row } = await adminClient
     .from("proposals")
-    .select("proposal_pdf_path")
+    .select("proposal_pdf_path, signed_pdf_path")
     .eq("id", proposalId)
     .maybeSingle()
 
@@ -411,10 +411,17 @@ export async function deleteProposal(proposalId: string) {
     throw new Error(error.message)
   }
 
-  if (row?.proposal_pdf_path) {
+  // Both artefacts: the immutable original and the signature-stamped copy
+  // (migration 029). Missing keys in remove() are a no-op.
+  const orphanPaths = [
+    row?.proposal_pdf_path,
+    (row as { signed_pdf_path?: string | null } | null)?.signed_pdf_path,
+  ].filter((v): v is string => Boolean(v))
+
+  if (orphanPaths.length > 0) {
     const { error: rmError } = await adminClient.storage
       .from("proposals")
-      .remove([row.proposal_pdf_path])
+      .remove(orphanPaths)
     if (rmError) {
       // Don't fail the whole delete just because storage cleanup failed —
       // the row is already gone. Log so we can clean orphans later.

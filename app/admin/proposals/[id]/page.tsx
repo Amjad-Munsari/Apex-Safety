@@ -43,10 +43,14 @@ export default async function ProposalDetailPage({
   const total =
     (proposal as { total_price?: number }).total_price ?? calculateProposalTotal(proposal.services_json)
   let documentUrl: string | null = null
-  if (proposal.proposal_pdf_path) {
+  // Prefer the stamped copy (migration 029); original is immutable.
+  const displayPdfPath =
+    (proposal as { signed_pdf_path?: string | null }).signed_pdf_path ??
+    proposal.proposal_pdf_path
+  if (displayPdfPath) {
     const { data: signed, error: signError } = await adminClient.storage
       .from("proposals")
-      .createSignedUrl(proposal.proposal_pdf_path, 60 * 60)
+      .createSignedUrl(displayPdfPath, 60 * 60)
     if (signError) {
       console.error("Failed to sign proposal PDF URL:", signError)
     } else {
@@ -101,7 +105,7 @@ export default async function ProposalDetailPage({
             clientName={clientName}
             status={status}
             documentUrl={documentUrl}
-            hasPdf={Boolean(proposal.proposal_pdf_path)}
+            hasPdf={Boolean(displayPdfPath)}
           />
         </div>
       </div>

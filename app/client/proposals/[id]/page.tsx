@@ -33,7 +33,7 @@ export default async function ClientProposalDetailPage({
   const { data: proposal } = await adminClient
     .from("proposals")
     .select(
-      "id, status, services_json, total_price, created_at, sent_at, proposal_pdf_path"
+      "id, status, services_json, total_price, created_at, sent_at, proposal_pdf_path, signed_pdf_path"
     )
     .eq("id", id)
     .eq("client_id", ctx.client_id)
@@ -67,10 +67,16 @@ export default async function ClientProposalDetailPage({
 
   let signedPdfUrl: string | null = null;
   let signedPdfDownloadUrl: string | null = null;
-  if (proposal.proposal_pdf_path) {
+  // Show the signature-stamped copy once it exists; fall back to the immutable
+  // original when signing hasn't happened or the best-effort stamp failed
+  // (migration 029 — the original is never overwritten any more).
+  const displayPdfPath =
+    (proposal as { signed_pdf_path?: string | null }).signed_pdf_path ??
+    proposal.proposal_pdf_path;
+  if (displayPdfPath) {
     const [view, download] = await Promise.all([
-      adminClient.storage.from("proposals").createSignedUrl(proposal.proposal_pdf_path, 60 * 60),
-      adminClient.storage.from("proposals").createSignedUrl(proposal.proposal_pdf_path, 60 * 60, { download: true }),
+      adminClient.storage.from("proposals").createSignedUrl(displayPdfPath, 60 * 60),
+      adminClient.storage.from("proposals").createSignedUrl(displayPdfPath, 60 * 60, { download: true }),
     ]);
     signedPdfUrl = view.data?.signedUrl ?? null;
     signedPdfDownloadUrl = download.data?.signedUrl ?? null;

@@ -5,6 +5,7 @@
 // tests/scheduler/send-reminder.spec.ts).
 
 import { beforeEach, describe, expect, it, vi } from "vitest"
+import { signedPdfPathFor } from "@/lib/signing-paths"
 import { NextRequest } from "next/server"
 import { PDFDocument } from "pdf-lib"
 
@@ -376,12 +377,26 @@ describe("POST /api/sign/[token]", () => {
     const json = await res.json()
     expect(json).toEqual({ success: true })
 
-    // The stamped PDF must be re-uploaded to the same path
+    // The stamped PDF goes to its OWN key. This assertion used to require the
+    // ORIGINAL key, pinning the evidence bug: overwriting the original destroyed
+    // the bytes proposal_signatures.document_hash attests to, so the hash could
+    // never be verified against anything (migration 029).
     expect(storageUploadSpy).toHaveBeenCalledTimes(1)
     const [uploadPath, _uploadData, uploadOpts] =
       storageUploadSpy.mock.calls[0] as [string, unknown, Record<string, unknown>]
-    expect(uploadPath).toBe(VALID_PROPOSAL_ROW.proposal_pdf_path)
+    const originalPath = VALID_PROPOSAL_ROW.proposal_pdf_path as string
+    expect(uploadPath).toBe(signedPdfPathFor(originalPath))
+    expect(uploadPath).not.toBe(originalPath)
     expect(uploadOpts).toMatchObject({ contentType: "application/pdf", upsert: true })
+
+    // …and the new key is persisted with a hash of the stamped bytes, otherwise
+    // nothing would ever point at the stamped copy.
+    const pathUpdate = proposalsUpdatePayloads
+      .map((arg) => arg as Record<string, unknown> | undefined)
+      .find((arg) => arg && "signed_pdf_path" in arg)
+    expect(pathUpdate).toBeDefined()
+    expect(pathUpdate).toMatchObject({ signed_pdf_path: signedPdfPathFor(originalPath) })
+    expect(String(pathUpdate?.signed_document_hash)).toMatch(/^[0-9a-f]{64}$/)
   })
 
   it("returns 200 and inserts signature row with ip + dispatches proposal_signed", async () => {

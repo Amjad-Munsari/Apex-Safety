@@ -21,8 +21,12 @@ export default async function ProposalsPage() {
 
   // Pre-sign every PDF URL in one batch so the cards stay synchronous below.
   const signedUrls = new Map<string, string>()
+  // Prefer the signature-stamped copy where one exists (migration 029 — the
+  // original is kept immutable so its recorded hash stays verifiable).
+  const displayPath = (p: { proposal_pdf_path?: string | null; signed_pdf_path?: string | null }) =>
+    p.signed_pdf_path ?? p.proposal_pdf_path ?? null
   const pathsToSign = items
-    .map(p => p.proposal_pdf_path)
+    .map(displayPath)
     .filter((p): p is string => Boolean(p))
 
   if (pathsToSign.length > 0) {
@@ -77,9 +81,8 @@ export default async function ProposalsPage() {
               <div className="flex flex-col gap-4 min-h-[500px] p-2 rounded-sm bg-muted/30 border border-border">
                   {filtered.map((prop) => {
                     const total = (prop as { total_price?: number }).total_price || calculateProposalTotal(prop.services_json)
-                    const documentUrl = prop.proposal_pdf_path
-                      ? signedUrls.get(prop.proposal_pdf_path) ?? null
-                      : null
+                    const propPath = displayPath(prop)
+                    const documentUrl = propPath ? signedUrls.get(propPath) ?? null : null
 
                     // Contracts feature has no DB backing yet — drop the deep-link
                     // to /admin/contracts/yellow-broom (mocked). Code audit 2026-05-29.

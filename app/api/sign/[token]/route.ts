@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createHash } from "crypto"
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
 import { hashToken } from "@/lib/signing"
+import { signedPdfPathFor } from "@/lib/signing-paths"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { embedSignatureInPdf } from "@/lib/pdf/embed-signature"
@@ -325,7 +327,21 @@ export async function POST(
     )
   }
 
-  // 8. Embed signature into PDF and re-upload (best-effort — must not fail the request)
+  // 8. Embed the signature into a COPY of the PDF (best-effort — must not fail
+  //     the request).
+  //
+  //     The original at proposal_pdf_path is IMMUTABLE from here on. It used to
+  //     be overwritten in place with `upsert: true`, which destroyed the exact
+  //     bytes proposal_signatures.document_hash attests to — so re-hashing the
+  //     stored file could never match the recorded hash, and a mismatch could not
+  //     tell "stamped as designed" from "document swapped". The hash was
+  //     unusable as evidence, which is the only reason to store it. See
+  //     migration 029.
+  //
+  //     The stamped copy therefore gets its own key, and its own hash is stored
+  //     so the delivered artefact is independently verifiable too. If any of this
+  //     fails, signed_pdf_path stays NULL and readers fall back to the original —
+  //     an unstamped-but-verifiable PDF beats a stamped-but-unattestable one.
   if (consumed.proposal_pdf_path) {
     try {
       const { data: pdfBlob, error: downloadError } = await adminClient.storage
@@ -346,15 +362,40 @@ export async function POST(
         signedAt: now,
       })
 
-      await adminClient.storage
+      const signedPath = signedPdfPathFor(consumed.proposal_pdf_path)
+
+      const { error: stampUploadError } = await adminClient.storage
         .from("proposals")
-        .upload(consumed.proposal_pdf_path, stampedBytes, {
+        .upload(signedPath, stampedBytes, {
           contentType: "application/pdf",
+          // upsert only so a retry of the SAME signature is not blocked; the key
+          // is distinct from the original, which is never written again.
           upsert: true,
         })
+
+      if (stampUploadError) {
+        throw new Error(stampUploadError.message)
+      }
+
+      const { error: pathError } = await adminClient
+        .from("proposals")
+        .update({
+          signed_pdf_path: signedPath,
+          signed_document_hash: createHash("sha256").update(stampedBytes).digest("hex"),
+        })
+        .eq("id", consumed.id)
+
+      if (pathError) {
+        // The stamped file exists but nothing points at it — readers keep serving
+        // the original, which is still the attested artefact. Log loudly.
+        console.error(
+          `[sign] stamped PDF stored at ${signedPath} but signed_pdf_path was not persisted for ${consumed.id}:`,
+          pathError
+        )
+      }
     } catch (err) {
       console.error(
-        `[sign] PDF signature embed failed for proposal ${consumed.id}:`,
+        `[sign] PDF signature embed failed for proposal ${consumed.id} — original left intact, signed_pdf_path stays NULL:`,
         err
       )
     }

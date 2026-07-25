@@ -449,6 +449,8 @@ export type Database = {
           created_by: string | null
           id: string
           proposal_pdf_path: string | null
+          signed_pdf_path: string | null
+          signed_document_hash: string | null
           sent_at: string | null
           services_json: Json
           signwell_contract_doc_id: string | null
@@ -465,6 +467,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           proposal_pdf_path?: string | null
+          signed_pdf_path?: string | null
+          signed_document_hash?: string | null
           sent_at?: string | null
           services_json: Json
           signwell_contract_doc_id?: string | null
@@ -481,6 +485,8 @@ export type Database = {
           created_by?: string | null
           id?: string
           proposal_pdf_path?: string | null
+          signed_pdf_path?: string | null
+          signed_document_hash?: string | null
           sent_at?: string | null
           services_json?: Json
           signwell_contract_doc_id?: string | null
