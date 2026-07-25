@@ -49,13 +49,27 @@ The stored `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` fail PayPal OAuth (`inval
 
 **User decision captured:** target is **Live (real money)**. **Do NOT re-key a secret from the screenshot** (OCR of credentials is unreliable — this was an explicit call). Need the **Live app's** Client ID + a freshly regenerated Secret from whoever owns the PayPal app (Matt/Finley — user has no PayPal access). Then: set both in Vercel prod, flip `PAYPAL_MODE=live`, lower one pack to ~£1 for the test, user buys, then **revert** price (and consider whether to keep live). To determine which environment a given credential pair belongs to: `curl -u "CID:SEC" -d grant_type=client_credentials` against `https://api-m.paypal.com/v1/oauth2/token` (live) and `.../api-m.sandbox.paypal.com/...` — whichever returns 200 is its environment.
 
-### B. Checkout review fixes — reviewed, NOT applied (awaiting go-ahead)
+### B. Checkout review fixes — MEDIUM + LOW APPLIED (commits `9ace04e`, `08e3ff2`); migration 027 still needs applying to prod
+
+**Applied 2026-07-25 on user go-ahead:**
+- MEDIUM — `billing-client.tsx` `captureOrder` no longer clears `?token=` in a `finally`. The URL is cleaned only on a settled order (credited / already credited) or cancel; a **failed** capture keeps its token so a reload re-drives the idempotent capture, and the error toast is persistent with a **Retry** action. The server-side idempotency this leans on is already covered by `tests/paypal/capture-order-route.test.ts` (ORDER_ALREADY_CAPTURED recovery + `credit_failed` 500 — the money-taken-but-uncredited case).
+  - **No unit test added for the component:** the repo has no `@testing-library/react` / effect-level client test infra (component tests use `renderToStaticMarkup` only), so this control-flow change is unverified by tests. Verified by reading + build/test gates.
+- LOW — `supabase/migrations/027_credit_hours_from_paypal_search_path.sql`: `CREATE OR REPLACE` of `credit_hours_from_paypal` with `set search_path = ''` and schema-qualified references, plus a re-assert of 025's REVOKE/GRANT. Behaviour unchanged.
+  - ⚠️ **NOT yet applied to prod** — needs the user to run it in the Supabase dashboard SQL editor (no DDL access from here, see §3). Harmless to deploy the code before it: nothing in the app depends on 027.
+
+622 tests green, `npm run build` clean. **Not pushed/deployed yet** — awaiting the user's call.
+
+The LOW/product items below remain open for Matt/Finley.
+
+<details><summary>Original review verdict (kept for context)</summary>
 End-to-end checkout review verdict: **fundamentally sound, no critical/high.** Authorization is correct (a client cannot capture another's order — `custom_id`/`ctx.client_id` checked at two points; `paypal_order_id TEXT UNIQUE` confirmed; amount re-derived server-side). UI/UX complete (loading, double-submit lockout, success/cancel/error, `PAYPAL_ENABLED=false` degrades cleanly). Findings to optionally fix:
 - **MEDIUM (recommended):** `billing-client.tsx` `captureOrder` `finally` clears the `?token=` on **every** outcome incl. failure, defeating the idempotent retry the server was built for. Worst case: PayPal captured (money taken) but RPC failed → no client-side recovery, only "contact consultant" toast (recoverable only via manual `adjust_client_credits`). Fix: clear token on success/cancel only; leave it on failed capture so a refresh re-drives the idempotent capture.
 - **LOW:** `credit_hours_from_paypal` (migration 001) is SECURITY DEFINER without `set search_path = ''` (the newer `adjust_client_credits` does set it). Fold into a small **migration 027** for consistency. Already service-role-only, so not exploitable — hygiene.
 - **LOW / product decisions (leave for Matt/Finley):** no `active`-client gate on purchase/crediting (`getClientContext` + `credit_hours_from_paypal` don't check `active`, unlike `adjust_client_credits`); no emailed purchase **receipt** (confirmation is toast + ledger only); `PENDING` captures (rare eCheck) treated as failure with no later reconciliation.
 
 **Next action if approved:** apply the MEDIUM (`billing-client.tsx`) + the LOW `search_path` (new migration 027, needs applying to prod same as 026).
+
+</details>
 
 ### C. Other known items (from earlier walkthrough, for Matt/Finley — not code-blocking)
 - **Brand split:** emails say "Merlin Safety System", but PDFs (proposal/report/contract), login pages, and client footer say "888 Safety & Training" / `888FST@proton.me`, plus two mismatched phone numbers (PDF `0114 555 0188` vs footer `0161 552 0918`). Needs a brand decision, then align.
@@ -76,7 +90,7 @@ End-to-end checkout review verdict: **fundamentally sound, no critical/high.** A
 
 ## 4. How to resume
 1. If continuing PayPal: get valid **Live** creds (§2A), set in Vercel, flip mode, lower a pack price, hand to user to test, revert. Verify creds first with the `oauth2/token` curl before flipping.
-2. If applying checkout fixes: do §2B MEDIUM + LOW `search_path` (migration 027 → user applies to prod), then rebuild/test/deploy.
+2. Checkout fixes are **applied and committed** (§2B). Remaining: user applies **migration 027** in the Supabase SQL editor, then push `main` to deploy.
 3. Prod currently has **zero clients** (all test data cleaned up; only `mathew.robinson@888safetyandtraining.com` in `admin_users`). Matt's first real client will be the first persistent data.
 4. Verification gates used all session: `npm run build` + `npm test` must both be green before any deploy; migrations applied to prod before the code that needs them.
 
