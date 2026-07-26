@@ -17,7 +17,7 @@ const openrouter = createOpenAI({
   apiKey: process.env.OPENROUTER_API_KEY || "dummy-key",
   headers: {
     "HTTP-Referer": "https://888safety.co.uk", // Optional, for OpenRouter rankings
-    "X-Title": "888 Safety Platform", // Optional, for OpenRouter rankings
+    "X-Title": "Merlin Safety System", // Optional, for OpenRouter rankings
   }
 })
 

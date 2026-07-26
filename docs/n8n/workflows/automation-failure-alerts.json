@@ -1,5 +1,5 @@
 {
-  "name": "888 Automation Failure Alerts",
+  "name": "Merlin Automation Failure Alerts",
   "nodes": [
     {
       "parameters": {},
@@ -14,14 +14,14 @@
     },
     {
       "parameters": {
-        "sendTo": "888FST@proton.me",
-        "subject": "[888] Automation failed",
+        "sendTo": "info@888safetyandtraining.com",
+        "subject": "[Merlin] Automation failed",
         "emailType": "text",
-        "message": "={{ \"An 888 Safety automation failed.\\n\\nWorkflow: \" + ($json.workflow && $json.workflow.name ? $json.workflow.name : \"Unknown workflow\") + \"\\nLast step: \" + ($json.execution && $json.execution.lastNodeExecuted ? $json.execution.lastNodeExecuted : \"Unknown\") + \"\\nError: \" + ($json.execution && $json.execution.error && $json.execution.error.message ? $json.execution.error.message : \"No error message was supplied\") + \"\\nExecution: \" + ($json.execution && $json.execution.url ? $json.execution.url : \"Open n8n and check Executions\") }}",
+        "message": "={{ \"A Merlin Safety System automation failed.\\n\\nWorkflow: \" + ($json.workflow && $json.workflow.name ? $json.workflow.name : \"Unknown workflow\") + \"\\nLast step: \" + ($json.execution && $json.execution.lastNodeExecuted ? $json.execution.lastNodeExecuted : \"Unknown\") + \"\\nError: \" + ($json.execution && $json.execution.error && $json.execution.error.message ? $json.execution.error.message : \"No error message was supplied\") + \"\\nExecution: \" + ($json.execution && $json.execution.url ? $json.execution.url : \"Open n8n and check Executions\") }}",
         "options": {
           "appendAttribution": false,
-          "senderName": "888 Safety & Training",
-          "replyTo": "888FST@proton.me"
+          "senderName": "Merlin Safety System",
+          "replyTo": "info@888safetyandtraining.com"
         }
       },
       "id": "send-automation-failure-alert",

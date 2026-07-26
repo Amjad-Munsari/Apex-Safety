@@ -5,6 +5,7 @@ import { getClientContext, isDemoMode } from "@/lib/auth-helpers";
 import { getAppSettings } from "@/lib/settings/app-settings";
 import { ClientPortalNav } from "./_components/client-portal-nav";
 import { ClientIdentityNav } from "./_components/client-identity-nav";
+import { PLATFORM_NAME, PUBLIC_CONTACT } from "@/lib/public-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -56,13 +57,19 @@ export default async function ClientLayout({
           </div>
         )}
         <div className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 font-mono text-[8.5px] tracking-[0.2em] text-muted-foreground uppercase">
+          <span>{PLATFORM_NAME}</span>
+          <span className="text-muted-foreground font-bold">&middot;</span>
           <span>Your Consultant</span>
           <span className="text-muted-foreground font-bold">&middot;</span>
           <span className="text-muted-foreground font-bold">Matt Robinson</span>
           <span className="text-muted-foreground font-bold">&middot;</span>
-          <span className="text-muted-foreground font-bold">888FST@proton.me</span>
+          <a className="text-muted-foreground font-bold hover:text-foreground transition-colors" href={PUBLIC_CONTACT.emailHref}>
+            {PUBLIC_CONTACT.email}
+          </a>
           <span className="text-muted-foreground font-bold">&middot;</span>
-          <span className="text-muted-foreground font-bold">0161 552 0918</span>
+          <a className="text-muted-foreground font-bold hover:text-foreground transition-colors" href={PUBLIC_CONTACT.phoneHref}>
+            {PUBLIC_CONTACT.phone}
+          </a>
         </div>
       </footer>
     </div>

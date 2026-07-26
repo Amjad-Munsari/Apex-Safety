@@ -132,9 +132,9 @@ export const dynamic = "force-dynamic";
     <span className="text-[#6b6560] font-bold">&middot;</span>
     <span className="text-[#6b6560] font-bold">Matt Robinson</span>
     <span className="text-[#6b6560] font-bold">&middot;</span>
-    <span className="text-[#6b6560] font-bold">888FST@proton.me</span>
+    <span className="text-[#6b6560] font-bold">info@888safetyandtraining.com</span>
     <span className="text-[#6b6560] font-bold">&middot;</span>
-    <span className="text-[#6b6560] font-bold">0161 552 0918</span>
+    <span className="text-[#6b6560] font-bold">0333 049 8979</span>
   </div>
 </footer>
 ```

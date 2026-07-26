@@ -1,6 +1,7 @@
 import "server-only"
 
 import type { NotificationPayload } from "./dispatch"
+import { PLATFORM_NAME, PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Transactional email templates (Resend).
@@ -16,7 +17,7 @@ import type { NotificationPayload } from "./dispatch"
 // colours with sufficient contrast render acceptably everywhere).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BRAND = process.env.EMAIL_BRAND_NAME ?? "Merlin Safety System"
+const BRAND = PLATFORM_NAME
 
 /** Types that become an email. Everything else routes to n8n. */
 export const EMAIL_TYPES = new Set<NotificationPayload["type"]>([
@@ -137,7 +138,7 @@ function layout(opts: {
         </td></tr>
         <!-- footer -->
         <tr><td style="padding:22px 32px 28px;border-top:1px solid ${C.border};color:${C.muted};font-size:12px;line-height:1.6;">
-          ${footerNote ? `${escapeHtml(footerNote)}<br/><br/>` : ""}This is an automated message from <span style="color:${C.body};font-weight:600;">${escapeHtml(BRAND)}</span>. Replying to this email reaches our team.
+          ${footerNote ? `${escapeHtml(footerNote)}<br/><br/>` : ""}This is an automated message from <span style="color:${C.body};font-weight:600;">${escapeHtml(BRAND)}</span>. Replying to this email reaches our team.<br/>${escapeHtml(PUBLIC_CONTACT_LINE)}
         </td></tr>
       </table>
       <div style="max-width:600px;color:${C.muted};font-size:11px;line-height:1.5;padding:16px 8px 0;">${escapeHtml(BRAND)} · Fire safety &amp; compliance management</div>

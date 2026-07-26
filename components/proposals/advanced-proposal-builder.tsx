@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { draftProposalScope, createProposal, deleteProposal } from '@/app/admin/proposals/actions';
 import { Service, groupByCategory } from '@/lib/data/services';
+import { PUBLIC_CONTACT_LINE } from '@/lib/public-identity';
 
 export type Client = {
   id: string;
@@ -641,7 +642,7 @@ export function AdvancedProposalBuilder({
                         <div className="prop-paper-meta-name">Matt Robinson</div>
                         <div className="prop-paper-meta-detail">
                           Lead Consultant · 888 Safety Solutions<br />
-                          888FST@proton.me · 0114 555 0188
+                          {PUBLIC_CONTACT_LINE}
                         </div>
                       </div>
                     </div>

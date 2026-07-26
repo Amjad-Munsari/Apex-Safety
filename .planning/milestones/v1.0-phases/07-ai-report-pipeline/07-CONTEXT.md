@@ -26,7 +26,7 @@ Out of scope (deferred): SignWell-style e-sig, PayPal hours-balance, Site Risk t
 - **D-06:** REPORT-11 hard guarantee: no email/delivery side-effect fires from any code path EXCEPT `finalizeReport` after a successful approve. Auto-generated drafts (from `submitAssessmentAction`) only populate `draft_report_json` and flip status to `draft_ready_for_review` — never email the client. Add a unit test asserting `dispatchNotification` is not called from the draft path.
 
 ### Delivery email on approve (REPORT-10)
-- **D-07:** `finalizeReport` dispatches via the existing `lib/notifications/n8n-dispatch.ts` helper (n8n is the email bridge per the project's Proton Mail constraint). Add a new variant to `NotificationPayload`:
+- **D-07:** `finalizeReport` dispatches via the existing `lib/notifications/n8n-dispatch.ts` helper (n8n is the project's email-delivery bridge). Add a new variant to `NotificationPayload`:
   ```ts
   | {
       type: "report_ready"
@@ -37,7 +37,7 @@ Out of scope (deferred): SignWell-style e-sig, PayPal hours-balance, Site Risk t
       report_storage_path: string // for n8n logging / dedup
     }
   ```
-  Generate a 7-day signed URL (`createSignedUrl(fileName, 60*60*24*7)`) for the email payload — separate call from the 5-min URL returned to Matt. n8n side handles the actual Proton send.
+  Generate a 7-day signed URL (`createSignedUrl(fileName, 60*60*24*7)`) for the email payload — separate call from the 5-min URL returned to Matt. n8n handles the actual email send.
 - **D-08:** Dispatch failures do NOT roll back the status flip. Order of operations in `finalizeReport`: render PDF → upload → status='completed' + persist `report_storage_path` → dispatch notification → if dispatch fails, insert `workflow_errors` row (`workflow_type='report_delivery_email'`, severity high) and surface a non-blocking toast to Matt ("Report saved, email retry queued"). Rationale: the PDF is the artefact of record; email is a delivery convenience that n8n can replay.
 
 ### Error workflow + status taxonomy (REPORT-12)
@@ -55,7 +55,7 @@ Out of scope (deferred): SignWell-style e-sig, PayPal hours-balance, Site Risk t
 - **D-11:** REPORT-12 acceptance: trigger an AI failure (mocked OpenRouter 500) and verify (a) `workflow_errors` row inserted, (b) `status='ai_draft_failed'`, (c) `/admin/month-summary` shows the error, (d) Review page renders a retry CTA.
 
 ### Claude's Discretion
-The user delegated all four gray areas mid-discussion ("you decide for everything"). Decisions D-04 through D-11 reflect Claude's calls grounded in: existing code (`runReportDraftGeneration`, `finalizeReport`, `dispatchNotification`), the Proton-via-n8n constraint, the `no demo mocks` and `production-ready ship target` memories, and the `07-AI-SPEC.md` framework lock. Any of these can be reversed by the user on review.
+The user delegated all four gray areas mid-discussion ("you decide for everything"). Decisions D-04 through D-11 reflect Claude's calls grounded in: existing code (`runReportDraftGeneration`, `finalizeReport`, `dispatchNotification`), the email-via-n8n constraint, the `no demo mocks` and `production-ready ship target` memories, and the `07-AI-SPEC.md` framework lock. Any of these can be reversed by the user on review.
 
 </decisions>
 
@@ -82,7 +82,7 @@ The user delegated all four gray areas mid-discussion ("you decide for everythin
 ### Project-level guardrails
 - `AGENTS.md` — `node_modules/next/dist/docs/` is the source of truth for Next.js APIs; do not assume training-data shapes.
 - `CLAUDE.md` (→ `AGENTS.md`) — form template ownership context (informational; Phase 7 doesn't touch templates directly).
-- Memory: `email_infra.md` — Proton via n8n; never call SMTP/Resend directly.
+- Memory: `email_infra.md` — email delivery via n8n; never call SMTP/Resend directly.
 - Memory: `production_ready_target.md` — Modules 2 + 4 are productionised; no demo mocks in shipped paths.
 - Memory: `feedback_no_demo_mocks_in_code.md` — empty-state UI, never fake-data generators.
 

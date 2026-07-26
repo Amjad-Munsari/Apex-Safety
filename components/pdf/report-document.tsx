@@ -1,6 +1,7 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
 import { BRAND } from "@/lib/branding"
+import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
 
 // PDFs render server-side via @react-pdf, which can't resolve CSS custom
 // properties — so brand accents come from the shared BRAND hexes, not --teal/--gold.
@@ -151,7 +152,7 @@ export const ReportDocument = ({
           <Text style={styles.gridLabel}>PREPARED BY</Text>
           <Text style={styles.gridName}>Matt Robinson</Text>
           <Text style={styles.gridDetail}>Lead Consultant · 888 Safety & Training</Text>
-          <Text style={styles.gridDetail}>888FST@proton.me · 0114 555 0188</Text>
+          <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>
         </View>
       </View>
 

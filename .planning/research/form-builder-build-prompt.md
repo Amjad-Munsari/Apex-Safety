@@ -484,7 +484,7 @@ When a client opens an assigned template, they see two buttons:
 - Use n8n webhook (same pattern as existing expiry alerts in the platform)
 - Notification schedule: 7 days before due, 1 day before due, on day of overdue
 - Dedup: store `last_reminder_sent` timestamp + reminder window on the assignment. Don't re-send for the same window.
-- Notification channel: email to client via the existing n8n email workflow (Proton Mail SMTP)
+- Notification channel: email to client via the existing n8n email workflow (the current email service)
 
 ### Phase 5 done criteria
 

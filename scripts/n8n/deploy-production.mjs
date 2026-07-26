@@ -7,10 +7,11 @@ const API_BASE =
   process.env.N8N_API_BASE ?? "https://fire-safety.app.n8n.cloud/api/v1"
 const PUBLIC_APP_URL =
   process.env.N8N_PUBLIC_APP_URL ?? "https://www.merlinsafetysystem.com"
-const ADMIN_INBOX = process.env.N8N_ADMIN_INBOX ?? "888FST@proton.me"
+const ADMIN_INBOX =
+  process.env.N8N_ADMIN_INBOX ?? "info@888safetyandtraining.com"
 
 const WORKFLOW_NAMES = {
-  errors: "888 Automation Failure Alerts",
+  errors: "Merlin Automation Failure Alerts",
   general: "Email Notifications",
   assessment: "Assessment Report Notifications",
 }
@@ -22,6 +23,7 @@ const CREDENTIAL_NAMES = {
 }
 
 const EXISTING_WORKFLOW_IDS = {
+  errors: "fzflrF6ByBnfRhxN",
   general: "hif6MMPvywQF6z6u",
   assessment: "eijErYNTCnWHuITQ",
 }
@@ -39,7 +41,7 @@ function gmailNode({ id, name, position, subject, message, gmailCredential }) {
       message,
       options: {
         appendAttribution: false,
-        senderName: "888 Safety & Training",
+        senderName: "Merlin Safety System",
         replyTo: ADMIN_INBOX,
       },
     },
@@ -208,9 +210,9 @@ function failureWorkflow(gmailCredential) {
     id: "send-automation-failure-alert",
     name: "Alert Matt",
     position: [260, 0],
-    subject: "[888] Automation failed",
+    subject: "[Merlin] Automation failed",
     message:
-      '={{ "An 888 Safety automation failed.\\n\\nWorkflow: " + ($json.workflow && $json.workflow.name ? $json.workflow.name : "Unknown workflow") + "\\nLast step: " + ($json.execution && $json.execution.lastNodeExecuted ? $json.execution.lastNodeExecuted : "Unknown") + "\\nError: " + ($json.execution && $json.execution.error && $json.execution.error.message ? $json.execution.error.message : "No error message was supplied") + "\\nExecution: " + ($json.execution && $json.execution.url ? $json.execution.url : "Open n8n and check Executions") }}',
+      '={{ "A Merlin Safety System automation failed.\\n\\nWorkflow: " + ($json.workflow && $json.workflow.name ? $json.workflow.name : "Unknown workflow") + "\\nLast step: " + ($json.execution && $json.execution.lastNodeExecuted ? $json.execution.lastNodeExecuted : "Unknown") + "\\nError: " + ($json.execution && $json.execution.error && $json.execution.error.message ? $json.execution.error.message : "No error message was supplied") + "\\nExecution: " + ($json.execution && $json.execution.url ? $json.execution.url : "Open n8n and check Executions") }}',
     gmailCredential,
   })
 
@@ -292,7 +294,7 @@ function generalWorkflow({
     id: "send-client-form-created",
     name: "Email Form Created",
     position: [780, 80],
-    subject: "[888] Client created a form template",
+    subject: "[Merlin] Client created a form template",
     message:
       '={{ "A client created a new form template.\\n\\nClient: " + ($json.body.client_name || $json.body.client_id) + "\\nClient ID: " + $json.body.client_id + "\\nTemplate: " + $json.body.template_name + "\\nType: " + $json.body.template_type + "\\nCreated: " + $json.body.created_at + "\\n\\nOpen client record: ' +
       PUBLIC_APP_URL +
@@ -303,7 +305,7 @@ function generalWorkflow({
     id: "send-client-form-submitted",
     name: "Email Form Submitted",
     position: [780, 300],
-    subject: "[888] Client submitted a form",
+    subject: "[Merlin] Client submitted a form",
     message:
       '={{ "A client submitted a completed form.\\n\\nClient: " + ($json.body.client_name || $json.body.client_id) + "\\nClient ID: " + $json.body.client_id + "\\nSubmission ID: " + $json.body.submission_id + "\\nAssignment: " + ($json.body.assignment_id || "Self-fill (no assignment)") + "\\nSubmitted: " + $json.body.submitted_at + "\\n\\nReview submission: ' +
       PUBLIC_APP_URL +
@@ -314,7 +316,7 @@ function generalWorkflow({
     id: "send-client-template-cloned",
     name: "Email Template Cloned",
     position: [780, 520],
-    subject: "[888] Client customised a form template",
+    subject: "[Merlin] Client customised a form template",
     message:
       '={{ "A client copied one of the master templates into its own editable version. The master was not changed.\\n\\nClient: " + ($json.body.client_name || $json.body.client_id) + "\\nClient ID: " + $json.body.client_id + "\\nNew template: " + $json.body.template_name + "\\nNew template ID: " + $json.body.template_id + "\\nCopied from: " + $json.body.parent_template_id + "\\nCopied: " + $json.body.cloned_at + "\\n\\nOpen client record: ' +
       PUBLIC_APP_URL +
@@ -418,7 +420,7 @@ function assessmentWorkflow({
     id: "send-assessment-notification",
     name: "Email Assessment Submitted",
     position: [540, -80],
-    subject: "[888] New assessment submitted",
+    subject: "[Merlin] New assessment submitted",
     message:
       '={{ "A new assessment has been submitted and is ready for review.\\n\\nSubmission ID: " + $json.body.submissionId + "\\n\\nReview assessment: ' +
       PUBLIC_APP_URL +
@@ -551,9 +553,9 @@ async function deploy() {
 
   const gmailCredential = credential(gmail.id, gmail.name)
   const failureDefinition = failureWorkflow(gmailCredential)
-  const existingFailure = workflows.find(
-    (workflow) => workflow.name === WORKFLOW_NAMES.errors
-  )
+  const existingFailure =
+    workflows.find((workflow) => workflow.id === EXISTING_WORKFLOW_IDS.errors) ??
+    workflows.find((workflow) => workflow.name === WORKFLOW_NAMES.errors)
   const deployedFailure = await upsertWorkflow(
     existingFailure,
     failureDefinition

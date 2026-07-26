@@ -350,14 +350,14 @@
     },
     {
       "parameters": {
-        "sendTo": "888FST@proton.me",
-        "subject": "[888] Client created a form template",
+        "sendTo": "info@888safetyandtraining.com",
+        "subject": "[Merlin] Client created a form template",
         "emailType": "text",
         "message": "={{ \"A client created a new form template.\\n\\nClient: \" + ($json.body.client_name || $json.body.client_id) + \"\\nClient ID: \" + $json.body.client_id + \"\\nTemplate: \" + $json.body.template_name + \"\\nType: \" + $json.body.template_type + \"\\nCreated: \" + $json.body.created_at + \"\\n\\nOpen client record: https://www.merlinsafetysystem.com/admin/clients/\" + $json.body.client_id }}",
         "options": {
           "appendAttribution": false,
-          "senderName": "888 Safety & Training",
-          "replyTo": "888FST@proton.me"
+          "senderName": "Merlin Safety System",
+          "replyTo": "info@888safetyandtraining.com"
         }
       },
       "id": "send-client-form-created",
@@ -380,14 +380,14 @@
     },
     {
       "parameters": {
-        "sendTo": "888FST@proton.me",
-        "subject": "[888] Client submitted a form",
+        "sendTo": "info@888safetyandtraining.com",
+        "subject": "[Merlin] Client submitted a form",
         "emailType": "text",
         "message": "={{ \"A client submitted a completed form.\\n\\nClient: \" + ($json.body.client_name || $json.body.client_id) + \"\\nClient ID: \" + $json.body.client_id + \"\\nSubmission ID: \" + $json.body.submission_id + \"\\nAssignment: \" + ($json.body.assignment_id || \"Self-fill (no assignment)\") + \"\\nSubmitted: \" + $json.body.submitted_at + \"\\n\\nReview submission: https://www.merlinsafetysystem.com/admin/assessments/\" + $json.body.submission_id + \"/review\" }}",
         "options": {
           "appendAttribution": false,
-          "senderName": "888 Safety & Training",
-          "replyTo": "888FST@proton.me"
+          "senderName": "Merlin Safety System",
+          "replyTo": "info@888safetyandtraining.com"
         }
       },
       "id": "send-client-form-submitted",
@@ -410,14 +410,14 @@
     },
     {
       "parameters": {
-        "sendTo": "888FST@proton.me",
-        "subject": "[888] Client customised a form template",
+        "sendTo": "info@888safetyandtraining.com",
+        "subject": "[Merlin] Client customised a form template",
         "emailType": "text",
         "message": "={{ \"A client copied one of the master templates into its own editable version. The master was not changed.\\n\\nClient: \" + ($json.body.client_name || $json.body.client_id) + \"\\nClient ID: \" + $json.body.client_id + \"\\nNew template: \" + $json.body.template_name + \"\\nNew template ID: \" + $json.body.template_id + \"\\nCopied from: \" + $json.body.parent_template_id + \"\\nCopied: \" + $json.body.cloned_at + \"\\n\\nOpen client record: https://www.merlinsafetysystem.com/admin/clients/\" + $json.body.client_id }}",
         "options": {
           "appendAttribution": false,
-          "senderName": "888 Safety & Training",
-          "replyTo": "888FST@proton.me"
+          "senderName": "Merlin Safety System",
+          "replyTo": "info@888safetyandtraining.com"
         }
       },
       "id": "send-client-template-cloned",

@@ -68,8 +68,8 @@ export function NewClientButton({
         })
       }
       onCreated?.(id)
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to add client")
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to add client")
     } finally {
       setSubmitting(false)
     }
@@ -124,7 +124,7 @@ export function NewClientButton({
               optional
               value={form.phone}
               onChange={(v) => setForm((f) => ({ ...f, phone: v }))}
-              placeholder="0161 552 0918"
+              placeholder="Office or mobile number"
             />
             <Field
               label="Site Address"

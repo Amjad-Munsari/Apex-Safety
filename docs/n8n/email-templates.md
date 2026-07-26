@@ -1,4 +1,4 @@
-# 888 Safety — n8n Admin Notices
+# Merlin Safety System — n8n Admin Notices
 
 **Current contract: 26 July 2026**
 
@@ -14,12 +14,12 @@ The deployed definitions are the source of truth:
 
 | Event | Trigger | Admin subject | Required data |
 |---|---|---|---|
-| `client_form_created` | A client creates an organisation-owned template | `[888] Client created a form template` | `client_id`, `client_name`, `template_id`, `template_name`, `template_type`, `created_at` |
-| `client_form_submitted` | A client submits an assigned or self-filled form | `[888] Client submitted a form` | `client_id`, `client_name`, `submission_id`, `submitted_at`; `assignment_id` may be empty for self-fill |
-| `client_template_cloned` | A client selects **Customise first** and creates a fork | `[888] Client customised a form template` | `client_id`, `client_name`, `template_id`, `template_name`, `parent_template_id`, `cloned_at` |
-| Assessment submitted | Matt submits an admin-led assessment | `[888] New assessment submitted` | `submissionId` |
+| `client_form_created` | A client creates an organisation-owned template | `[Merlin] Client created a form template` | `client_id`, `client_name`, `template_id`, `template_name`, `template_type`, `created_at` |
+| `client_form_submitted` | A client submits an assigned or self-filled form | `[Merlin] Client submitted a form` | `client_id`, `client_name`, `submission_id`, `submitted_at`; `assignment_id` may be empty for self-fill |
+| `client_template_cloned` | A client selects **Customise first** and creates a fork | `[Merlin] Client customised a form template` | `client_id`, `client_name`, `template_id`, `template_name`, `parent_template_id`, `cloned_at` |
+| Assessment submitted | Matt submits an admin-led assessment | `[Merlin] New assessment submitted` | `submissionId` |
 
-All four notices go to `888FST@proton.me` through the credential named `Info@ Account`.
+All four notices go to `info@888safetyandtraining.com` through the credential named `Info@ Account`.
 
 ## Delivery contract
 

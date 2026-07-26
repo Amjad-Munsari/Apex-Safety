@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Mail, Lock, Loader2, ArrowRight } from "lucide-react"
+import { Mail, Lock, Loader2 } from "lucide-react"
+import { PLATFORM_NAME } from "@/lib/public-identity"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [tab, setTab] = useState("password")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -62,7 +62,7 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-md border-0 bg-card/80 backdrop-blur-xl text-foreground shadow-2xl">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-3xl font-bold tracking-tight">888 Safety</CardTitle>
+        <CardTitle className="text-3xl font-bold tracking-tight">{PLATFORM_NAME}</CardTitle>
         <CardDescription className="text-muted-foreground">
           Sign in to access your compliance dashboard
         </CardDescription>

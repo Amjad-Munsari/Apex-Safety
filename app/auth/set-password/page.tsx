@@ -1,4 +1,5 @@
 import { SetPasswordForm } from "./set-password-form"
+import { PLATFORM_NAME } from "@/lib/public-identity"
 
 export default function SetPasswordPage() {
   return (
@@ -14,7 +15,7 @@ export default function SetPasswordPage() {
 
       <div className="absolute bottom-8 left-0 right-0 z-10 text-center">
         <p className="text-slate-500 text-sm font-medium tracking-widest uppercase">
-          888 Safety &amp; Training Operations Platform
+          {PLATFORM_NAME}
         </p>
       </div>
     </div>

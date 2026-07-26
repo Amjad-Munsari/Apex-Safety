@@ -1,8 +1,9 @@
 import { adminClient } from "@/lib/supabase/admin";
 import { AdvancedAssessmentBuilder } from "@/components/assessments/advanced-assessment-builder";
+import { PLATFORM_NAME } from "@/lib/public-identity";
 
 export const metadata = {
-  title: "New Assessment | 888 Safety Solutions",
+  title: `New Assessment | ${PLATFORM_NAME}`,
 };
 
 export const dynamic = "force-dynamic";

@@ -37,7 +37,7 @@ key-files:
 
 key-decisions:
   - "Option A chosen: second after() callback rather than extending existing block — keeps the two background tasks independently observable in stack traces and logs"
-  - "Inline, not extracted to lib/notifications/n8n-dispatch.ts — that helper targets a different URL (N8N_WEBHOOK_URL → Proton Mail routing); assessment webhook targets N8N_ASSESSMENT_WEBHOOK_URL (different workflow), per RESEARCH §Q5"
+  - "Inline, not extracted to lib/notifications/n8n-dispatch.ts — that helper targets a different URL (N8N_WEBHOOK_URL → general email routing); assessment webhook targets N8N_ASSESSMENT_WEBHOOK_URL (different workflow), per RESEARCH §Q5"
   - "client assignments.ts untouched (Pitfall P7 permanent invariant)"
   - "Legacy submitAssessment unchanged — both paths now fire the webhook"
 

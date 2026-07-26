@@ -15,7 +15,7 @@ updated: 2026-06-07
 ## Tests
 
 ### 1. Portal header/footer identity
-expected: After signing in, the portal chrome shows the real org ("Munsari Property Group") and user ("Amjad Munsari") — no hardcoded/mock identity. Footer shows Matt Robinson · 888FST@proton.me · 0161 552 0918.
+expected: After signing in, the portal chrome shows the real org ("Munsari Property Group") and user ("Amjad Munsari") — no hardcoded/mock identity. Footer shows Matt Robinson · info@888safetyandtraining.com · 0333 049 8979.
 result: passed
 
 ### 2. Mobile nav (Sheet + active link)

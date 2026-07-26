@@ -3,6 +3,7 @@ import "server-only"
 import { Resend } from "resend"
 
 import { buildEmail, EMAIL_TYPES } from "./email-templates"
+import { PLATFORM_NAME, PUBLIC_CONTACT } from "@/lib/public-identity"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Notification dispatch.
@@ -142,7 +143,7 @@ export interface DispatchOptions {
   idempotencyKey?: string
 }
 
-const DEFAULT_FROM = "Merlin Safety System <notifications@merlinsafetysystem.com>"
+const DEFAULT_FROM = `${PLATFORM_NAME} <notifications@merlinsafetysystem.com>`
 
 function isProd(): boolean {
   return process.env.NODE_ENV === "production"
@@ -208,7 +209,7 @@ async function sendEmail(
   }
 
   const from = process.env.EMAIL_FROM ?? DEFAULT_FROM
-  const replyTo = process.env.EMAIL_REPLY_TO
+  const replyTo = process.env.EMAIL_REPLY_TO ?? PUBLIC_CONTACT.email
 
   try {
     const { error } = await getResend(apiKey).emails.send(
@@ -217,7 +218,7 @@ async function sendEmail(
         to: email.to,
         subject: email.subject,
         html: email.html,
-        ...(replyTo ? { replyTo } : {}),
+        replyTo,
       },
       options.idempotencyKey
         ? { idempotencyKey: options.idempotencyKey }

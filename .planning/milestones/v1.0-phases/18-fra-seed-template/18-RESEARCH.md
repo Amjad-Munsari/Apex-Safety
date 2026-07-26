@@ -209,13 +209,13 @@ And separately, the older `submitAssessment` (which still exists at `actions.ts:
 | Path | Purpose | Where wired |
 |------|---------|-------------|
 | Vercel AI SDK (`after(runReportDraftGeneration)`) | Generate the structured AI report draft Matt reviews on `/admin/assessments/[id]/review`. | `submitAssessmentAction:302-308` — runs in `after()` so the user's redirect isn't blocked on the OpenRouter round-trip. |
-| n8n webhook (`N8N_ASSESSMENT_WEBHOOK_URL`) | Module 1 downstream bridge — Matt's existing n8n workflows that fan out to Proton Mail / customer notifications / Drive backups. Distinct from the AI draft. | `submitAssessment:194-212` (currently). |
+| n8n webhook (`N8N_ASSESSMENT_WEBHOOK_URL`) | Module 1 downstream bridge — Matt's existing n8n workflows that fan out to email delivery, customer notifications, or Drive backups. Distinct from the AI draft. | `submitAssessment:194-212` (currently). |
 
 **The two `submit*` server actions are doing duplicate work.** `submitAssessment` is the older path (no validation, no scrub, no after-callback); `submitAssessmentAction` is the Phase 13+ replacement (validates, scrubs, fires AI). The n8n webhook fire in `submitAssessment` is NOT mirrored in `submitAssessmentAction`. **This is the only real action item for Phase 18 SC#5:** verify the n8n webhook fire is also invoked from `submitAssessmentAction` — and if not, port the same fire-and-forget POST (lines 194-212) into `submitAssessmentAction` after the AI `after()` registration.
 
 **Recommendation for the planner:** add a small task "wire `N8N_ASSESSMENT_WEBHOOK_URL` fire-and-forget POST into `submitAssessmentAction`" — DO NOT create a new helper file. Inline the existing pattern from `submitAssessment:194-212` into `submitAssessmentAction` before the `after()` call. ROADMAP SC#5 reads "fires the n8n webhook **for the AI report pipeline (Module 1 bridge)**" — both paths are in scope.
 
-**Do NOT extend `lib/notifications/n8n-dispatch.ts`** for this. That helper carries the typed discriminated union used by Phase 5 (`expiry_alert`) and Phase 17 (`assignment_reminder`) — both of which want n8n to **route to Proton Mail**. The assessment-submission webhook is a different downstream: it targets the n8n "assessment ingestion" workflow with a `{ submissionId }` body and a different URL (`N8N_ASSESSMENT_WEBHOOK_URL` vs. `N8N_WEBHOOK_URL`). Keep it inline.
+**Do NOT extend `lib/notifications/n8n-dispatch.ts`** for this. That helper carries the typed discriminated union used by Phase 5 (`expiry_alert`) and Phase 17 (`assignment_reminder`) — both of which use the general email workflow. The assessment-submission webhook is a different downstream: it targets the n8n "assessment ingestion" workflow with a `{ submissionId }` body and a different URL (`N8N_ASSESSMENT_WEBHOOK_URL` vs. `N8N_WEBHOOK_URL`). Keep it inline.
 
 [VERIFIED: `app/admin/assessments/actions.ts:166-215, 232-309, 380-471`] [VERIFIED: `lib/notifications/n8n-dispatch.ts` uses `N8N_WEBHOOK_URL` — different env var from `N8N_ASSESSMENT_WEBHOOK_URL`]
 

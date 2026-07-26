@@ -1,5 +1,5 @@
 import React from "react"
-import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer"
+import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
 import {
   PAGE_MARGIN_X,
   PAGE_BOTTOM_RESERVED,
@@ -9,6 +9,7 @@ import {
   SIG_SPACE_PADDING_LEFT,
   SIG_META_MARGIN_TOP,
 } from "@/lib/pdf/signature-layout"
+import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
 
 // Since we are generating PDFs on the server, we rely on standard fonts built into react-pdf (Helvetica, Times-Roman) 
 // for simplicity, or we can register network fonts. We'll use Helvetica for a clean modern look.
@@ -271,7 +272,7 @@ export const ProposalDocument = ({
           <Text style={styles.gridLabel}>PREPARED BY</Text>
           <Text style={styles.gridName}>Matt Robinson</Text>
           <Text style={styles.gridDetail}>Lead Consultant · 888 Safety Solutions</Text>
-          <Text style={styles.gridDetail}>888FST@proton.me · 0114 555 0188</Text>
+          <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>
         </View>
       </View>
 

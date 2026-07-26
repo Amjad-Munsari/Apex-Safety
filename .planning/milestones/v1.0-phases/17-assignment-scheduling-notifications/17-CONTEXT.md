@@ -8,7 +8,7 @@
 ## Locked decisions (treat as inputs, not open questions)
 
 ### Notification infrastructure — LOCKED
-- **All reminders route through n8n** to **Proton Mail** (`888FST@proton.me`). The n8n→Proton bridge is the only outbound email surface for this phase.
+- **All reminders route through n8n** for email delivery. The n8n bridge is the only outbound email surface for this phase.
 - **NO direct Twilio / Resend integration** in Phase 17 — those are explicitly deferred per `memory/deferred_work.md`. If a Phase 17 success criterion needs SMS, treat it as out-of-scope and surface as a deviation.
 - The cron lives on **Vercel Cron** (`vercel.json` / Vercel Functions). No third-party scheduler.
 
@@ -92,5 +92,5 @@ These are unknowns that the gsd-phase-researcher should resolve via codebase + d
 - `.planning/phases/16-multi-tenancy-fork-on-fill/16-03-SUMMARY.md` — `/admin/clients/[id]` Assigned Forms tab (the other overdue mount point).
 - `.planning/phases/5-document-upload-expiry-alerts/*-SUMMARY.md` — existing n8n bridge pattern (Phase 5 set the precedent; Phase 17 must mirror it).
 - `supabase/migrations/013_phase16_assignments_instructions.sql` — most recent migration shape (the next migration is `015_*`).
-- `memory/email_infra.md` — Proton Mail constraint.
+- `memory/email_infra.md` — the email-delivery constraint.
 - `memory/deferred_work.md` — Twilio/Resend deferral.

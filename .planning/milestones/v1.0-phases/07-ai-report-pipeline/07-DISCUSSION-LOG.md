@@ -32,7 +32,7 @@ The user selected "Update CONTEXT (will need replan)". Existing PLAN.md is now c
 | Option | Description | Selected |
 |--------|-------------|----------|
 | Direct SMTP / Resend | Send email straight from `finalizeReport`. | |
-| n8n via `dispatchNotification` (new `report_ready` variant) | Reuse the Proton-via-n8n bridge the rest of the platform uses. | ✓ |
+| n8n via `dispatchNotification` (new `report_ready` variant) | Reuse the email-via-n8n bridge the rest of the platform uses. | ✓ |
 | Skip — leave manual | Matt downloads PDF and sends himself. | |
 
 **User's choice:** Delegated to Claude.
@@ -63,7 +63,7 @@ The user selected "Update CONTEXT (will need replan)". Existing PLAN.md is now c
 
 ## Claude's Discretion
 
-All four gray areas were delegated mid-discussion after one clarification rejection from the user ("you decide for everything"). Decisions D-04 through D-11 in `07-CONTEXT.md` are Claude's calls grounded in existing code (`runReportDraftGeneration`, `finalizeReport`, `dispatchNotification`), the Proton-via-n8n constraint, the production-ready ship target, and `07-AI-SPEC.md`. Reversible on user review.
+All four gray areas were delegated mid-discussion after one clarification rejection from the user ("you decide for everything"). Decisions D-04 through D-11 in `07-CONTEXT.md` are Claude's calls grounded in existing code (`runReportDraftGeneration`, `finalizeReport`, `dispatchNotification`), the email-via-n8n constraint, the production-ready ship target, and `07-AI-SPEC.md`. Reversible on user review.
 
 ## Deferred Ideas
 

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import { ShieldCheck } from "lucide-react"
+import { PLATFORM_NAME } from "@/lib/public-identity"
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("")
@@ -55,7 +56,7 @@ export default function AdminLoginPage() {
       <div className="hidden lg:flex flex-col justify-between w-[420px] bg-[#111] p-12 shrink-0 border-r border-white/5">
         <div>
           <span className="font-mono text-[9px] tracking-[0.3em] text-white/30 uppercase font-bold">
-            888 Safety & Training
+            {PLATFORM_NAME}
           </span>
         </div>
 
@@ -110,7 +111,7 @@ export default function AdminLoginPage() {
                 required
                 autoComplete="email"
                 className="w-full h-12 border border-white/10 bg-[#151515] rounded-sm px-4 text-[14px] text-white placeholder:text-[#555] outline-none focus:border-white/30 transition-colors font-sans"
-                placeholder="matt@yourdomain.com"
+                placeholder="you@company.com"
               />
             </div>
 

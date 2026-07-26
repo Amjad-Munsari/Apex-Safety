@@ -2,7 +2,7 @@
 status: testing
 phase: E2E (all shipped phases — Modules 2 & 4 + Form Builder)
 scope: full start-to-finish manual verification
-environment: production (Vercel + live OpenRouter/n8n/Supabase/Proton)
+environment: production (Vercel + live OpenRouter/n8n/Supabase/email delivery)
 depth: exhaustive
 source:
   - phases 04-07, 09-18 SUMMARY.md files
@@ -79,7 +79,7 @@ result: pass
 note: "Modal is reachable AND (after fix) uploaded undated docs now render. Root cause was the undated-bucket bug (see gap, root_cause corrected). FIXED + verified by user on prod. Also added a 'No Expiry Date' filter tab on request (commit b99da4a)."
 original_report: "The document looks like it is uploaded but there is an issue. The numbers show that it uploaded, but I can't see the actual document. → root cause: undated docs rendered in no table."
 
-### 9. Client notified on upload (n8n → Proton email)
+### 9. Client notified on upload (n8n → contact email)
 expected: Uploading a document triggers an immediate notification email to the client via n8n; a `notifications_sent` row is written; the email arrives in the recipient inbox.
 result: blocked
 blocked_by: third-party

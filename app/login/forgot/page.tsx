@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { ShieldCheck } from "lucide-react"
 import { requestPasswordReset } from "./actions"
+import { PLATFORM_NAME } from "@/lib/public-identity"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -90,7 +91,7 @@ export default function ForgotPasswordPage() {
       </div>
 
       <div className="w-full flex items-center justify-between text-[11px] text-[#bbb]">
-        <span>© {new Date().getFullYear()} 888 Safety &amp; Training Ltd</span>
+        <span>{PLATFORM_NAME}</span>
         <Link
           href="/login/admin"
           className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-[#bbb] transition-colors hover:text-[#1a1a1a]"

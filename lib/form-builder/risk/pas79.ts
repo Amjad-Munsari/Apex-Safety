@@ -1,5 +1,5 @@
 // lib/form-builder/risk/pas79.ts
-// 888 Safety & Training Platform
+// Merlin Safety System
 //
 // TODO: PAS 79 band boundaries are practitioner convention (RESEARCH Assumption A1) —
 // Matt must verify against BSI PAS 79-1:2020 before Phase 14 ships.

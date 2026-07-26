@@ -98,8 +98,8 @@ export function ContractorDialog({ contractor, children, open, onOpenChange }: C
           toast.success("Contractor added")
         }
         setControlledOpen(false)
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to save contractor")
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : "Failed to save contractor")
       }
     })
   }
@@ -178,7 +178,7 @@ export function ContractorDialog({ contractor, children, open, onOpenChange }: C
                   type="tel"
                   defaultValue={contractor?.phone}
                   required
-                  placeholder="e.g. 07700 900123"
+                  placeholder="Office or mobile number"
                 />
               </div>
               <div className="grid gap-1.5">

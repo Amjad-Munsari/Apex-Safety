@@ -1,9 +1,10 @@
 import { adminClient } from '@/lib/supabase/admin';
 import { AdvancedProposalBuilder } from '@/components/proposals/advanced-proposal-builder';
 import { fetchActiveServices } from '@/lib/data/services-server';
+import { PLATFORM_NAME } from '@/lib/public-identity';
 
 export const metadata = {
-  title: 'New Proposal | 888 Safety Solutions',
+  title: `New Proposal | ${PLATFORM_NAME}`,
 };
 
 export const dynamic = 'force-dynamic';

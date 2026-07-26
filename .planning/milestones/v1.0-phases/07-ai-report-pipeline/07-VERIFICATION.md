@@ -39,16 +39,16 @@ deferred:
 human_verification:
   - test: "Run a real submission end-to-end against the live OpenRouter + Supabase + n8n stack"
     expected: "Submit FRA → AI draft populates within ~30s → /admin/review-queue shows draft_ready_for_review → Review page renders raw-answers panel + editable draft → Approve produces PDF in reports bucket → client receives delivery email via n8n with 7-day signed URL"
-    why_human: "Requires live OPENROUTER_API_KEY, n8n N8N_WEBHOOK_URL, Supabase service-role, Matt's test client; vitest seam mocks the AI + n8n calls but cannot prove the production pipeline lands a real PDF in a real Proton inbox"
+    why_human: "Requires live OPENROUTER_API_KEY, n8n N8N_WEBHOOK_URL, Supabase service-role, Matt's test client; vitest seam mocks the AI + n8n calls but cannot prove the production pipeline lands a real PDF in a real recipient inbox"
   - test: "Verify YELLOW_BROOM_EXEMPLAR produces high-quality drafts in practice"
     expected: "AI draft tone matches Matt's authoring style; no invented hazards; severities calibrated against the YELLOW BROOM reference"
     why_human: "Quality of LLM output is domain-expert judgment (Matt) per AI-SPEC §5 'Manual Human in the Loop'; vitest tests only assert the schema shape and ordering invariants, not draft quality"
   - test: "Verify the D-04 Raw Answers panel auto-expand behaviour on Matt's typical screen"
     expected: "Panel opens automatically the first time Matt visits a freshly-generated draft; collapses cleanly on re-visit (report_storage_path set)"
     why_human: "Visual/UX evaluation; panelDefaultOpen logic (review-client.tsx:156-158) is correct by inspection but the felt experience needs Matt's sign-off"
-  - test: "Verify the email delivered via n8n renders correctly in Matt's Proton client and the 7-day signed URL works for an unauthenticated recipient"
+  - test: "Verify the email delivered via n8n renders correctly in Matt's email client and the 7-day signed URL works for an unauthenticated recipient"
     expected: "Email subject 'Your Fire Risk Assessment is ready — {client_name}', body links to a working Supabase signed URL that opens the PDF in a fresh browser session"
-    why_human: "End-to-end Proton + n8n + Supabase signed-URL flow needs a live test recipient; cannot be exercised from the test seam"
+    why_human: "End-to-end email delivery + n8n + Supabase signed-URL flow needs a live test recipient; cannot be exercised from the test seam"
   - test: "Verify the D-11(c) row-level workflow_errors table on /admin/month-summary"
     expected: "Inject a real ai_report_draft failure (e.g. invalid OPENROUTER_API_KEY) → /admin/month-summary lists the row with workflow_name='ai_report_draft', the error message, severity pill 'high', a deep-link to /admin/assessments/{submission_id}/review, and the en-GB-formatted timestamp"
     why_human: "Path is fully wired and the contract test asserts the row insertion shape, but the end-to-end visual + drill-down audit experience that Matt will use is a UX judgment; the payload-JSONB read fix (commit e60944b) was not separately re-tested with a fresh failure"
@@ -218,7 +218,7 @@ No `TBD`, `FIXME`, or `XXX` debt markers found in Phase 7-modified files. The lo
 
 ## Human Verification Required
 
-(See frontmatter `human_verification` for details — 5 items covering end-to-end live-stack validation, LLM output quality judgment, UX evaluation of the Raw Answers panel + workflow_errors table, and Proton/n8n/signed-URL email rendering.)
+(See frontmatter `human_verification` for details — 5 items covering end-to-end live-stack validation, LLM output quality judgment, UX evaluation of the Raw Answers panel + workflow_errors table, and n8n email/signed-URL rendering.)
 
 These are the only remaining items between the current verified state and full sign-off. All automated checks pass; all originally-blocking gaps closed.
 
@@ -229,10 +229,10 @@ These are the only remaining items between the current verified state and full s
 Per Step 9 decision tree:
 
 1. ❌ No truths FAILED, no artifacts MISSING/STUB, no key links NOT_WIRED, no blocker anti-patterns
-2. ✓ Step 8 produced 5 human verification items (live-stack E2E, LLM quality, UX, Proton+n8n, D-11(c) live)
+2. ✓ Step 8 produced 5 human verification items (live-stack E2E, LLM quality, UX, email+n8n, D-11(c) live)
 3. Therefore: **status = human_needed**
 
-The phase has reached the maximum verifiable state via static + unit-test analysis. Remaining items require live external services (OpenRouter, n8n, Proton, Supabase against real data) or domain-expert judgment (Matt evaluating LLM output quality and UX feel).
+The phase has reached the maximum verifiable state via static + unit-test analysis. Remaining items require live external services (OpenRouter, n8n, email delivery, Supabase against real data) or domain-expert judgment (Matt evaluating LLM output quality and UX feel).
 
 ---
 
@@ -254,7 +254,7 @@ The phase has reached the maximum verifiable state via static + unit-test analys
 
 **Zero remaining gaps blocking goal achievement.** All three originally-blocking gaps closed; additional audit fixes shipped beyond the original verification scope. Status moves from `gaps_found` (9/12) to `human_needed` (10/12 + 1 accepted override + 2 deferred). The only remaining work is human-only end-to-end validation against the live external stack.
 
-**Recommendation:** Phase 7 is ready to mark complete in the roadmap PENDING the live-stack human verification items listed in frontmatter. Once Matt has confirmed a real submission lands a real PDF in Proton with a working 7-day signed URL, Phase 7 is fully shippable.
+**Recommendation:** Phase 7 is ready to mark complete in the roadmap PENDING the live-stack human verification items listed in frontmatter. Once Matt has confirmed a real submission delivers a real PDF by email with a working 7-day signed URL, Phase 7 is fully shippable.
 
 ---
 

@@ -10,6 +10,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
+import { PLATFORM_NAME, PUBLIC_CONTACT } from "@/lib/public-identity";
 
 export interface SidebarStats {
   clients: number;
@@ -62,8 +63,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         <div className="flex flex-col gap-1.5">
           <span className="text-[10px] tracking-[0.2em] text-muted-foreground uppercase font-mono mb-2 opacity-50">Practice</span>
           <h1 className="font-serif text-[28px] leading-[0.9] text-sidebar-foreground font-medium tracking-tight">
-            888 Safety<br />
-            &amp; Training.
+            {PLATFORM_NAME}
           </h1>
         </div>
       </SidebarHeader>
@@ -123,7 +123,12 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
             <span className="text-sidebar-foreground font-semibold tracking-wide">Matt Robinson</span>
           </div>
-          <span className="text-muted-foreground">888FST@proton.me</span>
+          <a className="text-muted-foreground hover:text-sidebar-foreground transition-colors" href={PUBLIC_CONTACT.emailHref}>
+            {PUBLIC_CONTACT.email}
+          </a>
+          <a className="text-muted-foreground hover:text-sidebar-foreground transition-colors" href={PUBLIC_CONTACT.phoneHref}>
+            {PUBLIC_CONTACT.phone}
+          </a>
           <form action="/auth/signout" method="POST">
             <button type="submit" className="mt-1 w-full rounded-[4px] border border-sidebar-border bg-sidebar-accent px-3 py-2 text-[10px] uppercase tracking-[0.15em] text-sidebar-foreground/70 hover:border-gold hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors">
               Sign out

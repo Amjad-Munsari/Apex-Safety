@@ -26,7 +26,7 @@ key_files:
     - app/client/assessments/[id]/page.tsx
 decisions:
   - "D-01: Server/client split — layout.tsx is async server shell; ClientPortalNav is use client child"
-  - "D-03: Footer consultant block stays static (Matt Robinson · 888FST@proton.me · 0161 552 0918)"
+  - "D-03: Footer consultant block stays static (Matt Robinson · info@888safetyandtraining.com · 0333 049 8979)"
   - "D-04/D-06: Assessments nav entry replaced with Assignments (href: /client/assignments)"
   - "D-05: /client/assessments route deleted entirely — 100% mock, stale bookmarks 404"
   - "RSC→Client boundary: only orgName/userName/userRole primitive strings cross (T-19-05)"
@@ -70,7 +70,7 @@ Async server shell (`layout.tsx`) fetching real identity via `getClientContextWi
 - Identity fetched: `const identity = await getClientContextWithIdentity()`
 - Primitive string props passed to `<ClientPortalNav orgName={...} userName={...} userRole={...} />`
 - Fallback: `identity?.orgName ?? "—"` (real data with dash for unauthenticated/missing)
-- Static footer retained VERBATIM: Matt Robinson · 888FST@proton.me · 0161 552 0918 (D-03)
+- Static footer retained VERBATIM: Matt Robinson · info@888safetyandtraining.com · 0333 049 8979 (D-03)
 - No `usePathname`, `useState`, `Sheet`, or client hooks remain in this file
 - `BrandingProvider` still mounted as the first child
 
@@ -121,7 +121,7 @@ None — no new network endpoints, auth paths, or schema changes introduced. The
 - No mock identity strings in `client-portal-nav.tsx` (Hallam House, Sarah Whitfield, Facilities Manager, CL-8889 — all gone)
 - `app/client/assessments` directory deleted — confirmed by `test ! -e`
 - `app/client/layout.tsx` has no `"use client"`, has `force-dynamic`, awaits `getClientContextWithIdentity()`, passes primitive props
-- Static footer: Matt Robinson + 888FST@proton.me + 0161 552 0918 all present in layout.tsx
+- Static footer: Matt Robinson + info@888safetyandtraining.com + 0333 049 8979 all present in layout.tsx
 - No `usePathname`/`useState` in layout.tsx
 - Commit `4ebddd6` exists (Task 1)
 - Commit `28ed09d` exists (Task 2)

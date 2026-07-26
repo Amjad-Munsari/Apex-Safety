@@ -1,16 +1,16 @@
 # 888 Safety & Training
 
-## User Guide and Testing Manual
+## Merlin Safety System User Guide and Testing Manual
 
 **First full draft — updated 26 July 2026**
 
-This manual describes the source and production state checked on 25–26 July 2026. It is suitable for controlled testing, but the production account is not ready for normal client work until the setup and dependency items in Part 1 are completed. Database safeguards through migration 034 are applied in production.
+This manual describes the source and production state checked on 25–26 July 2026. It is suitable for controlled testing, but the production account is not ready for normal client work until the setup and dependency items in Part 1 are completed. Database safeguards through migration 035 are applied in production.
 
 # Part 1 — Overview
 
 ## What the platform does
 
-The platform gives Matt one place to manage clients, compliance documents, assessments, reports, proposals, contracts, credits, and approved contractors. Each client gets a separate portal where its people can see their own records, complete assigned forms, build templates, sign proposals, and download completed documents.
+Merlin Safety System gives Matt one place to manage clients, compliance documents, assessments, reports, proposals, contracts, credits, and approved contractors. Each client gets a separate portal where its people can see their own records, complete assigned forms, build templates, sign proposals, and download completed documents.
 
 ## Who uses it
 
@@ -125,8 +125,9 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - Credits are the stored balance unit. The editable default reference rate is four credits per hour.
 - The previously open payment-credit permission fault has been fixed and checked in production.
 - Portal brand colours are stored centrally and follow Matt and clients across devices.
-- The audited application dependency is upgraded to 16.2.11; the production build, 708 runnable tests, changed-file lint, and production dependency audit pass.
+- The audited application dependency is upgraded to 16.2.11; the production build and all 711 runnable tests pass.
 - All four partner notices are live. Both incoming routes are protected, Gmail is retried up to three times, and controlled tests for client template creation, form submission, template customisation, and Matt's assessment submission each returned final delivery confirmation.
+- Merlin Safety System is the platform brand. 888 Safety & Training remains the service provider on proposals, reports, contracts, and PayPal. The only public contact pair is `info@888safetyandtraining.com` and `0333 049 8979`.
 
 **Partial or held**
 
@@ -140,11 +141,10 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - New Client accepts a site address and the client record has Edit details for organisation and primary-contact fields. Job title is still not stored, so “Facilities Manager” remains part of Sarah's QA persona only.
 - Client Compliance, Reports, Proposals, Assignments, Assessments, Templates, Contracts, Billing, and Directory show a visible load error instead of pretending a failed query returned no records.
 - Settings colours apply to both portals on every device, but generated PDF colours remain fixed.
-- Saved sender and sign-off labels are staged for a future email-brand cutover. The real Resend From name and email brand still come from deployment settings, and the page now says so.
-- Public contact details are inconsistent: the client footer shows `0161 552 0918`, while generated PDFs show `0114 555 0188`; email also defaults to the Merlin name unless its deployment setting is changed. Agree one public identity before handover.
+- Saved sender and sign-off labels are staged and do not change current email. Transactional email stays Merlin-branded, uses the verified Merlin sending domain, and sends replies to the public 888 address.
 - The current risk-score matrix still needs Matt's professional approval. Do not treat the computed wording as approved fire-safety guidance yet.
 - Password reset is limited to three requests per account and 20 per source address each hour; the application change and migration 030 are live.
-- Repository-wide lint still reports pre-existing issues in vendored developer tooling and older untouched files. The files changed for this release are lint-clean.
+- Repository-wide lint still reports pre-existing issues in vendored developer tooling and older application files. The production build and full test suite pass.
 
 **Not built**
 
@@ -164,9 +164,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 | Job-title storage decision | Store a contact role such as “Facilities Manager” | Not modelled; site address and profile editing are live |
 | Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
 | Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
-| One public brand, phone number, sender, and monitored reply mailbox | Consistent portal, PDF, and email identity | Delivery works; identity is inconsistent |
 | Rotate the n8n audit key, enable MFA, remove unused mail credentials after ownership confirmation, and take the available bug-fix update | Reduce partner-automation account exposure | Required account hardening; webhook-secret rotation, four canaries, and retained-execution cleanup are complete |
-| Approved first-party signing approach | Formal acceptance of the in-app signature method | Unverified |
 | Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
 | SMS and offline scope decision | Text alerts and offline field work | Not built |
@@ -369,7 +367,7 @@ The client opens the link, reviews the proposal, enters name and email, draws or
 
 ### What's live vs. what's pending
 
-**Live:** single-use/expiry controls, exact-original verification, first-party signature pad, atomic evidence commit, separate content-addressed signed copy, and automatic contract attempt. **Pending:** Matt and Finley must formally accept the first-party signing approach.
+**Live:** single-use/expiry controls, exact-original verification, first-party signature pad, atomic evidence commit, separate content-addressed signed copy, and automatic contract attempt.
 
 ### Common situations
 
@@ -560,7 +558,7 @@ Settings stores the portal logo, practice-wide portal colours, reminder choices,
 
 ### How it works
 
-The logo, colours, toggles, labels, and rate are stored centrally. Both portal layouts read the colours on every load. Generated PDF colours and the active email sender/brand remain controlled elsewhere.
+The logo, colours, toggles, labels, and rate are stored centrally. Both portal layouts read the colours on every load. Generated PDF colours remain fixed, and the current Merlin email brand and public 888 Reply-To come from the application rather than the saved labels.
 
 ### Your daily workflow
 
@@ -568,7 +566,7 @@ The logo, colours, toggles, labels, and rate are stored centrally. Both portal l
 
 ### What's live vs. what's pending
 
-**Live:** logo, portal colours across devices, reminder toggles, upload notice toggle, credits rate, and theme. **Staged:** the saved sender and sign-off labels are not applied to current email; the screen labels this limitation.
+**Live:** logo, portal colours across devices, reminder toggles, upload notice toggle, credits rate, and theme. **Staged:** the saved sender and sign-off labels are not applied to current Merlin-branded email; the screen labels this limitation.
 
 ### Common situations
 
@@ -793,7 +791,7 @@ Draft proposals stay hidden. A Sent proposal offers Accept & Sign; Signed and Is
 
 ### What's live vs. what's pending
 
-**Live:** organisation-specific view/download, email delivery, and first-party signing. **Pending:** business acceptance of the signing method.
+**Live:** organisation-specific view/download, email delivery, and first-party signing.
 
 ### Common situations
 
@@ -951,19 +949,17 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - Matt's FRA/site-risk questions and approved risk matrix.
 - Matt-approved service catalogue and prices.
 - Valid PayPal live credentials and controlled payment test plan.
-- One agreed public brand/sender; email delivery itself is working.
 - Enable n8n MFA, rotate the exposed audit API key, remove confirmed-unused mail credentials, and apply the available n8n bug-fix update. The webhook-secret cutover, four notice canaries, and historical-execution cleanup are complete.
-- Formal first-party signing acceptance.
 - Upload/report recipient rule; expiry reminders already use the organisation contact.
 - Speech-to-text.
 - SMS and offline scope.
 - Billing receipt/invoice.
 - Privacy, retention, processor, and access decisions.
-- Repository-wide legacy/vendored lint cleanup; changed files and release gates are clean.
+- Repository-wide legacy and vendored lint cleanup; the production build and full test suite pass.
 
 ## Who to ask
 
-**Client:** Ask Matt through the contact details shown in the portal footer: `888FST@proton.me` or `0161 552 0918`.
+**Client:** Ask Matt through the contact details shown in the portal footer: `info@888safetyandtraining.com` or `0333 049 8979`.
 
 **Matt:** Owns fire-safety content, risk wording, service prices, contractor approval, client access, and whether a report or agreement is professionally ready.
 
@@ -973,7 +969,7 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 
 # Part 4 — QA Walkthroughs
 
-Use throwaway records and controlled inboxes. Each walkthrough states its commit point so the tester can inspect the screen without creating a permanent record. Never use a real client, real signature, or real payment unless the walkthrough explicitly says that dependency has been approved.
+Use throwaway records and controlled inboxes. Each walkthrough states its commit point so the tester can inspect the screen without creating a permanent record. Never use a real client, live proposal, or real payment for these walkthroughs.
 
 ## QA 1 — Login and role separation
 
@@ -1253,7 +1249,7 @@ The real production service catalogue and prices are awaiting Matt's approval.
 
 ### Before you start
 
-Use a controlled Sarah inbox and an explicitly test-only proposal. Agree that the typed/drawn test signature is not a real business acceptance.
+Use a controlled Sarah inbox and an explicitly test-only proposal. Do not use a live client proposal for this walkthrough.
 
 1. **Matt:** Open the verified Draft and select Send for signature.
 2. **Matt:** Stop before the final send action if the tester has not agreed to receive the link. Sending changes status to Sent and creates a 30-day link.
@@ -1281,10 +1277,6 @@ Compare the original and signed PDF, confirm the original content is unchanged, 
 ### When something looks wrong
 
 Do not mark a proposal manually signed to hide an online failure. Preserve the link state, proposal status, PDF, time, and Workflow Error for diagnosis.
-
-### Known gaps until dependencies land
-
-First-party signing still needs formal business acceptance.
 
 ## QA 10 — Manual credits and PayPal
 

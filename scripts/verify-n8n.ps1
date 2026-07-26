@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Run controlled canaries against the two production 888 Safety n8n webhooks.
+  Run controlled canaries against the two production Merlin n8n webhooks.
 
 .DESCRIPTION
   The app uses n8n for four admin activity emails:

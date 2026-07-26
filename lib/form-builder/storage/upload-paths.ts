@@ -1,5 +1,5 @@
 // lib/form-builder/storage/upload-paths.ts
-// 888 Safety & Training Platform
+// Merlin Safety System
 //
 // Pure path-builder helpers for the form-media Supabase Storage bucket.
 // These functions produce the storage paths that feed into uploadMediaAction.

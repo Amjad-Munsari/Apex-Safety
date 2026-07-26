@@ -34,7 +34,7 @@ expected: |
   at review-client.tsx:156-158 is correct by inspection; felt experience needs Matt sign-off.
 result: pending
 
-### 4. Proton email rendering + 7-day signed URL
+### 4. Email rendering + 7-day signed URL
 expected: |
   Email subject "Your Fire Risk Assessment is ready — {client_name}". Body links to a
   working Supabase signed URL that opens the PDF in a fresh browser session (no auth

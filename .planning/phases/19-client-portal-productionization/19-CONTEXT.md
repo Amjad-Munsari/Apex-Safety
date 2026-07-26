@@ -41,7 +41,7 @@ client-portal capabilities.
   authenticated auth user, **falling back to email** if no display name is stored. Exact
   columns/joins are a research/planning detail.
 - **D-03:** The **footer consultant block is static** ("Your Consultant · Matt Robinson ·
-  888FST@proton.me · 0161 552 0918"). Matt is the sole consultant; no per-client consultant
+  info@888safetyandtraining.com · 0333 049 8979"). Matt is the sole consultant; no per-client consultant
   assignment exists. Only org name + signed-in person become dynamic.
 
 ### Assessments → Assignments consolidation

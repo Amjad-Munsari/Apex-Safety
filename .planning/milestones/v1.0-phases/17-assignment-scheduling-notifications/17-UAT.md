@@ -125,7 +125,7 @@ Cron runs at UTC midnight. The overdue boundary computation in `lib/assignments/
 
 ### §E.3 n8n routing (ASSUMED A3 — confirm with the n8n owner)
 
-Phase 17 dispatches `assignment_reminder` payloads to the existing `N8N_WEBHOOK_URL`. The n8n side needs an `if type === 'assignment_reminder' then …` branch pointing at a Proton Mail outbound. **Action required:** confirm the n8n workflow has been updated to handle this new type. Smoke this in §D step 5.
+Phase 17 dispatches `assignment_reminder` payloads to the existing `N8N_WEBHOOK_URL`. The n8n side needs an `if type === 'assignment_reminder' then …` outbound-email branch. **Action required:** confirm the n8n workflow has been updated to handle this new type. Smoke this in §D step 5.
 
 ---
 

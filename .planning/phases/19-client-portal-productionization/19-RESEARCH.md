@@ -13,7 +13,7 @@
 
 - **D-01:** Convert `app/client/layout.tsx` to a server component shell that calls `getClientContext()` and passes resolved identity as props into a client nav subcomponent for mobile Sheet + usePathname interactivity.
 - **D-02:** Extend `getClientContext()` (or sibling helper) to also return org name (`clients.name`) and signed-in person's name + role. Source: org from `clients.name`; role from `client_users.role`; display name from `client_users.name`, falling back to email.
-- **D-03:** Footer consultant block ("Your Consultant · Matt Robinson · 888FST@proton.me · 0161 552 0918") stays static — only org name + signed-in person become dynamic.
+- **D-03:** Footer consultant block ("Your Consultant · Matt Robinson · info@888safetyandtraining.com · 0333 049 8979") stays static — only org name + signed-in person become dynamic.
 - **D-04:** Delete `app/client/assessments` (page + route) entirely; remove "Assessments" from NAV_ITEMS; add "Assignments" pointing to `/client/assignments`.
 - **D-05:** Completed AI reports live in the real Reports tab (nav 03); Assignments = assigned forms only. No data overlap.
 - **D-06:** Re-number / re-order NAV_ITEMS so the sequence stays clean after the swap.

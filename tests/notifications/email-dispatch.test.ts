@@ -40,7 +40,7 @@ describe("dispatchNotification — Resend email transport", () => {
   it("sends an email via Resend for an email-shaped payload and returns ok:true", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_test_key")
     vi.stubEnv("EMAIL_FROM", "Merlin Safety System <notifications@merlinsafetysystem.com>")
-    vi.stubEnv("EMAIL_REPLY_TO", "888fst@proton.me")
+    vi.stubEnv("EMAIL_REPLY_TO", "info@888safetyandtraining.com")
     sendSpy.mockResolvedValue({ data: { id: "email_123" }, error: null })
 
     const { dispatchNotification } = await import("@/lib/notifications/dispatch")
@@ -59,7 +59,7 @@ describe("dispatchNotification — Resend email transport", () => {
     expect(opts.to).toBe("contact@acme.example")
     expect(opts.from).toContain("merlinsafetysystem.com")
     expect(opts.subject).toContain("Fire Risk Assessment Proposal")
-    expect(opts.replyTo).toBe("888fst@proton.me")
+    expect(opts.replyTo).toBe("info@888safetyandtraining.com")
     // The raw signing URL must appear in the email body (it's the CTA), but never
     // in the log — logging redaction is asserted separately at the unit level.
     expect(opts.html).toContain("abc123rawtoken")
@@ -75,6 +75,22 @@ describe("dispatchNotification — Resend email transport", () => {
 
     expect(result.ok).toBe(false)
     expect(result.error).toContain("domain not verified")
+  })
+
+  it("uses the canonical public reply address when EMAIL_REPLY_TO is unset", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_key")
+    sendSpy.mockResolvedValue({ data: { id: "email_456" }, error: null })
+
+    const { dispatchNotification } = await import("@/lib/notifications/dispatch")
+    await dispatchNotification(SIGNATURE_PAYLOAD)
+
+    const opts = sendSpy.mock.calls[0][0] as {
+      html: string
+      replyTo: string
+    }
+    expect(opts.replyTo).toBe("info@888safetyandtraining.com")
+    expect(opts.html).toContain("info@888safetyandtraining.com")
+    expect(opts.html).toContain("0333 049 8979")
   })
 
   it("returns ok:false in production when RESEND_API_KEY is missing (no send attempted)", async () => {

@@ -1,4 +1,5 @@
 import { LoginForm } from "./login-form"
+import { PLATFORM_NAME } from "@/lib/public-identity"
 
 export default function LoginPage() {
   return (
@@ -15,7 +16,7 @@ export default function LoginPage() {
       {/* Footer Branding */}
       <div className="absolute bottom-8 left-0 right-0 z-10 text-center">
         <p className="text-slate-500 text-sm font-medium tracking-widest uppercase">
-          888 Safety & Training Operations Platform
+          {PLATFORM_NAME}
         </p>
       </div>
     </div>

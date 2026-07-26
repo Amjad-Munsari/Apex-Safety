@@ -61,14 +61,14 @@
     },
     {
       "parameters": {
-        "sendTo": "888FST@proton.me",
-        "subject": "[888] New assessment submitted",
+        "sendTo": "info@888safetyandtraining.com",
+        "subject": "[Merlin] New assessment submitted",
         "emailType": "text",
         "message": "={{ \"A new assessment has been submitted and is ready for review.\\n\\nSubmission ID: \" + $json.body.submissionId + \"\\n\\nReview assessment: https://www.merlinsafetysystem.com/admin/assessments/\" + $json.body.submissionId + \"/review\" }}",
         "options": {
           "appendAttribution": false,
-          "senderName": "888 Safety & Training",
-          "replyTo": "888FST@proton.me"
+          "senderName": "Merlin Safety System",
+          "replyTo": "info@888safetyandtraining.com"
         }
       },
       "id": "send-assessment-notification",

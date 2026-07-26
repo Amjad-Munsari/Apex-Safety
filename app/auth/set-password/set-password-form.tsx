@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Lock, Loader2, CheckCircle2 } from "lucide-react"
+import { PLATFORM_NAME } from "@/lib/public-identity"
 
 export function SetPasswordForm() {
   const router = useRouter()
@@ -59,7 +60,7 @@ export function SetPasswordForm() {
       <CardHeader className="space-y-1">
         <CardTitle className="text-3xl font-bold tracking-tight">Set your password</CardTitle>
         <CardDescription className="text-muted-foreground">
-          Choose a password to finish setting up your 888 Safety portal access.
+          Choose a password to finish setting up your {PLATFORM_NAME} access.
         </CardDescription>
       </CardHeader>
       <CardContent>

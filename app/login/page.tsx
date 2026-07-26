@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ShieldCheck } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { PLATFORM_NAME } from "@/lib/public-identity"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -60,7 +61,7 @@ export default function LoginPage() {
             <ShieldCheck className="w-6 h-6 text-[#1a1a1a]" />
           </div>
           <h1 className="font-serif text-[32px] text-[#1a1a1a] tracking-tight leading-tight">
-            888 Safety &amp; Training
+            {PLATFORM_NAME}
           </h1>
           <p className="font-mono text-[9px] tracking-[0.3em] text-[#3b8273] uppercase font-bold mt-3">
             Client Portal
@@ -138,7 +139,7 @@ export default function LoginPage() {
 
       {/* Footer — operator access stays deliberately quiet */}
       <div className="w-full flex items-center justify-between text-[11px] text-[#bbb]">
-        <span>© {new Date().getFullYear()} 888 Safety &amp; Training Ltd</span>
+        <span>{PLATFORM_NAME}</span>
         <Link
           href="/login/admin"
           className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-[#bbb] transition-colors hover:text-[#1a1a1a]"

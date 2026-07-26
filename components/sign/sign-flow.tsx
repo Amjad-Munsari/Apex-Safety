@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { CheckCircle2, FileText, Loader2 } from "lucide-react"
 import { SignatureField } from "@/components/forms/signature-field"
+import { PUBLIC_CONTACT } from "@/lib/public-identity"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -154,7 +155,10 @@ function ExpiredView() {
           Link expired
         </h1>
         <p className="font-sans text-[13px] text-muted-foreground leading-relaxed">
-          This signing link has expired. Please contact 888 Safety &amp; Training for a new link.
+          This signing link has expired. Ask for a new link at{" "}
+          <a className="underline" href={PUBLIC_CONTACT.emailHref}>{PUBLIC_CONTACT.email}</a>
+          {" "}or{" "}
+          <a className="underline" href={PUBLIC_CONTACT.phoneHref}>{PUBLIC_CONTACT.phone}</a>.
         </p>
       </StatusCard>
     </PageShell>

@@ -1,5 +1,6 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
 
 // Service Agreement PDF — issued once a proposal is signed. Mirrors the
 // proposal-document visual language (Helvetica/Times-Roman, A4) so the two
@@ -224,7 +225,7 @@ export const ContractDocument = ({
           <Text style={styles.gridLabel}>THE PROVIDER</Text>
           <Text style={styles.gridName}>888 Safety Solutions Ltd</Text>
           <Text style={styles.gridDetail}>Lead Consultant: Matt Robinson</Text>
-          <Text style={styles.gridDetail}>888FST@proton.me · 0114 555 0188</Text>
+          <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>
         </View>
       </View>
 

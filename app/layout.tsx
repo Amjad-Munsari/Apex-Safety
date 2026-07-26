@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PLATFORM_NAME } from "@/lib/public-identity";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -19,8 +20,8 @@ const geistMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "888 Safety & Training Admin",
-  description: "Dashboard for 888 Safety & Training.",
+  title: PLATFORM_NAME,
+  description: "Fire safety and compliance management.",
 };
 
 export default function RootLayout({

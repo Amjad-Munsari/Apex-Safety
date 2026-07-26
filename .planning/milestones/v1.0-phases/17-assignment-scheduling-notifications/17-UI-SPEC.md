@@ -24,7 +24,7 @@ scope: delta-only (overdue badge on two Phase 16 surfaces)
 | Overdue badge on `/admin/clients/[id]` Assigned Forms tab rows | New routes or pages |
 | Overdue badge on `/client/assignments` Active tab cards | Admin queue table (`/admin/assignments`) — already has overdue colouring on the due-date column via Plan 16-03, no additional change |
 | Sort behaviour confirmation (overdue first) | Reminder UI / notification preferences UI (no surface) |
-| Accessible label pattern | SMS/email surfaces (n8n → Proton, no in-app render) |
+| Accessible label pattern | SMS/email surfaces (n8n → email delivery, no in-app render) |
 
 The badge is a **derived visual state**. The DB has no `overdue` column. The condition is:
 

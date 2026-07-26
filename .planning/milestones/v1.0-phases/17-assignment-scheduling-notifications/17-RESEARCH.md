@@ -26,7 +26,7 @@ Net-new surface: **one migration (015)**, **one cron route (`/api/cron/assignmen
 ### Locked Decisions
 
 **Notification infrastructure**
-- All reminders route through n8n to Proton Mail (`888FST@proton.me`). The n8n→Proton bridge is the only outbound email surface.
+- All reminders route through n8n for email delivery. The n8n bridge is the only outbound email surface.
 - NO direct Twilio / Resend integration in Phase 17 (deferred per `memory/deferred_work.md`).
 - Cron lives on Vercel Cron (`vercel.json` / Vercel Functions). No third-party scheduler.
 
@@ -71,7 +71,7 @@ Net-new surface: **one migration (015)**, **one cron route (`/api/cron/assignmen
 | "This is NOT the Next.js you know" — read `node_modules/next/dist/docs/` before any Next.js API | AGENTS.md preamble | Cron route is a plain `route.ts` GET handler — same shape as the existing `app/api/cron/expiry/route.ts`. No new Next.js APIs introduced. |
 | Polymorphic owner_id contract is sacred | AGENTS.md "Form template ownership" | Phase 17 makes **zero** changes to `form_templates`. All schema changes target `form_assignments` (new `recurrence_rule` + `last_reminder_sent` columns). |
 | No mocks in shipped code | MEMORY.md "feedback_no_demo_mocks_in_code" | The dispatcher already handles missing env vars gracefully (`console.warn` + `ok:true` in dev). Do not introduce a `mock_dispatch.ts` — extend the real `n8n-dispatch.ts` discriminated union. |
-| Proton Mail is the ONLY outbound channel | MEMORY.md "email_infra.md" | n8n owns delivery. The Phase 17 function only POSTs the payload; routing-to-Proton is n8n's responsibility, not the cron's. |
+| Email is the only outbound channel | MEMORY.md "email_infra.md" | n8n owns delivery. The Phase 17 function only POSTs the payload; email delivery is n8n's responsibility, not the cron's. |
 
 ---
 
@@ -342,7 +342,7 @@ This matches [VERIFIED: `app/api/cron/expiry/route.ts:113-122`] exactly.
 
 ### Pattern 5: Wire reminder URLs absolutely, not relatively
 
-The n8n payload's `assignment_url` must be **absolute** (`https://…/client/assignments/[id]`) because the email recipient clicks it from Proton Mail, not from inside the app. Read the base URL from `process.env.NEXT_PUBLIC_SITE_URL` or `process.env.VERCEL_URL` with a fallback. **Don't synthesise from request headers** — the cron's request comes from Vercel internally and `request.url` is the cron path, not the public origin.
+The n8n payload's `assignment_url` must be **absolute** (`https://…/client/assignments/[id]`) because the recipient clicks it from an email, not from inside the app. Read the base URL from `process.env.NEXT_PUBLIC_SITE_URL` or `process.env.VERCEL_URL` with a fallback. **Don't synthesise from request headers** — the cron's request comes from Vercel internally and `request.url` is the cron path, not the public origin.
 
 ---
 
