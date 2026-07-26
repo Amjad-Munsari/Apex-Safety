@@ -14,6 +14,11 @@ export interface AppSettings {
   creditsPerHour: number
   brandingPrimary: string
   brandingSecondary: string
+  paypal: {
+    mode: "sandbox" | "live"
+    clientIdHint: string | null
+    verifiedAt: string | null
+  }
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
@@ -26,6 +31,11 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   creditsPerHour: 4,
   brandingPrimary: "#3b8273",
   brandingSecondary: "#d97706",
+  paypal: {
+    mode: "live",
+    clientIdHint: null,
+    verifiedAt: null,
+  },
 }
 
 /**
@@ -36,7 +46,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
 export async function getAppSettings(): Promise<AppSettings> {
   const { data } = await adminClient
     .from("app_settings")
-    .select("sign_off_name, sender_name, expiry_reminders_enabled, notify_on_upload, logo_path, credits_per_hour, branding_primary, branding_secondary")
+    .select("sign_off_name, sender_name, expiry_reminders_enabled, notify_on_upload, logo_path, credits_per_hour, branding_primary, branding_secondary, paypal_enabled, paypal_mode, paypal_client_id_hint, paypal_verified_at")
     .eq("id", 1)
     .maybeSingle()
 
@@ -59,5 +69,10 @@ export async function getAppSettings(): Promise<AppSettings> {
       data.branding_primary ?? DEFAULT_APP_SETTINGS.brandingPrimary,
     brandingSecondary:
       data.branding_secondary ?? DEFAULT_APP_SETTINGS.brandingSecondary,
+    paypal: {
+      mode: data.paypal_mode === "sandbox" ? "sandbox" : "live",
+      clientIdHint: data.paypal_client_id_hint ?? null,
+      verifiedAt: data.paypal_verified_at ?? null,
+    },
   }
 }

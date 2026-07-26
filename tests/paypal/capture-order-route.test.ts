@@ -5,6 +5,8 @@ import { NextRequest } from "next/server"
 const isEnabledSpy = vi.fn()
 const captureSpy = vi.fn()
 const getOrderSpy = vi.fn()
+const getCheckoutContextSpy = vi.fn()
+const markCreditedSpy = vi.fn()
 const getClientContextSpy = vi.fn()
 
 // adminClient query spies
@@ -22,6 +24,8 @@ vi.mock("@/lib/paypal", () => ({
   isPayPalEnabled: () => isEnabledSpy(),
   capturePayPalOrder: (...a: unknown[]) => captureSpy(...a),
   getPayPalOrder: (...a: unknown[]) => getOrderSpy(...a),
+  getPayPalCheckoutContext: (...a: unknown[]) => getCheckoutContextSpy(...a),
+  markPayPalPendingCheckoutCredited: (...a: unknown[]) => markCreditedSpy(...a),
 }))
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -29,15 +33,15 @@ vi.mock("@/lib/supabase/admin", () => ({
     from: (table: string) => {
       if (table === "hours_transactions") {
         return {
-          select: (_c: string) => ({
-            eq: (_col: string, _v: string) => ({ maybeSingle: () => txMaybeSingleSpy() }),
+          select: () => ({
+            eq: () => ({ maybeSingle: () => txMaybeSingleSpy() }),
           }),
         }
       }
       if (table === "clients") {
         return {
-          select: (_c: string) => ({
-            eq: (_col: string, _v: string) => ({ single: () => clientSingleSpy() }),
+          select: () => ({
+            eq: () => ({ single: () => clientSingleSpy() }),
           }),
         }
       }
@@ -81,18 +85,19 @@ describe("POST /api/paypal/capture-order", () => {
     vi.clearAllMocks()
     isEnabledSpy.mockReturnValue(true)
     getClientContextSpy.mockResolvedValue({ client_id: CLIENT_ID, role: "owner" })
+    getCheckoutContextSpy.mockResolvedValue({ config: { version: 1 }, mapping: null })
+    markCreditedSpy.mockResolvedValue(undefined)
     txMaybeSingleSpy.mockResolvedValue({ data: null, error: null }) // no prior tx
     captureSpy.mockResolvedValue(completedCapture())
     rpcSpy.mockResolvedValue({ error: null })
     clientSingleSpy.mockResolvedValue({ data: { hours_balance: 20 }, error: null })
   })
 
-  it("returns 403 and captures nothing when the feature flag is off", async () => {
+  it("still captures an already-created checkout while new payments are paused", async () => {
     isEnabledSpy.mockReturnValue(false)
     const res = await POST(makeRequest({ orderId: ORDER_ID }))
-    expect(res.status).toBe(403)
-    expect(captureSpy).not.toHaveBeenCalled()
-    expect(rpcSpy).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(captureSpy).toHaveBeenCalledWith(ORDER_ID, expect.anything())
   })
 
   it("returns 401 for an unauthenticated caller", async () => {
@@ -136,6 +141,18 @@ describe("POST /api/paypal/capture-order", () => {
     expect(rpcSpy).not.toHaveBeenCalled()
   })
 
+  it("uses the mapped historical checkout and rejects a different mapped client before capture", async () => {
+    getCheckoutContextSpy.mockResolvedValue({
+      config: { version: 1 },
+      mapping: { clientId: "another-client", packageId: "20c" },
+    })
+
+    const res = await POST(makeRequest({ orderId: ORDER_ID }))
+
+    expect(res.status).toBe(403)
+    expect(captureSpy).not.toHaveBeenCalled()
+  })
+
   it("happy path: captures, credits via credit_hours_from_paypal RPC, returns new balance", async () => {
     const res = await POST(makeRequest({ orderId: ORDER_ID }))
 
@@ -143,7 +160,7 @@ describe("POST /api/paypal/capture-order", () => {
     const body = await res.json()
     expect(body).toMatchObject({ success: true, balance: 20, credits: 20 })
 
-    expect(captureSpy).toHaveBeenCalledWith(ORDER_ID)
+    expect(captureSpy).toHaveBeenCalledWith(ORDER_ID, expect.anything())
     expect(rpcSpy).toHaveBeenCalledTimes(1)
     // p_hours carries credits (RPC signature unchanged — see migration 026).
     expect(rpcSpy).toHaveBeenCalledWith("credit_hours_from_paypal", {
@@ -152,6 +169,19 @@ describe("POST /api/paypal/capture-order", () => {
       p_hours: 20,
       p_gbp: 495,
     })
+    expect(markCreditedSpy).toHaveBeenCalledWith(ORDER_ID)
+  })
+
+  it("rejects a capture whose package disagrees with the credential-version mapping", async () => {
+    getCheckoutContextSpy.mockResolvedValue({
+      config: { version: 1 },
+      mapping: { clientId: CLIENT_ID, packageId: "40c" },
+    })
+
+    const res = await POST(makeRequest({ orderId: ORDER_ID }))
+
+    expect(res.status).toBe(400)
+    expect(rpcSpy).not.toHaveBeenCalled()
   })
 
   it("deploy-window: a stale captured order carrying reference_id '5h' resolves to the 20c pack and credits exactly 20", async () => {
@@ -214,7 +244,7 @@ describe("POST /api/paypal/capture-order", () => {
     const res = await POST(makeRequest({ orderId: ORDER_ID }))
 
     expect(res.status).toBe(200)
-    expect(getOrderSpy).toHaveBeenCalledWith(ORDER_ID)
+    expect(getOrderSpy).toHaveBeenCalledWith(ORDER_ID, expect.anything())
     expect(rpcSpy).toHaveBeenCalledWith(
       "credit_hours_from_paypal",
       expect.objectContaining({ p_hours: 20, p_order_id: ORDER_ID })

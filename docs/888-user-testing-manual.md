@@ -4,7 +4,7 @@
 
 **First full draft — updated 26 July 2026**
 
-This manual describes the source and production state checked on 25–26 July 2026. The platform is ready for handover. Production is an empty account, so Matt still needs to add the clients, templates, contractors, and services he wants to use; that is operational setup rather than unfinished build work. Database safeguards through migration 035 are applied in production.
+This manual describes the source and production state checked on 25–26 July 2026. The platform is ready for handover. Production is an empty account, so Matt still needs to add the clients, templates, contractors, and services he wants to use; that is operational setup rather than unfinished build work. Database safeguards through migration 036 are applied in production.
 
 # Part 1 — Overview
 
@@ -78,7 +78,7 @@ The repository also contains `admin@test.com` seed metadata and a non-production
 | Service Catalog | `/admin/services` | Proposal services, descriptions, units, prices, and active status |
 | Contractors | `/admin/directory` | Add, edit, hide, or delete approved contractors |
 | Notifications | `/admin/notifications` | Successful expiry-reminder history only |
-| Settings | `/admin/settings` | Logo, colours, reminders, email labels, credits rate, theme, and diagnostics |
+| Settings | `/admin/settings` | Logo, colours, reminders, PayPal connection, email labels, credits rate, theme, and diagnostics |
 | Workflow Errors | `/admin/errors` | The latest recorded failures |
 
 Some working pages are reached from dashboard cards or client records rather than the left sidebar. A missing sidebar link does not mean the route is missing.
@@ -125,13 +125,14 @@ The platform is ready for handover and reads live records. Production currently 
 - Credits are the stored balance unit. The editable default reference rate is four credits per hour.
 - The previously open payment-credit permission fault has been fixed and checked in production.
 - Portal brand colours are stored centrally and follow Matt and clients across devices.
-- The audited application dependency is upgraded to 16.2.11; the production build and all 711 runnable tests pass.
+- PayPal can be connected from Settings without a developer or redeployment. The platform checks the pair with PayPal before saving it, encrypts it, never displays the secret again, and lets Matt pause or resume new payments.
+- The audited application dependency is upgraded to 16.2.11; the production build and all 737 runnable tests pass.
 - All four partner notices are live. Both incoming routes are protected, Gmail is retried up to three times, and controlled tests for client template creation, form submission, template customisation, and Matt's assessment submission each returned final delivery confirmation.
 - Merlin Safety System is the platform brand. 888 Safety & Training remains the service provider on proposals, reports, contracts, and PayPal. The only public contact pair is `info@888safetyandtraining.com` and `0333 049 8979`.
 
 **Known limitations after handover**
 
-- PayPal cannot complete a purchase because the current production credentials are invalid. Do not test with real money until the correct live credentials are supplied and a controlled purchase plan is agreed.
+- Production currently has no saved PayPal connection, so client purchase controls remain off. Matt can connect a Sandbox pair for a no-money test or a Live pair for real payments from Settings; no real provider purchase has yet been completed.
 - Email delivery is live and owner-confirmed as working. The system still has no complete sent-message outbox or automatic retry for every failed message, so use Workflow Errors and the recipient's inbox when investigating an individual send.
 - Partner-notice failure logging is best-effort. An absent assessment webhook address is skipped, and an error while writing the error row can leave Workflow Errors empty. The client event waits up to eight seconds and the assessment event waits up to 15, while the partner workflow may continue for 30 seconds, so a timeout can be followed by a late admin email.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
@@ -159,8 +160,7 @@ The platform is ready for handover and reads live records. Production currently 
 | Production FRA/site-risk master template | A real master assessment that can be assigned | Operational setup; not a handover blocker |
 | Production service names and current prices | Proposal creation | Operational setup; the live catalogue currently has zero rows |
 | Job-title storage decision | Store a contact role such as “Facilities Manager” | Not modelled; site address and profile editing are live |
-| Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
-| Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
+| Valid PayPal Sandbox or Live REST Client ID and secret | A no-money Sandbox checkout or real-money Live credit purchase | Waiting for Matt's PayPal pair; paste it in Settings, with no developer or redeployment required |
 | Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
 | SMS and offline scope decision | Text alerts and offline field work | Not built |
@@ -411,23 +411,23 @@ Billing shows the organisation's whole-credit balance and ledger. Matt can adjus
 
 ### How it works
 
-The default reference is four credits per hour, used only to help Matt convert when adjusting a balance. Changing that rate does not recalculate old balances. PayPal packages are 20 credits for £495, 40 for £950, and 80 for £1,800.
+The default reference is four credits per hour, used only to help Matt convert when adjusting a balance. Changing that rate does not recalculate old balances. PayPal packages are 20 credits for £495, 40 for £950, and 80 for £1,800. The platform fixes those amounts before sending the client to PayPal.
 
 ### Your daily workflow
 
 **Matt:** Open the client Credits tab, choose credits or hours as the input aid, check the resulting whole-credit change, and submit. Add a business note outside the platform if the reason needs more detail; the current ledger labels only manual top-up or deduction.
 
-**Client:** Open Billing to see the balance and movements. Do not attempt a real purchase until the PayPal dependency is cleared.
+**Client:** Open Billing to see the balance and movements. Purchase controls appear only while Matt's saved PayPal connection is active.
 
 ### What's live vs. what's pending
 
-**Live:** stored credits, atomic manual adjustment, overdraft protection, ledger, package and capture logic. **Held:** current PayPal credentials fail. **Not built:** receipt or invoice email.
+**Live:** stored credits, atomic manual adjustment, overdraft protection, ledger, PayPal connection controls, package and capture logic. **Waiting for setup:** Matt has not saved a production PayPal pair, so checkout is off. **Not built:** receipt or invoice email.
 
 ### Common situations
 
 - A deduction cannot take the balance below zero.
 - Deactivated clients cannot receive a manual balance change.
-- If PayPal took payment but the balance did not move during a future test, keep the return page open, retry, and escalate with the order reference. The capture path is designed to avoid double credit.
+- If PayPal took payment but the balance did not move, keep the return page open, retry once, and keep the order reference. Do not add credits manually until the order is checked; the recovery path retains the original connection and prevents a duplicate credit.
 
 ### Where to find things
 
@@ -550,25 +550,27 @@ Notifications and Workflow Errors in the admin sidebar.
 
 ### What it does
 
-Settings stores the portal logo, practice-wide portal colours, reminder choices, future email-brand labels, credits-per-hour reference rate, and theme.
+Settings stores the portal logo, practice-wide portal colours, reminder choices, PayPal connection, future email-brand labels, credits-per-hour reference rate, and theme.
 
 ### How it works
 
-The logo, colours, toggles, labels, and rate are stored centrally. Both portal layouts read the colours on every load. Generated PDF colours remain fixed, and the current Merlin email brand and public 888 Reply-To come from the application rather than the saved labels.
+The logo, colours, toggles, labels, and rate are stored centrally. Both portal layouts read the colours on every load. For PayPal, Matt chooses Live or Sandbox, pastes the REST Client ID and secret, then selects **Save & Verify**. The pair is checked with PayPal before it is encrypted; the secret is never displayed again. Matt can pause new purchases, and Resume checks the stored connection again before exposing purchase controls. Generated PDF colours remain fixed, and the current Merlin email brand and public 888 Reply-To come from the application rather than the saved labels.
 
 ### Your daily workflow
 
-**Matt:** Change one setting at a time, Save Changes, reload, and confirm it persisted. Test notification changes with a controlled document rather than assuming the label changes delivery.
+**Matt:** Change one setting at a time, Save Changes, reload, and confirm it persisted. Connect or rotate PayPal only when you have the complete matching pair and know whether it is Live or Sandbox. Test notification changes with a controlled document rather than assuming the label changes delivery.
 
 ### What's live vs. what's pending
 
-**Live:** logo, portal colours across devices, reminder toggles, upload notice toggle, credits rate, and theme. **Staged:** the saved sender and sign-off labels are not applied to current Merlin-branded email; the screen labels this limitation.
+**Live:** logo, portal colours across devices, reminder toggles, upload notice toggle, PayPal connect/rotate/pause/resume, credits rate, and theme. **Waiting for setup:** no production PayPal pair is saved. **Staged:** the saved sender and sign-off labels are not applied to current Merlin-branded email; the screen labels this limitation.
 
 ### Common situations
 
 - A saved colour change should appear on Matt's other device and the client's portal after reload; it does not recolour generated PDFs.
 - Changing the credits rate does not alter existing balances.
 - Turning reminders off pauses email; turning them back on lets the range-based job catch the latest crossed window.
+- **Not connected** means no usable pair is stored; **New payments paused** means the pair is stored but purchase controls are hidden; **Connection needs attention** means the saved encrypted record could not be read safely.
+- Saving a replacement pair while payments are paused keeps them paused. Pausing does not strand a checkout that a client already started.
 
 ### Where to find things
 
@@ -695,19 +697,19 @@ Billing shows the current credit balance, recent additions/deductions, and credi
 
 ### How it works
 
-PayPal is the purchase provider. A successful approved order should add credits once and add a ledger row.
+PayPal is the purchase provider. A successful approved order should add credits once and add a ledger row. Each started checkout keeps the exact connection version that created it, so Matt can pause or rotate the saved pair without breaking the client's return.
 
 ### Your daily workflow
 
-**Client:** Review the balance and ledger. Until Matt says the payment test is open, do not select a live purchase.
+**Client:** Review the balance and ledger. Purchase only when Matt says the saved PayPal connection and test mode are ready.
 
 ### What's live vs. what's pending
 
-**Live:** balance and ledger. **Held:** checkout credentials. **Not built:** receipt/invoice email.
+**Live:** balance, ledger, packages, and checkout/capture path. **Waiting for setup:** purchase controls are off until Matt saves a valid pair. **Not built:** receipt/invoice email.
 
 ### Common situations
 
-- **Payments coming soon:** purchasing is switched off.
+- **Payments coming soon:** PayPal is not connected or Matt paused new purchases.
 - **Could not start checkout:** credentials or PayPal are unavailable.
 - Keep the return page and order reference if payment succeeds but credits do not appear.
 
@@ -944,7 +946,7 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - Real Hallam House and Sarah QA account.
 - Production FRA/site-risk master template; this is operational setup, not a handover blocker.
 - Production service catalogue entries; this is operational setup needed only for proposals.
-- Valid PayPal live credentials and controlled payment test plan.
+- Valid PayPal Sandbox or Live REST credentials; Matt can paste them directly in Settings.
 - Upload/report recipient rule; expiry reminders already use the organisation contact.
 - Speech-to-text.
 - SMS and offline scope.
@@ -1281,7 +1283,7 @@ There is no additional signing dependency. A failed signature-request email stil
 
 ### Before you start
 
-Manual credits can be tested with Hallam House. PayPal must not be tested until valid credentials and an approved sandbox or controlled live-money plan exist.
+Manual credits can be tested with Hallam House. For a no-money checkout, use a PayPal Sandbox REST app and Sandbox buyer. For a real checkout, use the Live pair and the smallest package deliberately; production has no saved pair today.
 
 1. **Matt:** Open Hallam House → Credits and note the starting balance.
 2. **Matt:** Enter a +8 credit adjustment and inspect the hours conversion hint.
@@ -1290,19 +1292,23 @@ Manual credits can be tested with Hallam House. PayPal must not be tested until 
 5. **Matt:** Enter −3 credits, submit, and confirm the balance and second ledger row.
 6. **Matt:** Try a deduction larger than the balance and confirm it is rejected with no ledger row.
 7. **Client:** Open Billing and confirm the same balance and movements.
-8. **Client:** Inspect the 20/40/80 packages and prices. Stop here while credentials are broken.
-9. **Client:** Only after the payment gate is approved, purchase the agreed test package and return to Billing.
-10. **Client:** Confirm exactly one purchase ledger row and exactly one credit increase, even after refreshing the return page.
+8. **Matt:** Open Settings → PayPal connection. Confirm the Client ID and secret fields are blank. Choose Sandbox or Live, paste the matching REST Client ID and secret, then stop before **Save & Verify**; selecting it verifies and stores the pair.
+9. **Matt:** Select **Save & Verify**. Confirm the status becomes **Connected**, only a short Client ID hint remains, and the secret field is blank.
+10. **Client:** Open Billing and inspect the 20/40/80 packages and prices. Purchase the chosen test package and return to Billing.
+11. **Client:** Confirm exactly one purchase ledger row and exactly one credit increase, even after refreshing the return page.
+12. **Matt:** If new purchases should stop after the test, select **Pause new payments**. Confirm the client sees **Payments coming soon**. Resume only when you want purchases available; Resume checks PayPal again.
 
 ### Errors / exception states you might see
 
-- **Payments coming soon:** checkout disabled.
-- **Could not start checkout:** credentials or provider failure.
+- **PayPal rejected these credentials:** the mode and pair do not match; nothing was stored.
+- **PayPal could not be reached:** verification timed out or PayPal was unavailable; nothing was stored.
+- **Payments coming soon:** PayPal is not connected or new purchases are paused.
+- **Could not start checkout:** the saved connection or PayPal is unavailable.
 - **Payment capture failed:** keep the order return information and do not buy again.
 
 ### When nothing looks wrong but you want to be sure
 
-Match the PayPal order, GBP amount, package, client, ledger row, and balance. Confirm no second credit after refresh.
+Confirm Settings shows the selected mode and only the Client ID hint, never the secret. Match the PayPal order, GBP amount, package, client, ledger row, and balance. Confirm no second credit after refresh.
 
 ### When something looks wrong
 
@@ -1310,7 +1316,7 @@ Do not “fix” a disputed payment with a manual top-up until the PayPal order 
 
 ### Known gaps until dependencies land
 
-Production credentials are invalid, live money has not been tested, and receipts/invoices are absent.
+No production pair is saved and no real provider purchase has been completed. The platform has no automatic receipt/invoice or PayPal refund, reversal, or dispute handling.
 
 ## QA 11 — Contractor Directory
 
@@ -1347,7 +1353,7 @@ Production is empty and the Directory's scope acceptance should be confirmed.
 
 ### Before you start
 
-Record all current Settings values so they can be restored. Use a controlled test document and inbox.
+Record all current Settings values so they can be restored. Use a controlled test document and inbox. Do not rotate a connected PayPal pair during this walkthrough; QA 10 covers the committed connection and checkout flow.
 
 1. **Matt:** Change Saved Sign-off Name, Save Changes, reload, and confirm the value persisted. This is a stored future label, not a current email change.
 2. **Matt:** Restore it. Repeat with Credits per Hour, then restore 4. Confirm no existing balance changed.
@@ -1356,13 +1362,15 @@ Record all current Settings values so they can be restored. Use a controlled tes
 5. **Matt:** Upload a temporary logo, confirm it appears in the client footer, then restore/remove it.
 6. **Matt:** Turn Notify on document upload off, upload a test document, and confirm the document saves without an email.
 7. **Matt:** Turn it back on, upload another test document, and check the controlled inbox and Workflow Errors.
-8. **Matt:** Open Notifications and confirm it contains successful expiry reminders only.
-9. **Matt:** Open Workflow Errors and inspect any failure created during QA. Confirm there is no Retry or Resolve action.
+8. **Matt:** Inspect the PayPal connection card. Confirm its status agrees with QA 10 and both entry fields are blank; stop without selecting **Save & Verify**.
+9. **Matt:** Open Notifications and confirm it contains successful expiry reminders only.
+10. **Matt:** Open Workflow Errors and inspect any failure created during QA. Confirm there is no Retry or Resolve action.
 
 ### Errors / exception states you might see
 
 - A Settings success message does not mean the sender label changed real email.
 - SVG logos and files whose real header does not match PNG, JPEG, or WebP are rejected.
+- PayPal entry fields are deliberately blank after every save; the status, mode, short Client ID hint, and verification date are the positive confirmation.
 - Partner notices are not tested from Settings. The live n8n routes reject unauthorised or incomplete events and confirm success only after the admin email is accepted; use QA 15.
 - An empty Workflow Errors page is not proof that email, PayPal, or the error-log read itself is healthy.
 

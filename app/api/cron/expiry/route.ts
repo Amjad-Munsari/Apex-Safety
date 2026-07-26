@@ -35,17 +35,29 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  const supabase = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // Retain uncredited checkouts for recovery; only credited checkout history
+  // leaves after the conservative 90-day buffer. This runs before every early
+  // exit so disabling reminders does not disable payment data housekeeping.
+  const { error: paypalCleanupError } = await supabase.rpc("cleanup_paypal_runtime_records")
+  if (
+    paypalCleanupError &&
+    paypalCleanupError.code !== "PGRST202" &&
+    paypalCleanupError.code !== "42883"
+  ) {
+    console.error("[cron/expiry] PayPal runtime cleanup failed")
+  }
+
   // Respect the admin "Send expiry reminders" toggle — when off, the cron is a
   // no-op (documents are untouched; nothing is emailed).
   const settings = await getAppSettings()
   if (!settings.expiryRemindersEnabled) {
     return NextResponse.json({ success: true, message: "Expiry reminders are disabled in settings." })
   }
-
-  const supabase = createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
 
   // The expiry date is a UK business calendar date. Build all bounds from that
   // date so a Vercel host in UTC cannot disagree with the portal around midnight.

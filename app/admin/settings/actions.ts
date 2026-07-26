@@ -4,12 +4,147 @@ import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
 import { requireAdmin } from "@/lib/auth-helpers"
 import {
+  verifyCurrentPayPalConnection,
+  verifyPayPalCredentials,
+  type PayPalConnectionHealth,
+  type PayPalMode,
+} from "@/lib/paypal"
+import {
   detectAllowedDocumentType,
   mimeMatchesDetectedType,
 } from "@/lib/files/file-signature"
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2 MB (matches the dropzone copy)
 const ALLOWED_LOGO_MIME = new Set(["image/png", "image/jpeg", "image/webp"])
+
+export interface SavePayPalCredentialsInput {
+  clientId: string
+  clientSecret: string
+  mode: PayPalMode
+}
+
+export interface PayPalConnectionStatus {
+  health: PayPalConnectionHealth
+  mode: PayPalMode
+  clientIdHint: string | null
+  verifiedAt: string | null
+}
+
+function validPayPalValue(value: string, maxLength: number): boolean {
+  return value.length > 0 && value.length <= maxLength && !/[\u0000-\u001F\u007F]/.test(value)
+}
+
+/**
+ * Verify a credential pair with PayPal before committing it to Vault. The
+ * returned shape is deliberately status-only because Server Action responses
+ * are serialized to the browser.
+ */
+export async function savePayPalCredentials(
+  input: SavePayPalCredentialsInput
+): Promise<{ ok: true; status: PayPalConnectionStatus } | { ok: false; error: string }> {
+  await requireAdmin()
+
+  const clientId = typeof input?.clientId === "string" ? input.clientId.trim() : ""
+  const clientSecret =
+    typeof input?.clientSecret === "string" ? input.clientSecret.trim() : ""
+  const mode = input?.mode
+
+  if (
+    !validPayPalValue(clientId, 512) ||
+    !validPayPalValue(clientSecret, 1024) ||
+    (mode !== "sandbox" && mode !== "live")
+  ) {
+    return { ok: false, error: "Enter a valid Client ID, secret, and connection mode." }
+  }
+
+  const verification = await verifyPayPalCredentials({ clientId, clientSecret, mode })
+  if (!verification.ok) return verification
+
+  const { data, error } = await adminClient.rpc("set_paypal_runtime_credentials", {
+    p_client_id: clientId,
+    p_client_secret: clientSecret,
+    p_mode: mode,
+  })
+  if (error) return { ok: false, error: "Could not save the PayPal connection. Try again." }
+
+  const row = (Array.isArray(data) ? data[0] : data) as {
+    enabled?: unknown
+    paypal_mode?: unknown
+    client_id_hint?: unknown
+    verified_at?: unknown
+  } | null
+  if (
+    !row ||
+    typeof row.enabled !== "boolean" ||
+    (row.paypal_mode !== "sandbox" && row.paypal_mode !== "live") ||
+    typeof row.client_id_hint !== "string" ||
+    typeof row.verified_at !== "string"
+  ) {
+    return { ok: false, error: "PayPal was saved but its status could not be confirmed. Refresh and try again." }
+  }
+
+  revalidatePath("/admin/settings")
+  revalidatePath("/client/billing")
+  return {
+    ok: true,
+    status: {
+      health: row.enabled ? "connected" : "paused",
+      mode: row.paypal_mode,
+      clientIdHint: row.client_id_hint,
+      verifiedAt: row.verified_at,
+    },
+  }
+}
+
+/** Pause or resume only new checkout creation; pending orders retain their key version. */
+export async function setPayPalPaymentsEnabled(
+  enabled: boolean
+): Promise<{ ok: true; status: PayPalConnectionStatus } | { ok: false; error: string }> {
+  await requireAdmin()
+  if (typeof enabled !== "boolean") return { ok: false, error: "Choose whether new payments are enabled." }
+
+  if (enabled) {
+    const verification = await verifyCurrentPayPalConnection()
+    if (!verification.ok) return verification
+  }
+
+  const { data, error } = await adminClient.rpc("set_paypal_payments_enabled", { p_enabled: enabled })
+  if (error) {
+    return {
+      ok: false,
+      error: enabled
+        ? "Could not resume payments. Check the saved PayPal connection and try again."
+        : "Could not pause payments. Try again.",
+    }
+  }
+  const row = (Array.isArray(data) ? data[0] : data) as {
+    enabled?: unknown
+    paypal_mode?: unknown
+    client_id_hint?: unknown
+    verified_at?: unknown
+  } | null
+  if (
+    !row ||
+    row.enabled !== enabled ||
+    (row.paypal_mode !== "sandbox" && row.paypal_mode !== "live") ||
+    typeof row.client_id_hint !== "string" ||
+    typeof row.verified_at !== "string"
+  ) {
+    return { ok: false, error: "PayPal status could not be confirmed. Refresh and try again." }
+  }
+
+  revalidatePath("/admin/settings")
+  revalidatePath("/client/billing")
+  return {
+    ok: true,
+    status: {
+      health: enabled ? "connected" : "paused",
+      mode: row.paypal_mode,
+      clientIdHint: row.client_id_hint,
+      verifiedAt: row.verified_at,
+    },
+  }
+}
 
 export interface SaveNotificationSettingsInput {
   signOffName: string

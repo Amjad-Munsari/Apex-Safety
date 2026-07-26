@@ -7,7 +7,11 @@ import {
   packageDescription,
   PAYPAL_CURRENCY,
 } from "@/lib/billing/packages"
-import { createPayPalOrder, isPayPalEnabled } from "@/lib/paypal"
+import {
+  createPayPalOrder,
+  isPayPalEnabled,
+  recordPayPalPendingCheckout,
+} from "@/lib/paypal"
 import { getSiteUrl } from "@/lib/site-url"
 
 // Buffer + PayPal SDK-free fetch live in the Node runtime.
@@ -23,7 +27,7 @@ export const runtime = "nodejs"
  * Returns { orderId, approveUrl } so the client can redirect to PayPal.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!isPayPalEnabled()) {
+  if (!(await isPayPalEnabled())) {
     return NextResponse.json({ error: "payments_disabled" }, { status: 403 })
   }
 
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const base = getSiteUrl()
   const redirectUrl = `${base}/client/billing`
   try {
-    const { id, approveUrl } = await createPayPalOrder({
+    const { id, approveUrl, configVersion, mode } = await createPayPalOrder({
       amount: formatPayPalAmount(pkg.priceGBP),
       currency: PAYPAL_CURRENCY,
       description: packageDescription(pkg),
@@ -60,6 +64,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       customId: ctx.client_id,
       returnUrl: redirectUrl,
       cancelUrl: redirectUrl,
+    })
+    // An approval URL is not returned until its credential version is pinned.
+    // That keeps a later key rotation from stranding this checkout at capture.
+    await recordPayPalPendingCheckout({
+      orderId: id,
+      clientId: ctx.client_id,
+      packageId: pkg.id,
+      configVersion,
+      mode,
     })
     return NextResponse.json({ orderId: id, approveUrl }, { status: 200 })
   } catch (err) {

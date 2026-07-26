@@ -2,13 +2,19 @@
 
 import * as React from "react"
 import Image from "next/image"
-import { Upload, Save, X } from "lucide-react"
+import { Check, Upload, Save, X } from "lucide-react"
 import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import ThemeSwitch from "@/components/ui/theme-switch"
 import { applyBranding } from "@/lib/branding"
-import { saveNotificationSettings, uploadBrandingLogo, removeBrandingLogo } from "@/app/admin/settings/actions"
+import {
+  saveNotificationSettings,
+  savePayPalCredentials,
+  setPayPalPaymentsEnabled,
+  uploadBrandingLogo,
+  removeBrandingLogo,
+} from "@/app/admin/settings/actions"
 
 export interface SettingsFormInitial {
   signOffName: string
@@ -19,6 +25,12 @@ export interface SettingsFormInitial {
   creditsPerHour: number
   brandingPrimary: string
   brandingSecondary: string
+  paypal: {
+    health: "connected" | "paused" | "not_connected" | "error"
+    mode: "sandbox" | "live"
+    clientIdHint: string | null
+    verifiedAt: string | null
+  }
 }
 
 export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
@@ -32,6 +44,12 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
   const [logoUrl, setLogoUrl] = React.useState<string | null>(initial.logoUrl)
   const [uploadingLogo, setUploadingLogo] = React.useState(false)
   const [saving, setSaving] = React.useState(false)
+  const [paypalClientId, setPaypalClientId] = React.useState("")
+  const [paypalClientSecret, setPaypalClientSecret] = React.useState("")
+  const [paypalMode, setPaypalMode] = React.useState<"sandbox" | "live">(initial.paypal.mode)
+  const [paypalStatus, setPaypalStatus] = React.useState(initial.paypal)
+  const [savingPayPal, setSavingPayPal] = React.useState(false)
+  const [updatingPayPalState, setUpdatingPayPalState] = React.useState(false)
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -83,6 +101,51 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
       toast.success("Settings saved", { description: "Brand colours and notification defaults applied." })
     } else {
       toast.error(res.error || "Could not save settings.")
+    }
+  }
+
+  async function handleSavePayPal() {
+    setSavingPayPal(true)
+    try {
+      const result = await savePayPalCredentials({
+        clientId: paypalClientId,
+        clientSecret: paypalClientSecret,
+        mode: paypalMode,
+      })
+
+      if (result.ok) {
+        setPaypalStatus(result.status)
+        toast.success(result.status.health === "paused" ? "PayPal updated while paused" : "PayPal connected", {
+          description: result.status.health === "paused"
+            ? "New payments remain paused. Resume them when you are ready."
+            : `The ${result.status.mode} connection is ready to take payments.`,
+        })
+      } else {
+        toast.error(result.error || "Could not verify the PayPal connection.")
+      }
+    } catch {
+      toast.error("Could not verify the PayPal connection. Try again.")
+    } finally {
+      setSavingPayPal(false)
+      setPaypalClientId("")
+      setPaypalClientSecret("")
+    }
+  }
+
+  async function handlePayPalEnabled(enabled: boolean) {
+    setUpdatingPayPalState(true)
+    try {
+      const result = await setPayPalPaymentsEnabled(enabled)
+      if (result.ok) {
+        setPaypalStatus(result.status)
+        toast.success(enabled ? "New payments resumed" : "New payments paused")
+      } else {
+        toast.error(result.error || "Could not update PayPal payments.")
+      }
+    } catch {
+      toast.error("Could not update PayPal payments. Try again.")
+    } finally {
+      setUpdatingPayPalState(false)
     }
   }
 
@@ -201,11 +264,128 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
         </div>
       </Card>
 
-      {/* Billing */}
+      {/* PayPal connection */}
       <Card className="bg-card border-border rounded-sm p-8">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
           <div>
             <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">03</div>
+            <h3 className="font-serif text-[22px] text-foreground leading-tight">PayPal connection</h3>
+            <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
+              Paste the REST credentials from PayPal. They are checked before saving, encrypted, and never shown here again.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center justify-between gap-4 bg-background rounded-sm p-4 ring-1 ring-border">
+              <div className="flex items-center gap-2">
+                <span className={`size-1.5 rounded-full ${
+                  paypalStatus.health === "connected" ? "bg-success" :
+                  paypalStatus.health === "paused" ? "bg-gold" :
+                  paypalStatus.health === "error" ? "bg-danger" : "bg-muted-foreground"
+                }`} />
+                <span className={`font-mono text-[10px] uppercase tracking-[0.18em] ${
+                  paypalStatus.health === "connected" ? "text-success" :
+                  paypalStatus.health === "paused" ? "text-gold" :
+                  paypalStatus.health === "error" ? "text-danger" : "text-muted-foreground"
+                }`}>
+                  {paypalStatus.health === "connected" ? "Connected" :
+                   paypalStatus.health === "paused" ? "New payments paused" :
+                   paypalStatus.health === "error" ? "Connection needs attention" : "Not connected"}
+                </span>
+              </div>
+              {(paypalStatus.health === "connected" || paypalStatus.health === "paused") && (
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {paypalStatus.mode} · {paypalStatus.clientIdHint}
+                  {paypalStatus.verifiedAt ? ` · verified ${new Date(paypalStatus.verifiedAt).toLocaleDateString()}` : ""}
+                </span>
+              )}
+            </div>
+            {paypalStatus.health === "error" && (
+              <p className="text-danger text-xs leading-relaxed">
+                The saved connection could not be checked. New payments are hidden until the connection is verified again.
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Connection mode</span>
+              <div className="inline-flex w-fit rounded-sm ring-1 ring-border overflow-hidden" role="radiogroup" aria-label="PayPal connection mode">
+                {(["live", "sandbox"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    role="radio"
+                    aria-checked={paypalMode === mode}
+                    onClick={() => setPaypalMode(mode)}
+                    className={`h-8 px-4 font-mono text-[10px] uppercase tracking-[0.16em] transition-colors ${
+                      paypalMode === mode ? "bg-gold text-gold-foreground" : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Client ID</span>
+              <input
+                type="text"
+                value={paypalClientId}
+                onChange={(event) => setPaypalClientId(event.target.value)}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="bg-background border border-border rounded-sm h-9 px-3 text-sm text-foreground outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20 transition-all"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground">Client secret</span>
+              <input
+                type="password"
+                value={paypalClientSecret}
+                onChange={(event) => setPaypalClientSecret(event.target.value)}
+                autoComplete="new-password"
+                autoCapitalize="none"
+                spellCheck={false}
+                className="bg-background border border-border rounded-sm h-9 px-3 text-sm text-foreground outline-none focus:border-gold/50 focus:ring-2 focus:ring-gold/20 transition-all"
+              />
+              <span className="text-muted-foreground text-xs">The secret is never displayed after it is saved.</span>
+            </label>
+
+            <div className="flex flex-wrap justify-end gap-2">
+              {(paypalStatus.health === "connected" || paypalStatus.health === "paused") && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handlePayPalEnabled(paypalStatus.health === "paused")}
+                  disabled={updatingPayPalState || savingPayPal}
+                  className="rounded-sm px-4 font-medium text-[11px] h-9 tracking-wide"
+                >
+                  {updatingPayPalState
+                    ? "Updating..."
+                    : paypalStatus.health === "paused" ? "Resume new payments" : "Pause new payments"}
+                </Button>
+              )}
+              <Button
+                type="button"
+                onClick={handleSavePayPal}
+                disabled={savingPayPal}
+                className="bg-gold hover:bg-gold/90 disabled:opacity-40 text-gold-foreground rounded-sm px-5 font-medium text-[11px] h-9 tracking-wide border-none flex gap-2"
+              >
+                <Check className="w-3.5 h-3.5" />
+                {savingPayPal ? "Verifying..." : "Save & Verify"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Billing */}
+      <Card className="bg-card border-border rounded-sm p-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
+          <div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">04</div>
             <h3 className="font-serif text-[22px] text-foreground leading-tight">Billing</h3>
             <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
               The reference rate used to convert hours to credits when adjusting a client&apos;s balance.
@@ -233,7 +413,7 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
       <Card className="bg-card border-border rounded-sm p-8">
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-10">
           <div>
-            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">04</div>
+            <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-2">05</div>
             <h3 className="font-serif text-[22px] text-foreground leading-tight">Appearance</h3>
             <p className="text-muted-foreground text-xs mt-2 leading-relaxed">
               Display preferences for the admin interface.

@@ -4,13 +4,17 @@ import { SettingsForm } from "@/components/admin/settings-form"
 import { Card } from "@/components/ui/card"
 import { getDashboardStats } from "@/lib/supabase/dashboard"
 import { getAppSettings } from "@/lib/settings/app-settings"
+import { getPayPalConnectionHealth } from "@/lib/paypal"
 
 export const dynamic = "force-dynamic"
 
 export default async function SettingsPage() {
-  const stats = await getDashboardStats()
+  const [stats, settings, paypalHealth] = await Promise.all([
+    getDashboardStats(),
+    getAppSettings(),
+    getPayPalConnectionHealth(),
+  ])
   const errorCount = stats.errorCount ?? 0
-  const settings = await getAppSettings()
 
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -36,6 +40,7 @@ export default async function SettingsPage() {
           creditsPerHour: settings.creditsPerHour,
           brandingPrimary: settings.brandingPrimary,
           brandingSecondary: settings.brandingSecondary,
+          paypal: { ...settings.paypal, health: paypalHealth },
         }}
       />
 

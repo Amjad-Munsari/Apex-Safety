@@ -4,8 +4,9 @@ import { getClientContext } from "@/lib/auth-helpers"
 import { formatPayPalAmount, getPackage, PAYPAL_CURRENCY } from "@/lib/billing/packages"
 import {
   capturePayPalOrder,
+  getPayPalCheckoutContext,
   getPayPalOrder,
-  isPayPalEnabled,
+  markPayPalPendingCheckoutCredited,
   type PayPalOrderPayload,
 } from "@/lib/paypal"
 import { adminClient } from "@/lib/supabase/admin"
@@ -76,10 +77,6 @@ async function currentBalance(clientId: string): Promise<number | null> {
  * cross-client order is rejected.
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  if (!isPayPalEnabled()) {
-    return NextResponse.json({ error: "payments_disabled" }, { status: 403 })
-  }
-
   const ctx = await getClientContext()
   if (!ctx) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
@@ -108,6 +105,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       // Order belongs to another client — don't touch it.
       return NextResponse.json({ error: "forbidden" }, { status: 403 })
     }
+    try {
+      await markPayPalPendingCheckoutCredited(orderId)
+    } catch (error) {
+      console.error("[paypal/capture-order] could not mark an existing credit:", error)
+    }
     return NextResponse.json({
       success: true,
       balance: await currentBalance(ctx.client_id),
@@ -115,15 +117,34 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
   }
 
-  // 2. Capture at PayPal (recovering from an already-captured order).
-  let payload = await capturePayPalOrder(orderId)
+  // 2. Capture with the configuration version that created this checkout.
+  // Pausing only blocks new orders; it must never strand an approved one.
+  let checkout
+  try {
+    checkout = await getPayPalCheckoutContext(orderId)
+  } catch (error) {
+    console.error("[paypal/capture-order] checkout configuration failed:", error)
+    return NextResponse.json({ error: "checkout_configuration_failed" }, { status: 502 })
+  }
+  if (checkout.mapping && checkout.mapping.clientId !== ctx.client_id) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 })
+  }
+
+  let payload = await capturePayPalOrder(orderId, checkout)
   let completed = (payload as { status?: string }).status === "COMPLETED"
   if (!completed && isAlreadyCaptured(payload)) {
-    payload = await getPayPalOrder(orderId)
+    payload = await getPayPalOrder(orderId, checkout)
     completed = (payload as { status?: string }).status === "COMPLETED"
   }
   if (!completed) {
-    console.error("[paypal/capture-order] capture did not complete:", payload)
+    console.error("[paypal/capture-order] capture did not complete", {
+      status: typeof (payload as { status?: unknown }).status === "string"
+        ? (payload as { status: string }).status
+        : "unknown",
+      issue: Array.isArray((payload as { details?: unknown }).details)
+        ? "provider_rejected"
+        : "provider_unavailable",
+    })
     return NextResponse.json({ error: "capture_failed" }, { status: 502 })
   }
 
@@ -134,6 +155,9 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   }
   const pkg = unit.referenceId ? getPackage(unit.referenceId) : undefined
   if (!pkg) {
+    return NextResponse.json({ error: "invalid_package" }, { status: 400 })
+  }
+  if (checkout.mapping && checkout.mapping.packageId !== pkg.id) {
     return NextResponse.json({ error: "invalid_package" }, { status: 400 })
   }
   if (
@@ -163,6 +187,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   if (rpcError && rpcError.code !== "23505") {
     console.error("[paypal/capture-order] credit RPC failed:", rpcError)
     return NextResponse.json({ error: "credit_failed" }, { status: 500 })
+  }
+
+  try {
+    await markPayPalPendingCheckoutCredited(orderId)
+  } catch (error) {
+    // The ledger is already authoritative and idempotent; a later retry of the
+    // capture route will repair this non-money lifecycle marker.
+    console.error("[paypal/capture-order] could not mark credited checkout:", error)
   }
 
   return NextResponse.json({

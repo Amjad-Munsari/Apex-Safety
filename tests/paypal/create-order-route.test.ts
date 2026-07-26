@@ -4,6 +4,7 @@ import { NextRequest } from "next/server"
 
 const isEnabledSpy = vi.fn()
 const createOrderSpy = vi.fn()
+const recordCheckoutSpy = vi.fn()
 const getClientContextSpy = vi.fn()
 
 vi.mock("server-only", () => ({}))
@@ -15,6 +16,7 @@ vi.mock("@/lib/auth-helpers", () => ({
 vi.mock("@/lib/paypal", () => ({
   isPayPalEnabled: () => isEnabledSpy(),
   createPayPalOrder: (...a: unknown[]) => createOrderSpy(...a),
+  recordPayPalPendingCheckout: (...a: unknown[]) => recordCheckoutSpy(...a),
 }))
 
 // lib/billing/packages is pure data — used for real (no mock).
@@ -39,7 +41,10 @@ describe("POST /api/paypal/create-order", () => {
     createOrderSpy.mockResolvedValue({
       id: "ORDER123",
       approveUrl: "https://www.sandbox.paypal.com/checkoutnow?token=ORDER123",
+      configVersion: 7,
+      mode: "sandbox",
     })
+    recordCheckoutSpy.mockResolvedValue(undefined)
     process.env.NEXT_PUBLIC_SITE_URL = "https://app.test"
   })
 
@@ -50,6 +55,7 @@ describe("POST /api/paypal/create-order", () => {
 
     expect(res.status).toBe(403)
     expect(createOrderSpy).not.toHaveBeenCalled()
+    expect(recordCheckoutSpy).not.toHaveBeenCalled()
   })
 
   it("returns 401 when there is no authenticated client", async () => {
@@ -101,6 +107,13 @@ describe("POST /api/paypal/create-order", () => {
         cancelUrl: "https://app.test/client/billing",
       })
     )
+    expect(recordCheckoutSpy).toHaveBeenCalledWith({
+      orderId: "ORDER123",
+      clientId: CLIENT_ID,
+      packageId: "20c",
+      configVersion: 7,
+      mode: "sandbox",
+    })
   })
 
   it("prices the 80c package at £1,800.00", async () => {
@@ -117,5 +130,14 @@ describe("POST /api/paypal/create-order", () => {
     const res = await POST(makeRequest({ packageId: "20c" }))
 
     expect(res.status).toBe(500)
+  })
+
+  it("does not return an approval URL when recording its credential version fails", async () => {
+    recordCheckoutSpy.mockRejectedValueOnce(new Error("mapping unavailable"))
+
+    const res = await POST(makeRequest({ packageId: "20c" }))
+
+    expect(res.status).toBe(500)
+    expect(createOrderSpy).toHaveBeenCalledTimes(1)
   })
 })

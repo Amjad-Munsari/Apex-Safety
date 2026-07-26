@@ -25,13 +25,19 @@ function jsonResponse(body: unknown, status = 200): FetchResponse {
 const TOKEN_BODY = { access_token: "tok_ABC", token_type: "Bearer", expires_in: 32400 }
 
 let fetchMock: ReturnType<typeof vi.fn>
+const rpcSpy = vi.fn()
 
 async function importFresh() {
   vi.resetModules()
   return await import("@/lib/paypal")
 }
 
+vi.mock("@/lib/supabase/admin", () => ({
+  adminClient: { rpc: (...args: unknown[]) => rpcSpy(...args) },
+}))
+
 beforeEach(() => {
+  vi.clearAllMocks()
   fetchMock = vi.fn()
   vi.stubGlobal("fetch", fetchMock)
   vi.useFakeTimers()
@@ -40,6 +46,7 @@ beforeEach(() => {
   process.env.PAYPAL_CLIENT_SECRET = "secret_test"
   process.env.PAYPAL_MODE = "sandbox"
   process.env.PAYPAL_ENABLED = "true"
+  rpcSpy.mockResolvedValue({ data: null, error: { code: "PGRST202" } })
 })
 
 afterEach(() => {
@@ -51,25 +58,60 @@ describe("isPayPalEnabled", () => {
   it("is true only when PAYPAL_ENABLED === 'true'", async () => {
     const { isPayPalEnabled } = await importFresh()
     process.env.PAYPAL_ENABLED = "true"
-    expect(isPayPalEnabled()).toBe(true)
+    await expect(isPayPalEnabled()).resolves.toBe(true)
     process.env.PAYPAL_ENABLED = "false"
-    expect(isPayPalEnabled()).toBe(false)
+    await expect(isPayPalEnabled()).resolves.toBe(false)
     delete process.env.PAYPAL_ENABLED
-    expect(isPayPalEnabled()).toBe(false)
+    await expect(isPayPalEnabled()).resolves.toBe(false)
     process.env.PAYPAL_ENABLED = "1"
-    expect(isPayPalEnabled()).toBe(false)
+    await expect(isPayPalEnabled()).resolves.toBe(false)
+  })
+
+  it("does not fall back to environment values once the database connection exists but is unconfigured", async () => {
+    rpcSpy.mockResolvedValue({
+      data: [{ configured: false, enabled: false, paypal_mode: "live" }],
+      error: null,
+    })
+    const { isPayPalEnabled } = await importFresh()
+    await expect(isPayPalEnabled()).resolves.toBe(false)
+  })
+
+  it("fails closed when the runtime configuration read fails", async () => {
+    rpcSpy.mockResolvedValue({ data: null, error: { code: "XX000", message: "database offline" } })
+    const { isPayPalEnabled } = await importFresh()
+    await expect(isPayPalEnabled()).resolves.toBe(false)
+  })
+})
+
+describe("getPayPalConnectionHealth", () => {
+  it("reports paused only when the encrypted runtime connection is readable but disabled", async () => {
+    rpcSpy.mockResolvedValue({
+      data: [{
+        configured: true,
+        enabled: false,
+        paypal_mode: "live",
+        client_id: "cid_live",
+        client_secret: "secret_live",
+        revision: "2",
+      }],
+      error: null,
+    })
+    const { getPayPalConnectionHealth } = await importFresh()
+    await expect(getPayPalConnectionHealth()).resolves.toBe("paused")
+  })
+
+  it("reports an error when Vault/RPC health cannot be established", async () => {
+    rpcSpy.mockResolvedValue({ data: null, error: { code: "XX000", message: "vault unavailable" } })
+    const { getPayPalConnectionHealth } = await importFresh()
+    await expect(getPayPalConnectionHealth()).resolves.toBe("error")
   })
 })
 
 describe("paypalApiBase", () => {
-  it("uses the sandbox host unless PAYPAL_MODE is 'live'", async () => {
+  it("uses the host for the supplied mode", async () => {
     const { paypalApiBase } = await importFresh()
-    process.env.PAYPAL_MODE = "sandbox"
-    expect(paypalApiBase()).toBe("https://api-m.sandbox.paypal.com")
-    delete process.env.PAYPAL_MODE
-    expect(paypalApiBase()).toBe("https://api-m.sandbox.paypal.com")
-    process.env.PAYPAL_MODE = "live"
-    expect(paypalApiBase()).toBe("https://api-m.paypal.com")
+    expect(paypalApiBase("sandbox")).toBe("https://api-m.sandbox.paypal.com")
+    expect(paypalApiBase("live")).toBe("https://api-m.paypal.com")
   })
 })
 
@@ -120,6 +162,118 @@ describe("getAccessToken", () => {
 
     await expect(getAccessToken()).rejects.toThrow()
   })
+
+  it("invalidates the token cache when the stored credential revision changes", async () => {
+    let revision = "1"
+    let secret = "secret_one"
+    rpcSpy.mockImplementation(async () => ({
+      data: [{
+        configured: true,
+        enabled: true,
+        paypal_mode: "live",
+        client_id: "cid_live",
+        client_secret: secret,
+        revision,
+      }],
+      error: null,
+    }))
+    fetchMock.mockResolvedValue(jsonResponse(TOKEN_BODY))
+    const { getAccessToken } = await importFresh()
+
+    await getAccessToken()
+    revision = "2"
+    secret = "secret_two"
+    await getAccessToken()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api-m.paypal.com/v1/oauth2/token")
+    expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe(
+      "Basic " + Buffer.from("cid_live:secret_two").toString("base64")
+    )
+  })
+})
+
+describe("verifyPayPalCredentials", () => {
+  it("uses the supplied live credentials without reading the runtime store", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(TOKEN_BODY))
+    const { verifyPayPalCredentials } = await importFresh()
+
+    const result = await verifyPayPalCredentials({
+      clientId: "verify_id",
+      clientSecret: "verify_secret",
+      mode: "live",
+    })
+
+    expect(result).toEqual({ ok: true })
+    expect(rpcSpy).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api-m.paypal.com/v1/oauth2/token")
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe(
+      "Basic " + Buffer.from("verify_id:verify_secret").toString("base64")
+    )
+  })
+
+  it("returns a sanitised failure without echoing the credential or PayPal body", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error_description: "verify_secret" }, 401))
+    const { verifyPayPalCredentials } = await importFresh()
+    const result = await verifyPayPalCredentials({
+      clientId: "verify_id",
+      clientSecret: "verify_secret",
+      mode: "sandbox",
+    })
+
+    expect(result).toMatchObject({ ok: false })
+    expect(JSON.stringify(result)).not.toContain("verify_secret")
+  })
+})
+
+describe("credential-version checkout recovery", () => {
+  it("captures with the mapped historical credential after the active connection has changed", async () => {
+    rpcSpy.mockImplementation(async (name: string) => {
+      if (name === "get_paypal_checkout_runtime_config") {
+        return {
+          data: [{
+            mapped: true,
+            pending_client_id: "client-uuid-1",
+            pending_package_id: "20c",
+            paypal_mode: "sandbox",
+            config_version: 1,
+            paypal_client_id: "old_client",
+            paypal_client_secret: "old_secret",
+          }],
+          error: null,
+        }
+      }
+      return { data: null, error: { code: "PGRST202" } }
+    })
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(TOKEN_BODY))
+      .mockResolvedValueOnce(jsonResponse({ id: "ORDER123", status: "COMPLETED" }, 201))
+    const { capturePayPalOrder, getPayPalCheckoutContext } = await importFresh()
+
+    const context = await getPayPalCheckoutContext("ORDER123")
+    await capturePayPalOrder("ORDER123", context)
+
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api-m.sandbox.paypal.com/v1/oauth2/token")
+    expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe(
+      "Basic " + Buffer.from("old_client:old_secret").toString("base64")
+    )
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://api-m.sandbox.paypal.com/v2/checkout/orders/ORDER123/capture"
+    )
+  })
+
+  it("keeps documented env-backed checkouts unmapped before the runtime migration exists", async () => {
+    const { recordPayPalPendingCheckout } = await importFresh()
+
+    await expect(recordPayPalPendingCheckout({
+      orderId: "ORDER123",
+      clientId: "client-uuid-1",
+      packageId: "20c",
+      configVersion: null,
+      mode: "sandbox",
+    })).resolves.toBeUndefined()
+    expect(rpcSpy).not.toHaveBeenCalled()
+  })
 })
 
 describe("createPayPalOrder", () => {
@@ -148,9 +302,11 @@ describe("createPayPalOrder", () => {
       cancelUrl: "https://app.test/client/billing?paypal=cancel",
     })
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       id: "ORDER123",
       approveUrl: "https://www.sandbox.paypal.com/checkoutnow?token=ORDER123",
+      configVersion: null,
+      mode: "sandbox",
     })
 
     const [url, init] = fetchMock.mock.calls[1]

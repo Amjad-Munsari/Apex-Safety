@@ -29,6 +29,7 @@ export default async function BillingPage() {
   const [
     { data: client, error: clientError },
     { data: txRows, error: transactionsError },
+    paypalEnabled,
   ] = await Promise.all([
     supabase.from("clients").select("hours_balance").eq("id", ctx.client_id).single(),
     supabase
@@ -38,6 +39,7 @@ export default async function BillingPage() {
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(50),
+    isPayPalEnabled(),
   ]);
 
   if (clientError || transactionsError) {
@@ -57,7 +59,7 @@ export default async function BillingPage() {
       lastTopUpLabel={summary.lastTopUpLabel}
       usedThisYearCredits={summary.usedThisYearCredits}
       transactions={rows.map(toTransactionView)}
-      paypalEnabled={isPayPalEnabled()}
+      paypalEnabled={paypalEnabled}
     />
   );
 }
