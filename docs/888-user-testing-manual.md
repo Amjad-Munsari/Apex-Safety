@@ -116,6 +116,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - Admin and client dashboards use live organisation data.
 - Compliance upload, status, download, and catch-up reminders are working.
 - Matt and clients can build templates; clients can fork a master without changing Matt's original.
+- Creating either a Matt-owned or client-owned template stores the template and its first blank version together. If either write fails, the screen stays open, says nothing was saved, and no client-template activity notice is sent.
 - Assigned forms, resumable drafts, validation, recurrence, and reminders are working.
 - Report drafting, Matt's review step, final PDF creation, storage, email delivery, and client download are working when the AI service is available.
 - Proposal creation, first-party signing, separate original/signed PDFs, and contract generation are implemented.
@@ -124,7 +125,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - Credits are the stored balance unit. The editable default reference rate is four credits per hour.
 - The previously open payment-credit permission fault has been fixed and checked in production.
 - Portal brand colours are stored centrally and follow Matt and clients across devices.
-- The audited application dependency is upgraded to 16.2.11; the production build, 701 runnable tests, automation-change lint, and production dependency audit pass.
+- The audited application dependency is upgraded to 16.2.11; the production build, 708 runnable tests, changed-file lint, and production dependency audit pass.
 - All four partner notices are live. Both incoming routes are protected, Gmail is retried up to three times, and controlled tests for client template creation, form submission, template customisation, and Matt's assessment submission each returned final delivery confirmation.
 
 **Partial or held**
@@ -456,7 +457,7 @@ Every Save draft and Publish creates a new version. Assignments use a published 
 
 ### What's live vs. what's pending
 
-**Live:** 11 field types, conditions, append-only version history, published/referenced-version protection, publishing, assignment, customer ownership, fork-on-fill, soft deletion, and self-fill. **Pending:** no production master exists.
+**Live:** 11 field types, conditions, atomic template-plus-first-version creation, append-only version history, published/referenced-version protection, publishing, assignment, customer ownership, fork-on-fill, soft deletion, and self-fill. **Pending:** no production master exists.
 
 ### Common situations
 
@@ -764,13 +765,13 @@ Each save creates a new draft version. Publish creates a published version. A fo
 
 ### What's live vs. what's pending
 
-**Partial:** create, append-only save/publish, fill, fork, soft delete, protected referenced versions, and self-fill report handoff work. Create-from-scratch does not verify that its first blank version was stored before returning and sending Matt's activity notice, so always open and save a new template once before relying on it.
+**Live:** create, append-only save/publish, fill, fork, soft delete, protected referenced versions, and self-fill report handoff work. A new template and its first blank version are stored together; if either write fails, the dialog stays open and says nothing was saved.
 
 ### Common situations
 
 - A template must have a published version before self-fill.
 - Matt can view a client template but cannot edit it.
-- If a newly created template is listed but will not open or save, stop instead of recreating it repeatedly. Its first blank version may not have been stored even though Matt received the activity notice.
+- If creation fails, keep the dialog open and read the message. “Nothing was saved” means there should be no new list entry and no activity notice; retry once, then record the time and report it if the same message returns.
 
 ### Where to find things
 
@@ -1159,12 +1160,13 @@ Create a fresh second assignment from Matt's master so QA 5's completed assignme
 6. **Client:** Fill and submit the forked form.
 7. **Matt:** Open Form Templates and confirm the client template appears under Client templates and is read-only.
 8. **Matt:** Open the master and confirm its fields did not change.
-9. **Client:** Create a separate template from scratch, publish it, and self-fill it without an assignment. Confirm the answers are saved and the submission reaches Review Queue or AI Draft Failed.
+9. **Client:** Create a separate template from scratch and confirm its blank builder opens immediately. Publish it, self-fill it without an assignment, then confirm the answers are saved and the submission reaches Review Queue or AI Draft Failed.
 
 ### Errors / exception states you might see
 
 - Matt should not see edit, publish, delete, or assign controls on a client-owned template.
 - A customer template without a published version cannot be self-filled.
+- If template creation cannot commit both required records, the dialog should stay open and say “Nothing was saved”; Matt should receive no activity notice.
 
 ### When nothing looks wrong but you want to be sure
 
@@ -1176,7 +1178,7 @@ Do not delete either template. Record the two names and version numbers, then ch
 
 ### Known gaps until dependencies land
 
-Create-from-scratch does not verify its first blank-version write. After step 9, reopen and save the new template once; if that fails, keep the listed record and report it rather than creating duplicates. Approved production content remains the other dependency.
+Approved production content remains the dependency for realistic testing; there is no longer a known first-version gap in create-from-scratch.
 
 ## QA 7 — Admin assessment, draft review, and final report
 

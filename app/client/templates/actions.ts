@@ -48,43 +48,57 @@ async function requireOwnedTemplate(templateId: string, clientId: string) {
 // template creation keeps its own type selector (Matt may want categories later).
 const CLIENT_TEMPLATE_TYPE = "custom";
 
-export async function createClientTemplate(name: string) {
+export type CreateClientTemplateResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
+export async function createClientTemplate(
+  name: string
+): Promise<CreateClientTemplateResult> {
+  const templateName = name.trim();
+  if (templateName.length === 0 || templateName.length > 160) {
+    return {
+      ok: false,
+      error: "Enter a template name between 1 and 160 characters.",
+    };
+  }
+
   const supabase = await createClient();
   const ctx = await requireClientContext();
-  const userId = await requireActorUserId("client");
 
-  const { data, error } = await supabase
-    .from("form_templates")
-    .insert({
-      name,
-      template_type: CLIENT_TEMPLATE_TYPE,
-      owner_id: ctx.client_id,
-      owner_type: "customer",
-    })
-    .select("id")
-    .single();
-  if (error) throw new Error(error.message);
-
-  await supabase.from("template_versions").insert({
-    template_id: data.id,
-    version_number: 1,
-    schema_json: { entities: {}, root: [] },
-    created_by: userId,
-  });
+  // The database function inserts the template and version 1 in one
+  // transaction. If either write fails, neither row is committed.
+  const { data: templateId, error } = await supabase.rpc(
+    "create_customer_template_with_initial_version",
+    {
+      p_name: templateName,
+      p_client_id: ctx.client_id,
+    }
+  );
+  if (error || typeof templateId !== "string") {
+    console.error("[templates] Atomic customer template creation failed", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return {
+      ok: false,
+      error: "Could not create the template. Nothing was saved.",
+    };
+  }
 
   // Notify n8n that a client built a new template from scratch (best-effort).
   await dispatchClientFormEvent({
     type: "client_form_created",
     client_id: ctx.client_id,
     client_name: ctx.client_name,
-    template_id: data.id,
-    template_name: name,
+    template_id: templateId,
+    template_name: templateName,
     template_type: CLIENT_TEMPLATE_TYPE,
     created_at: new Date().toISOString(),
   });
 
   revalidatePath("/client/templates");
-  return data.id;
+  return { ok: true, id: templateId };
 }
 
 // ── saveClientDraftAction (coltorapps schema, always inserts new version) ───

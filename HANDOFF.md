@@ -164,3 +164,20 @@ End-to-end checkout review verdict: **fundamentally sound, no critical/high.** A
 4. Verification gates used all session: `npm run build` + `npm test` must both be green before any deploy; migrations applied to prod before the code that needs them.
 
 Project memory (`~/.claude/projects/-Users-aymanbaig-dev-fire-safety-platform/memory/`) has the durable facts (Supabase access, brand direction, walkthrough findings). This file is the session-specific detail.
+
+---
+
+## Update — 2026-07-26 atomic template creation
+
+Migration 035 is applied and verified in production. Matt-owned and client-owned
+template creation now inserts the template and version 1 in one security-invoker
+database transaction; either both rows commit or neither does.
+
+- Authenticated production probes created exactly one template/version pair for
+  each role, then rolled the test records back.
+- A forced version-write failure rolled the preceding template insert back.
+- Anonymous calls to both functions returned `401`, and the temporary failure
+  trigger, helper function, client, and template rows were verified absent.
+- The focused regression suite is 20/20, the full suite is 708 passing with five
+  integration tests skipped and three existing todos, the production build is
+  clean, changed-file lint is clean, and the production dependency audit is zero.

@@ -630,6 +630,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      create_admin_template_with_initial_version: {
+        Args: {
+          p_name: string
+          p_template_type: string
+        }
+        Returns: string
+      }
+      create_customer_template_with_initial_version: {
+        Args: {
+          p_client_id: string
+          p_name: string
+        }
+        Returns: string
+      }
       credit_hours_from_paypal: {
         Args: {
           p_client_id: string

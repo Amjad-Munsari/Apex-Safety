@@ -11,20 +11,33 @@ export function NewTemplateButton() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState("fra");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleCreate() {
-    if (!name.trim()) return;
+    if (!name.trim() || isPending) return;
+    setError(null);
     startTransition(async () => {
-      const id = await createTemplate(name.trim(), type);
-      setShowModal(false);
-      router.push(`/admin/templates/${id}`);
+      try {
+        const result = await createTemplate(name, type);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        setShowModal(false);
+        router.push(`/admin/templates/${result.id}`);
+      } catch {
+        setError("Could not create the template. Nothing was saved.");
+      }
     });
   }
 
   return (
     <>
       <Button
-        onClick={() => setShowModal(true)}
+        onClick={() => {
+          setError(null);
+          setShowModal(true);
+        }}
         className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm px-6 font-medium text-sm h-10 tracking-wide border-none"
       >
         + New Template
@@ -45,9 +58,15 @@ export function NewTemplateButton() {
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                 placeholder="e.g. Fire Risk Assessment (Type 3)"
+                maxLength={160}
                 className="bg-transparent border border-border rounded-sm px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-border/60 transition-colors"
                 autoFocus
               />
+              {error && (
+                <p role="alert" className="text-sm text-destructive">
+                  {error}
+                </p>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">
@@ -68,7 +87,10 @@ export function NewTemplateButton() {
             <div className="flex gap-3 justify-end">
               <Button
                 variant="ghost"
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setError(null);
+                  setShowModal(false);
+                }}
                 className="text-muted-foreground hover:text-foreground"
               >
                 Cancel

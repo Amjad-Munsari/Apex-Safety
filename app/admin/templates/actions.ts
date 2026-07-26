@@ -116,34 +116,51 @@ function describeAttributeErrors(reason: unknown): string {
 
 // ── createTemplate ──────────────────────────────────────────────────────────
 
-export async function createTemplate(name: string, templateType: string) {
+export type CreateAdminTemplateResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
+export async function createTemplate(
+  name: string,
+  templateType: string
+): Promise<CreateAdminTemplateResult> {
+  const templateName = name.trim();
+  const normalizedType = templateType.trim();
+  if (templateName.length === 0 || templateName.length > 160) {
+    return {
+      ok: false,
+      error: "Enter a template name between 1 and 160 characters.",
+    };
+  }
+  if (normalizedType.length === 0) {
+    return { ok: false, error: "Choose a template type." };
+  }
+
   const supabase = await createClient();
   await assertAdmin();
-  const userId = await requireActorUserId("admin");
 
-  const { data, error } = await supabase
-    .from("form_templates")
-    .insert({
-      name,
-      template_type: templateType,
-      owner_id: userId,
-      owner_type: "admin",
-    })
-    .select("id")
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  // Seed version 1 with an empty coltorapps schema
-  await supabase.from("template_versions").insert({
-    template_id: data.id,
-    version_number: 1,
-    schema_json: { entities: {}, root: [] },
-    created_by: userId,
-  });
+  // The database function inserts the template and version 1 in one
+  // transaction. If either write fails, neither row is committed.
+  const { data: templateId, error } = await supabase.rpc(
+    "create_admin_template_with_initial_version",
+    {
+      p_name: templateName,
+      p_template_type: normalizedType,
+    }
+  );
+  if (error || typeof templateId !== "string") {
+    console.error("[templates] Atomic admin template creation failed", {
+      code: error?.code,
+      message: error?.message,
+    });
+    return {
+      ok: false,
+      error: "Could not create the template. Nothing was saved.",
+    };
+  }
 
   revalidatePath("/admin/templates");
-  return data.id;
+  return { ok: true, id: templateId };
 }
 
 // ── saveDraftAction (BUILDER-05: admin gate) ────────────────────────────────

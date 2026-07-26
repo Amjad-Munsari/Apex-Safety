@@ -10,20 +10,33 @@ export function NewClientTemplateButton() {
   const [isPending, startTransition] = useTransition();
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   async function handleCreate() {
-    if (!name.trim()) return;
+    if (!name.trim() || isPending) return;
+    setError(null);
     startTransition(async () => {
-      const id = await createClientTemplate(name.trim());
-      setShowModal(false);
-      router.push(`/client/templates/${id}`);
+      try {
+        const result = await createClientTemplate(name);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        setShowModal(false);
+        router.push(`/client/templates/${result.id}`);
+      } catch {
+        setError("Could not create the template. Nothing was saved.");
+      }
     });
   }
 
   return (
     <>
       <Button
-        onClick={() => setShowModal(true)}
+        onClick={() => {
+          setError(null);
+          setShowModal(true);
+        }}
         className="rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground h-10 px-6 font-bold text-[10px] uppercase tracking-[0.25em] shadow-none"
       >
         + New Template
@@ -42,15 +55,24 @@ export function NewClientTemplateButton() {
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
                 placeholder="e.g. Daily Fire Door Walkaround"
+                maxLength={160}
                 className="bg-card border border-border rounded-sm px-4 py-3 text-foreground text-sm placeholder:text-muted-foreground outline-none focus:border-foreground/40 transition-colors"
                 autoFocus
               />
+              {error && (
+                <p role="alert" className="text-sm text-destructive">
+                  {error}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-3 justify-end">
               <Button
                 variant="ghost"
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setError(null);
+                  setShowModal(false);
+                }}
                 className="text-muted-foreground hover:text-foreground"
               >
                 Cancel
