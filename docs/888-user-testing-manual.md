@@ -129,12 +129,11 @@ The platform is ready for handover and reads live records. Production currently 
 - All four partner notices are live. Both incoming routes are protected, Gmail is retried up to three times, and controlled tests for client template creation, form submission, template customisation, and Matt's assessment submission each returned final delivery confirmation.
 - Merlin Safety System is the platform brand. 888 Safety & Training remains the service provider on proposals, reports, contracts, and PayPal. The only public contact pair is `info@888safetyandtraining.com` and `0333 049 8979`.
 
-**Partial or held**
+**Known limitations after handover**
 
 - PayPal cannot complete a purchase because the current production credentials are invalid. Do not test with real money until the correct live credentials are supplied and a controlled purchase plan is agreed.
 - Email delivery is live and owner-confirmed as working. The system still has no complete sent-message outbox or automatic retry for every failed message, so use Workflow Errors and the recipient's inbox when investigating an individual send.
 - Partner-notice failure logging is best-effort. An absent assessment webhook address is skipped, and an error while writing the error row can leave Workflow Errors empty. The client event waits up to eight seconds and the assessment event waits up to 15, while the partner workflow may continue for 30 seconds, so a timeout can be followed by a late admin email.
-- The sole n8n account does not have MFA enabled, two unused mail credentials remain stored there, and the audit key shared in chat should be rotated. These are recommended post-handover security housekeeping tasks; they do not block the four live notice paths or platform handover.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
 - A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
 - Saved photos reload after refresh using temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
@@ -162,7 +161,6 @@ The platform is ready for handover and reads live records. Production currently 
 | Job-title storage decision | Store a contact role such as “Facilities Manager” | Not modelled; site address and profile editing are live |
 | Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
 | Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
-| Rotate the n8n audit key, enable MFA, and remove unused mail credentials after ownership confirmation | Reduce partner-automation account exposure | Recommended post-handover housekeeping; not a handover blocker |
 | Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
 | SMS and offline scope decision | Text alerts and offline field work | Not built |
@@ -947,7 +945,6 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - Production FRA/site-risk master template; this is operational setup, not a handover blocker.
 - Production service catalogue entries; this is operational setup needed only for proposals.
 - Valid PayPal live credentials and controlled payment test plan.
-- Post-handover n8n housekeeping: enable MFA, rotate the exposed audit API key, and remove confirmed-unused mail credentials. The live workflows and four notice canaries already pass.
 - Upload/report recipient rule; expiry reminders already use the organisation contact.
 - Speech-to-text.
 - SMS and offline scope.
@@ -963,7 +960,7 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 
 **Platform support:** The named technical contact is **UNVERIFIED**. Matt should ask whoever controls deployment, live data, email, and PayPal for configuration or security faults.
 
-**Finley / partner automation:** The workflows and production cutover are live. Ask the partner owner for MFA, API-key rotation, unused-credential confirmation, and the hosted update; the exact live workflow IDs and canary results are recorded in the research brief.
+**Finley / partner automation:** The workflows and production cutover are live. The exact workflow IDs and controlled-delivery results are recorded in the research brief.
 
 # Part 4 — QA Walkthroughs
 
@@ -1276,6 +1273,10 @@ Compare the original and signed PDF, confirm the original content is unchanged, 
 
 Do not mark a proposal manually signed to hide an online failure. Preserve the link state, proposal status, PDF, time, and Workflow Error for diagnosis.
 
+### Known gaps until dependencies land
+
+There is no additional signing dependency. A failed signature-request email still has no automatic retry, so preserve the Sent proposal and use its recorded link and Workflow Error instead of repeating the send blindly.
+
 ## QA 10 — Manual credits and PayPal
 
 ### Before you start
@@ -1479,4 +1480,4 @@ Do not repeat the client write or assessment submission. Record the event type, 
 
 ### Known gaps until dependencies land
 
-MFA, audit-key rotation, ownership checks for two unused mail credentials, and the hosted bug-fix update are recommended post-handover security housekeeping. They do not block handover, this walkthrough, or any of the four live notice paths.
+None for these four notices. Every production notice path passed its controlled delivery check.
