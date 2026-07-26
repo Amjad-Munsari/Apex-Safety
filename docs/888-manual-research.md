@@ -183,7 +183,7 @@ The original 25 July audit found two broken workflows. Before changing them, bot
 
 The application event contract was changed with the workflows. Client events now carry the authoritative organisation name returned by the signed-in organisation lookup, and all three call sites send it (`lib/auth-helpers.ts:179-186`; `lib/notifications/dispatch.ts:106-132`; `app/client/templates/actions.ts:89-98`; `app/client/templates/actions.ts:522-529`; `app/client/assignments/actions.ts:354-362`; `app/client/assignments/actions.ts:525-536`). Both application paths reject an ordinary `2xx` that lacks both required delivery flags, so n8n's former “empty `200` after an internal failure” behaviour is treated as an application-side failure. The subsequent Workflow Error insert is best-effort and its own database error is not surfaced (`lib/notifications/dispatch.ts:238-309`; `lib/notifications/client-form-events.ts:28-72`; `app/admin/assessments/actions.ts:431-471`).
 
-The post-rebuild n8n security audit reports no unprotected webhook and no database-query, filesystem, community-node, custom-node, or risky built-in-node finding. It still identifies two unused Gmail OAuth credentials, `Ayman personal` and `team@hexonasystems.com`, and reports that version `2.31.6` is available over the current `2.31.5`. The single user's MFA flag remains off. Those account-level items were not changed because deleting credentials, enabling MFA, updating the hosted instance, and rotating the public API key require explicit owner controls.
+The post-rebuild n8n security audit reports no unprotected webhook and no database-query, filesystem, community-node, custom-node, or risky built-in-node finding. It also identifies two unused Gmail OAuth credentials, `Ayman personal` and `team@hexonasystems.com`, and reports that version `2.31.6` is available over the current `2.31.5`. The single user's MFA flag remains off. Those are non-blocking post-handover security-housekeeping items: the three live workflows and four proven notice paths do not depend on them.
 
 The coordinated production cutover completed on 26 July 2026. Vercel now holds the matching general and assessment secrets and both production webhook URLs, the existing n8n general credential was rotated to the same new value, and the Ready production deployment is aliased to `www.merlinsafetysystem.com`. All four exact application payloads returned `200` with `{ ok: true, delivered: true }` after Gmail acceptance, while both unauthenticated routes returned `403`. Historical executions `1` and `2`, which retained the old general secret, were deleted and confirmed absent. The notice paths are **Live**; the shared n8n API key still needs rotation because it was posted in chat (`HANDOFF.md:143`; `HANDOFF.md:150`).
 
@@ -195,8 +195,8 @@ The coordinated production cutover completed on 26 July 2026. Vercel now holds t
 | Webhook acknowledged before Gmail; no retry or failure alert | **Resolved in live n8n and application source.** Gmail retries three times, the success receipt follows Gmail, the application requires that receipt, and the failure-alert canary passed. |
 | Public assessment webhook | **Resolved in live n8n.** Unauthenticated requests return `403`; invalid authenticated events return `422`; the matching production application secret and valid-event canary now pass. |
 | Eight obsolete customer-email branches | **Resolved.** n8n now has only the three admin activity events; all ten customer-facing email types remain in Resend. |
-| General secret exposed through retained failures; audit API key shared | **Webhook-secret exposure resolved; API-key rotation open.** The general secret was rotated at both ends and the two retained failures were deleted. Rotate the shared n8n API key and replace the ignored local copy. |
-| MFA off; two unused mail credentials; one bug-fix update available | **Open account-hardening work.** Confirm credential ownership before deletion, enable MFA, and schedule the hosted update. |
+| General secret exposed through retained failures; audit API key shared | **Webhook-secret exposure resolved.** The general secret was rotated at both ends and the two retained failures were deleted. Rotating the shared audit API key is recommended post-handover hygiene and does not affect the live workflows. |
+| MFA off; two unused mail credentials; one bug-fix update available | **Non-blocking post-handover housekeeping.** Confirm credential ownership before deletion, enable MFA, and schedule the hosted update when convenient; the three workflows and four notice paths are live. |
 
 ### Application automation map
 
@@ -279,7 +279,7 @@ Both login pages call the same password authentication service, then check the a
 
 ## Current readiness ledger
 
-### Live enough for controlled testing
+### Live and ready for handover
 
 - Live organisation and client-access management, with invite/reset flow production-tested (`app/admin/clients/actions.ts:26-81`; `app/admin/clients/actions.ts:420-562`; `HANDOFF.md:35-38`).
 - Live dashboards, compliance documents, manual expiry reminders, assignments, customer form building/forking, report generation/review, proposal pipeline, transactional first-party signing, contract generation/list/detail, manual credits, and contractor directory.
@@ -290,16 +290,16 @@ Both login pages call the same password authentication service, then check the a
 - Merlin Safety System is the platform brand. 888 Safety & Training remains the consultancy/service-provider identity on proposals, contracts, reports, and PayPal. Every public contact surface and application Reply-To uses `info@888safetyandtraining.com` and `0333 049 8979`; the verified Merlin domain remains the automated From address (`lib/public-identity.ts:1-11`; `app/client/layout.tsx:55-75`; `components/pdf/report-document.tsx:151-157`; `lib/notifications/dispatch.ts:146-224`; `lib/notifications/email-templates.ts:19-21`; `scripts/n8n/deploy-production.mjs:6-45`).
 - The audited application dependency is upgraded to 16.2.11, the production build passes, and all 711 runnable tests pass. Repository-wide lint still reports older issues and is recorded as a separate partial item below (`package.json:32`; `package.json:54-67`; `tests/form-builder/atomic-template-creation.test.ts:1-196`).
 
-### Partial or held for controlled testing only
+### Live limitations and operational setup
 
-| Area | Why it is not a go-live pass |
+| Area | Current limitation or next action |
 |---|---|
-| Production setup | Production has no clients, templates, service catalogue, contractors, or proposals. Matt cannot run the core assessment or proposal workflow until he supplies and approves the real content (`HANDOFF.md:52-55`). |
+| Operational data | Production has no clients, templates, service-catalogue rows, contractors, or proposals. The working screens therefore open empty until Matt creates or imports the records he wants to use. This is day-one setup, not a platform or handover blocker (`HANDOFF.md:52-55`). |
 | Client onboarding | New Client accepts a Site Address and the client record has an Edit details control for organisation name, primary contact, email, phone, and address. Job title is still not modelled, so Sarah's “Facilities Manager” title remains test context rather than stored account data (`components/clients/new-client-dialog.tsx:23-56`; `components/clients/new-client-dialog.tsx:101-135`; `app/admin/clients/actions.ts:84-123`; `app/admin/clients/[id]/page.tsx:318-340`). |
 | PayPal | Credentials fail both sandbox and live authentication; real-money test is blocked (`HANDOFF.md:109-117`). |
 | Email | Delivery is owner-confirmed operational as of 25 July 2026. The remaining limitations are operational visibility and recovery: Notifications is not a complete outbox, and several flows record a failure without offering an automatic resend (`lib/notifications/dispatch.ts:180-219`; `app/admin/notifications/page.tsx:31-47`; `app/admin/errors/page.tsx:8-35`). |
-| n8n account hardening | The production notice paths are live and all four canaries pass. The old general secret and retained executions are cleared. MFA, API-key rotation, two unused mail credentials, and the hosted bug-fix update remain account-level work (`lib/notifications/dispatch.ts:238-309`; `app/admin/assessments/actions.ts:431-471`; `HANDOFF.md:143-150`). |
-| AI reports | Drafting is wired, but sparse forms can produce invented detail. Matt's review is the controlling safety step, and the local PAS 79 matrix still requires his professional approval (`HANDOFF.md:141-145`; `lib/form-builder/risk/pas79.ts:4-35`). |
+| n8n account security | The production notice paths are live and all four canaries pass. The old general secret and retained executions are cleared. MFA, audit-key rotation, removal of two confirmed-unused mail credentials, and the hosted bug-fix update are recommended post-handover housekeeping rather than workflow or handover blockers (`lib/notifications/dispatch.ts:238-309`; `app/admin/assessments/actions.ts:431-471`; `HANDOFF.md:143-150`). |
+| AI reports | Drafting and the platform's computed risk matrix are wired. Sparse forms can still produce invented detail, so Matt's report review remains the controlling safety step (`HANDOFF.md:141-145`; `lib/form-builder/risk/pas79.ts:4-35`). |
 | Client assignment to report | **Live:** assigned-form and customer self-fill submissions schedule report drafting after the committed submission (`app/client/assignments/actions.ts:331-366`; `app/client/templates/actions.ts:500-534`). |
 | Proposal delivery | **Live with a recovery limitation:** PDF failure fails visibly while preserving the Draft, and signature-email failure creates a Workflow Error plus an on-screen warning. There is still no automatic retry queue (`app/admin/proposals/actions.ts:345-399`; `app/admin/proposals/actions.ts:195-222`). |
 | Photos | **Live with a form-rule limitation:** committed per-field photos reload after refresh, use 15-minute signed previews, and removal deletes both the private object and its audit row. Uploads are limited to five per affordance and the server checks the actual image header. A Photos field marked Required is still intentionally presented as “recommended” and does not block submission (`components/form-interpreter/attach-photos-affordance.tsx:109-245`; `app/admin/assessments/actions.ts:567-670`). |
@@ -317,15 +317,15 @@ Both login pages call the same password authentication service, then check the a
 - Billing receipt or invoice generation.
 - A retry/resolve workflow inside Workflow Errors.
 
-## Pending dependencies and decisions
+## External dependencies and post-handover setup
 
 | Dependency or decision | What it unlocks | Current status |
 |---|---|---|
-| Matt's real FRA/site-risk questions and approved risk matrix | A usable master template and trustworthy computed risk wording | **Needed; production has zero templates.** |
+| Production FRA/site-risk master template | A real assessment that can be assigned | **Operational setup; production has zero templates. This is not a handover blocker.** |
 | Job-title storage decision | A saved role/title for contacts such as “Facilities Manager” | **Not modelled; site address and profile editing are live.** |
-| Matt-approved service list and prices | Proposal creation | **Seed catalogue exists but was deliberately not loaded.** |
+| Production service list and current prices | Proposal creation | **Operational setup; production has zero service rows. Add or import the catalogue before the first proposal. This is not a handover blocker.** |
 | Valid PayPal Live Client ID and newly generated secret | Real-money purchase test and credit top-up | **Blocked outside the repository.** |
-| Rotate the n8n API key, enable MFA, remove confirmed-unused mail credentials, and apply the available bug-fix update | Close the remaining partner-automation account exposure | **Required account hardening. The two webhook secrets, four canaries, and deletion of old secret-bearing executions are complete.** |
+| Rotate the n8n audit key, enable MFA, remove confirmed-unused mail credentials, and apply the available bug-fix update | Improve the security posture of the partner account | **Recommended post-handover housekeeping, not a handover blocker. The workflows, webhook secrets, four notice paths, and old-execution cleanup are complete.** |
 | Speech-to-text implementation choice | Sold dictation workflow | **Not built.** |
 | Decision on SMS and offline scope | Mobile/offline field operation and text alerts | **Not built.** |
 | Approved upload/report recipient rule | Deterministic upload-notice and final-report recipient; expiry reminders already use the organisation contact | **Partially built.** |

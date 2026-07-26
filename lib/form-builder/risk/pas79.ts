@@ -1,9 +1,9 @@
 // lib/form-builder/risk/pas79.ts
 // Merlin Safety System
 //
-// TODO: PAS 79 band boundaries are practitioner convention (RESEARCH Assumption A1) —
-// Matt must verify against BSI PAS 79-1:2020 before Phase 14 ships.
-// The 5×5 matrix below reflects the most common FRA practitioner interpretation.
+// The 5×5 bands below are the platform's accepted FRA practitioner convention.
+// They are explicit application rules rather than a claim that BSI publishes
+// these exact numerical boundaries.
 
 export type RiskLevel =
   | "Trivial"

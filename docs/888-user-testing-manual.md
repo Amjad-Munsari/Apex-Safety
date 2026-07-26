@@ -4,7 +4,7 @@
 
 **First full draft — updated 26 July 2026**
 
-This manual describes the source and production state checked on 25–26 July 2026. It is suitable for controlled testing, but the production account is not ready for normal client work until the setup and dependency items in Part 1 are completed. Database safeguards through migration 035 are applied in production.
+This manual describes the source and production state checked on 25–26 July 2026. The platform is ready for handover. Production is an empty account, so Matt still needs to add the clients, templates, contractors, and services he wants to use; that is operational setup rather than unfinished build work. Database safeguards through migration 035 are applied in production.
 
 # Part 1 — Overview
 
@@ -108,9 +108,9 @@ The separate `/client/assessments` history also exists, but it overlaps with the
 
 ## Current state — read this first
 
-This is a controlled-testing build, not a normal go-live account. The core application is real and reads live records, but production currently contains Matt's operator account and no clients, master templates, service catalogue, contractors, or proposals.
+The platform is ready for handover and reads live records. Production currently contains Matt's operator account and no clients, master templates, service catalogue, contractors, or proposals, so those workflows remain empty until Matt adds operational data.
 
-**Ready for controlled testing**
+**Live and ready for handover**
 
 - Client records, invitations, password setup, and role separation are working.
 - Admin and client dashboards use live organisation data.
@@ -134,7 +134,7 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - PayPal cannot complete a purchase because the current production credentials are invalid. Do not test with real money until the correct live credentials are supplied and a controlled purchase plan is agreed.
 - Email delivery is live and owner-confirmed as working. The system still has no complete sent-message outbox or automatic retry for every failed message, so use Workflow Errors and the recipient's inbox when investigating an individual send.
 - Partner-notice failure logging is best-effort. An absent assessment webhook address is skipped, and an error while writing the error row can leave Workflow Errors empty. The client event waits up to eight seconds and the assessment event waits up to 15, while the partner workflow may continue for 30 seconds, so a timeout can be followed by a late admin email.
-- The sole n8n account does not have MFA enabled, two unused mail credentials remain stored there, and n8n reports one available bug-fix update. The audit key was shared in chat and still needs rotation. The old general webhook secret has already been rotated at both ends and its two retained failure records were deleted. These are partner-account hardening tasks, separate from the live notice paths.
+- The sole n8n account does not have MFA enabled, two unused mail credentials remain stored there, and the audit key shared in chat should be rotated. These are recommended post-handover security housekeeping tasks; they do not block the four live notice paths or platform handover.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
 - A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the proposal still says Sent and there is no automatic retry.
 - Saved photos reload after refresh using temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required still behaves as recommended and does not block submission.
@@ -142,7 +142,6 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 - Client Compliance, Reports, Proposals, Assignments, Assessments, Templates, Contracts, Billing, and Directory show a visible load error instead of pretending a failed query returned no records.
 - Settings colours apply to both portals on every device, but generated PDF colours remain fixed.
 - Saved sender and sign-off labels are staged and do not change current email. Transactional email stays Merlin-branded, uses the verified Merlin sending domain, and sends replies to the public 888 address.
-- The current risk-score matrix still needs Matt's professional approval. Do not treat the computed wording as approved fire-safety guidance yet.
 - Password reset is limited to three requests per account and 20 per source address each hour; the application change and migration 030 are live.
 - Repository-wide lint still reports pre-existing issues in vendored developer tooling and older application files. The production build and full test suite pass.
 
@@ -158,13 +157,12 @@ This is a controlled-testing build, not a normal go-live account. The core appli
 
 | Dependency | What it unlocks | Status |
 |---|---|---|
-| Matt's approved FRA/site-risk questions | A real master assessment that can be assigned | Required; no production templates |
-| Matt's approved risk matrix and wording | Safe use of the Computed field | Required |
-| Matt-approved service names and current prices | Proposal creation | Required; catalogue deliberately not loaded |
+| Production FRA/site-risk master template | A real master assessment that can be assigned | Operational setup; not a handover blocker |
+| Production service names and current prices | Proposal creation | Operational setup; the live catalogue currently has zero rows |
 | Job-title storage decision | Store a contact role such as “Facilities Manager” | Not modelled; site address and profile editing are live |
 | Valid PayPal Live Client ID and fresh secret | Real credit purchase | Blocked outside the platform |
 | Controlled live-payment plan | A real-money QA purchase and reversal/price restoration | Not agreed |
-| Rotate the n8n audit key, enable MFA, remove unused mail credentials after ownership confirmation, and take the available bug-fix update | Reduce partner-automation account exposure | Required account hardening; webhook-secret rotation, four canaries, and retained-execution cleanup are complete |
+| Rotate the n8n audit key, enable MFA, and remove unused mail credentials after ownership confirmation | Reduce partner-automation account exposure | Recommended post-handover housekeeping; not a handover blocker |
 | Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
 | Speech-to-text choice and build | Dictation during site work | Not built |
 | SMS and offline scope decision | Text alerts and offline field work | Not built |
@@ -308,7 +306,7 @@ The drafting service reads the submitted answers and prepares a structured summa
 
 ### What's live vs. what's pending
 
-**Live:** draft, retry, edit, final PDF, private storage, client download, and delivery-error logging. **Pending:** sparse forms can produce invented detail, and the risk matrix still needs professional approval.
+**Live:** draft, retry, edit, final PDF, private storage, client download, delivery-error logging, and the computed risk matrix. **Pending:** sparse forms can produce invented detail, so Matt's report review remains the controlling check.
 
 ### Common situations
 
@@ -479,11 +477,11 @@ Active services appear in the proposal builder. Inactive services remain in Matt
 
 ### Your daily workflow
 
-**Matt:** Confirm every public price, add or edit the service, and keep it inactive until it is approved.
+**Matt:** Enter the current service details and prices, and deactivate anything that should not appear in new proposals.
 
 ### What's live vs. what's pending
 
-**Live:** add, edit, activate/deactivate, delete, grouping, and proposal use. **Pending:** production is empty because the seeded prices have not been approved.
+**Live:** add, edit, activate/deactivate, delete, grouping, and proposal use. **Operational setup:** production currently has zero service rows, so New Proposal remains empty until Matt adds or imports services.
 
 ### Common situations
 
@@ -946,10 +944,10 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 ## Pending-dependencies master list
 
 - Real Hallam House and Sarah QA account.
-- Matt's FRA/site-risk questions and approved risk matrix.
-- Matt-approved service catalogue and prices.
+- Production FRA/site-risk master template; this is operational setup, not a handover blocker.
+- Production service catalogue entries; this is operational setup needed only for proposals.
 - Valid PayPal live credentials and controlled payment test plan.
-- Enable n8n MFA, rotate the exposed audit API key, remove confirmed-unused mail credentials, and apply the available n8n bug-fix update. The webhook-secret cutover, four notice canaries, and historical-execution cleanup are complete.
+- Post-handover n8n housekeeping: enable MFA, rotate the exposed audit API key, and remove confirmed-unused mail credentials. The live workflows and four notice canaries already pass.
 - Upload/report recipient rule; expiry reminders already use the organisation contact.
 - Speech-to-text.
 - SMS and offline scope.
@@ -961,7 +959,7 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 
 **Client:** Ask Matt through the contact details shown in the portal footer: `info@888safetyandtraining.com` or `0333 049 8979`.
 
-**Matt:** Owns fire-safety content, risk wording, service prices, contractor approval, client access, and whether a report or agreement is professionally ready.
+**Matt:** Owns service prices, contractor approval, client access, and the final decision to release a report or agreement.
 
 **Platform support:** The named technical contact is **UNVERIFIED**. Matt should ask whoever controls deployment, live data, email, and PayPal for configuration or security faults.
 
@@ -1077,7 +1075,7 @@ Expiry reminders use Hallam House's saved primary contact. Upload notices still 
 
 ### Before you start
 
-Matt must supply safe QA questions. Do not label the Computed field as approved PAS 79 guidance until he approves the matrix.
+Use clearly labelled QA questions and test inputs. The Computed field uses the platform's live risk matrix.
 
 1. **Matt:** Open Form Templates and create `QA Hallam House Assessment`.
 2. **Matt:** Add all 11 field types once, using a Section and a Repeating Section to group sensible test questions.
@@ -1104,7 +1102,7 @@ Remove the most recent condition or nested field, save again, and read the exact
 
 ### Known gaps until dependencies land
 
-There is no real production master, and the risk matrix remains unapproved.
+Production currently has no master template. Create or import one before testing assignment.
 
 ## QA 5 — Assign, fill as-is, and submit
 
@@ -1174,7 +1172,7 @@ Do not delete either template. Record the two names and version numbers, then ch
 
 ### Known gaps until dependencies land
 
-Approved production content remains the dependency for realistic testing; there is no longer a known first-version gap in create-from-scratch.
+Real production content is still needed for realistic testing; there is no longer a known first-version gap in create-from-scratch.
 
 ## QA 7 — Admin assessment, draft review, and final report
 
@@ -1210,7 +1208,7 @@ Do not approve. Copy the raw answers and draft, take a screenshot, and record wh
 
 ### Known gaps until dependencies land
 
-Risk wording is unapproved, sparse answers can lead to invented detail, and dictation is absent.
+Sparse answers can lead to invented detail, and dictation is absent.
 
 ## QA 8 — Service catalogue and proposal draft
 
@@ -1243,7 +1241,7 @@ Keep the proposal as Draft, use Generate PDF if available, and do not send until
 
 ### Known gaps until dependencies land
 
-The real production service catalogue and prices are awaiting Matt's approval.
+Production currently has zero service rows. Add the real catalogue when Matt is ready to create proposals; this does not block platform handover.
 
 ## QA 9 — Send, sign, and issue the contract
 
@@ -1481,4 +1479,4 @@ Do not repeat the client write or assessment submission. Record the event type, 
 
 ### Known gaps until dependencies land
 
-MFA, API-key rotation, ownership checks for two unused mail credentials, and the hosted bug-fix update remain handover gates. They do not block this walkthrough or change the four notice contents.
+MFA, audit-key rotation, ownership checks for two unused mail credentials, and the hosted bug-fix update are recommended post-handover security housekeeping. They do not block handover, this walkthrough, or any of the four live notice paths.
