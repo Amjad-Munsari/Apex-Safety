@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { draftProposalScope, createProposal, deleteProposal } from '@/app/admin/proposals/actions';
 import { Service, groupByCategory } from '@/lib/data/services';
-import { PUBLIC_CONTACT_LINE } from '@/lib/public-identity';
+import { PUBLIC_CONTACT_LINE, DOCUMENT_BRAND } from '@/lib/public-identity';
 import { errorMessage } from '@/lib/utils';
 
 export type Client = {
@@ -620,7 +620,7 @@ export function AdvancedProposalBuilder({
                   <div className="prop-paper">
                     <div className="prop-paper-header">
                       <div className="prop-paper-logo-block">
-                        <div className="prop-paper-logo">888<span style={{ fontSize: '18px', color: '#666' }}> Safety Solutions</span></div>
+                        <div className="prop-paper-logo">{DOCUMENT_BRAND.lead}<span style={{ fontSize: '18px', color: '#666' }}> {DOCUMENT_BRAND.rest}</span></div>
                         <div className="prop-paper-tagline">Fire Safety · Health & Safety · Training</div>
                       </div>
                       <div className="prop-paper-id-block">
@@ -643,7 +643,7 @@ export function AdvancedProposalBuilder({
                         <div className="prop-paper-meta-label">PREPARED BY</div>
                         <div className="prop-paper-meta-name">Matt Robinson</div>
                         <div className="prop-paper-meta-detail">
-                          Lead Consultant · 888 Safety Solutions<br />
+                          Lead Consultant · {DOCUMENT_BRAND.full}<br />
                           {PUBLIC_CONTACT_LINE}
                         </div>
                       </div>

@@ -1,7 +1,7 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
 import { Branding, DEFAULT_BRANDING } from "@/lib/branding"
-import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
+import { PUBLIC_CONTACT_LINE, DOCUMENT_BRAND } from "@/lib/public-identity"
 
 // Service Agreement PDF — issued once a proposal is signed. Mirrors the
 // proposal-document visual language (Helvetica/Times-Roman, A4) so the two
@@ -206,7 +206,7 @@ export const ContractDocument = ({
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.logoBlock}>
-          <Text style={styles.logo}>888 <Text style={styles.logoSpan}>Safety Solutions</Text></Text>
+          <Text style={styles.logo}>{DOCUMENT_BRAND.lead} <Text style={styles.logoSpan}>{DOCUMENT_BRAND.rest}</Text></Text>
           <Text style={styles.tagline}>Fire Safety · Health & Safety · Training</Text>
         </View>
         <View style={styles.metaBlock}>
@@ -226,6 +226,15 @@ export const ContractDocument = ({
         </View>
         <View style={styles.gridCol}>
           <Text style={styles.gridLabel}>THE PROVIDER</Text>
+          {/* TODO(handover): unconfirmed legal entity. This is the contracting
+              party in a service agreement, not a brand — it must be the name
+              registered at Companies House for Matt's consultancy. "888 Safety
+              Solutions Ltd" is inherited from the prototype and was never a real
+              trading name; the name in use is "888 Safety & Training". Finley
+              confirmed 27 Jul 2026 that documents are 888-branded and Merlin is
+              only the system name, so Merlin must NOT appear here. What remains
+              unconfirmed is the exact registered form ("888 Safety & Training
+              Ltd"?). Get it from Matt before the first real contract issues. */}
           <Text style={styles.gridName}>888 Safety Solutions Ltd</Text>
           <Text style={styles.gridDetail}>Lead Consultant: Matt Robinson</Text>
           <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>

@@ -1,6 +1,16 @@
 -- 001_initial_schema.sql
 -- 888 Safety & Training Platform — initial database schema
 -- Tables, RLS policies, indexes, storage buckets
+--
+-- ⚠ HISTORICAL DOCUMENT — NOT the live schema. This file does not match
+-- production and never fully did: e.g. it declares deleted_at on
+-- hours_transactions (and other tables) that production does not have, which
+-- 42703'd the client Billing page in July 2026. Migrations here are hand-run,
+-- so drift is expected. The authoritative sources for what exists are
+-- information_schema on the live database and the generated
+-- lib/supabase/database.types.ts (regenerate with `supabase gen types` after
+-- any applied migration). Never write a query against a column because this
+-- file says it exists.
 
 -- ─────────────────────────────────────────────────────────────
 -- EXTENSIONS

@@ -10,7 +10,7 @@ import {
   SIG_META_MARGIN_TOP,
 } from "@/lib/pdf/signature-layout"
 import { Branding, DEFAULT_BRANDING } from "@/lib/branding"
-import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
+import { PUBLIC_CONTACT_LINE, DOCUMENT_BRAND } from "@/lib/public-identity"
 
 // Since we are generating PDFs on the server, we rely on standard fonts built into react-pdf (Helvetica, Times-Roman) 
 // for simplicity, or we can register network fonts. We'll use Helvetica for a clean modern look.
@@ -253,7 +253,7 @@ export const ProposalDocument = ({
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.logoBlock}>
-          <Text style={styles.logo}>888 <Text style={styles.logoSpan}>Safety Solutions</Text></Text>
+          <Text style={styles.logo}>{DOCUMENT_BRAND.lead} <Text style={styles.logoSpan}>{DOCUMENT_BRAND.rest}</Text></Text>
           <Text style={styles.tagline}>Fire Safety · Health & Safety · Training</Text>
         </View>
         <View style={styles.metaBlock}>
@@ -274,7 +274,7 @@ export const ProposalDocument = ({
         <View style={styles.gridCol}>
           <Text style={styles.gridLabel}>PREPARED BY</Text>
           <Text style={styles.gridName}>Matt Robinson</Text>
-          <Text style={styles.gridDetail}>Lead Consultant · 888 Safety Solutions</Text>
+          <Text style={styles.gridDetail}>Lead Consultant · {DOCUMENT_BRAND.full}</Text>
           <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>
         </View>
       </View>

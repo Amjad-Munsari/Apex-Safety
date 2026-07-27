@@ -4,7 +4,9 @@
 
 **Updated 27 July 2026**
 
-This manual describes the source and production state checked on 25–27 July 2026. Production is an empty account, so Matt still needs to add the clients, templates, contractors, and services he wants to use; that is operational setup rather than unfinished build work. Database safeguards through migration 037 are applied in production.
+This manual describes the source and production state checked on 25–27 July 2026. Production is effectively an empty account, so Matt still needs to add the clients, templates, contractors, and services he wants to use; that is operational setup rather than unfinished build work. Database safeguards through migration 038 are applied in production.
+
+One exception to "empty": a disposable client record, **Test Ltd**, was created on 27 July 2026 to verify the invite and portal flows against a real inbox. It holds no documents, assessments, proposals or credits. Delete it before handover — until then it is the only client on the account.
 
 # Part 1 — Overview
 
@@ -17,7 +19,7 @@ Merlin Safety System gives Matt one place to manage clients, compliance document
 | Role | Person | What they do |
 |---|---|---|
 | Admin / consultant | Matt Robinson | Manages clients, creates templates, carries out assessments, reviews report drafts, issues proposals and contracts, adjusts credits, and watches reminders and errors. |
-| Client | Building owner or facilities manager. The intended QA identity is Sarah Whitfield, Facilities Manager, Hallam House Care Home. | Reviews the organisation's documents, completes forms, builds or adapts templates, signs proposals, downloads contracts and reports, checks credits, and finds approved contractors. |
+| Client | Building owner or facilities manager. QA uses an invented stand-in — "Sarah Whitfield, Facilities Manager, Hallam House Care Home" is a test persona from the prototype, not a real person or customer. | Reviews the organisation's documents, completes forms, builds or adapts templates, signs proposals, downloads contracts and reports, checks credits, and finds approved contractors. |
 
 ## The modules at a glance
 
@@ -45,7 +47,7 @@ Use the production address:
 | Person | Sign-in page | Current account | Password |
 |---|---|---|---|
 | Matt | `/login/admin` | `mathew.robinson@888safetyandtraining.com` | **UNVERIFIED.** Use Matt's current password or **Forgot?** to set a new one. |
-| Sarah / client tester | `/login` | **No current Sarah account exists in production.** | **UNVERIFIED.** Matt must create Hallam House, invite Sarah, and let her set a password first. |
+| Sarah / client tester | `/login` | **No Sarah account exists in production, and Sarah is not a real person.** | **UNVERIFIED.** Sarah Whitfield and Hallam House Care Home are invented test identities, not a real contact or customer. Matt creates a disposable client organisation, invites a controlled address he owns, and lets it set a password first. |
 
 The two forms use the same account system, but each form checks the person's role after the password is accepted. If a client uses the operator form, or Matt uses the client form, the platform signs that session back out and tells the person which sign-in page to use. Someone who is already signed in and opens a login page is sent to the correct area automatically.
 
@@ -109,7 +111,7 @@ The separate `/client/assessments` history also exists, but it overlaps with the
 
 ## Current state — read this first
 
-The platform is ready for handover and reads live records. Production currently contains Matt's operator account and no clients, master templates, service catalogue, contractors, or proposals, so those workflows remain empty until Matt adds operational data.
+The platform is ready for handover and reads live records. Production currently contains Matt's operator account, the disposable **Test Ltd** record described above, and no master templates, service catalogue, contractors, or proposals, so those workflows remain empty until Matt adds operational data.
 
 **Live and ready for handover**
 
@@ -141,7 +143,8 @@ The platform is ready for handover and reads live records. Production currently 
 - Client Compliance, Reports, Proposals, Assignments, Assessments, Templates, Contracts, Billing, and Directory show a visible load error instead of pretending a failed query returned no records.
 - Saved sender and sign-off labels are staged and do not change current email. Transactional email stays Merlin-branded, uses the verified Merlin sending domain, and sends replies to the public 888 address.
 - Password reset is limited to three requests per account and 20 per source address each hour; the application change and migration 030 are live.
-- Every error the platform meets is recorded with its technical detail — server pages, background jobs, scheduled reminders, outside services, and the browser — and grouped by cause on the Diagnostics page. Nothing is kept only in short-lived hosting logs.
+- Most errors the platform meets are recorded with their technical detail — server pages, background jobs, scheduled reminders, outside services, and the browser — and grouped by cause on the Diagnostics page.
+- **Diagnostics and Workflow Errors showing nothing does not prove the platform is healthy.** When a client portal page cannot load its data it shows a load-error panel to the client, but that failure is not currently written to either page; it is kept only in the hosting logs. This was demonstrated on 27 July 2026, when the client Billing page failed three times while both pages read clear. Until that gap is closed, treat a client's report of a load-error panel as real even when Diagnostics is empty, and use the client's own screen as the check.
 
 **Not built**
 

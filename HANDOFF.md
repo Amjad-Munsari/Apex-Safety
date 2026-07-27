@@ -189,3 +189,27 @@ database transaction; either both rows commit or neither does.
 - The focused regression suite is 20/20, the full suite is 711 passing with five
   integration tests skipped and three existing todos, and the production build
   is clean. Repository-wide lint still reports older application and vendored-tooling issues.
+
+---
+
+## Open — contract legal entity unconfirmed (2026-07-27)
+
+Client-facing generated documents (proposals, contracts, reports) and the on-screen
+proposal preview now render their letterhead from a single `DOCUMENT_BRAND` constant in
+`lib/public-identity.ts`, set to **888 Safety & Training**. This replaces the prototype
+string "888 Safety Solutions", which was never a real trading name and had survived in all
+four components. Contact lines are unchanged (`info@888safetyandtraining.com`,
+`0333 049 8979`).
+
+**Confirmed by Finley, 27 Jul 2026:** client-facing documents are 888-branded; Merlin
+Safety System is the system name only and must never appear on a proposal, contract or
+report. `PLATFORM_NAME` and `DOCUMENT_BRAND` are deliberately separate for this reason —
+do not collapse them.
+
+**Still unresolved:** `components/pdf/contract-document.tsx` names `888 Safety Solutions
+Ltd` as THE PROVIDER in the parties block and in the operative sentence of the agreement.
+That is the legal party, not a brand, so it has been left unchanged rather than guessed at.
+Matt must supply the name as registered at Companies House — most likely "888 Safety &
+Training Ltd", but unconfirmed — before the first real contract is issued. A TODO marks
+both lines.
+

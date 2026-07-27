@@ -1,7 +1,7 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
 import { Branding, DEFAULT_BRANDING } from "@/lib/branding"
-import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
+import { PUBLIC_CONTACT_LINE, DOCUMENT_BRAND } from "@/lib/public-identity"
 
 // PDFs render server-side via @react-pdf, which can't resolve CSS custom
 // properties — so brand accents come from the branding prop (saved practice
@@ -134,7 +134,7 @@ export const ReportDocument = ({
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.logoBlock}>
-          <Text style={styles.logo}>888 <Text style={styles.logoSpan}>Safety Solutions</Text></Text>
+          <Text style={styles.logo}>{DOCUMENT_BRAND.lead} <Text style={styles.logoSpan}>{DOCUMENT_BRAND.rest}</Text></Text>
           <Text style={styles.tagline}>Fire Safety · Health &amp; Safety · Training</Text>
         </View>
         <View style={styles.metaBlock}>

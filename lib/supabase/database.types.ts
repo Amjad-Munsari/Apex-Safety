@@ -32,6 +32,149 @@ export type Database = {
         }
         Relationships: []
       }
+      app_error_log: {
+        Row: {
+          actor_id: string | null
+          actor_type: string | null
+          area: string
+          client_id: string | null
+          context: Json
+          digest: string | null
+          environment: string | null
+          error_name: string | null
+          fingerprint: string
+          id: string
+          message: string
+          occurred_at: string
+          release: string | null
+          request_id: string | null
+          request_method: string | null
+          request_path: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          route_path: string | null
+          severity: string
+          source: string
+          stack: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string | null
+          area: string
+          client_id?: string | null
+          context?: Json
+          digest?: string | null
+          environment?: string | null
+          error_name?: string | null
+          fingerprint: string
+          id?: string
+          message: string
+          occurred_at?: string
+          release?: string | null
+          request_id?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route_path?: string | null
+          severity?: string
+          source: string
+          stack?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string | null
+          area?: string
+          client_id?: string | null
+          context?: Json
+          digest?: string | null
+          environment?: string | null
+          error_name?: string | null
+          fingerprint?: string
+          id?: string
+          message?: string
+          occurred_at?: string
+          release?: string | null
+          request_id?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route_path?: string | null
+          severity?: string
+          source?: string
+          stack?: string | null
+        }
+        Relationships: []
+      }
+      app_settings: {
+        Row: {
+          branding_primary: string
+          branding_secondary: string
+          credits_per_hour: number
+          expiry_reminders_enabled: boolean
+          id: number
+          logo_path: string | null
+          notify_on_upload: boolean
+          paypal_client_id_hint: string | null
+          paypal_config_version: number | null
+          paypal_credentials_updated_at: string | null
+          paypal_enabled: boolean
+          paypal_mode: string
+          paypal_verified_at: string | null
+          sender_name: string
+          sign_off_name: string
+          updated_at: string
+        }
+        Insert: {
+          branding_primary?: string
+          branding_secondary?: string
+          credits_per_hour?: number
+          expiry_reminders_enabled?: boolean
+          id?: number
+          logo_path?: string | null
+          notify_on_upload?: boolean
+          paypal_client_id_hint?: string | null
+          paypal_config_version?: number | null
+          paypal_credentials_updated_at?: string | null
+          paypal_enabled?: boolean
+          paypal_mode?: string
+          paypal_verified_at?: string | null
+          sender_name?: string
+          sign_off_name?: string
+          updated_at?: string
+        }
+        Update: {
+          branding_primary?: string
+          branding_secondary?: string
+          credits_per_hour?: number
+          expiry_reminders_enabled?: boolean
+          id?: number
+          logo_path?: string | null
+          notify_on_upload?: boolean
+          paypal_client_id_hint?: string | null
+          paypal_config_version?: number | null
+          paypal_credentials_updated_at?: string | null
+          paypal_enabled?: boolean
+          paypal_mode?: string
+          paypal_verified_at?: string | null
+          sender_name?: string
+          sign_off_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_paypal_config_version_fkey"
+            columns: ["paypal_config_version"]
+            isOneToOne: false
+            referencedRelation: "paypal_runtime_credential_versions"
+            referencedColumns: ["config_version"]
+          },
+        ]
+      }
       client_users: {
         Row: {
           client_id: string
@@ -109,10 +252,59 @@ export type Database = {
         }
         Relationships: []
       }
+      contractors: {
+        Row: {
+          active: boolean
+          address: string | null
+          category: string
+          company_name: string
+          contact_name: string
+          created_at: string
+          deleted_at: string | null
+          email: string
+          id: string
+          notes: string | null
+          phone: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          active?: boolean
+          address?: string | null
+          category: string
+          company_name: string
+          contact_name: string
+          created_at?: string
+          deleted_at?: string | null
+          email: string
+          id?: string
+          notes?: string | null
+          phone: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          active?: boolean
+          address?: string | null
+          category?: string
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          deleted_at?: string | null
+          email?: string
+          id?: string
+          notes?: string | null
+          phone?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           active: boolean
           client_id: string
+          deleted_at: string | null
           document_category: string
           expiry_date: string | null
           file_size_bytes: number | null
@@ -125,6 +317,7 @@ export type Database = {
         Insert: {
           active?: boolean
           client_id: string
+          deleted_at?: string | null
           document_category: string
           expiry_date?: string | null
           file_size_bytes?: number | null
@@ -137,6 +330,7 @@ export type Database = {
         Update: {
           active?: boolean
           client_id?: string
+          deleted_at?: string | null
           document_category?: string
           expiry_date?: string | null
           file_size_bytes?: number | null
@@ -163,11 +357,125 @@ export type Database = {
           },
         ]
       }
+      email_outbox: {
+        Row: {
+          attempt_count: number
+          client_id: string | null
+          created_at: string
+          first_attempt_at: string | null
+          id: string
+          idempotency_key: string | null
+          last_attempt_at: string | null
+          last_error: string | null
+          last_error_kind: string | null
+          max_attempts: number
+          notification_type: string
+          payload: Json
+          provider: string
+          provider_message_id: string | null
+          recipient: string | null
+          related_id: string | null
+          related_type: string | null
+          resend_allowed: boolean
+          sent_at: string | null
+          status: string
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          client_id?: string | null
+          created_at?: string
+          first_attempt_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_error_kind?: string | null
+          max_attempts?: number
+          notification_type: string
+          payload?: Json
+          provider?: string
+          provider_message_id?: string | null
+          recipient?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          resend_allowed?: boolean
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          client_id?: string | null
+          created_at?: string
+          first_attempt_at?: string | null
+          id?: string
+          idempotency_key?: string | null
+          last_attempt_at?: string | null
+          last_error?: string | null
+          last_error_kind?: string | null
+          max_attempts?: number
+          notification_type?: string
+          payload?: Json
+          provider?: string
+          provider_message_id?: string | null
+          recipient?: string | null
+          related_id?: string | null
+          related_type?: string | null
+          resend_allowed?: boolean
+          sent_at?: string | null
+          status?: string
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      field_media: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          field_id: string
+          id: string
+          media_type: string
+          storage_path: string
+          submission_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          field_id: string
+          id?: string
+          media_type: string
+          storage_path: string
+          submission_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          field_id?: string
+          id?: string
+          media_type?: string
+          storage_path?: string
+          submission_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_media_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "form_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       form_assignments: {
         Row: {
           assigned_by: string | null
           client_id: string
           created_at: string
+          deleted_at: string | null
           due_date: string | null
           id: string
           instructions: string | null
@@ -182,6 +490,7 @@ export type Database = {
           assigned_by?: string | null
           client_id: string
           created_at?: string
+          deleted_at?: string | null
           due_date?: string | null
           id?: string
           instructions?: string | null
@@ -196,6 +505,7 @@ export type Database = {
           assigned_by?: string | null
           client_id?: string
           created_at?: string
+          deleted_at?: string | null
           due_date?: string | null
           id?: string
           instructions?: string | null
@@ -243,6 +553,7 @@ export type Database = {
           assignment_id: string | null
           client_id: string
           created_at: string
+          deleted_at: string | null
           draft_report_json: Json | null
           id: string
           report_storage_path: string | null
@@ -258,6 +569,7 @@ export type Database = {
           assignment_id?: string | null
           client_id: string
           created_at?: string
+          deleted_at?: string | null
           draft_report_json?: Json | null
           id?: string
           report_storage_path?: string | null
@@ -273,6 +585,7 @@ export type Database = {
           assignment_id?: string | null
           client_id?: string
           created_at?: string
+          deleted_at?: string | null
           draft_report_json?: Json | null
           id?: string
           report_storage_path?: string | null
@@ -317,6 +630,7 @@ export type Database = {
       form_templates: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           is_published: boolean | null
           name: string
@@ -327,6 +641,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_published?: boolean | null
           name: string
@@ -337,6 +652,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_published?: boolean | null
           name?: string
@@ -441,6 +757,119 @@ export type Database = {
           },
         ]
       }
+      paypal_pending_checkouts: {
+        Row: {
+          client_id: string
+          config_version: number
+          created_at: string
+          credited_at: string | null
+          order_id: string
+          package_id: string
+          paypal_mode: string
+        }
+        Insert: {
+          client_id: string
+          config_version: number
+          created_at?: string
+          credited_at?: string | null
+          order_id: string
+          package_id: string
+          paypal_mode: string
+        }
+        Update: {
+          client_id?: string
+          config_version?: number
+          created_at?: string
+          credited_at?: string | null
+          order_id?: string
+          package_id?: string
+          paypal_mode?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paypal_pending_checkouts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "paypal_pending_checkouts_config_version_fkey"
+            columns: ["config_version"]
+            isOneToOne: false
+            referencedRelation: "paypal_runtime_credential_versions"
+            referencedColumns: ["config_version"]
+          },
+        ]
+      }
+      paypal_runtime_credential_versions: {
+        Row: {
+          config_version: number
+          created_at: string
+          paypal_mode: string
+          vault_secret_name: string
+        }
+        Insert: {
+          config_version: number
+          created_at?: string
+          paypal_mode: string
+          vault_secret_name: string
+        }
+        Update: {
+          config_version?: number
+          created_at?: string
+          paypal_mode?: string
+          vault_secret_name?: string
+        }
+        Relationships: []
+      }
+      proposal_signatures: {
+        Row: {
+          created_at: string
+          document_hash: string
+          id: string
+          ip_address: unknown
+          proposal_id: string
+          signature_image: string
+          signed_at: string
+          signer_email: string
+          signer_name: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_hash: string
+          id?: string
+          ip_address: unknown
+          proposal_id: string
+          signature_image: string
+          signed_at?: string
+          signer_email: string
+          signer_name: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_hash?: string
+          id?: string
+          ip_address?: unknown
+          proposal_id?: string
+          signature_image?: string
+          signed_at?: string
+          signer_email?: string
+          signer_name?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_signatures_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           client_id: string
@@ -449,10 +878,15 @@ export type Database = {
           created_by: string | null
           id: string
           proposal_pdf_path: string | null
-          signed_pdf_path: string | null
-          signed_document_hash: string | null
           sent_at: string | null
           services_json: Json
+          signed_at: string | null
+          signed_document_hash: string | null
+          signed_pdf_path: string | null
+          signing_document_hash: string | null
+          signing_token: string | null
+          signing_token_expires_at: string | null
+          signing_token_used: boolean
           signwell_contract_doc_id: string | null
           signwell_proposal_doc_id: string | null
           status: string
@@ -467,10 +901,15 @@ export type Database = {
           created_by?: string | null
           id?: string
           proposal_pdf_path?: string | null
-          signed_pdf_path?: string | null
-          signed_document_hash?: string | null
           sent_at?: string | null
           services_json: Json
+          signed_at?: string | null
+          signed_document_hash?: string | null
+          signed_pdf_path?: string | null
+          signing_document_hash?: string | null
+          signing_token?: string | null
+          signing_token_expires_at?: string | null
+          signing_token_used?: boolean
           signwell_contract_doc_id?: string | null
           signwell_proposal_doc_id?: string | null
           status?: string
@@ -485,10 +924,15 @@ export type Database = {
           created_by?: string | null
           id?: string
           proposal_pdf_path?: string | null
-          signed_pdf_path?: string | null
-          signed_document_hash?: string | null
           sent_at?: string | null
           services_json?: Json
+          signed_at?: string | null
+          signed_document_hash?: string | null
+          signed_pdf_path?: string | null
+          signing_document_hash?: string | null
+          signing_token?: string | null
+          signing_token_expires_at?: string | null
+          signing_token_used?: boolean
           signwell_contract_doc_id?: string | null
           signwell_proposal_doc_id?: string | null
           status?: string
@@ -512,6 +956,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limit_hits: {
+        Row: {
+          bucket_key: string
+          hits: number
+          window_start: string
+        }
+        Insert: {
+          bucket_key: string
+          hits?: number
+          window_start: string
+        }
+        Update: {
+          bucket_key?: string
+          hits?: number
+          window_start?: string
+        }
+        Relationships: []
       }
       services: {
         Row: {
@@ -587,84 +1049,6 @@ export type Database = {
           },
         ]
       }
-      app_error_log: {
-        Row: {
-          actor_id: string | null
-          actor_type: string | null
-          area: string
-          client_id: string | null
-          context: Json
-          digest: string | null
-          environment: string
-          error_name: string | null
-          fingerprint: string
-          id: string
-          message: string
-          occurred_at: string
-          release: string | null
-          request_id: string | null
-          request_method: string | null
-          request_path: string | null
-          resolved: boolean
-          resolved_at: string | null
-          resolved_by: string | null
-          route_path: string | null
-          severity: string
-          source: string
-          stack: string | null
-        }
-        Insert: {
-          actor_id?: string | null
-          actor_type?: string | null
-          area: string
-          client_id?: string | null
-          context?: Json
-          digest?: string | null
-          environment?: string
-          error_name?: string | null
-          fingerprint: string
-          id?: string
-          message: string
-          occurred_at?: string
-          release?: string | null
-          request_id?: string | null
-          request_method?: string | null
-          request_path?: string | null
-          resolved?: boolean
-          resolved_at?: string | null
-          resolved_by?: string | null
-          route_path?: string | null
-          severity?: string
-          source: string
-          stack?: string | null
-        }
-        Update: {
-          actor_id?: string | null
-          actor_type?: string | null
-          area?: string
-          client_id?: string | null
-          context?: Json
-          digest?: string | null
-          environment?: string
-          error_name?: string | null
-          fingerprint?: string
-          id?: string
-          message?: string
-          occurred_at?: string
-          release?: string | null
-          request_id?: string | null
-          request_method?: string | null
-          request_path?: string | null
-          resolved?: boolean
-          resolved_at?: string | null
-          resolved_by?: string | null
-          route_path?: string | null
-          severity?: string
-          source?: string
-          stack?: string | null
-        }
-        Relationships: []
-      }
       workflow_errors: {
         Row: {
           created_at: string
@@ -700,6 +1084,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      adjust_client_credits: {
+        Args: {
+          p_adjustment: number
+          p_client_id: string
+          p_description: string
+        }
+        Returns: number
+      }
+      check_rate_limit: {
+        Args: { p_key: string; p_max: number; p_window_seconds: number }
+        Returns: boolean
+      }
       cleanup_app_error_log: {
         Args: {
           p_resolved_retention_days?: number
@@ -707,26 +1103,27 @@ export type Database = {
         }
         Returns: number
       }
-      check_rate_limit: {
+      cleanup_email_outbox: {
         Args: {
-          p_key: string
-          p_max: number
-          p_window_seconds: number
+          p_failed_retention_days?: number
+          p_payload_retention_days?: number
+          p_sent_retention_days?: number
         }
-        Returns: boolean
+        Returns: number
+      }
+      cleanup_paypal_runtime_records: {
+        Args: { p_retention_days?: number }
+        Returns: {
+          checkouts_deleted: number
+          versions_deleted: number
+        }[]
       }
       create_admin_template_with_initial_version: {
-        Args: {
-          p_name: string
-          p_template_type: string
-        }
+        Args: { p_name: string; p_template_type: string }
         Returns: string
       }
       create_customer_template_with_initial_version: {
-        Args: {
-          p_client_id: string
-          p_name: string
-        }
+        Args: { p_client_id: string; p_name: string }
         Returns: string
       }
       credit_hours_from_paypal: {
@@ -737,6 +1134,83 @@ export type Database = {
           p_order_id: string
         }
         Returns: undefined
+      }
+      get_paypal_checkout_runtime_config: {
+        Args: { p_order_id: string }
+        Returns: {
+          config_version: number
+          mapped: boolean
+          paypal_client_id: string
+          paypal_client_secret: string
+          paypal_mode: string
+          pending_client_id: string
+          pending_package_id: string
+        }[]
+      }
+      get_paypal_runtime_credentials: {
+        Args: never
+        Returns: {
+          client_id: string
+          client_secret: string
+          configured: boolean
+          enabled: boolean
+          paypal_mode: string
+          revision: string
+        }[]
+      }
+      mark_paypal_pending_checkout_credited: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      record_paypal_pending_checkout: {
+        Args: {
+          p_client_id: string
+          p_config_version: number
+          p_order_id: string
+          p_package_id: string
+          p_paypal_mode: string
+        }
+        Returns: undefined
+      }
+      redeem_proposal_signature: {
+        Args: {
+          p_expected_document_hash: string
+          p_expected_pdf_path: string
+          p_ip_address: unknown
+          p_signature_image: string
+          p_signed_at: string
+          p_signed_document_hash: string
+          p_signed_pdf_path: string
+          p_signer_email: string
+          p_signer_name: string
+          p_token_hash: string
+          p_user_agent: string
+        }
+        Returns: {
+          client_id: string
+          proposal_id: string
+          proposal_pdf_path: string
+          services_json: Json
+          signing_document_hash: string
+        }[]
+      }
+      set_paypal_payments_enabled: {
+        Args: { p_enabled: boolean }
+        Returns: {
+          client_id_hint: string
+          enabled: boolean
+          paypal_mode: string
+          verified_at: string
+        }[]
+      }
+      set_paypal_runtime_credentials: {
+        Args: { p_client_id: string; p_client_secret: string; p_mode: string }
+        Returns: {
+          client_id_hint: string
+          enabled: boolean
+          paypal_mode: string
+          verified_at: string
+        }[]
       }
     }
     Enums: {
