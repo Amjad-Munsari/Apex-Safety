@@ -350,13 +350,31 @@ export async function POST(
     const services = parseServices(consumed.services_json)
     const title = deriveTitle(services)
 
-    const notified = await dispatchNotification({
-      type: "proposal_signed",
-      client_name: clientRow?.name ?? "",
-      client_email: clientRow?.contact_email ?? "",
-      proposal_title: title,
-      signed_at: now,
-    })
+    const notified = await dispatchNotification(
+      {
+        type: "proposal_signed",
+        client_name: clientRow?.name ?? "",
+        client_email: clientRow?.contact_email ?? "",
+        proposal_title: title,
+        signed_at: now,
+      },
+      {
+        // One confirmation per proposal, ever. The key makes that true even if
+        // this branch somehow runs twice, and it is what lets the outbox reuse
+        // the existing row instead of mailing again.
+        idempotencyKey: `proposal_signed:${proposalId}`,
+        clientId: consumed.client_id ?? null,
+        relatedType: "proposal",
+        relatedId: proposalId,
+        // The customer is watching a spinner on the signing page, so the inline
+        // budget stays small: one immediate retry for a blip, and anything worse
+        // is left to the durable outbox row, which Matt can re-send from the
+        // admin errors view. Before the outbox existed there was no such
+        // fallback, which is why this used to be a single all-or-nothing try.
+        maxAttempts: 2,
+        backoffMs: [500],
+      }
+    )
     if (!notified.ok) {
       await logWorkflowFailure({
         workflowName: "proposal_signed_email",
@@ -364,10 +382,18 @@ export async function POST(
         area: "notifications.proposal_signed",
         source: "route",
         clientId: consumed.client_id ?? null,
-        payload: { proposalId },
+        // outboxId is what turns this row from a notice into something
+        // actionable: it is the handle the admin re-send button needs.
+        payload: {
+          proposalId,
+          outboxId: notified.outboxId ?? null,
+          errorKind: notified.errorKind ?? null,
+        },
       })
     }
   } catch (err) {
+    // dispatchNotification does not throw, so reaching here means the client
+    // lookup failed. The signature is already committed either way.
     await logWorkflowFailure({
       workflowName: "proposal_signed_email",
       error: err,

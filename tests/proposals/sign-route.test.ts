@@ -764,3 +764,103 @@ describe("POST /api/sign/[token]", () => {
     expect(arg.error_message).toBe("kaboom")
   })
 })
+
+// ── Suite: confirmation email retry (Task 4) ──────────────────────────────────
+//
+// The signature and the token redemption are committed by
+// redeem_proposal_signature before any of this runs. Everything here is about
+// the email that follows, and the first assertion in every test is that the
+// commit was left alone.
+
+describe("POST /api/sign/[token] — confirmation email retry", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    proposalsUpdatePayloads.length = 0
+    issueContractCoreSpy.mockResolvedValue({ ok: true })
+    proposalsRollbackSpy.mockResolvedValue({ error: null })
+    workflowErrorsInsertSpy.mockResolvedValue({ error: null })
+    storageDownloadSpy.mockResolvedValue({ data: makeMinimalPdfBlob(), error: null })
+    storageUploadSpy.mockResolvedValue({ data: {}, error: null })
+    storageRemoveSpy.mockResolvedValue({ data: [], error: null })
+    proposalsSelectSpy.mockResolvedValue({ data: VALID_PROPOSAL_ROW, error: null })
+    redeemSignatureSpy.mockResolvedValue({ data: [VALID_CONSUMED_ROW], error: null })
+    clientsSingleSpy.mockResolvedValue({
+      data: { name: "Acme Fire Ltd", contact_email: "jane@acme.example" },
+      error: null,
+    })
+    dispatchSpy.mockResolvedValue({ ok: true, outboxId: "outbox-1" })
+  })
+
+  it("sends the confirmation through the outbox with a per-proposal idempotency key", async () => {
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(200)
+
+    expect(dispatchSpy).toHaveBeenCalledTimes(1)
+    const [payload, options] = dispatchSpy.mock.calls[0] as [
+      Record<string, unknown>,
+      Record<string, unknown>,
+    ]
+    expect(payload.type).toBe("proposal_signed")
+    // One confirmation per proposal, ever — this key is what enforces it.
+    expect(options.idempotencyKey).toBe(`proposal_signed:${VALID_PROPOSAL_ROW.id}`)
+    expect(options.clientId).toBe(VALID_PROPOSAL_ROW.client_id)
+    expect(options.relatedType).toBe("proposal")
+    expect(options.relatedId).toBe(VALID_PROPOSAL_ROW.id)
+  })
+
+  it("keeps the inline retry budget small — the customer is waiting on this request", async () => {
+    await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+
+    const options = dispatchSpy.mock.calls[0][1] as { maxAttempts?: number }
+    expect(options.maxAttempts).toBeLessThanOrEqual(2)
+  })
+
+  it("records the outbox id on the workflow error so the failure is re-sendable", async () => {
+    dispatchSpy.mockResolvedValue({
+      ok: false,
+      error: "fetch failed",
+      errorKind: "transient",
+      outboxId: "outbox-42",
+    })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+    expect(res.status).toBe(200)
+
+    const arg = workflowErrorsInsertSpy.mock.calls[0][0] as Record<string, unknown>
+    expect(arg.workflow_name).toBe("proposal_signed_email")
+    expect(arg.payload).toMatchObject({
+      proposalId: VALID_PROPOSAL_ROW.id,
+      outboxId: "outbox-42",
+      errorKind: "transient",
+    })
+  })
+
+  it("never re-runs or rolls back the signature commit when the email fails", async () => {
+    dispatchSpy.mockResolvedValue({
+      ok: false,
+      error: "Invalid `to` field",
+      errorKind: "hard",
+      outboxId: "outbox-43",
+    })
+
+    const res = await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ success: true })
+    // The commit ran exactly once and nothing touched the proposal afterwards.
+    expect(redeemSignatureSpy).toHaveBeenCalledTimes(1)
+    expect(proposalsRollbackSpy).not.toHaveBeenCalled()
+    expect(storageRemoveSpy).not.toHaveBeenCalled()
+    expect(proposalsUpdatePayloads).toHaveLength(0)
+  })
+
+  it("still issues the contract when the confirmation email fails", async () => {
+    // The two downstream steps are independent: a dead email address must not
+    // cost the customer their service agreement.
+    dispatchSpy.mockResolvedValue({ ok: false, error: "fetch failed", outboxId: "o" })
+
+    await POST(makeRequest("POST", VALID_POST_BODY), makeCtx("tok"))
+
+    expect(issueContractCoreSpy).toHaveBeenCalledTimes(1)
+  })
+})
