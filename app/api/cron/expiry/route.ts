@@ -75,6 +75,23 @@ export async function GET(request: Request) {
     })
   }
 
+  // Email-outbox retention, on the same tick and for the same reasons. Delivered
+  // mail is a receipt and goes early; the payloads (which can carry signing and
+  // invite URLs) are blanked well before the rows themselves are dropped.
+  const { error: outboxCleanupError } = await supabase.rpc("cleanup_email_outbox", {})
+  if (
+    outboxCleanupError &&
+    outboxCleanupError.code !== "PGRST202" &&
+    outboxCleanupError.code !== "42883"
+  ) {
+    await logAppError({
+      area: "cron.email_outbox_cleanup",
+      source: "cron",
+      severity: "warning",
+      error: outboxCleanupError,
+    })
+  }
+
   // Respect the admin "Send expiry reminders" toggle — when off, the cron is a
   // no-op (documents are untouched; nothing is emailed).
   const settings = await getAppSettings()

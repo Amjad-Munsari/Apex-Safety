@@ -1,9 +1,7 @@
 import "server-only"
 
-import { Resend } from "resend"
-
-import { buildEmail, EMAIL_TYPES } from "./email-templates"
-import { PLATFORM_NAME, PUBLIC_CONTACT } from "@/lib/public-identity"
+import { EMAIL_TYPES } from "./email-templates"
+import { sendEmailThroughOutbox, type FailureKind } from "./outbox"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Notification dispatch.
@@ -14,6 +12,11 @@ import { PLATFORM_NAME, PUBLIC_CONTACT } from "@/lib/public-identity"
 // workflow. n8n sends the final admin email and only acknowledges after Gmail
 // succeeds. dispatchNotification is the single entry point for both; call sites
 // never need to know which transport runs.
+//
+// Email sends go through ./outbox, so every attempt is recorded and transient
+// failures are retried within a bounded budget before the caller ever sees an
+// error. The transport itself is ./resend. Call sites keep the same contract
+// they always had: a DispatchResult, never a throw.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type NotificationPayload =
@@ -136,17 +139,28 @@ export interface DispatchResult {
   ok: boolean
   status?: number
   error?: string
+  /** Whether a failed email is worth retrying. Absent for n8n events. */
+  errorKind?: FailureKind
+  /** The email_outbox row this send was recorded against, when one was written. */
+  outboxId?: string
 }
 
 export interface DispatchOptions {
-  /** Stable provider key for retry-safe email sends. */
+  /**
+   * Stable key for retry-safe email sends. Used both as Resend's idempotency
+   * key and as the outbox dedupe key, so repeating a dispatch with the same key
+   * reuses the existing row instead of mailing twice.
+   */
   idempotencyKey?: string
-}
-
-const DEFAULT_FROM = `${PLATFORM_NAME} <notifications@merlinsafetysystem.com>`
-
-function isProd(): boolean {
-  return process.env.NODE_ENV === "production"
+  /** Attributes the outbox row to an org, for the admin delivery view. */
+  clientId?: string | null
+  /** What the email is about, e.g. "proposal" / proposal id. */
+  relatedType?: string | null
+  relatedId?: string | null
+  /** Total attempts, first included. Defaults to the outbox budget. */
+  maxAttempts?: number
+  /** Backoff between attempts. Overridable so tests need not wait. */
+  backoffMs?: number[]
 }
 
 function redactSigningUrl(url: string): string {
@@ -177,60 +191,42 @@ function logDispatch(payload: NotificationPayload): void {
   )
 }
 
-let resendClient: Resend | null = null
-function getResend(apiKey: string): Resend {
-  if (!resendClient) resendClient = new Resend(apiKey)
-  return resendClient
-}
-
-/** Send an email-shaped payload via Resend. */
+/**
+ * Sends an email-shaped payload through the outbox: recorded, claimed, retried
+ * on transient failures, never double-sent. The DispatchResult shape is
+ * unchanged from the direct-to-Resend version this replaced, so no call site had
+ * to change; `errorKind` and `outboxId` are additive.
+ */
 async function sendEmail(
   payload: NotificationPayload,
   options: DispatchOptions
 ): Promise<DispatchResult> {
-  const apiKey = process.env.RESEND_API_KEY
-
-  if (!apiKey) {
-    if (isProd()) {
-      return { ok: false, error: "RESEND_API_KEY not configured" }
-    }
+  if (!process.env.RESEND_API_KEY && !isProd()) {
     console.warn(
       `[dispatch] RESEND_API_KEY missing — email skipped (type: ${payload.type}). Set RESEND_API_KEY to enable in dev.`
     )
-    return { ok: true, status: 0 }
   }
 
-  const email = buildEmail(payload)
-  if (!email) {
-    return { ok: false, error: `no email template for type ${payload.type}` }
-  }
-  if (!email.to || !email.to.includes("@")) {
-    return { ok: false, error: `missing/invalid recipient for ${payload.type}` }
-  }
+  const result = await sendEmailThroughOutbox(payload, {
+    idempotencyKey: options.idempotencyKey,
+    clientId: options.clientId,
+    relatedType: options.relatedType,
+    relatedId: options.relatedId,
+    maxAttempts: options.maxAttempts,
+    backoffMs: options.backoffMs,
+  })
 
-  const from = process.env.EMAIL_FROM ?? DEFAULT_FROM
-  const replyTo = process.env.EMAIL_REPLY_TO ?? PUBLIC_CONTACT.email
-
-  try {
-    const { error } = await getResend(apiKey).emails.send(
-      {
-        from,
-        to: email.to,
-        subject: email.subject,
-        html: email.html,
-        replyTo,
-      },
-      options.idempotencyKey
-        ? { idempotencyKey: options.idempotencyKey }
-        : undefined
-    )
-    if (error) {
-      return { ok: false, error: error.message }
-    }
-    return { ok: true, status: 200 }
-  } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  return {
+    ok: result.ok,
+    status: result.status,
+    error: result.error,
+    errorKind: result.errorKind,
+    outboxId: result.outboxId,
   }
+}
+
+function isProd(): boolean {
+  return process.env.NODE_ENV === "production"
 }
 
 /** Outbound webhook budget. Kept short: this sits on a user-facing submit. */
