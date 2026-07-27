@@ -108,13 +108,21 @@ Before this fix, `dispatchToN8n` called `fetch` with no `AbortSignal` or timeout
 
 ## 2. Open items — NOT done yet
 
-### A. PayPal credentials are BROKEN in prod (blocker for any purchase)
-The stored `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` fail PayPal OAuth (`invalid_client`) against **both** live and sandbox endpoints — so no checkout (sandbox or live) can complete today. Diagnosis:
-- `PAYPAL_CLIENT_ID` has a **stray trailing `#`** — a chat line-wrap artifact from Finley's 29-Jun message (real PayPal client ids are 80 chars, alphanumeric; stripping `#` → exactly 80).
-- Even with `#` removed it still 401s → the **secret** is also mistyped, or (likely, given the age) the app's secret was **regenerated** since 29 Jun, which kills the old one.
-- Current prod `PAYPAL_MODE = sandbox`, `PAYPAL_ENABLED = true`.
+### A. PayPal is NOT CONNECTED in prod (deliberate off state — no code work outstanding)
 
-**User decision captured:** target is **Live (real money)**. **Do NOT re-key a secret from the screenshot** (OCR of credentials is unreliable — this was an explicit call). Need the **Live app's** Client ID + a freshly regenerated Secret from whoever owns the PayPal app (Matt/Finley — user has no PayPal access). Then: set both in Vercel prod, flip `PAYPAL_MODE=live`, lower one pack to ~£1 for the test, user buys, then **revert** price (and consider whether to keep live). To determine which environment a given credential pair belongs to: `curl -u "CID:SEC" -d grant_type=client_credentials` against `https://api-m.paypal.com/v1/oauth2/token` (live) and `.../api-m.sandbox.paypal.com/...` — whichever returns 200 is its environment.
+**Superseded by migration 036 (`886622b`).** PayPal credentials are no longer environment variables. `resolvePayPalConfig()` (`lib/paypal.ts:146-154`) reads the `get_paypal_runtime_credentials` RPC and treats the database as authoritative; it falls back to `envConfig()` **only** on `PGRST202`/`42883`, i.e. when the RPC does not exist. Both RPCs are confirmed present in prod, so that fallback can never fire and the Vercel `PAYPAL_CLIENT_ID` / `PAYPAL_CLIENT_SECRET` / `PAYPAL_MODE` values are **dead — never read**. Do not set them; changing them has no effect.
+
+**Verified prod state (2026-07-27):** migration 036 applied; `paypal_runtime_credential_versions` has zero rows; `vault.secrets` has zero rows; `app_settings.paypal_config_version`, `paypal_client_id_hint`, `paypal_verified_at` are all NULL and `paypal_enabled = false`. Nothing has ever been saved through Settings — `set_paypal_runtime_credentials` writes a Vault secret **and** a version row, and wrote neither. Client checkout is therefore hidden by design, not failing.
+
+**To go live, no developer and no deploy are needed.** Matt pastes a Sandbox or Live REST Client ID + Secret into Settings → PayPal. The pair is validated against PayPal before storage, encrypted into Vault, and the secret is never displayed again; pause/resume affects only new checkouts. An in-flight order keeps the credential version that created it.
+
+**Still true and still needed:** the June pair from Finley's 29-Jun message is unusable — it 401s against both live and sandbox (client id carried a line-wrap `#`; the secret is a character short of the required length). It is now harmless rather than dangerous, because nothing reads it, but it cannot be pasted into Settings either — validation will reject it. Matt/Finley must supply a **freshly generated** pair from whoever owns the PayPal app. Do not re-key credentials from a screenshot (OCR of secrets is unreliable — explicit call).
+
+**Never verified in any environment:** no real or sandbox purchase has ever completed end to end. The first connection should be a Sandbox pair or a temporarily reduced pack price, then revert.
+
+To identify which environment an unknown pair belongs to: `curl -u "CID:SEC" -d grant_type=client_credentials` against `https://api-m.paypal.com/v1/oauth2/token` (live) and `https://api-m.sandbox.paypal.com/v1/oauth2/token` — whichever returns 200 is its environment.
+
+Do not call `get_paypal_runtime_credentials()` from a shell to inspect state — it returns the decrypted secret. Check `app_settings.paypal_verified_at` / `paypal_client_id_hint` or the Settings screen instead.
 
 ### B. Checkout review fixes — MEDIUM + LOW APPLIED (commits `9ace04e`, `08e3ff2`); migration 027 still needs applying to prod
 
@@ -158,7 +166,7 @@ End-to-end checkout review verdict: **fundamentally sound, no critical/high.** A
 ---
 
 ## 4. How to resume
-1. If continuing PayPal: get valid **Live** creds (§2A), set in Vercel, flip mode, lower a pack price, hand to user to test, revert. Verify creds first with the `oauth2/token` curl before flipping.
+1. PayPal needs **no code work** (§2A). It is live-but-unconnected by design. Matt pastes a fresh Sandbox or Live pair into Settings → PayPal; no Vercel variable, no redeploy. The Vercel `PAYPAL_*` values are dead and must not be relied on. Blocked only on Matt/Finley supplying a freshly generated pair — the June one is invalid.
 2. Checkout fixes are **applied and committed** (§2B). Remaining: user applies **migration 027** in the Supabase SQL editor, then push `main` to deploy.
 3. Prod currently has **zero clients** (all test data cleaned up; only `mathew.robinson@888safetyandtraining.com` in `admin_users`). Matt's first real client will be the first persistent data.
 4. Verification gates used all session: `npm run build` + `npm test` must both be green before any deploy; migrations applied to prod before the code that needs them.
