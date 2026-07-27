@@ -143,6 +143,13 @@ export interface DispatchResult {
   errorKind?: FailureKind
   /** The email_outbox row this send was recorded against, when one was written. */
   outboxId?: string
+  /**
+   * The app stopped waiting before the partner workflow answered. Unlike a
+   * refusal or transport error this is NOT proof of failure — the workflow may
+   * still complete and the admin email may still arrive. Recorded entries must
+   * say so, or Matt learns to ignore the error log.
+   */
+  unconfirmed?: boolean
 }
 
 export interface DispatchOptions {
@@ -229,8 +236,29 @@ function isProd(): boolean {
   return process.env.NODE_ENV === "production"
 }
 
-/** Outbound webhook budget. Kept short: this sits on a user-facing submit. */
+/**
+ * Outbound webhook budget. Kept short because it sits on a user-facing submit —
+ * deliberately SHORTER than the partner workflow's ~30s worst case, so hitting
+ * it proves nothing about the outcome. That is why a timeout is reported as
+ * `unconfirmed`, never as a plain failure.
+ */
 const WEBHOOK_TIMEOUT_MS = 8_000
+
+/** AbortSignal.timeout rejects with a DOMException named TimeoutError; in some
+ *  runtimes DOMException is not an Error subclass, so match on the name. */
+export function isTimeoutError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { name?: unknown }).name === "TimeoutError"
+  )
+}
+
+/** The wording Matt reads in Workflow Errors when we stopped waiting. It must
+ *  not claim failure: the workflow may still deliver after we gave up. */
+export function unconfirmedDeliveryMessage(timeoutMs: number): string {
+  return `No delivery confirmation within ${Math.round(timeoutMs / 1000)}s — the partner workflow may still be running and the admin email may still arrive. Check the inbox before treating this as a failure.`
+}
 
 /**
  * A 2xx only proves that an HTTP endpoint answered. The production n8n
@@ -302,6 +330,13 @@ async function dispatchToN8n(
     await assertN8nDeliveryAcknowledged(res)
     return { ok: true, status: res.status }
   } catch (err) {
+    if (isTimeoutError(err)) {
+      return {
+        ok: false,
+        unconfirmed: true,
+        error: unconfirmedDeliveryMessage(WEBHOOK_TIMEOUT_MS),
+      }
+    }
     return { ok: false, error: err instanceof Error ? err.message : String(err) }
   }
 }

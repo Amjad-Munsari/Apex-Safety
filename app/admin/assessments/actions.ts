@@ -15,6 +15,8 @@ import {
 import {
   assertN8nDeliveryAcknowledged,
   dispatchNotification,
+  isTimeoutError,
+  unconfirmedDeliveryMessage,
 } from "@/lib/notifications/dispatch"
 import {
   runReportDraftGeneration,
@@ -24,6 +26,14 @@ import {
   detectAllowedDocumentType,
   mimeMatchesDetectedType,
 } from "@/lib/files/file-signature"
+
+/**
+ * Wait budget for the n8n assessment-submitted notice. Runs inside after(), so
+ * no user request is held open by it; it must exceed the partner workflow's
+ * ~30s worst case (bounded Gmail retries + acknowledgement), because a wait
+ * shorter than the workflow records "failures" for emails that then arrive.
+ */
+const ASSESSMENT_WEBHOOK_TIMEOUT_MS = 40_000
 
 // Authorize a caller to act on a specific submission. Admins always pass; a
 // client may only act on a submission owned by their OWN org. Returns the
@@ -474,18 +484,24 @@ export async function submitAssessmentAction(
           Authorization: `Bearer ${webhookSecret}`,
         },
         body: JSON.stringify({ submissionId }),
-        // This runs after the user response, so allow the workflow enough time
-        // for its bounded Gmail retries and final delivery acknowledgement.
-        signal: AbortSignal.timeout(15_000),
+        // This runs after the user response, so nothing is held open on this
+        // wait. The budget sits above the workflow's ~30s worst case (Gmail
+        // retries + delivery acknowledgement) — a shorter wait was recording
+        // "failures" for sends that then arrived anyway.
+        signal: AbortSignal.timeout(ASSESSMENT_WEBHOOK_TIMEOUT_MS),
       })
       await assertN8nDeliveryAcknowledged(response)
     } catch (err) {
+      const timedOut = isTimeoutError(err)
       await logWorkflowFailure({
         workflowName: "assessment-submission-webhook",
-        error: err,
+        error: timedOut
+          ? unconfirmedDeliveryMessage(ASSESSMENT_WEBHOOK_TIMEOUT_MS)
+          : err,
         area: "notifications.assessment_webhook",
         source: "job",
-        payload: { submissionId },
+        severity: timedOut ? "warning" : undefined,
+        payload: { submissionId, ...(timedOut ? { unconfirmed: true } : {}) },
       })
     }
   })

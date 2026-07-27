@@ -327,6 +327,9 @@ export async function logWorkflowFailure(input: {
   source?: ErrorSource
   clientId?: string | null
   requestId?: string
+  /** Downgrade to "warning" for unproven failures (e.g. an unconfirmed
+   *  delivery timeout) so Diagnostics doesn't count them as faults. */
+  severity?: ErrorSeverity
 }): Promise<void> {
   const { workflowName, error, payload, clientId, requestId } = input
   const area = input.area ?? `workflow.${workflowName}`
@@ -334,6 +337,7 @@ export async function logWorkflowFailure(input: {
   await logAppError({
     area,
     source: input.source ?? "job",
+    severity: input.severity,
     error,
     clientId: clientId ?? null,
     requestId,

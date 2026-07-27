@@ -36,7 +36,8 @@ export type ClientFormEventPayload = Extract<
  */
 async function recordDispatchFailure(
   payload: ClientFormEventPayload,
-  error: unknown
+  error: unknown,
+  unconfirmed = false
 ): Promise<void> {
   const { logWorkflowFailure } = await import("./../observability/log")
   // logWorkflowFailure writes both surfaces and swallows its own transport
@@ -46,7 +47,11 @@ async function recordDispatchFailure(
     error,
     area: `notifications.${payload.type}`,
     source: "job",
-    payload: { ...payload },
+    // `unconfirmed` marks a timed-out wait, not a proven failure — the message
+    // already says so; the flag makes it filterable. Logged as a warning so
+    // Diagnostics doesn't count a possibly-delivered notice as a fault.
+    severity: unconfirmed ? "warning" : undefined,
+    payload: { ...payload, ...(unconfirmed ? { unconfirmed: true } : {}) },
   })
 }
 
@@ -57,7 +62,11 @@ export async function dispatchClientFormEvent(
     const { dispatchNotification } = await import("./dispatch")
     const result = await dispatchNotification(payload)
     if (!result.ok) {
-      await recordDispatchFailure(payload, result.error ?? "unknown dispatch failure")
+      await recordDispatchFailure(
+        payload,
+        result.error ?? "unknown dispatch failure",
+        result.unconfirmed ?? false
+      )
     }
   } catch (err) {
     // Swallowed to protect the client's flow: the database write they triggered
