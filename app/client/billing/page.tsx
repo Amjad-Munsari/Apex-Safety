@@ -36,7 +36,11 @@ export default async function BillingPage() {
       .from("hours_transactions")
       .select("id, created_at, transaction_type, hours_amount, gbp_amount, notes, paypal_order_id")
       .eq("client_id", ctx.client_id)
-      .is("deleted_at", null)
+      // NOTE: hours_transactions has no deleted_at column in the live schema
+      // (001_initial_schema.sql declares one, production never got it, and the
+      // generated types agree with production). Nothing writes a soft-delete to
+      // the ledger, so there is nothing to filter — the old .is("deleted_at",
+      // null) made every client's Billing page 42703 and render the load-error.
       .order("created_at", { ascending: false })
       .limit(50),
     isPayPalEnabled(),

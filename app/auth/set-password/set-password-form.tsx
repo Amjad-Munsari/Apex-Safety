@@ -3,12 +3,18 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Lock, Loader2, CheckCircle2 } from "lucide-react"
+import { ShieldCheck, CheckCircle2 } from "lucide-react"
 import { PLATFORM_NAME } from "@/lib/public-identity"
 
+/**
+ * Styled to match /login — cream field, hairline inputs, near-black button.
+ * The shadcn Card/Input/Button components were dropped in favour of the same
+ * plain markup /login uses: those components read theme tokens, which resolve
+ * light, and this page was drawing them over a hardcoded dark background.
+ *
+ * Only the presentation changed. The session check, validation rules, Supabase
+ * call, and redirect timing are exactly as they were.
+ */
 export function SetPasswordForm() {
   const router = useRouter()
   const supabase = createClient()
@@ -55,67 +61,105 @@ export function SetPasswordForm() {
     }, 1200)
   }
 
+  const inputClass =
+    "w-full h-12 border border-[#e5e1d8] bg-white rounded-sm px-4 text-[14px] text-[#1a1a1a] placeholder:text-[#b6b0a6] outline-none focus:border-[#1a1a1a] transition-colors"
+
+  const buttonClass =
+    "group w-full h-12 bg-[#1a1a1a] hover:bg-black text-[#fbfaf5] rounded-sm text-[13px] font-bold tracking-tight transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+
   return (
-    <Card className="w-full max-w-md border-0 bg-card/80 backdrop-blur-xl text-foreground shadow-2xl">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-3xl font-bold tracking-tight">Set your password</CardTitle>
-        <CardDescription className="text-muted-foreground">
-          Choose a password to finish setting up your {PLATFORM_NAME} access.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {done ? (
-          <div className="flex flex-col items-center text-center gap-3 py-6">
-            <CheckCircle2 className="h-10 w-10 text-success" />
-            <p className="text-foreground font-medium">Password set — signing you in…</p>
-          </div>
-        ) : hasSession === false ? (
-          <div className="space-y-4 py-2">
-            <p className="text-sm text-danger">
-              This link has expired or was already used. Ask your administrator to resend your invite.
-            </p>
-            <Button
-              onClick={() => router.push("/auth/login")}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg font-semibold"
+    <div>
+      {/* Wordmark — same lockup as /login */}
+      <div className="text-center mb-12">
+        <div className="w-12 h-12 mx-auto rounded-full border border-black/10 bg-white shadow-sm flex items-center justify-center mb-5">
+          <ShieldCheck className="w-6 h-6 text-[#1a1a1a]" />
+        </div>
+        <h1 className="font-serif text-[32px] text-[#1a1a1a] tracking-tight leading-tight">
+          {PLATFORM_NAME}
+        </h1>
+        <p className="font-mono text-[9px] tracking-[0.3em] text-[#3b8273] uppercase font-bold mt-3">
+          Set your password
+        </p>
+      </div>
+
+      {done ? (
+        <div className="flex flex-col items-center text-center gap-3 py-6">
+          <CheckCircle2 className="h-9 w-9 text-[#3b8273]" />
+          <p className="text-[14px] text-[#1a1a1a] font-medium">
+            Password set — signing you in…
+          </p>
+        </div>
+      ) : hasSession === false ? (
+        <div className="space-y-5">
+          <p className="text-[13px] leading-relaxed text-[#1a1a1a]">
+            This link has expired or was already used. Ask your administrator to resend your
+            invite.
+          </p>
+          <button type="button" onClick={() => router.push("/auth/login")} className={buttonClass}>
+            Go to sign in
+            <span
+              aria-hidden
+              className="transition-transform duration-200 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-[3px]"
             >
-              Go to sign in
-            </Button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="password"
-                placeholder="New password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary h-12"
-                required
-              />
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="password"
-                placeholder="Confirm password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                className="pl-10 bg-muted border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary h-12"
-                required
-              />
-            </div>
-            {error && <p className="text-sm text-danger font-medium">{error}</p>}
-            <Button
-              type="submit"
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-6 text-lg font-semibold"
-              disabled={loading || hasSession === null}
+              →
+            </span>
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1.5">
+            <label
+              htmlFor="new-password"
+              className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#888] font-bold"
             >
-              {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Set password & continue"}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+              New password
+            </label>
+            <input
+              id="new-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="new-password"
+              placeholder="At least 8 characters"
+              className={inputClass}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="confirm-password"
+              className="block text-[9px] font-mono uppercase tracking-[0.25em] text-[#888] font-bold"
+            >
+              Confirm password
+            </label>
+            <input
+              id="confirm-password"
+              type="password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+              required
+              autoComplete="new-password"
+              placeholder="••••••••"
+              className={inputClass}
+            />
+          </div>
+
+          {error && <p className="text-[12px] text-[oklch(0.50_0.16_25)]">{error}</p>}
+
+          <button type="submit" disabled={loading || hasSession === null} className={buttonClass}>
+            {loading ? "Setting password…" : "Set password & continue"}
+            {!loading && (
+              <span
+                aria-hidden
+                className="transition-transform duration-200 ease-[cubic-bezier(.22,1,.36,1)] group-hover:translate-x-[3px]"
+              >
+                →
+              </span>
+            )}
+          </button>
+        </form>
+      )}
+    </div>
   )
 }
