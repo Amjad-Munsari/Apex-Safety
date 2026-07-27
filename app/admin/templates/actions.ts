@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { requireActorUserId, isAdmin } from "@/lib/auth-helpers";
+import { logAppError } from "@/lib/observability/log";
 
 // Admin-only template mutations. requireActorUserId only proves authentication;
 // this adds the authorization check against the server-trusted admin_users table
@@ -149,9 +150,12 @@ export async function createTemplate(
     }
   );
   if (error || typeof templateId !== "string") {
-    console.error("[templates] Atomic admin template creation failed", {
-      code: error?.code,
-      message: error?.message,
+    await logAppError({
+      area: "templates.create.admin",
+      source: "action",
+      error,
+      actorType: "admin",
+      context: { templateName, templateType: normalizedType },
     });
     return {
       ok: false,

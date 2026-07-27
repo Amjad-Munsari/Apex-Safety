@@ -9,6 +9,7 @@ import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { embedSignatureInPdf } from "@/lib/pdf/embed-signature"
 import { issueContractCore } from "@/lib/proposals/issue-contract"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -172,8 +173,16 @@ export async function POST(
   // unused and no contract can be issued.
   const now = new Date().toISOString()
   if (!row.signing_document_hash || !row.proposal_pdf_path) {
-    console.error("[sign/[token]] Proposal has incomplete signing evidence", {
-      proposalId: row.id,
+    await logAppError({
+      area: "signing.incomplete_evidence",
+      source: "route",
+      message: "Proposal reached signing with no stored PDF path or document hash",
+      clientId: row.client_id ?? null,
+      context: {
+        proposalId: row.id,
+        hasHash: Boolean(row.signing_document_hash),
+        hasPath: Boolean(row.proposal_pdf_path),
+      },
     })
     return NextResponse.json({ error: "server_error" }, { status: 500 })
   }
@@ -234,10 +243,16 @@ export async function POST(
       throw new Error(stampUploadError.message)
     }
   } catch (err) {
-    console.error(
-      `[sign] proposal evidence preparation failed for ${row.id}:`,
-      err
-    )
+    // The customer is looking at a failed signing page right now, and the token
+    // is deliberately left unused so they can retry — but nothing else records
+    // why it failed.
+    await logAppError({
+      area: "signing.evidence_preparation",
+      source: "route",
+      error: err,
+      clientId: row.client_id ?? null,
+      context: { proposalId: row.id, stage: "download/hash/stamp/upload" },
+    })
     return NextResponse.json(
       { error: "evidence_unavailable" },
       { status: 503 }
@@ -278,18 +293,27 @@ export async function POST(
       .from("proposals")
       .remove([signedPath])
     if (cleanupError) {
-      console.error("[sign/[token]] failed to remove uncommitted artefact", {
-        proposalId: row.id,
-        signedPath,
-        cleanupError,
+      await logAppError({
+        area: "signing.orphan_cleanup",
+        source: "route",
+        severity: "warning",
+        error: cleanupError,
+        clientId: row.client_id ?? null,
+        context: {
+          proposalId: row.id,
+          signedPath,
+          note: "stamped PDF left in storage with no row pointing at it",
+        },
       })
     }
 
     if (redeemError) {
-      console.error("[sign/[token]] atomic evidence commit failed", redeemError)
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "proposal_signature_commit",
-        error_message: redeemError.message ?? "unknown database error",
+      await logWorkflowFailure({
+        workflowName: "proposal_signature_commit",
+        error: redeemError,
+        area: "signing.commit",
+        source: "route",
+        clientId: row.client_id ?? null,
         payload: { proposalId: row.id },
       })
       return NextResponse.json(
@@ -334,14 +358,24 @@ export async function POST(
       signed_at: now,
     })
     if (!notified.ok) {
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "proposal_signed_email",
-        error_message: notified.error ?? "unknown dispatch failure",
-        payload: { proposalId, client_id: consumed.client_id },
+      await logWorkflowFailure({
+        workflowName: "proposal_signed_email",
+        error: notified.error ?? "unknown dispatch failure",
+        area: "notifications.proposal_signed",
+        source: "route",
+        clientId: consumed.client_id ?? null,
+        payload: { proposalId },
       })
     }
   } catch (err) {
-    console.error("[sign/[token]] Notification dispatch failed:", err)
+    await logWorkflowFailure({
+      workflowName: "proposal_signed_email",
+      error: err,
+      area: "notifications.proposal_signed",
+      source: "route",
+      clientId: consumed.client_id ?? null,
+      payload: { proposalId, reason: "dispatch threw" },
+    })
   }
 
   // 8. Auto-issue the Service Agreement now that the proposal is "Signed".
@@ -355,26 +389,26 @@ export async function POST(
   try {
     const issued = await issueContractCore(proposalId)
     if (!issued.ok) {
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "auto_issue_contract",
-        error_message: issued.error,
-        payload: { proposalId, client_id: consumed.client_id },
+      await logWorkflowFailure({
+        workflowName: "auto_issue_contract",
+        error: issued.error,
+        area: "contracts.auto_issue",
+        source: "route",
+        clientId: consumed.client_id ?? null,
+        payload: { proposalId },
       })
     }
   } catch (err) {
-    console.error(
-      `[sign/[token]] Auto-issue contract failed for proposal ${proposalId}:`,
-      err
-    )
-    try {
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "auto_issue_contract",
-        error_message: err instanceof Error ? err.message : String(err),
-        payload: { proposalId, client_id: consumed.client_id },
-      })
-    } catch (logErr) {
-      console.error("[sign/[token]] Failed to log auto-issue error:", logErr)
-    }
+    // logWorkflowFailure swallows its own transport failures, so the nested
+    // try/catch this replaced is no longer needed.
+    await logWorkflowFailure({
+      workflowName: "auto_issue_contract",
+      error: err,
+      area: "contracts.auto_issue",
+      source: "route",
+      clientId: consumed.client_id ?? null,
+      payload: { proposalId, reason: "issueContractCore threw" },
+    })
   }
 
   // 11. Revalidate admin Kanban

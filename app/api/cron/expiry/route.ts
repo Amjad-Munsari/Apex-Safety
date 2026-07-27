@@ -7,6 +7,7 @@ import {
   addDaysToIsoDate,
   todayIsoInTimeZone,
 } from "@/lib/compliance/expiry-status"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 
 export async function GET(request: Request) {
   // Simple cron secret protection (Header or Query Param for manual testing)
@@ -49,7 +50,29 @@ export async function GET(request: Request) {
     paypalCleanupError.code !== "PGRST202" &&
     paypalCleanupError.code !== "42883"
   ) {
-    console.error("[cron/expiry] PayPal runtime cleanup failed")
+    await logAppError({
+      area: "cron.paypal_cleanup",
+      source: "cron",
+      severity: "warning",
+      error: paypalCleanupError,
+    })
+  }
+
+  // Error-log retention. Piggy-backs on the existing daily tick rather than
+  // adding a second schedule; missing a day is harmless because the function
+  // deletes by age, not by what happened since the last run.
+  const { error: errorLogCleanupError } = await supabase.rpc("cleanup_app_error_log", {})
+  if (
+    errorLogCleanupError &&
+    errorLogCleanupError.code !== "PGRST202" &&
+    errorLogCleanupError.code !== "42883"
+  ) {
+    await logAppError({
+      area: "cron.error_log_cleanup",
+      source: "cron",
+      severity: "warning",
+      error: errorLogCleanupError,
+    })
   }
 
   // Respect the admin "Send expiry reminders" toggle — when off, the cron is a
@@ -101,7 +124,13 @@ export async function GET(request: Request) {
     .is("deleted_at", null)
 
   if (docsError || !documents) {
-    console.error("Cron fetch documents error:", docsError)
+    // The whole tick aborts here: no alerts go out for anyone this run.
+    await logAppError({
+      area: "cron.expiry.fetch_documents",
+      source: "cron",
+      error: docsError,
+      context: { note: "expiry tick aborted; no alerts dispatched this run" },
+    })
     return NextResponse.json({ error: "Database error" }, { status: 500 })
   }
 
@@ -178,11 +207,12 @@ export async function GET(request: Request) {
     })
 
     if (!result.ok) {
-      console.error(`[cron/expiry] dispatch failed for doc ${doc.id}: ${result.error}`)
-      await supabase.from("workflow_errors").insert({
-        workflow_name: "expiry_alert",
-        error_message: result.error ?? "unknown dispatch failure",
-        payload: payload,
+      await logWorkflowFailure({
+        workflowName: "expiry_alert",
+        error: result.error ?? "unknown dispatch failure",
+        area: "notifications.expiry_alert",
+        source: "cron",
+        payload: { ...payload, documentId: doc.id },
       })
       // Skip notifications_sent insert so the next cron tick retries this doc.
       continue
@@ -197,10 +227,12 @@ export async function GET(request: Request) {
         alert_window: alertWindow
       })
     if (sentLogError) {
-      console.error(
-        `[cron/expiry] email sent but notification audit insert failed for ${doc.id}:`,
-        sentLogError
-      )
+      await logAppError({
+        area: "cron.expiry.audit_insert",
+        source: "cron",
+        error: sentLogError,
+        context: { documentId: doc.id, note: "alert emailed but dedup row missing — may resend" },
+      })
       await supabase.from("workflow_errors").insert({
         workflow_name: "expiry_notification_audit",
         error_message: sentLogError.message,
@@ -230,10 +262,11 @@ export async function GET(request: Request) {
       }
       const digestResult = await dispatchNotification(digest)
       if (!digestResult.ok) {
-        console.error(`[cron/expiry] admin digest failed for ${admin.email}: ${digestResult.error}`)
-        await supabase.from("workflow_errors").insert({
-          workflow_name: "expiry_admin_digest",
-          error_message: digestResult.error ?? "unknown dispatch failure",
+        await logWorkflowFailure({
+          workflowName: "expiry_admin_digest",
+          error: digestResult.error ?? "unknown dispatch failure",
+          area: "notifications.expiry_admin_digest",
+          source: "cron",
           payload: digest,
         })
       }

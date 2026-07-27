@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { AlertCircle } from "lucide-react"
+import { reportClientError } from "@/lib/observability/report-client-error"
 
 export default function Error({
   error,
@@ -12,8 +13,11 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
+    // The copy below promises the user this was logged, so it has to actually
+    // reach the durable log — console.error alone only ever reached this
+    // browser's devtools.
     console.error("Admin Dashboard Error:", error)
+    reportClientError(error)
   }, [error])
 
   return (

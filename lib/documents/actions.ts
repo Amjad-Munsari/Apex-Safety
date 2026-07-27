@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache"
 import { cookies } from "next/headers"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getAppSettings } from "@/lib/settings/app-settings"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 import {
   detectAllowedDocumentType,
   mimeMatchesDetectedType,
@@ -88,7 +89,14 @@ export async function uploadClientDocumentAction(formData: FormData) {
     .upload(filePath, file)
 
   if (uploadError) {
-    console.error("Storage upload error:", uploadError)
+    await logAppError({
+      area: "documents.upload.storage",
+      source: "action",
+      error: uploadError,
+      actorType: "admin",
+      clientId,
+      context: { filePath, category, sizeBytes: file.size },
+    })
     throw new Error("Failed to upload document")
   }
 
@@ -108,7 +116,14 @@ export async function uploadClientDocumentAction(formData: FormData) {
     .single()
 
   if (dbError) {
-    console.error("Database insert error:", dbError)
+    await logAppError({
+      area: "documents.upload.metadata",
+      source: "action",
+      error: dbError,
+      actorType: "admin",
+      clientId,
+      context: { filePath, category, note: "uploaded object rolled back" },
+    })
     await supabase.storage.from("client-documents").remove([filePath])
     throw new Error("Failed to save document metadata")
   }
@@ -137,11 +152,13 @@ export async function uploadClientDocumentAction(formData: FormData) {
       expiry_date: expiryDate || null,
     })
     if (!result.ok) {
-      console.error(`[upload] notification dispatch failed for client ${clientId}: ${result.error}`)
-      await supabase.from("workflow_errors").insert({
-        workflow_name: "document_uploaded",
-        error_message: result.error ?? "unknown dispatch failure",
-        payload: { client_id: clientId, document_id: document?.id, document_name: file.name },
+      await logWorkflowFailure({
+        workflowName: "document_uploaded",
+        error: result.error ?? "unknown dispatch failure",
+        area: "notifications.document_uploaded",
+        source: "action",
+        clientId,
+        payload: { document_id: document?.id, document_name: file.name },
       })
     }
   } else if (!settings.notifyOnUpload) {
@@ -183,7 +200,17 @@ export async function deleteDocument(documentId: string) {
     const { error: rmErr } = await adminClient.storage
       .from("client-documents")
       .remove([doc.storage_path])
-    if (rmErr) console.error("deleteDocument: storage cleanup failed", { documentId, rmErr })
+    if (rmErr) {
+      await logAppError({
+        area: "documents.delete.storage_cleanup",
+        source: "action",
+        severity: "warning",
+        error: rmErr,
+        actorType: "admin",
+        clientId: doc.client_id ?? null,
+        context: { documentId, storagePath: doc.storage_path, note: "row deleted; file stranded" },
+      })
+    }
   }
 
   if (doc.client_id) revalidatePath(`/admin/clients/${doc.client_id}`)

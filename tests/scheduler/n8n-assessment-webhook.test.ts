@@ -135,9 +135,26 @@ vi.mock("@/lib/form-builder/visibility/strip-hidden-answers", () => ({
 
 // ── next/server after() — invoke callback eagerly so tests can await side effects ──
 // Without this, after() runs out-of-band and the spec races against the webhook fire.
+//
+// Invoking eagerly is not enough on its own: the callback is async, and calling
+// it without keeping the promise leaves the spec asserting against whatever
+// happened to finish in the microtasks the action itself awaited. Any extra
+// await inside the callback then reads as "the side effect never ran". The
+// promises are collected here so a spec can await them explicitly.
+
+const afterPromises: Array<Promise<void> | void> = []
+
+/** Await every callback after() has been handed since the last flush. */
+async function flushAfter(): Promise<void> {
+  while (afterPromises.length > 0) {
+    await Promise.allSettled(afterPromises.splice(0, afterPromises.length))
+  }
+}
 
 vi.mock("next/server", () => ({
-  after: (cb: () => Promise<void> | void) => cb(),
+  after: (cb: () => Promise<void> | void) => {
+    afterPromises.push(cb())
+  },
 }))
 
 // ── AI SDK mocks — suppress runReportDraftGeneration side effects ────────────
@@ -191,6 +208,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+    await flushAfter()
 
     // fetch may be called by the AI pipeline (generateObject → OpenRouter) but
     // NOT by the webhook. Filter to only webhook-URL calls.
@@ -209,6 +227,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+    await flushAfter()
 
     const webhookCall = fetchSpy.mock.calls.find(
       ([url]) => url === FAKE_WEBHOOK_URL
@@ -240,6 +259,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     // Must not throw even though fetch rejects
     await expect(submitAssessmentAction(FAKE_SUBMISSION_ID, {})).resolves.toBeUndefined()
+    await flushAfter()
 
     expect(workflowErrorsInsertSpy).toHaveBeenCalledTimes(1)
     const insertArg = workflowErrorsInsertSpy.mock.calls[0][0]
@@ -254,6 +274,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+    await flushAfter()
 
     expect(workflowErrorsInsertSpy).not.toHaveBeenCalled()
   })
@@ -267,6 +288,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+    await flushAfter()
 
     expect(fetchSpy).not.toHaveBeenCalledWith(
       FAKE_WEBHOOK_URL,
@@ -288,6 +310,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+    await flushAfter()
 
     await vi.waitFor(() => {
       expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(
@@ -307,6 +330,7 @@ describe("submitAssessmentAction inline n8n webhook fire (Phase 18 SC#5)", () =>
 
     const { submitAssessmentAction } = await import("@/app/admin/assessments/actions")
     await submitAssessmentAction(FAKE_SUBMISSION_ID, {})
+    await flushAfter()
 
     await vi.waitFor(() => {
       expect(workflowErrorsInsertSpy).toHaveBeenCalledWith(

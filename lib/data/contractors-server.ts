@@ -4,6 +4,7 @@ import { adminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import type { Contractor, ContractorCategory } from "./contractors"
 import { CONTRACTOR_CATEGORIES } from "./contractors"
+import { logAppErrorAsync } from "@/lib/observability/log"
 
 type ContractorRow = {
   id: string
@@ -52,7 +53,13 @@ export async function fetchContractors(): Promise<Contractor[]> {
     .order("company_name", { ascending: true })
 
   if (error) {
-    console.error("fetchContractors failed:", error)
+    logAppErrorAsync({
+      area: "directory.fetch_contractors",
+      source: "render",
+      severity: "warning",
+      error,
+      context: { degradedTo: "empty result" },
+    })
     return []
   }
 

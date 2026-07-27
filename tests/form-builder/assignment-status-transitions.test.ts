@@ -338,6 +338,9 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
   it("logs but does NOT throw when the DB update returns an error", async () => {
     inStatusSpy.mockResolvedValueOnce({ error: { message: "boom" } });
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    // A recovered-but-degraded path is logged at warning severity, so the
+    // structured line lands on console.warn rather than console.error.
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const supabase = await createClient();
     // Should resolve without throwing
@@ -345,11 +348,17 @@ describe("assignment status transitions — Phase 16 D-08/D-10/D-11 (T-16-05)", 
       transitionAssignmentStatus(supabase as never, "asg-1", "in_progress")
     ).resolves.toBeUndefined();
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "Status transition failed",
-      expect.objectContaining({ assignmentId: "asg-1", next: "in_progress" })
-    );
+    // The failure now goes through the observability logger, which emits one
+    // structured line before attempting its durable write. The guarantee under
+    // test is unchanged: the failure is recorded and the caller does not throw.
+    const emitted = [...warnSpy.mock.calls, ...consoleSpy.mock.calls]
+      .map((call) => String(call[0]))
+      .join("\n");
+    expect(emitted).toContain("assignments.status_transition");
+    expect(emitted).toContain("asg-1");
+    expect(emitted).toContain("in_progress");
 
+    warnSpy.mockRestore();
     consoleSpy.mockRestore();
   });
 

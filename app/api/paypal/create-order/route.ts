@@ -13,6 +13,7 @@ import {
   recordPayPalPendingCheckout,
 } from "@/lib/paypal"
 import { getSiteUrl } from "@/lib/site-url"
+import { logAppError } from "@/lib/observability/log"
 
 // Buffer + PayPal SDK-free fetch live in the Node runtime.
 export const runtime = "nodejs"
@@ -76,7 +77,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     })
     return NextResponse.json({ orderId: id, approveUrl }, { status: 200 })
   } catch (err) {
-    console.error("[paypal/create-order] failed to create order:", err)
+    await logAppError({
+      area: "paypal.create_order",
+      source: "route",
+      error: err,
+      actorType: "client",
+      clientId: ctx.client_id,
+      context: { packageId: pkg?.id },
+    })
     return NextResponse.json({ error: "order_creation_failed" }, { status: 500 })
   }
 }

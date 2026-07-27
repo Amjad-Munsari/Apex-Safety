@@ -1,12 +1,17 @@
 "use client"
 
 import { useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { AlertCircle } from "lucide-react"
-import Link from "next/link"
+import { Button } from "@/components/ui/button"
 import { reportClientError } from "@/lib/observability/report-client-error"
 
-export default function TemplateEditorError({
+/**
+ * Client-portal error boundary. Without one, a throw anywhere under /client
+ * fell through to Next's default error page — which shows a customer of Matt's
+ * a bare stack-trace shell in development and an unbranded message in
+ * production, and reported nothing.
+ */
+export default function ClientPortalError({
   error,
   reset,
 }: {
@@ -14,7 +19,7 @@ export default function TemplateEditorError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error("Template editor error:", error)
+    console.error("Client portal error:", error)
     reportClientError(error)
   }, [error])
 
@@ -24,23 +29,21 @@ export default function TemplateEditorError({
         <AlertCircle className="w-8 h-8 text-danger" />
       </div>
       <div className="space-y-2 max-w-md">
-        <h2 className="text-2xl font-serif text-foreground">Template editor unavailable</h2>
-        <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
-          This template's schema couldn't be loaded into the builder.
-        </p>
-        <p className="text-muted-foreground text-sm pt-2">
-          The schema may be in an older format. The published version is still safe — open it directly or return to the templates list.
+        <h2 className="text-2xl font-serif text-foreground">This page couldn&apos;t be loaded</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Something went wrong on our side. Your data is safe and nothing you submitted has been
+          lost. Try again, and if it keeps happening contact your consultant with the reference
+          below.
         </p>
       </div>
       <div className="flex gap-3">
-        <Link href="/admin/templates">
-          <Button
-            variant="outline"
-            className="border-border hover:bg-muted font-mono text-xs uppercase tracking-widest"
-          >
-            Back to templates
-          </Button>
-        </Link>
+        <Button
+          variant="outline"
+          onClick={() => { window.location.href = "/client" }}
+          className="border-border hover:bg-muted font-mono text-xs uppercase tracking-widest"
+        >
+          Back to portal
+        </Button>
         <Button
           onClick={() => reset()}
           className="bg-primary text-primary-foreground hover:bg-primary/90 font-mono text-xs uppercase tracking-widest"
@@ -51,7 +54,7 @@ export default function TemplateEditorError({
       {error.digest && (
         <div className="mt-8 pt-8 border-t border-border w-full max-w-xs">
           <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-tighter">
-            Error ID: {error.digest}
+            Reference: {error.digest}
           </div>
         </div>
       )}

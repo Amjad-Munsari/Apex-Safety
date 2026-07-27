@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth-helpers"
 import { clientIsActive, CLIENT_DEACTIVATED_MESSAGE } from "@/lib/clients/require-active"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getSiteUrl } from "@/lib/site-url"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 
 export type NewClientInput = {
   name: string
@@ -69,7 +70,14 @@ export async function createClient(
       })
       inviteEmailed = invite.ok ? invite.emailed : false
     } catch (err) {
-      console.error("createClient: portal invite failed", { clientId: data.id, err })
+      await logAppError({
+        area: "clients.create.invite",
+        source: "action",
+        error: err,
+        actorType: "admin",
+        clientId: data.id,
+        context: { note: "client created; portal invite email not sent" },
+      })
       inviteEmailed = false
     }
   }
@@ -196,7 +204,15 @@ export async function deleteClient(
   try {
     await removeClientStorage(clientId)
   } catch (err) {
-    console.error("client delete: storage cleanup failed", { clientId, err })
+    await logAppError({
+      area: "clients.delete.storage",
+      source: "action",
+      severity: "warning",
+      error: err,
+      actorType: "admin",
+      clientId,
+      context: { note: "client rows deleted; storage objects may be stranded" },
+    })
     await adminClient.from("workflow_errors").insert({
       workflow_name: "client_delete_storage",
       error_message: err instanceof Error ? err.message : String(err),
@@ -241,7 +257,14 @@ export async function deleteClient(
     .eq("owner_type", "customer")
     .eq("owner_id", clientId)
   if (tplError) {
-    console.error("client delete: template cleanup failed", { clientId, tplError })
+    await logAppError({
+      area: "clients.delete.templates",
+      source: "action",
+      severity: "warning",
+      error: tplError,
+      actorType: "admin",
+      clientId,
+    })
     await adminClient.from("workflow_errors").insert({
       workflow_name: "client_delete_templates",
       error_message: tplError.message,
@@ -253,11 +276,15 @@ export async function deleteClient(
   for (const u of portalUsers ?? []) {
     const { error: authErr } = await adminClient.auth.admin.deleteUser(u.id)
     if (authErr) {
-      console.error("client delete: auth user cleanup failed", { clientId, userId: u.id, authErr })
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "client_delete_auth_users",
-        error_message: authErr.message,
-        payload: { clientId, userId: u.id },
+      // An orphaned auth.users row blocks re-inviting that email to a future
+      // org, so it needs to be findable rather than only logged.
+      await logWorkflowFailure({
+        workflowName: "client_delete_auth_users",
+        error: authErr,
+        area: "clients.delete.auth_user",
+        source: "action",
+        clientId,
+        payload: { userId: u.id, note: "orphaned auth user blocks re-invite of this email" },
       })
     }
   }
@@ -365,7 +392,16 @@ export async function updateClientHours(
       case "client_not_found":
         return { ok: false, error: "Client not found." }
       default:
-        console.error("updateClientHours: adjust_client_credits failed", { clientId, adjustment, error })
+        // Unmapped RPC failure on a balance write — the one place a silent log
+        // hides a discrepancy between what Matt thinks he adjusted and reality.
+        await logAppError({
+          area: "credits.adjust",
+          source: "action",
+          error,
+          actorType: "admin",
+          clientId,
+          context: { adjustment, note: "balance unchanged; unmapped RPC error" },
+        })
         return { ok: false, error: "Failed to update credits." }
     }
   }

@@ -3,6 +3,7 @@ import "server-only"
 import { revalidatePath } from "next/cache"
 import { adminClient } from "@/lib/supabase/admin"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 
 const VAT_RATE = 0.2
 
@@ -113,7 +114,13 @@ export async function issueContractCore(
       issuedDate,
     })
   } catch (err) {
-    console.error("issueContractCore: PDF generation failed", { proposalId, err })
+    await logAppError({
+      area: "contracts.pdf_generation",
+      source: "action",
+      error: err,
+      clientId: proposal.client_id ?? null,
+      context: { proposalId },
+    })
     return { ok: false, error: "Failed to generate the contract PDF. Please try again." }
   }
 
@@ -124,7 +131,13 @@ export async function issueContractCore(
     .upload(fileName, pdfBuffer, { contentType: "application/pdf", upsert: true })
 
   if (uploadError) {
-    console.error("issueContractCore: upload failed", { proposalId, uploadError })
+    await logAppError({
+      area: "contracts.upload",
+      source: "action",
+      error: uploadError,
+      clientId: proposal.client_id ?? null,
+      context: { proposalId, fileName },
+    })
     return { ok: false, error: "Failed to store the contract PDF. Please try again." }
   }
 
@@ -135,7 +148,16 @@ export async function issueContractCore(
     .eq("id", proposalId)
 
   if (updateError) {
-    console.error("issueContractCore: status/path update failed", { proposalId, updateError })
+    // The PDF exists in storage but the proposal still reads as unissued — a
+    // silent orphan unless it is recorded somewhere durable.
+    await logWorkflowFailure({
+      workflowName: "contract_link_failed",
+      error: updateError,
+      area: "contracts.link",
+      source: "action",
+      clientId: proposal.client_id ?? null,
+      payload: { proposalId, fileName, note: "contract PDF stored but proposal not advanced" },
+    })
     return { ok: false, error: "Contract generated but could not be linked to the proposal." }
   }
 
@@ -164,15 +186,25 @@ export async function issueContractCore(
         issued_at: new Date().toISOString(),
       })
       if (!dispatch.ok) {
-        await adminClient.from("workflow_errors").insert({
-          workflow_name: "contract_issued_email",
-          error_message: dispatch.error ?? "unknown dispatch failure",
-          payload: { proposalId, client_id: proposal.client_id },
+        await logWorkflowFailure({
+          workflowName: "contract_issued_email",
+          error: dispatch.error ?? "unknown dispatch failure",
+          area: "notifications.contract_issued",
+          source: "action",
+          clientId: proposal.client_id ?? null,
+          payload: { proposalId },
         })
       }
     }
   } catch (err) {
-    console.error("issueContractCore: notification dispatch failed", { proposalId, err })
+    await logWorkflowFailure({
+      workflowName: "contract_issued_email",
+      error: err,
+      area: "notifications.contract_issued",
+      source: "action",
+      clientId: proposal.client_id ?? null,
+      payload: { proposalId, reason: "dispatch threw" },
+    })
   }
 
   revalidatePath("/admin/proposals")

@@ -36,18 +36,18 @@ export type ClientFormEventPayload = Extract<
  */
 async function recordDispatchFailure(
   payload: ClientFormEventPayload,
-  error: string
+  error: unknown
 ): Promise<void> {
-  try {
-    const { adminClient } = await import("@/lib/supabase/admin")
-    await adminClient.from("workflow_errors").insert({
-      workflow_name: payload.type,
-      error_message: error,
-      payload,
-    })
-  } catch (err) {
-    console.error(`[n8n] could not record ${payload.type} failure:`, err)
-  }
+  const { logWorkflowFailure } = await import("./../observability/log")
+  // logWorkflowFailure writes both surfaces and swallows its own transport
+  // failures, so the local try/catch this replaced is no longer needed.
+  await logWorkflowFailure({
+    workflowName: payload.type,
+    error,
+    area: `notifications.${payload.type}`,
+    source: "job",
+    payload: { ...payload },
+  })
 }
 
 export async function dispatchClientFormEvent(
@@ -57,17 +57,11 @@ export async function dispatchClientFormEvent(
     const { dispatchNotification } = await import("./dispatch")
     const result = await dispatchNotification(payload)
     if (!result.ok) {
-      console.error(`[n8n] ${payload.type} dispatch failed:`, result.error)
       await recordDispatchFailure(payload, result.error ?? "unknown dispatch failure")
     }
   } catch (err) {
-    console.error(
-      `[n8n] ${payload.type} dispatch threw — swallowed to protect client flow:`,
-      err
-    )
-    await recordDispatchFailure(
-      payload,
-      err instanceof Error ? err.message : String(err)
-    )
+    // Swallowed to protect the client's flow: the database write they triggered
+    // has already committed and must not be undone by a notification failure.
+    await recordDispatchFailure(payload, err)
   }
 }

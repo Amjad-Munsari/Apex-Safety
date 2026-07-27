@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { sendProposalForSignature } from "@/app/admin/proposals/actions"
 import { SendProposalError } from "@/lib/proposals/send-errors"
+import { logAppError } from "@/lib/observability/log"
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,12 @@ export async function POST(req: NextRequest, ctx: RouteContext): Promise<NextRes
 
     // Genuinely unexpected failures are server errors — reporting them as 401
     // hides real faults behind an auth story (auth failures are caught above).
-    console.error("[send-for-signature] unexpected error:", err)
+    await logAppError({
+      area: "proposals.send_for_signature",
+      source: "route",
+      error: err,
+      actorType: "admin",
+    })
     return NextResponse.json({ error: "internal_error" }, { status: 500 })
   }
 }

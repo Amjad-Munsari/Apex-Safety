@@ -7,6 +7,7 @@ import { dispatchClientFormEvent } from "@/lib/notifications/client-form-events"
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { scheduleReportDraftGeneration } from "@/lib/reports/report-draft";
+import { logAppError } from "@/lib/observability/log";
 
 // Every export in this file is a WRITE (create/save/publish/delete/fill a
 // customer-owned template), so the deactivated-client freeze belongs here in the
@@ -76,9 +77,13 @@ export async function createClientTemplate(
     }
   );
   if (error || typeof templateId !== "string") {
-    console.error("[templates] Atomic customer template creation failed", {
-      code: error?.code,
-      message: error?.message,
+    await logAppError({
+      area: "templates.create.customer",
+      source: "action",
+      error,
+      actorType: "client",
+      clientId: ctx.client_id,
+      context: { templateName },
     });
     return {
       ok: false,

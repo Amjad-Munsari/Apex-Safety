@@ -587,6 +587,84 @@ export type Database = {
           },
         ]
       }
+      app_error_log: {
+        Row: {
+          actor_id: string | null
+          actor_type: string | null
+          area: string
+          client_id: string | null
+          context: Json
+          digest: string | null
+          environment: string
+          error_name: string | null
+          fingerprint: string
+          id: string
+          message: string
+          occurred_at: string
+          release: string | null
+          request_id: string | null
+          request_method: string | null
+          request_path: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          route_path: string | null
+          severity: string
+          source: string
+          stack: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_type?: string | null
+          area: string
+          client_id?: string | null
+          context?: Json
+          digest?: string | null
+          environment?: string
+          error_name?: string | null
+          fingerprint: string
+          id?: string
+          message: string
+          occurred_at?: string
+          release?: string | null
+          request_id?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route_path?: string | null
+          severity?: string
+          source: string
+          stack?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_type?: string | null
+          area?: string
+          client_id?: string | null
+          context?: Json
+          digest?: string | null
+          environment?: string
+          error_name?: string | null
+          fingerprint?: string
+          id?: string
+          message?: string
+          occurred_at?: string
+          release?: string | null
+          request_id?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          route_path?: string | null
+          severity?: string
+          source?: string
+          stack?: string | null
+        }
+        Relationships: []
+      }
       workflow_errors: {
         Row: {
           created_at: string
@@ -622,6 +700,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_app_error_log: {
+        Args: {
+          p_resolved_retention_days?: number
+          p_unresolved_retention_days?: number
+        }
+        Returns: number
+      }
       check_rate_limit: {
         Args: {
           p_key: string

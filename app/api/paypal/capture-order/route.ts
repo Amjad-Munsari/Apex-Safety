@@ -10,6 +10,7 @@ import {
   type PayPalOrderPayload,
 } from "@/lib/paypal"
 import { adminClient } from "@/lib/supabase/admin"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 
 export const runtime = "nodejs"
 
@@ -108,7 +109,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     try {
       await markPayPalPendingCheckoutCredited(orderId)
     } catch (error) {
-      console.error("[paypal/capture-order] could not mark an existing credit:", error)
+      await logAppError({
+        area: "paypal.capture.mark_existing",
+        source: "route",
+        severity: "warning",
+        error,
+        actorType: "client",
+        clientId: ctx.client_id,
+        context: { orderId, note: "credit already applied; only the lifecycle marker failed" },
+      })
     }
     return NextResponse.json({
       success: true,
@@ -123,7 +132,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     checkout = await getPayPalCheckoutContext(orderId)
   } catch (error) {
-    console.error("[paypal/capture-order] checkout configuration failed:", error)
+    await logAppError({
+      area: "paypal.capture.configuration",
+      source: "route",
+      error,
+      actorType: "client",
+      clientId: ctx.client_id,
+      context: { orderId },
+    })
     return NextResponse.json({ error: "checkout_configuration_failed" }, { status: 502 })
   }
   if (checkout.mapping && checkout.mapping.clientId !== ctx.client_id) {
@@ -137,13 +153,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     completed = (payload as { status?: string }).status === "COMPLETED"
   }
   if (!completed) {
-    console.error("[paypal/capture-order] capture did not complete", {
-      status: typeof (payload as { status?: unknown }).status === "string"
-        ? (payload as { status: string }).status
-        : "unknown",
-      issue: Array.isArray((payload as { details?: unknown }).details)
-        ? "provider_rejected"
-        : "provider_unavailable",
+    await logAppError({
+      area: "paypal.capture.incomplete",
+      source: "external",
+      message: "PayPal capture did not reach COMPLETED",
+      actorType: "client",
+      clientId: ctx.client_id,
+      context: {
+        orderId,
+        status: typeof (payload as { status?: unknown }).status === "string"
+          ? (payload as { status: string }).status
+          : "unknown",
+        issue: Array.isArray((payload as { details?: unknown }).details)
+          ? "provider_rejected"
+          : "provider_unavailable",
+      },
     })
     return NextResponse.json({ error: "capture_failed" }, { status: 502 })
   }
@@ -164,10 +188,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     unit.amountCurrency !== PAYPAL_CURRENCY ||
     unit.amountValue !== formatPayPalAmount(pkg.priceGBP)
   ) {
-    console.error("[paypal/capture-order] amount mismatch", {
-      expected: formatPayPalAmount(pkg.priceGBP),
-      got: unit.amountValue,
-      currency: unit.amountCurrency,
+    // A mismatch means the approved order does not match any package we sell —
+    // tampering or a package edited mid-checkout. Both warrant a real record.
+    await logAppError({
+      area: "paypal.capture.amount_mismatch",
+      source: "route",
+      message: "Captured amount did not match the package price",
+      actorType: "client",
+      clientId: ctx.client_id,
+      context: {
+        orderId,
+        packageId: pkg.id,
+        expected: formatPayPalAmount(pkg.priceGBP),
+        got: unit.amountValue,
+        currency: unit.amountCurrency,
+      },
     })
     return NextResponse.json({ error: "amount_mismatch" }, { status: 400 })
   }
@@ -185,7 +220,23 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // UNIQUE violation on paypal_order_id = a concurrent request already credited.
   // Treat as success rather than double-charging the customer's balance.
   if (rpcError && rpcError.code !== "23505") {
-    console.error("[paypal/capture-order] credit RPC failed:", rpcError)
+    // Money has been taken and the balance did not move. This is the one
+    // failure in the build that costs a customer real money, so it goes to
+    // Workflow Errors (where Matt will see it) as well as the diagnostics log.
+    await logWorkflowFailure({
+      workflowName: "paypal_credit_failed",
+      error: rpcError,
+      area: "paypal.capture.credit",
+      source: "route",
+      clientId: ctx.client_id,
+      payload: {
+        orderId,
+        packageId: pkg.id,
+        credits: pkg.credits,
+        gbp: pkg.priceGBP,
+        note: "PayPal captured but credits were not applied — manual adjustment required",
+      },
+    })
     return NextResponse.json({ error: "credit_failed" }, { status: 500 })
   }
 
@@ -194,7 +245,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   } catch (error) {
     // The ledger is already authoritative and idempotent; a later retry of the
     // capture route will repair this non-money lifecycle marker.
-    console.error("[paypal/capture-order] could not mark credited checkout:", error)
+    await logAppError({
+      area: "paypal.capture.mark_credited",
+      source: "route",
+      severity: "warning",
+      error,
+      actorType: "client",
+      clientId: ctx.client_id,
+      context: { orderId, note: "credits applied; only the lifecycle marker failed" },
+    })
   }
 
   return NextResponse.json({

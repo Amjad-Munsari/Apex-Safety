@@ -11,6 +11,7 @@ import { SendProposalError } from "@/lib/proposals/send-errors"
 import { issueContractCore } from "@/lib/proposals/issue-contract"
 import { generateText } from "ai"
 import { createOpenAI } from "@ai-sdk/openai"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 
 const openrouter = createOpenAI({
   baseURL: "https://openrouter.ai/api/v1",
@@ -209,15 +210,13 @@ export async function sendProposalForSignature(
   })
 
   if (!dispatch.ok) {
-    console.error("[sendProposalForSignature] n8n dispatch failed:", dispatch.error)
-    await adminClient.from("workflow_errors").insert({
-      workflow_name: "proposal_signature_request",
-      error_message: dispatch.error ?? "unknown dispatch failure",
-      payload: {
-        proposal_id: proposalId,
-        client_id: proposal.client_id,
-        recipient_email: contactEmail,
-      },
+    await logWorkflowFailure({
+      workflowName: "proposal_signature_request",
+      error: dispatch.error ?? "unknown dispatch failure",
+      area: "notifications.proposal_signature_request",
+      source: "action",
+      clientId: proposal.client_id ?? null,
+      payload: { proposal_id: proposalId, recipient_email: contactEmail },
     })
   }
 
@@ -454,8 +453,15 @@ export async function deleteProposal(proposalId: string) {
       .remove(orphanPaths)
     if (rmError) {
       // Don't fail the whole delete just because storage cleanup failed —
-      // the row is already gone. Log so we can clean orphans later.
-      console.error("Failed to remove proposal PDF from storage:", rmError)
+      // the row is already gone. Recorded so the orphans stay findable.
+      await logAppError({
+        area: "proposals.delete.storage_cleanup",
+        source: "action",
+        severity: "warning",
+        error: rmError,
+        actorType: "admin",
+        context: { orphanPaths, note: "proposal rows deleted; PDFs stranded" },
+      })
     }
   }
 
@@ -649,7 +655,18 @@ export async function markProposalSignedManually(
     signed_at: now,
   })
   if (sigError) {
-    console.error("markProposalSignedManually: signature audit insert failed", { proposalId, sigError })
+    // This leaves a proposal marked Signed with no evidence row behind it — the
+    // exact state an audit would query for. It used to reach console only, so
+    // nobody could discover it after the fact; it now surfaces on Workflow
+    // Errors for Matt and in the diagnostics log with the failure detail.
+    await logWorkflowFailure({
+      workflowName: "proposal_manual_signature_evidence",
+      error: sigError,
+      area: "signing.manual_evidence",
+      source: "action",
+      clientId: proposal.client_id ?? null,
+      payload: { proposalId, reason: "signature audit insert failed after status change" },
+    })
   }
 
   // Notify client — non-fatal.
@@ -671,15 +688,25 @@ export async function markProposalSignedManually(
         signed_at: now,
       })
       if (!dispatch.ok) {
-        await adminClient.from("workflow_errors").insert({
-          workflow_name: "proposal_signed_email",
-          error_message: dispatch.error ?? "unknown dispatch failure",
-          payload: { proposalId, client_id: proposal.client_id },
+        await logWorkflowFailure({
+          workflowName: "proposal_signed_email",
+          error: dispatch.error ?? "unknown dispatch failure",
+          area: "notifications.proposal_signed",
+          source: "action",
+          clientId: proposal.client_id ?? null,
+          payload: { proposalId },
         })
       }
     }
   } catch (err) {
-    console.error("markProposalSignedManually: notification dispatch failed", { proposalId, err })
+    await logWorkflowFailure({
+      workflowName: "proposal_signed_email",
+      error: err,
+      area: "notifications.proposal_signed",
+      source: "action",
+      clientId: proposal.client_id ?? null,
+      payload: { proposalId, reason: "dispatch threw" },
+    })
   }
 
   revalidatePath("/admin/proposals")

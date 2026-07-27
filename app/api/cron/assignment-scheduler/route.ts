@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { generateNextOccurrence } from "@/lib/scheduler/generate-next-occurrence"
 import { sendAssignmentReminder } from "@/lib/scheduler/send-reminder"
+import { logAppError } from "@/lib/observability/log"
 
 export async function GET(request: Request) {
   // Simple cron secret protection (Header or Query Param for manual testing)
@@ -61,7 +62,12 @@ export async function GET(request: Request) {
     .not("due_date", "is", null)
 
   if (activeError) {
-    console.error("[cron/assignment-scheduler] PASS A fetch error:", activeError)
+    await logAppError({
+      area: "cron.scheduler.pass_a_fetch",
+      source: "cron",
+      error: activeError,
+      context: { note: "no assignment reminders sent this tick" },
+    })
   }
 
   for (const row of active ?? []) {
@@ -122,9 +128,12 @@ export async function GET(request: Request) {
 
     if (!result.ok) {
       // Failure path: insert workflow_errors and skip dedup write so next tick retries
-      console.error(
-        `[cron/assignment-scheduler] dispatch failed for assignment ${row.id}: ${result.error}`
-      )
+      await logAppError({
+        area: "notifications.assignment_reminder",
+        source: "cron",
+        error: result.error ?? "unknown dispatch failure",
+        context: { assignmentId: row.id, cadence },
+      })
       await supabase.from("workflow_errors").insert({
         workflow_name: "assignment_reminder",
         error_message: result.error ?? "unknown dispatch failure",
@@ -155,7 +164,12 @@ export async function GET(request: Request) {
     .is("recurrence_generated_at", null)
 
   if (recurringError) {
-    console.error("[cron/assignment-scheduler] PASS B fetch error:", recurringError)
+    await logAppError({
+      area: "cron.scheduler.pass_b_fetch",
+      source: "cron",
+      error: recurringError,
+      context: { note: "no recurring assignments regenerated this tick" },
+    })
   }
 
   for (const completed of completedRecurring ?? []) {
@@ -193,9 +207,12 @@ export async function GET(request: Request) {
         .update({ recurrence_generated_at: null })
         .eq("id", completed.id)
 
-      console.error(
-        `[cron/assignment-scheduler] recurrence generation failed for ${completed.id}: ${res.reason}`
-      )
+      await logAppError({
+        area: "cron.scheduler.recurrence",
+        source: "cron",
+        message: `Recurrence generation failed: ${res.reason}`,
+        context: { assignmentId: completed.id, reason: res.reason },
+      })
     }
   }
 

@@ -7,6 +7,7 @@ import { assertClientActive } from "@/lib/clients/require-active"
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { after } from "next/server"
+import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
 import {
   buildSignatureStoragePath,
   buildPhotoStoragePath,
@@ -161,7 +162,15 @@ export async function deleteAssessment(submissionId: string) {
       .eq("id", sub.assignment_id)
     if (assignDeleteError) {
       // Non-fatal — submission is already gone, assignment is just dangling.
-      console.error("Failed to delete parent form_assignment:", assignDeleteError)
+      await logAppError({
+        area: "assessments.delete.assignment",
+        source: "action",
+        severity: "warning",
+        error: assignDeleteError,
+        actorType: "admin",
+        clientId: sub.client_id ?? null,
+        context: { submissionId, assignmentId: sub.assignment_id, note: "dangling assignment left behind" },
+      })
     }
   }
 
@@ -170,7 +179,15 @@ export async function deleteAssessment(submissionId: string) {
       .from("reports")
       .remove([sub.report_storage_path])
     if (rmError) {
-      console.error("Failed to remove assessment PDF from storage:", rmError)
+      await logAppError({
+        area: "assessments.delete.report_pdf",
+        source: "action",
+        severity: "warning",
+        error: rmError,
+        actorType: "admin",
+        clientId: sub.client_id ?? null,
+        context: { submissionId, path: sub.report_storage_path, note: "report PDF stranded in storage" },
+      })
     }
   }
 
@@ -440,11 +457,12 @@ export async function submitAssessmentAction(
     if (!webhookSecret) {
       const errorMessage =
         "N8N_ASSESSMENT_WEBHOOK_SECRET is not configured; assessment webhook was not sent."
-      console.error(errorMessage, { submissionId })
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "assessment-submission-webhook",
-        error_message: errorMessage,
-        payload: { submissionId },
+      await logWorkflowFailure({
+        workflowName: "assessment-submission-webhook",
+        error: errorMessage,
+        area: "notifications.assessment_webhook",
+        source: "job",
+        payload: { submissionId, reason: "missing webhook secret" },
       })
       return
     }
@@ -462,10 +480,11 @@ export async function submitAssessmentAction(
       })
       await assertN8nDeliveryAcknowledged(response)
     } catch (err) {
-      console.error("Phase 18 SC#5 n8n webhook trigger failed", { submissionId, err })
-      await adminClient.from("workflow_errors").insert({
-        workflow_name: "assessment-submission-webhook",
-        error_message: String(err),
+      await logWorkflowFailure({
+        workflowName: "assessment-submission-webhook",
+        error: err,
+        area: "notifications.assessment_webhook",
+        source: "job",
         payload: { submissionId },
       })
     }
@@ -644,11 +663,11 @@ export async function uploadMediaAction(
     })
 
   if (insertError) {
-    console.error("field_media insert failed after successful storage upload", {
-      submissionId,
-      fieldId,
-      storagePath,
+    await logAppError({
+      area: "assessments.field_media.insert",
+      source: "action",
       error: insertError,
+      context: { submissionId, fieldId, storagePath, note: "object uploaded but audit row missing" },
     })
     const { error: cleanupError } = await adminClient.storage
       .from("form-media")
@@ -774,16 +793,12 @@ export async function deleteMediaAction(
     .eq("storage_path", storagePath)
 
   if (auditDeleteError) {
-    console.error("Photo removed but field_media cleanup failed", {
-      submissionId,
-      fieldId,
-      storagePath,
-      auditDeleteError,
-    })
-    await adminClient.from("workflow_errors").insert({
-      workflow_name: "field_media_cleanup",
-      error_message: auditDeleteError.message,
-      payload: { submissionId, fieldId, storagePath },
+    await logWorkflowFailure({
+      workflowName: "field_media_cleanup",
+      error: auditDeleteError,
+      area: "assessments.field_media.cleanup",
+      source: "action",
+      payload: { submissionId, fieldId, storagePath, note: "photo removed but audit row remains" },
     })
   }
 

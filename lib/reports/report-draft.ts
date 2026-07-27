@@ -11,6 +11,7 @@ import { buildReportPrompt } from "@/lib/ai/prompt-builder"
 import { expandRepeatingSections } from "@/lib/form-builder/expand-repeating-sections"
 import { extractPAS79Summary } from "@/lib/form-builder/risk/pas79"
 import { adminClient } from "@/lib/supabase/admin"
+import { logAppError } from "@/lib/observability/log"
 
 /**
  * Generate and persist the AI report draft for a committed submission.
@@ -111,9 +112,17 @@ export async function runReportDraftGeneration(submissionId: string) {
 
     return { success: true, draft: object }
   } catch (err: unknown) {
-    console.error("generateReportDraft failed:", err)
     const errMessage = err instanceof Error ? err.message : String(err)
     const errStack = err instanceof Error ? err.stack : null
+
+    // Both surfaces: Workflow Errors tells Matt a report needs re-running,
+    // the diagnostics log keeps the provider response and stack that say why.
+    await logAppError({
+      area: "ai.report_draft",
+      source: "job",
+      error: err,
+      context: { submissionId, model: "openrouter", stage: "generateObject" },
+    })
 
     await adminClient.from("workflow_errors").insert({
       workflow_name: "ai_report_draft",
@@ -146,7 +155,12 @@ export function scheduleReportDraftGeneration(submissionId: string): void {
     try {
       await runReportDraftGeneration(submissionId)
     } catch (err) {
-      console.error("Auto report-draft generation failed", { submissionId, err })
+      await logAppError({
+        area: "ai.report_draft.scheduled",
+        source: "job",
+        error: err,
+        context: { submissionId, note: "post-response draft generation failed" },
+      })
       try {
         await adminClient
           .from("form_submissions")
@@ -154,9 +168,16 @@ export function scheduleReportDraftGeneration(submissionId: string): void {
           .eq("id", submissionId)
           .eq("status", "submitted")
       } catch (flipErr) {
-        console.error("Fallback status flip to ai_draft_failed also failed", {
-          submissionId,
-          flipErr,
+        // The submission is now stuck in 'submitted' with no draft and no
+        // failure marker — invisible in the review queue without this record.
+        await logAppError({
+          area: "ai.report_draft.status_flip",
+          source: "job",
+          error: flipErr,
+          context: {
+            submissionId,
+            note: "submission left in 'submitted' with no draft and no ai_draft_failed marker",
+          },
         })
       }
     }

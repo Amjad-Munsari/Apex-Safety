@@ -3,6 +3,7 @@ import "server-only"
 import { adminClient } from "@/lib/supabase/admin"
 import type { Service, ServiceCategory } from "./services"
 import { SERVICE_CATEGORIES } from "./services"
+import { logAppErrorAsync } from "@/lib/observability/log"
 
 type ServiceRow = {
   id: string
@@ -54,7 +55,13 @@ export async function fetchServices(): Promise<Service[]> {
     .order("name", { ascending: true })
 
   if (error) {
-    console.error("fetchServices failed:", error)
+    logAppErrorAsync({
+      area: "services.fetch",
+      source: "render",
+      severity: "warning",
+      error,
+      context: { degradedTo: "empty result" },
+    })
     return []
   }
 

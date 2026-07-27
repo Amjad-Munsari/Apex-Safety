@@ -13,6 +13,7 @@ import {
   detectAllowedDocumentType,
   mimeMatchesDetectedType,
 } from "@/lib/files/file-signature"
+import { logAppError } from "@/lib/observability/log"
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2 MB (matches the dropzone copy)
 const ALLOWED_LOGO_MIME = new Set(["image/png", "image/jpeg", "image/webp"])
@@ -302,7 +303,16 @@ export async function removeBrandingLogo(): Promise<{ ok: boolean; error?: strin
 
   if (prev?.logo_path) {
     const { error: rmErr } = await adminClient.storage.from("branding").remove([prev.logo_path])
-    if (rmErr) console.error("removeBrandingLogo: storage cleanup failed", rmErr)
+    if (rmErr) {
+      await logAppError({
+        area: "settings.branding_logo.cleanup",
+        source: "action",
+        severity: "warning",
+        error: rmErr,
+        actorType: "admin",
+        context: { note: "logo reference cleared; object left in storage" },
+      })
+    }
   }
 
   revalidatePath("/admin/settings")

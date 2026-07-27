@@ -9,6 +9,7 @@ import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateNextOccurrence } from "@/lib/scheduler/generate-next-occurrence";
 import { scheduleReportDraftGeneration } from "@/lib/reports/report-draft";
+import { logAppError } from "@/lib/observability/log";
 
 // ── Internal auth helpers ────────────────────────────────────────────────────
 
@@ -92,7 +93,14 @@ export async function transitionAssignmentStatus(
         .eq("status", "in_progress");
 
   if (error) {
-    console.error("Status transition failed", { assignmentId, next, error });
+    await logAppError({
+      area: "assignments.status_transition",
+      source: "action",
+      severity: "warning",
+      error,
+      actorType: "client",
+      context: { assignmentId, next, note: "assignment left in its previous status" },
+    });
   }
 }
 
@@ -399,9 +407,17 @@ export async function submitAssignedFillByIdAction(
           .from("form_assignments")
           .update({ recurrence_generated_at: null })
           .eq("id", updated.assignment_id);
-        console.error("inline recurrence failed", {
-          assignmentId: updated.assignment_id,
-          reason: res.reason,
+        await logAppError({
+          area: "assignments.inline_recurrence",
+          source: "action",
+          severity: "warning",
+          message: `Inline recurrence generation failed: ${res.reason}`,
+          actorType: "client",
+          context: {
+            assignmentId: updated.assignment_id,
+            reason: res.reason,
+            note: "recurrence stamp rolled back for the next cron tick",
+          },
         });
       }
     }

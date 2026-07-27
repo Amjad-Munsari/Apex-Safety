@@ -5,6 +5,30 @@ import {
   complianceStatusForDate,
   todayIsoInTimeZone,
 } from "@/lib/compliance/expiry-status"
+import { logAppErrorAsync } from "@/lib/observability/log"
+
+/**
+ * Records a dashboard read that failed and fell back to an empty result.
+ *
+ * Every query in this file degrades to `[]` or `0` rather than throwing, which
+ * keeps the dashboard up but makes a broken query indistinguishable from a
+ * genuinely empty account — "no reports awaiting review" reads the same whether
+ * that's true or the query 500'd. These are render paths, so the log write is
+ * fire-and-forget: the page must not wait on it.
+ */
+function reportReadFailure(
+  area: string,
+  error: unknown,
+  context?: Record<string, unknown>
+): void {
+  logAppErrorAsync({
+    area: `dashboard.${area}`,
+    source: "render",
+    severity: "warning",
+    error,
+    context: { ...context, degradedTo: "empty result" },
+  })
+}
 
 export const getDashboardStats = cache(async () => {
   const todayIso = todayIsoInTimeZone()
@@ -70,12 +94,12 @@ export const getDashboardStats = cache(async () => {
   const proposalCount = proposalRes.count
   const totalDocCount = totalDocRes.count
 
-  if (overdueRes.error) console.error(`Dashboard stats error (overdue): ${overdueRes.error.message}`)
-  if (expiringRes.error) console.error(`Dashboard stats error (expiring): ${expiringRes.error.message}`)
-  if (reviewRes.error) console.error(`Dashboard stats error (review): ${reviewRes.error.message}`)
-  if (errorRes.error) console.error(`Dashboard stats error (errors): ${errorRes.error.message}`)
-  if (clientRes.error) console.error(`Dashboard stats error (clients): ${clientRes.error.message}`)
-  if (proposalRes.error) console.error(`Dashboard stats error (proposals): ${proposalRes.error.message}`)
+  if (overdueRes.error) reportReadFailure("stats.overdue", overdueRes.error)
+  if (expiringRes.error) reportReadFailure("stats.expiring", expiringRes.error)
+  if (reviewRes.error) reportReadFailure("stats.review", reviewRes.error)
+  if (errorRes.error) reportReadFailure("stats.errors", errorRes.error)
+  if (clientRes.error) reportReadFailure("stats.clients", clientRes.error)
+  if (proposalRes.error) reportReadFailure("stats.proposals", proposalRes.error)
 
   return {
     overdueCount: overdueCount || 0,
@@ -105,7 +129,7 @@ export async function getReportsAwaitingReview(limit: number = 3) {
     .limit(limit)
 
   if (error) {
-    console.error("getReportsAwaitingReview error:", { code: error.code, message: error.message })
+    reportReadFailure("reportsAwaitingReview", error)
     return []
   }
   return data || []
@@ -133,7 +157,7 @@ export async function getCompletedReports(limit: number = 50) {
     .limit(limit)
 
   if (error) {
-    console.error("getCompletedReports error:", { code: error.code, message: error.message })
+    reportReadFailure("completedReports", error)
     return []
   }
   return data || []
@@ -159,7 +183,7 @@ export async function getUpcomingExpiries(limit: number = 100) {
     .limit(limit)
 
   if (error) {
-    console.error("getUpcomingExpiries error:", { code: error.code, message: error.message })
+    reportReadFailure("upcomingExpiries", error)
     return []
   }
   return data || []
@@ -186,11 +210,11 @@ export async function getComplianceAggregates() {
   const undated = total - expired - expiring - current
 
   if (expiredRes.error || expiringRes.error || currentRes.error || totalRes.error) {
-    console.error("getComplianceAggregates error:", {
+    reportReadFailure("complianceAggregates", expiredRes.error ?? expiringRes.error ?? currentRes.error ?? totalRes.error, {
       expired: expiredRes.error?.message,
       expiring: expiringRes.error?.message,
       current: currentRes.error?.message,
-      total: totalRes.error?.message
+      total: totalRes.error?.message,
     })
   }
 
@@ -229,7 +253,7 @@ export const getComplianceBreakdown = cache(async (): Promise<ComplianceBreakdow
   const breakdown: ComplianceBreakdown = { Current: [], Expiring: [], Expired: [] }
 
   if (error) {
-    console.error("getComplianceBreakdown error:", { code: error.code, message: error.message })
+    reportReadFailure("complianceBreakdown", error)
     return breakdown
   }
 
@@ -410,7 +434,7 @@ export async function getWorkflowErrors(limit: number = 5): Promise<WorkflowErro
     .limit(limit)
 
   if (error) {
-    console.error(`getWorkflowErrors failure: ${error.message} (Code: ${error.code})`)
+    reportReadFailure("workflowErrors", error)
     return []
   }
   return enrichWorkflowErrors((data ?? []) as RawWorkflowErrorRow[])
@@ -432,7 +456,7 @@ export async function getWorkflowErrorsSince(
     .limit(limit)
 
   if (error) {
-    console.error(`getWorkflowErrorsSince failure: ${error.message} (Code: ${error.code})`)
+    reportReadFailure("workflowErrorsSince", error)
     return []
   }
   return enrichWorkflowErrors((data ?? []) as RawWorkflowErrorRow[])
