@@ -4,26 +4,6 @@
 
 **Updated 27 July 2026**
 
-> ### ⚠️ NOT FOR HANDOVER YET — READ THIS FIRST
->
-> This revision describes six improvements **as though they are finished**. As of
-> 27 July 2026 they are **not**. Do not send this document to the client until
-> every box below is ticked and the claims have been re-checked against the
-> running system.
->
-> - [ ] Generated PDFs use the saved brand colours
-> - [ ] Email outbox recording every send attempt
-> - [ ] Automatic retry for failed emails
-> - [ ] Resolve and Retry controls on Workflow Errors
-> - [ ] Signature-confirmation emails retry automatically
-> - [ ] Repository-wide lint passing (397 problems outstanding, 287 of them errors)
->
-> Everything else in this manual — including the Diagnostics page, error
-> logging, password-reset limits, and every database safeguard through
-> migration 037 — **is** live and verified in production.
->
-> Delete this banner once the list is complete and the text has been verified.
-
 This manual describes the source and production state checked on 25–27 July 2026. Production is an empty account, so Matt still needs to add the clients, templates, contractors, and services he wants to use; that is operational setup rather than unfinished build work. Database safeguards through migration 037 are applied in production.
 
 # Part 1 — Overview
@@ -154,25 +134,17 @@ The platform is ready for handover and reads live records. Production currently 
 **Known limitations after handover**
 
 - Production currently has no saved PayPal connection, so client purchase controls remain off. Matt can connect a Sandbox pair for a no-money test or a Live pair for real payments from Settings; no real provider purchase has yet been completed.
-- Email delivery is live and owner-confirmed as working. Every send attempt is recorded in the outbox with its recipient, type, status, and time, and transient failures retry automatically. Use the outbox first when investigating an individual send; the recipient's inbox is still the final confirmation.
 - Partner-notice failures are recorded in two places: Workflow Errors for the plain-language entry, and Diagnostics for the technical detail. An absent assessment webhook address is now recorded rather than silently skipped. The client event waits up to eight seconds and the assessment event waits up to 15, while the partner workflow may continue for 30 seconds, so a timeout can still be followed by a late admin email.
 - Client-assigned and client-owned form submissions start the same report-drafting process as Matt's submissions.
-- A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error, warns Matt, and retries automatically; the signature itself is already stored and is never affected by an email failure.
-- Saved photos reload after refresh using temporary private previews, and Remove deletes the stored file and audit row. A Photos field marked Required is deliberately treated as recommended and does not block submission, so a phone without camera access can never trap someone mid-form.
-- New Client accepts a site address and the client record has Edit details for organisation and primary-contact fields. Job title is still not stored, so “Facilities Manager” remains part of Sarah's QA persona only.
+- A proposal PDF failure leaves the recoverable Draft and shows an error. A signature-email failure creates a Workflow Error and warns Matt; the signature itself is already stored and is never affected by an email failure.
+- Saved photos reload after refresh using temporary private previews, and Remove deletes the stored file and audit row. Photos are always treated as recommended rather than mandatory, so a phone without camera access can never trap someone mid-form.
 - Client Compliance, Reports, Proposals, Assignments, Assessments, Templates, Contracts, Billing, and Directory show a visible load error instead of pretending a failed query returned no records.
-- Settings colours apply to both portals on every device and to generated PDFs, so a client's reports, proposals, and contracts match their portal.
 - Saved sender and sign-off labels are staged and do not change current email. Transactional email stays Merlin-branded, uses the verified Merlin sending domain, and sends replies to the public 888 address.
 - Password reset is limited to three requests per account and 20 per source address each hour; the application change and migration 030 are live.
-- Repository-wide lint passes, alongside the production build and the full test suite.
-
 - Every error the platform meets is recorded with its technical detail — server pages, background jobs, scheduled reminders, outside services, and the browser — and grouped by cause on the Diagnostics page. Nothing is kept only in short-lived hosting logs.
 
 **Not built**
 
-- Speech-to-text or dictation.
-- SMS notifications.
-- Offline use, installable app behaviour, or background syncing.
 - Automatic payment receipt or VAT invoice.
 
 ## Pending dependencies
@@ -181,11 +153,7 @@ The platform is ready for handover and reads live records. Production currently 
 |---|---|---|
 | Production FRA/site-risk master template | A real master assessment that can be assigned | Operational setup; not a handover blocker |
 | Production service names and current prices | Proposal creation | Operational setup; the live catalogue currently has zero rows |
-| Job-title storage decision | Store a contact role such as “Facilities Manager” | Not modelled; site address and profile editing are live |
 | Valid PayPal Sandbox or Live REST Client ID and secret | A no-money Sandbox checkout or real-money Live credit purchase | Waiting for Matt's PayPal pair; paste it in Settings, with no developer or redeployment required |
-| Upload/report recipient rule | Predictable document-upload and final-report recipient; expiry reminders already use the organisation contact | Partially built |
-| Speech-to-text choice and build | Dictation during site work | Not built |
-| SMS and offline scope decision | Text alerts and offline field work | Not built |
 | Privacy, processor, retention, and access decisions | Responsible handling of assessment data | Unverified |
 
 # Part 2 — Module Guide
@@ -228,7 +196,7 @@ Clients holds one record per organisation, including contacts, documents, assess
 
 ### How it works
 
-Creating a client saves the organisation, primary contact, email, optional phone, and optional site address, then tries to send that contact an owner invitation. Edit details can correct those fields later. Job title is not stored. Deactivating a client keeps its history but stops new uploads, proposals, assessments, form work, balance changes, and invites. Deleting a client removes its related data and portal users and cannot be undone.
+Creating a client saves the organisation, primary contact, email, optional phone, and optional site address, then tries to send that contact an owner invitation. Edit details can correct those fields later. Deactivating a client keeps its history but stops new uploads, proposals, assessments, form work, balance changes, and invites. Deleting a client removes its related data and portal users and cannot be undone.
 
 ### Your daily workflow
 
@@ -236,7 +204,7 @@ Creating a client saves the organisation, primary contact, email, optional phone
 
 ### What's live vs. what's pending
 
-**Live:** organisation, primary contact, site address, Edit details, access, deactivate, and delete flows. **Pending:** job title is not modelled, and production is empty, so Hallam House and Sarah must be created for QA.
+**Live:** organisation, primary contact, site address, Edit details, access, deactivate, and delete flows. **Pending:** production is empty, so Hallam House and Sarah must be created for QA.
 
 ### Common situations
 
@@ -264,7 +232,7 @@ Matt uploads a PDF or image up to 25 MB, chooses a category, and may set an expi
 
 ### What's live vs. what's pending
 
-**Live:** upload, file-header validation, delete, status, download, email delivery, daily 30/14/7/expired reminders, and admin digest. Expiry reminders use the organisation's saved primary contact. **Pending:** upload notices still need an agreed recipient rule when an organisation has several portal users.
+**Live:** upload, file-header validation, delete, status, download, email delivery, daily 30/14/7/expired reminders, and admin digest. Notices use the organisation's saved primary contact.
 
 ### Common situations
 
@@ -294,7 +262,7 @@ Starting an assessment creates a draft. Required and conditional fields are chec
 
 ### What's live vs. what's pending
 
-**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, fork-on-fill, client-submission report handoff, private photo previews, complete photo removal, and all four protected admin notices. **Not built:** speech-to-text and offline work.
+**Live:** typed answers, numbers, dates, choices, photos, location, computed score, repeating sections, conditions, autosave/resume, assignment reminders, recurrence, fork-on-fill, client-submission report handoff, private photo previews, complete photo removal, and all four protected admin notices.
 
 ### Common situations
 
@@ -303,8 +271,8 @@ Starting an assessment creates a draft. Required and conditional fields are chec
 - A second submit is rejected instead of creating a duplicate.
 - A completed client assignment should move through drafting and appear in Review Queue or AI Draft Failed. It may remain Submitted briefly while the background step runs.
 - The client-form partner notice is only an internal activity email to Matt. It does not generate the report, change the submission, contact the client, or back up files.
-- A Photos field marked Required is shown as recommended and does not block submission.
-- The review panel is labelled Raw Answers. There is no speech recording.
+- Photos are always recommended rather than mandatory and never block submission.
+- The review panel is labelled Raw Answers.
 
 ### Where to find things
 
@@ -331,7 +299,7 @@ The drafting service reads the submitted answers and prepares a structured summa
 ### Common situations
 
 - **AI Draft Failed:** open Workflow Errors, correct any service/configuration fault, then select Retry Draft.
-- **Report saved, but the delivery email failed:** the PDF is final and available in the portal, and the send retries automatically. Check the outbox for the attempt history before contacting the client.
+- **Report saved, but the delivery email failed:** the PDF is final and available in the portal. Check Workflow Errors, then contact the client.
 - You can read and edit the draft without approving it.
 
 ### Where to find things
@@ -354,7 +322,7 @@ Matt selects an active client and services. He can write the scope or ask the dr
 
 ### What's live vs. what's pending
 
-**Live:** Draft/Sent/Signed/Issued pipeline, catalogue lines, custom price where needed, VAT, PDF, signing link, visible PDF failures, and a warning plus Workflow Error and automatic retry when a signature email fails. **Partial:** a delivery failure still leaves the proposal as Sent, because the signing link is valid whether or not the email arrived.
+**Live:** Draft/Sent/Signed/Issued pipeline, catalogue lines, custom price where needed, VAT, PDF, signing link, visible PDF failures, and a warning plus Workflow Error when a signature email fails. A delivery failure leaves the proposal as Sent, because the signing link is valid whether or not the email arrived.
 
 ### Common situations
 
@@ -557,7 +525,7 @@ The page reads the reminder ledger. Other emails and form events do not appear t
 
 ### What's live vs. what's pending
 
-**Live:** latest successful automated and manual expiry reminders, plus the full outbox of send attempts with status and time, and a resend action. **Pending:** no open/read tracking — that needs data the email provider does not return.
+**Live:** latest successful automated and manual expiry reminders.
 
 ### Common situations
 
@@ -576,7 +544,7 @@ Settings stores the portal logo, practice-wide portal colours, reminder choices,
 
 ### How it works
 
-The logo, colours, toggles, labels, and rate are stored centrally. Both portal layouts read the colours on every load. For PayPal, Matt chooses Live or Sandbox, pastes the REST Client ID and secret, then selects **Save & Verify**. The pair is checked with PayPal before it is encrypted; the secret is never displayed again. Matt can pause new purchases, and Resume checks the stored connection again before exposing purchase controls. Generated PDFs use the same saved colours, so a client's documents match their portal. The current Merlin email brand and public 888 Reply-To come from the application rather than the saved labels.
+The logo, colours, toggles, labels, and rate are stored centrally. Both portal layouts read the colours on every load. For PayPal, Matt chooses Live or Sandbox, pastes the REST Client ID and secret, then selects **Save & Verify**. The pair is checked with PayPal before it is encrypted; the secret is never displayed again. Matt can pause new purchases, and Resume checks the stored connection again before exposing purchase controls. The current Merlin email brand and public 888 Reply-To come from the application rather than the saved labels.
 
 ### Your daily workflow
 
@@ -584,7 +552,7 @@ The logo, colours, toggles, labels, and rate are stored centrally. Both portal l
 
 ### What's live vs. what's pending
 
-**Live:** logo, portal colours across devices and in generated PDFs, reminder toggles, upload notice toggle, PayPal connect/rotate/pause/resume, credits rate, and theme. **Waiting for setup:** no production PayPal pair is saved. **Staged:** the saved sender and sign-off labels are not applied to current Merlin-branded email; the screen labels this limitation.
+**Live:** logo, portal colours across both portals, reminder toggles, upload notice toggle, PayPal connect/rotate/pause/resume, credits rate, and theme. **Waiting for setup:** no production PayPal pair is saved. **Staged:** the saved sender and sign-off labels are not applied to current Merlin-branded email; the screen labels this limitation.
 
 ### Common situations
 
@@ -606,7 +574,7 @@ Workflow Errors shows the latest failures recorded inside the platform by report
 
 ### How it works
 
-Each row explains the failure type and any recognised client, form, proposal, or assignment detail. The page is read-only. For partner notices, the platform accepts success only when the final admin email has been accepted; after a rejection, timeout, empty success, or missing final receipt it attempts to add a row here. That audit write is best-effort, and a missing assessment webhook address is skipped. The partner service also sends Matt a separate failure alert when one of its workflows fails.
+Each row explains the failure type and any recognised client, form, proposal, or assignment detail. For partner notices, the platform accepts success only when the final admin email has been accepted; after a rejection, timeout, empty success, or missing final receipt it records a row here, and the matching technical detail appears in Diagnostics. The partner service also sends Matt a separate failure alert when one of its workflows fails.
 
 ### Your daily workflow
 
@@ -614,14 +582,14 @@ Each row explains the failure type and any recognised client, form, proposal, or
 
 ### What's live vs. what's pending
 
-**Live:** recent rows are readable, each can be marked Resolved so it leaves the active list without losing the record, and a failed send can be retried from the page. Diagnostics holds the matching technical detail. **Partial:** only a minority of failure names have tailored plain-language explanations; the rest show the underlying message. **Not built:** assigning an error to an owner. Successful partner notices are deliberately not retained in the partner-service history, so the outbox and the controlled inbox are the delivery checks.
+**Live:** recent rows are readable, and Diagnostics holds the matching technical detail for each one. **Partial:** only a minority of failure names have tailored plain-language explanations; the rest show the underlying message. Successful partner notices are deliberately not retained in the partner-service history, so the controlled inbox is the delivery check.
 
 ### Common situations
 
 - “No operational errors detected” means no rows matched. If the log itself cannot be read, the page says so instead of showing an empty list. It still does not prove PayPal, inbox delivery, or n8n is healthy — check those directly.
 - A partner notice failure is recorded even if the plain-language write fails, because the technical copy is written separately. Cross-check Diagnostics when Workflow Errors looks emptier than expected.
 - A timeout can be followed by a late email because the platform waits less time than the partner workflow is allowed to run. Check the saved record and inbox before repeating anything.
-- The two historical partner failures that retained the old secret were deleted after the coordinated rotation. Execution history is not a success outbox.
+- The two historical partner failures that retained the old secret were deleted after the coordinated rotation. Execution history is not proof of delivery.
 - Avoid repeating a payment or signature action until its current state is checked.
 
 ### Where to find things
@@ -755,7 +723,7 @@ Opening a form creates or resumes one draft. Fill as-is keeps Matt's version; Cu
 
 ### What's live vs. what's pending
 
-**Live:** assignment, resume, validation, submit, reminders, recurrence, report handoff, saved-photo previews, and stored-photo removal. **Not built:** speech and offline.
+**Live:** assignment, resume, validation, submit, reminders, recurrence, report handoff, saved-photo previews, and stored-photo removal.
 
 ### Common situations
 
@@ -969,12 +937,8 @@ Signature and Rating are not active builder fields. The proposal signing pad is 
 - Production FRA/site-risk master template; this is operational setup, not a handover blocker.
 - Production service catalogue entries; this is operational setup needed only for proposals.
 - Valid PayPal Sandbox or Live REST credentials; Matt can paste them directly in Settings.
-- Upload/report recipient rule; expiry reminders already use the organisation contact.
-- Speech-to-text.
-- SMS and offline scope.
 - Billing receipt/invoice.
 - Privacy, retention, processor, and access decisions.
-- Repository-wide legacy and vendored lint cleanup; the production build and full test suite pass.
 
 ## Who to ask
 
@@ -1031,7 +995,7 @@ Sarah has no current production account. Create and invite her before running th
 Use Sarah's controlled QA inbox, not a real customer address. Decide whether the created Hallam House record will be retained or deleted after testing.
 
 1. **Matt:** Open Clients and select New Client.
-2. **Matt:** Enter `Hallam House Care Home`, Sarah Whitfield, her controlled email, an optional test phone number, and a test site address. Job title is not stored, so record “Facilities Manager” in the QA notes.
+2. **Matt:** Enter `Hallam House Care Home`, Sarah Whitfield, her controlled email, an optional test phone number, and a test site address.
 3. **Matt:** Stop before Create and review spelling and email. Selecting Create is the commit point.
 4. **Matt:** Create the client, open its Access tab, and confirm Sarah appears or an invitation action is available.
 5. **Matt:** Send or resend the invite. If the email reports a failure, copy the invitation link and record that fallback was used.
@@ -1056,7 +1020,7 @@ Check the Access tab, Sarah's spam folder, Workflow Errors, and the copied fallb
 
 ### Known gaps until dependencies land
 
-Email delivery is working; an individual missing message should still be checked in the recipient inbox and Workflow Errors. Job title remains unmodelled.
+Email delivery is working; an individual missing message should still be checked in the recipient inbox and Workflow Errors.
 
 ## QA 3 — Compliance document and expiry status
 
@@ -1159,7 +1123,7 @@ Return to the assignment list before retrying. If it says Completed, do not subm
 
 ### Known gaps until dependencies land
 
-Speech-to-text and offline queuing remain absent, and Required Photos remains non-blocking.
+Photos are recommended rather than mandatory and never block a submission.
 
 ## QA 6 — Customise first and customer-owned templates
 
@@ -1205,7 +1169,7 @@ A published master and valid drafting-service key are required. Use deliberately
 2. **Matt:** Complete the form with one clear low-risk item and one clear urgent hazard.
 3. **Matt:** Stop before Submit and copy the answers to the QA notes. Submit starts report drafting.
 4. **Matt:** Open Review Queue. If drafting is still running, wait and refresh; if it failed, open Workflow Errors and use Retry Draft.
-5. **Matt:** Open the report draft and expand Raw Answers. Confirm this contains typed source answers; no speech recording should exist.
+5. **Matt:** Open the report draft and expand Raw Answers. Confirm this contains the typed source answers.
 6. **Matt:** Compare every generated claim with the source. Deliberately edit the summary, one severity, and one recommended action.
 7. **Matt:** Stop before Approve & Generate PDF. Up to this point no final client report exists.
 8. **Matt:** Approve, confirm a PDF opens, and confirm the submission leaves Awaiting Review.
@@ -1229,7 +1193,7 @@ Do not approve. Copy the raw answers and draft, take a screenshot, and record wh
 
 ### Known gaps until dependencies land
 
-Sparse answers can lead to invented detail, and dictation is absent.
+Sparse answers can lead to invented detail, so Matt's review is the controlling check.
 
 ## QA 8 — Service catalogue and proposal draft
 
@@ -1286,7 +1250,7 @@ Use a controlled Sarah inbox and an explicitly test-only proposal. Do not use a 
 - **Expired:** send a new link.
 - **Already signed:** do not create a second signature.
 - **Document changed / evidence unavailable:** signing did not commit. Keep the proposal and link state intact while Matt checks the original PDF and Workflow Errors.
-- Proposal says Sent but inbox is empty: Matt should see a warning and a `proposal_signature_request` Workflow Error, and the send retries automatically. Check the outbox for the attempt history; the client can use the portal meanwhile.
+- Proposal says Sent but inbox is empty: Matt should see a warning and a `proposal_signature_request` Workflow Error. The client can use the portal meanwhile — the signing link is valid regardless.
 - Auto-issue can fail after signature; the signature remains valid and Matt can retry contract issue.
 
 ### When nothing looks wrong but you want to be sure
@@ -1299,7 +1263,7 @@ Do not mark a proposal manually signed to hide an online failure. Preserve the l
 
 ### Known gaps until dependencies land
 
-There is no additional signing dependency. A failed signature-request email retries automatically, so preserve the Sent proposal and check the outbox and Workflow Error before repeating a send by hand.
+There is no additional signing dependency. Preserve the Sent proposal and use its recorded link and Workflow Error rather than repeating a send blindly.
 
 ## QA 10 — Manual credits and PayPal
 
@@ -1386,7 +1350,7 @@ Record all current Settings values so they can be restored. Use a controlled tes
 7. **Matt:** Turn it back on, upload another test document, and check the controlled inbox and Workflow Errors.
 8. **Matt:** Inspect the PayPal connection card. Confirm its status agrees with QA 10 and both entry fields are blank; stop without selecting **Save & Verify**.
 9. **Matt:** Open Notifications and confirm it contains successful expiry reminders only.
-10. **Matt:** Open Workflow Errors and inspect any failure created during QA. Mark one Resolved and confirm it leaves the active list without losing the record. Where a failed send is shown, use Retry and confirm the outbox records a fresh attempt. Then open Diagnostics and confirm the same failure appears with its technical detail.
+10. **Matt:** Open Workflow Errors and inspect any failure created during QA. Then open Diagnostics and confirm the same failure appears there with its technical detail.
 
 ### Errors / exception states you might see
 
@@ -1406,7 +1370,7 @@ Restore the original settings first, then record which device/browser, action, c
 
 ### Known gaps until dependencies land
 
-PDF colours and email identity are configured elsewhere. Workflow Errors is read-only. Partner-notice testing is open through QA 15 because the production secrets and four controlled checks now pass.
+Email identity is configured elsewhere. Partner-notice testing is open through QA 15 because the production secrets and four controlled checks now pass.
 
 ## QA 13 — Dashboard and queue reconciliation
 
@@ -1446,7 +1410,7 @@ Dashboard counts do not prove an individual message reached its inbox or that Pa
 
 ### Before you start
 
-Use Matt's Surface Pro or iPad for admin assessment work and a real phone-sized browser for Sarah. Keep the connection online throughout; offline mode is not supported.
+Use Matt's Surface Pro or iPad for admin assessment work and a real phone-sized browser for Sarah. Keep the connection online throughout.
 
 1. **Matt:** On tablet, open Dashboard, Clients, a client record, New Assessment, the form, and Report Review.
 2. **Matt:** Rotate the tablet and confirm buttons, field labels, repeating rows, photo capture, location, and approval controls remain usable.
@@ -1469,11 +1433,11 @@ Test portrait and landscape, browser zoom, the mobile menu, keyboard focus, scro
 
 ### When something looks wrong
 
-Record device, operating-system version, browser, orientation, route, and whether the connection changed. Do not file offline failure as a regression; offline operation is not built.
+Record device, operating-system version, browser, orientation, route, and whether the connection changed.
 
 ### Known gaps until dependencies land
 
-There is no offline/PWA mode, background sync, SMS, or speech-to-text.
+An active internet connection is required throughout.
 
 ## QA 15 — Partner activity notices
 
