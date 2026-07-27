@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { startAssessment } from '@/app/admin/assessments/actions';
+import { errorMessage } from '@/lib/utils';
 
 export type AssessmentClient = {
   id: string;
@@ -47,7 +49,6 @@ export function AdvancedAssessmentBuilder({
   initialClientId?: string | null;
   initialTemplateVersionId?: string | null;
 }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -113,15 +114,15 @@ export function AdvancedAssessmentBuilder({
       // and calls redirect() to /admin/assessments/[id]. The browser navigates
       // before this promise resolves, so we don't reset isStarting on success.
       await startAssessment(selectedClientId, selectedTemplateId);
-    } catch (err: any) {
+    } catch (err) {
       // A redirect thrown from a server action surfaces here as a benign
       // NEXT_REDIRECT error — let it propagate so Next.js can complete the
       // navigation. Only real failures should toast.
-      if (err?.message?.includes('NEXT_REDIRECT')) {
+      if (errorMessage(err)?.includes('NEXT_REDIRECT')) {
         throw err;
       }
       console.error('startAssessment failed:', err);
-      toast.error(err?.message || 'Failed to start assessment');
+      toast.error(errorMessage(err) || 'Failed to start assessment');
       setIsStarting(false);
     }
   };
@@ -185,7 +186,7 @@ export function AdvancedAssessmentBuilder({
                 style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
               >
                 <span>SELECT CLIENT</span>
-                <a
+                <Link
                   href="/admin/clients"
                   style={{
                     fontSize: 10,
@@ -197,7 +198,7 @@ export function AdvancedAssessmentBuilder({
                   }}
                 >
                   + New client →
-                </a>
+                </Link>
               </div>
               <div className="prop-client-grid">
                 {clients.map(client => (
@@ -216,9 +217,9 @@ export function AdvancedAssessmentBuilder({
                 {clients.length === 0 && (
                   <div className="text-[color:var(--p-text-muted)] text-sm" style={{ gridColumn: '1 / -1' }}>
                     No clients yet.{' '}
-                    <a href="/admin/clients" style={{ color: 'var(--p-gold)' }}>
+                    <Link href="/admin/clients" style={{ color: 'var(--p-gold)' }}>
                       Add one in the client list →
-                    </a>
+                    </Link>
                   </div>
                 )}
               </div>
@@ -290,9 +291,9 @@ export function AdvancedAssessmentBuilder({
                 {visibleTemplates.length === 0 && (
                   <div className="text-[color:var(--p-text-muted)] text-sm" style={{ gridColumn: '1 / -1' }}>
                     No published templates yet.{' '}
-                    <a href="/admin/templates" style={{ color: 'var(--p-gold)' }}>
+                    <Link href="/admin/templates" style={{ color: 'var(--p-gold)' }}>
                       Build one in the template editor →
-                    </a>
+                    </Link>
                   </div>
                 )}
               </div>

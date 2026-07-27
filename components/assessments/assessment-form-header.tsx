@@ -17,6 +17,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { deleteAssessment } from "@/app/admin/assessments/actions"
+import { errorMessage } from "@/lib/utils"
 
 interface AssessmentFormHeaderProps {
   submissionId: string
@@ -54,9 +55,9 @@ export function AssessmentFormHeader({
       const { clientId } = await deleteAssessment(submissionId)
       toast.success("Assessment deleted")
       router.push(clientId ? `/admin/clients/${clientId}` : "/admin")
-    } catch (err: any) {
+    } catch (err) {
       setIsDeleting(false)
-      toast.error(err?.message || "Failed to delete assessment")
+      toast.error(errorMessage(err) || "Failed to delete assessment")
     }
   }
 

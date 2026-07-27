@@ -1,8 +1,5 @@
 "use client"
 
-import { Card } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
-
 export function DashboardSkeleton() {
   return (
     <div className="flex flex-col gap-10 pt-8 pb-20 animate-pulse">

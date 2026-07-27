@@ -21,6 +21,7 @@ import {
 } from "@/lib/data/services"
 import { addService, updateService } from "@/app/admin/services/actions"
 import { toast } from "sonner"
+import { errorMessage } from "@/lib/utils"
 
 interface ServiceDialogProps {
   service?: Service
@@ -70,8 +71,8 @@ export function ServiceDialog({ service, children, open, onOpenChange }: Service
           toast.success("Service added")
         }
         setControlledOpen(false)
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to save service")
+      } catch (err) {
+        toast.error(errorMessage(err) || "Failed to save service")
       }
     })
   }

@@ -1,5 +1,5 @@
 import { adminClient } from "@/lib/supabase/admin"
-import { calculateProposalTotal } from "@/lib/supabase/dashboard"
+import { calculateProposalTotal, type ProposalLineItem } from "@/lib/supabase/dashboard"
 import { Card } from "@/components/ui/card"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -227,7 +227,7 @@ export default async function ProposalDetailPage({
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {services.map((item: any, idx: number) => {
+              {services.map((item: ProposalLineItem, idx: number) => {
                 const name = item?.service?.name || item?.name || "Service"
                 const qty = Number(item?.quantity) || 1
                 const unit = Number(item?.service?.unit_price ?? item?.unit_price ?? item?.price) || 0

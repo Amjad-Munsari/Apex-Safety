@@ -140,7 +140,7 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
                   Report delivered
                 </h4>
                 <p className="text-muted-foreground text-[13px] font-sans tracking-tight max-w-xl">
-                  Matt's signed-off report is ready. Download the PDF for your records, or open it in
+                  Matt&apos;s signed-off report is ready. Download the PDF for your records, or open it in
                   a new tab.
                 </p>
               </div>
@@ -176,8 +176,8 @@ export default async function ClientAssessmentDetailPage({ params }: Props) {
                 Matt is currently working on this assessment.
               </h4>
               <p className="text-muted-foreground text-[13px] font-sans tracking-tight">
-                You'll be notified by email as soon as the report is ready. No action is required
-                from you — site visits, evidence capture and write-up all happen on Matt's side.
+                You&apos;ll be notified by email as soon as the report is ready. No action is required
+                from you — site visits, evidence capture and write-up all happen on Matt&apos;s side.
               </p>
             </div>
           </div>

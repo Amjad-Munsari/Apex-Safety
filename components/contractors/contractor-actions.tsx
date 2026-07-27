@@ -17,6 +17,7 @@ import { ContractorDialog } from "./contractor-dialog"
 import type { Contractor } from "@/lib/data/contractors"
 import { deleteContractor, toggleContractorActive } from "@/app/admin/directory/actions"
 import { toast } from "sonner"
+import { errorMessage } from "@/lib/utils"
 
 export function ContractorActions({ contractor }: { contractor: Contractor }) {
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -32,8 +33,8 @@ export function ContractorActions({ contractor }: { contractor: Contractor }) {
             ? "Contractor hidden from client directory"
             : "Contractor visible to clients"
         )
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to update contractor")
+      } catch (err) {
+        toast.error(errorMessage(err) || "Failed to update contractor")
       }
     })
   }
@@ -44,8 +45,8 @@ export function ContractorActions({ contractor }: { contractor: Contractor }) {
         await deleteContractor(contractor.id)
         setIsDeleteOpen(false)
         toast.success(`${contractor.company_name} removed`)
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to delete contractor")
+      } catch (err) {
+        toast.error(errorMessage(err) || "Failed to delete contractor")
       }
     })
   }

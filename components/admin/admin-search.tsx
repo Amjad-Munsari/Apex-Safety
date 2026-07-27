@@ -5,15 +5,24 @@ import { Search, Loader2, Building, FileText, X, Send } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useDebounce } from "@/hooks/use-debounce"
 
+/** One hit from GET /api/admin/search. `subtitle` is absent on client hits. */
+interface SearchResult {
+  id: string
+  title: string
+  type: "client" | "document" | "proposal"
+  subtitle?: string
+  url: string
+}
+
 export function AdminSearch() {
   const [query, setQuery] = useState("")
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const debouncedQuery = useDebounce(query, 300)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
-  const cacheRef = useRef<Map<string, any[]>>(new Map())
+  const cacheRef = useRef<Map<string, SearchResult[]>>(new Map())
 
   useEffect(() => {
     if (debouncedQuery.length < 2) {
@@ -37,12 +46,12 @@ export function AdminSearch() {
           `/api/admin/search?q=${encodeURIComponent(debouncedQuery)}`,
           { signal: controller.signal }
         )
-        const data = await res.json()
+        const data: SearchResult[] = await res.json()
         cacheRef.current.set(debouncedQuery, data)
         setResults(data)
         setOpen(true)
       } catch (error) {
-        if ((error as any)?.name === "AbortError") return
+        if (error instanceof DOMException && error.name === "AbortError") return
         console.error("Search failed:", error)
       } finally {
         setLoading(false)
@@ -153,7 +162,7 @@ export function AdminSearch() {
 
       {open && query.length >= 2 && !loading && results.length === 0 && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-card border border-border rounded-sm shadow-2xl z-50 p-8 text-center">
-          <span className="text-sm text-muted-foreground italic">No matches found for "{query}"</span>
+          <span className="text-sm text-muted-foreground italic">No matches found for &quot;{query}&quot;</span>
         </div>
       )}
     </div>

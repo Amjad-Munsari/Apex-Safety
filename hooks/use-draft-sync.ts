@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client"
 
 export function useDraftSync(
   submissionId: string | null,
-  formData: any,
+  formData: Record<string, unknown>,
   intervalMs: number = 30000
 ) {
   const supabase = createClient()

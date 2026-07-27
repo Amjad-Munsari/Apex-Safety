@@ -17,6 +17,7 @@ import { ServiceDialog } from "./service-dialog"
 import type { Service } from "@/lib/data/services"
 import { deleteService, toggleServiceActive } from "@/app/admin/services/actions"
 import { toast } from "sonner"
+import { errorMessage } from "@/lib/utils"
 
 export function ServiceActions({ service }: { service: Service }) {
   const [isEditOpen, setIsEditOpen] = useState(false)
@@ -28,8 +29,8 @@ export function ServiceActions({ service }: { service: Service }) {
       try {
         await toggleServiceActive(service.id, !service.active)
         toast.success(service.active ? "Service deactivated" : "Service activated")
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to update service")
+      } catch (err) {
+        toast.error(errorMessage(err) || "Failed to update service")
       }
     })
   }
@@ -40,8 +41,8 @@ export function ServiceActions({ service }: { service: Service }) {
         await deleteService(service.id)
         setIsDeleteOpen(false)
         toast.success(`${service.name} removed`)
-      } catch (err: any) {
-        toast.error(err?.message || "Failed to delete service")
+      } catch (err) {
+        toast.error(errorMessage(err) || "Failed to delete service")
       }
     })
   }

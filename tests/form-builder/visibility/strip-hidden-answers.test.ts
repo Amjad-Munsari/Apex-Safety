@@ -72,15 +72,6 @@ describe("stripHiddenAnswers — server-side scrub", () => {
   it("per-instance repeatingSection scrub: each instance is evaluated independently and hidden fields are stripped", async () => {
     const { stripHiddenAnswers } = await getModule();
 
-    const schema = makeSchema({
-      doorSection: {
-        type: "repeatingSection",
-        children: ["doorCondition", "repairUrgency"],
-      },
-      doorCondition: { type: "selectField" },
-      repairUrgency: { type: "selectField" },
-    });
-
     const answers = {
       doorSection: {
         instances: [

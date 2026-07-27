@@ -26,7 +26,7 @@ export default function TemplateEditorError({
       <div className="space-y-2 max-w-md">
         <h2 className="text-2xl font-serif text-foreground">Template editor unavailable</h2>
         <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
-          This template's schema couldn't be loaded into the builder.
+          This template&apos;s schema couldn&apos;t be loaded into the builder.
         </p>
         <p className="text-muted-foreground text-sm pt-2">
           The schema may be in an older format. The published version is still safe — open it directly or return to the templates list.

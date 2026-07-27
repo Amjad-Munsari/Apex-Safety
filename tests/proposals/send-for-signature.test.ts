@@ -4,7 +4,7 @@
 // Hoisting-safe pattern: spies declared BEFORE vi.mock factories.
 
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest } from "next/server"
 
 // ── Spies (declared before vi.mock so they can close over factories at hoist) ─
 

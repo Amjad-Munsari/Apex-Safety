@@ -17,7 +17,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it, expect, vi } from "vitest";
 import React from "react";
-import { useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Schema fixture helpers

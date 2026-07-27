@@ -2,10 +2,12 @@
 
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { draftProposalScope, createProposal, deleteProposal } from '@/app/admin/proposals/actions';
 import { Service, groupByCategory } from '@/lib/data/services';
 import { PUBLIC_CONTACT_LINE } from '@/lib/public-identity';
+import { errorMessage } from '@/lib/utils';
 
 export type Client = {
   id: string;
@@ -184,14 +186,14 @@ export function AdvancedProposalBuilder({
           toast.success("Draft saved", {
             description: "It's in the Draft column of the proposals pipeline.",
           });
-        } catch (saveErr: any) {
-          toast.error(saveErr?.message || "Drafted, but couldn't auto-save. Use “Save as draft”.");
+        } catch (saveErr) {
+          toast.error(errorMessage(saveErr) || "Drafted, but couldn't auto-save. Use “Save as draft”.");
         }
       } else {
         toast.success("Scope drafted");
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to draft scope");
+    } catch (err) {
+      toast.error(errorMessage(err) || "Failed to draft scope");
       setScopeText("We will provide the listed services as agreed. Please review the itemized quote below.");
     } finally {
       setIsDrafting(false);
@@ -236,8 +238,8 @@ export function AdvancedProposalBuilder({
         toast.success("Proposal sent and PDF generated");
         router.push(`/admin/clients/${selectedClientId}`);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create proposal");
+    } catch (err) {
+      toast.error(errorMessage(err) || "Failed to create proposal");
     } finally {
       setIsGenerating(false);
     }
@@ -262,8 +264,8 @@ export function AdvancedProposalBuilder({
         description: "Find it in the Draft column of the proposals pipeline.",
       });
       router.push("/admin/proposals");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save draft");
+    } catch (err) {
+      toast.error(errorMessage(err) || "Failed to save draft");
     } finally {
       setIsGenerating(false);
     }
@@ -359,7 +361,7 @@ export function AdvancedProposalBuilder({
                 style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}
               >
                 <span>SELECT CLIENT</span>
-                <a
+                <Link
                   href="/admin/clients"
                   style={{
                     fontSize: 10,
@@ -371,7 +373,7 @@ export function AdvancedProposalBuilder({
                   }}
                 >
                   + New client →
-                </a>
+                </Link>
               </div>
               <div className="prop-client-grid">
                 {clients.map(client => (
@@ -389,7 +391,7 @@ export function AdvancedProposalBuilder({
                 ))}
                 {clients.length === 0 && (
                   <div className="text-[color:var(--p-text-muted)] text-sm" style={{ gridColumn: '1 / -1' }}>
-                    No clients yet. <a href="/admin/clients" style={{ color: 'var(--p-gold)' }}>Add one in the client list →</a>
+                    No clients yet. <Link href="/admin/clients" style={{ color: 'var(--p-gold)' }}>Add one in the client list →</Link>
                   </div>
                 )}
               </div>

@@ -124,7 +124,6 @@ function ChildInput({
   entityDef,
   value,
   onChange,
-  surface,
   t,
   dynamicRequired = false,
 }: {

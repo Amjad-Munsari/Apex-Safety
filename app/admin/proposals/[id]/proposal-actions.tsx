@@ -16,6 +16,7 @@ import { toast } from "sonner"
 import { Send, CheckCircle2, FileSignature, Download, Pencil, Trash2, FileText } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { deleteProposal, regenerateProposalPdf, markProposalSignedManually, issueContract } from "../actions"
+import { errorMessage } from "@/lib/utils"
 
 type ProposalStatus = "Draft" | "Sent" | "Signed" | "Contract Issued"
 
@@ -127,8 +128,8 @@ export function ProposalActions({
       await regenerateProposalPdf(proposalId)
       toast.success("Proposal PDF generated")
       router.refresh()
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to generate PDF. Please try again.")
+    } catch (err) {
+      toast.error(errorMessage(err) || "Failed to generate PDF. Please try again.")
     } finally {
       setIsGenerating(false)
     }
@@ -147,9 +148,9 @@ export function ProposalActions({
       await deleteProposal(proposalId)
       toast.success(`Proposal for ${clientName} deleted`)
       router.push("/admin/proposals")
-    } catch (err: any) {
+    } catch (err) {
       setIsDeleting(false)
-      toast.error(err?.message || "Failed to delete proposal")
+      toast.error(errorMessage(err) || "Failed to delete proposal")
     }
   }
 

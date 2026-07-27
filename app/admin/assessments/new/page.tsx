@@ -8,6 +8,19 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
+/**
+ * The `template:form_templates!inner(...)` embed on the template_versions query
+ * below. PostgREST hands it back as either an object or a single-element array
+ * depending on how it resolves the relation, hence the normalize step.
+ */
+type TemplateEmbed = {
+  id: string
+  name: string
+  owner_type: string | null
+  owner_id: string | null
+  deleted_at: string | null
+}
+
 export default async function NewAssessmentPage({
   searchParams,
 }: {
@@ -65,7 +78,9 @@ export default async function NewAssessmentPage({
   }>();
 
   for (const row of templatesResult.data ?? []) {
-    const tpl: any = Array.isArray(row.template) ? row.template[0] : row.template;
+    const tpl: TemplateEmbed | undefined = Array.isArray(row.template)
+      ? row.template[0]
+      : row.template;
     if (!tpl) continue;
     if (tpl.deleted_at) continue;
     // A customer-owned row with no owner org is corrupt data. Without this

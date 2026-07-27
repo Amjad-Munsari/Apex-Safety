@@ -28,7 +28,7 @@ export default function Error({
       <div className="space-y-2">
         <h2 className="text-2xl font-serif text-foreground">Something went wrong</h2>
         <p className="text-muted-foreground font-mono text-sm max-w-md">
-          The admin dashboard encountered an unexpected error. This has been logged and we're looking into it.
+          The admin dashboard encountered an unexpected error. This has been logged and we&apos;re looking into it.
         </p>
       </div>
       <div className="flex gap-4">

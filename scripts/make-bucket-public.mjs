@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
 async function update() {
   console.log('Updating proposals bucket to public...')
-  const { data, error } = await supabase.storage.updateBucket('proposals', {
+  const { error } = await supabase.storage.updateBucket('proposals', {
     public: true
   })
 

@@ -491,6 +491,20 @@ const VAT_RATE = 0.2
  * Returns the total *including VAT* so it stays consistent with
  * `proposals.total_price`, which stores the VAT-inclusive headline.
  */
+/**
+ * One entry of `proposals.services_json`, as the UI reads it. Every field is
+ * optional because the column has carried two shapes over time (see
+ * `calculateProposalTotal` below) and prices have been persisted as both numbers
+ * and numeric strings, so callers coerce with `Number(...)` and fall back.
+ */
+export type ProposalLineItem = {
+  name?: string | null
+  price?: number | string | null
+  unit_price?: number | string | null
+  quantity?: number | string | null
+  service?: { name?: string | null; unit_price?: number | string | null } | null
+}
+
 type ProposalServiceRecord = {
   price?: unknown
   unit_price?: unknown

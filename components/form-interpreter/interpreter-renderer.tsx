@@ -244,7 +244,7 @@ export const InterpreterRenderer = forwardRef<
       <CheckboxFieldRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} dynamicRequired={propsRef.current.visibility[entity.id]?.required ?? false} />,
     // sectionGroup: NO dynamicRequired — container; cascade handled by shouldBeProcessed
     sectionGroup: ({ entity, children, setValue, validateValue, resetError, resetValue, clearValue }: Parameters<typeof SectionGroupRenderer>[0]) =>
-      <SectionGroupRenderer entity={entity} children={children} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface} />,
+      <SectionGroupRenderer entity={entity} setValue={setValue} validateValue={validateValue} resetError={resetError} resetValue={resetValue} clearValue={clearValue} surface={surface}>{children}</SectionGroupRenderer>,
 
     // ── Phase 14 specialty renderers (Plans 14-04 + 14-05) ────────────────
     // All 6 wrappers read propsRef.current at call time (per-entity render) —
@@ -265,7 +265,6 @@ export const InterpreterRenderer = forwardRef<
     repeatingSection: (p: EntityComponentProps<typeof repeatingSectionEntity>) =>
       <RepeatingSectionRenderer {...p} surface={surface} schema={propsRef.current.schema} interpreterStore={propsRef.current.interpreterStore} />,
   // deps stay [surface] — see propsRef JSDoc above for why this is correct.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [surface])
 
   const submit = async (): Promise<boolean> => {

@@ -11,6 +11,32 @@ import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { getAppSettings } from "@/lib/settings/app-settings"
 import { EditClientProfileDialog } from "@/components/clients/edit-client-profile-dialog"
 
+/**
+ * A row from the form_submissions query below. Each level of the
+ * template_versions → form_templates embed can come back as an object or as a
+ * single-element array depending on how PostgREST resolves the relation (the
+ * generated select types say array, to-one embeds arrive as objects at
+ * runtime), so `templateNameOf` unwraps both levels before reading the name.
+ */
+type NameEmbed = { name?: string | null }
+type TemplateEmbed = { form_template?: NameEmbed | NameEmbed[] | null } | null
+type SubmissionRow = {
+  id: string
+  status: string | null
+  created_at: string
+  submitted_at: string | null
+  report_storage_path: string | null
+  template?: TemplateEmbed | TemplateEmbed[] | null
+}
+
+function templateNameOf(row: SubmissionRow): string {
+  const version = Array.isArray(row.template) ? row.template[0] : row.template
+  const template = Array.isArray(version?.form_template)
+    ? version.form_template[0]
+    : version?.form_template
+  return template?.name ?? "Assessment"
+}
+
 export default async function ClientDetailsPage({
   params,
 }: {
@@ -131,18 +157,25 @@ export default async function ClientDetailsPage({
     pdfUrl: null as string | null,
   }))
 
+  const hoursLogChronological: {
+    id: string
+    date: string
+    description: string
+    delta: number
+    balance: number
+  }[] = []
   let running = 0
-  const hoursLogChronological = (hoursRows ?? []).map((row) => {
+  for (const row of hoursRows ?? []) {
     const delta = Number(row.hours_amount) || 0
     running += delta
-    return {
+    hoursLogChronological.push({
       id: row.id,
       date: row.created_at,
       description: row.notes?.trim() || row.transaction_type || "Hours transaction",
       delta,
       balance: running,
-    }
-  })
+    })
+  }
   // Newest first for the UI.
   const hoursLog = hoursLogChronological.reverse()
 
@@ -195,11 +228,8 @@ export default async function ClientDetailsPage({
 
   const clientTemplates = normalizeClientTemplateRows(clientTemplateRows, parentNames)
 
-  const assessments = (submissionRows ?? []).map((row: any) => {
-    const templateName: string =
-      row.template?.form_template?.name ??
-      (Array.isArray(row.template) ? row.template[0]?.form_template?.name : null) ??
-      "Assessment"
+  const assessments = (submissionRows ?? []).map((row: SubmissionRow) => {
+    const templateName = templateNameOf(row)
 
     // Map DB status → UI status. Anything past `submitted` shows as "Delivered"
     // (the final PDF is in storage); draft variants show as "Draft"; mid-flight
@@ -239,15 +269,15 @@ export default async function ClientDetailsPage({
   // failed, or a final PDF was delivered). These live in the Reports tab. A
   // delivered report opens its PDF directly; a draft/failed one opens the review
   // workspace where it's reviewed / approved / generated.
-  const reportRows = (submissionRows ?? []).filter((row: any) =>
-    ["draft_ready_for_review", "ai_draft_failed", "completed"].includes(row.status)
+  const reportRows = (submissionRows ?? []).filter((row: SubmissionRow) =>
+    ["draft_ready_for_review", "ai_draft_failed", "completed"].includes(row.status ?? "")
   )
 
   // Pre-sign delivered report PDFs (1h TTL) so clicking a Delivered row opens the
   // actual PDF rather than the generate/review page.
   const deliveredPaths = reportRows
-    .filter((row: any) => row.status === "completed" && row.report_storage_path)
-    .map((row: any) => row.report_storage_path as string)
+    .filter((row) => row.status === "completed" && row.report_storage_path)
+    .map((row) => row.report_storage_path as string)
   const reportSignedMap = new Map<string, string>()
   if (deliveredPaths.length > 0) {
     const { data: signed } = await adminClient.storage
@@ -258,11 +288,8 @@ export default async function ClientDetailsPage({
     }
   }
 
-  const reports = reportRows.map((row: any) => {
-    const templateName: string =
-      row.template?.form_template?.name ??
-      (Array.isArray(row.template) ? row.template[0]?.form_template?.name : null) ??
-      "Assessment"
+  const reports = reportRows.map((row: SubmissionRow) => {
+    const templateName = templateNameOf(row)
     const reportStatus: "Draft" | "Failed" | "Delivered" =
       row.status === "completed"
         ? "Delivered"

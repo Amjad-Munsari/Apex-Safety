@@ -28,6 +28,26 @@ function formatWindow(days: number | null): string {
   return `${days}d before`
 }
 
+/**
+ * A row from the notifications_sent query below. PostgREST returns each embed as
+ * either an object or a single-element array depending on how it resolves the
+ * relation, hence the union on `client` and `document`.
+ */
+type ClientEmbed = { name?: string | null; contact_email?: string | null } | null
+type DocumentEmbed = {
+  filename?: string | null
+  document_category?: string | null
+  expiry_date?: string | null
+} | null
+type NotificationRow = {
+  id: string
+  sent_at: string
+  notification_type: string | null
+  alert_window: number | null
+  client?: ClientEmbed | ClientEmbed[]
+  document?: DocumentEmbed | DocumentEmbed[]
+}
+
 export default async function NotificationsPage() {
   // Reminder log is the notifications_sent dedup ledger written after automatic
   // and manual expiry reminder sends. Joined with client + document for
@@ -45,7 +65,7 @@ export default async function NotificationsPage() {
     .order("sent_at", { ascending: false })
     .limit(200)
 
-  const entries = (rows ?? []).map((row: any) => {
+  const entries = (rows ?? []).map((row: NotificationRow) => {
     const clientRow = Array.isArray(row.client) ? row.client[0] : row.client
     const docRow = Array.isArray(row.document) ? row.document[0] : row.document
     return {

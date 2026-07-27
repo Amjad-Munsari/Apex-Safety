@@ -1,10 +1,11 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { generateReportDraft, finalizeReport } from "../../actions"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { errorMessage } from "@/lib/utils"
 
 type Severity = "Low" | "Medium" | "High" | "Critical"
 type ComplianceStatus = "Pass" | "Action Required" | "Fail"
@@ -124,12 +125,24 @@ function buildRawAnswerRows(
   return rows
 }
 
+/**
+ * The subset of the `form_submissions` row this screen reads. The page fetches
+ * `select("*")`, so this is a narrowing of that row rather than the full shape.
+ */
+interface ReviewSubmission {
+  id: string
+  status: string | null
+  answers_json: Record<string, unknown> | null
+  draft_report_json: Draft | null
+  report_storage_path: string | null
+}
+
 export function ReviewClient({
   submission,
   schemaJson,
   audioMedia,
 }: {
-  submission: any
+  submission: ReviewSubmission
   schemaJson: SchemaJsonShape | null
   audioMedia: AudioMediaRow[]
 }) {
@@ -170,8 +183,8 @@ export function ReviewClient({
       }
       toast.success("AI draft generated successfully")
       router.refresh()
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate draft")
+    } catch (err) {
+      toast.error(errorMessage(err) || "Failed to generate draft")
     } finally {
       setGenerating(false)
     }
@@ -205,8 +218,8 @@ export function ReviewClient({
       }
       setApproving(false)
       router.refresh()
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate PDF")
+    } catch (err) {
+      toast.error(errorMessage(err) || "Failed to generate PDF")
       setApproving(false)
     }
   }

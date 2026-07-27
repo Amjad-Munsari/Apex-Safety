@@ -3,7 +3,7 @@ import { ArrowLeft, FileText } from "lucide-react";
 import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { markProposalViewed } from "@/app/admin/proposals/actions";
-import { calculateProposalTotal } from "@/lib/supabase/dashboard";
+import { calculateProposalTotal, type ProposalLineItem } from "@/lib/supabase/dashboard";
 import { AcceptSignButton } from "./accept-sign-button";
 import { FileDownloadUrl } from "@/components/client/file-download-url";
 
@@ -160,7 +160,7 @@ export default async function ClientProposalDetailPage({
                 Scope
               </div>
               <ul className="space-y-2.5">
-                {services.map((item: any, idx: number) => {
+                {services.map((item: ProposalLineItem, idx: number) => {
                   const name = item?.service?.name || item?.name || "Service";
                   const qty = Number(item?.quantity) || 1;
                   return (
