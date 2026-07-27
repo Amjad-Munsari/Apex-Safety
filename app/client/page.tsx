@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext, getUser } from "@/lib/auth-helpers";
 import { ClientDashboard } from "./dashboard-client";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 import {
   complianceStatusForDate,
   todayIsoInTimeZone,
@@ -69,7 +70,11 @@ export default async function ClientDashboardPage() {
   const supabase = await createClient();
   const user = await getUser();
 
-  const [{ data: client }, { data: clientUser }, { data: docs }] = await Promise.all([
+  const [
+    { data: client, error: clientError },
+    { data: clientUser },
+    { data: docs, error: docsError },
+  ] = await Promise.all([
     supabase
       .from("clients")
       .select("name, hours_balance")
@@ -81,7 +86,7 @@ export default async function ClientDashboardPage() {
           .select("name")
           .eq("id", user.id)
           .maybeSingle()
-      : Promise.resolve({ data: null }),
+      : Promise.resolve({ data: null, error: null }),
     supabase
       .from("documents")
       .select("id, filename, expiry_date")
@@ -89,6 +94,19 @@ export default async function ClientDashboardPage() {
       .is("deleted_at", null)
       .order("expiry_date", { ascending: true, nullsFirst: false }),
   ]);
+
+  // A failed documents query must not render as "0 documents, all clear" — on
+  // a compliance dashboard that reads as good news. (The client_users lookup
+  // only feeds the greeting; its failure isn't worth breaking the page over.)
+  if (clientError || docsError) {
+    return failedClientLoad({
+      area: "client.dashboard.load",
+      itemName: "dashboard",
+      error: clientError ?? docsError,
+      clientId: ctx.client_id,
+      context: { failedQuery: clientError ? "clients" : "documents" },
+    });
+  }
 
   const now = new Date();
   const todayIso = todayIsoInTimeZone(now);

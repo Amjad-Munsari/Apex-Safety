@@ -5,6 +5,7 @@ import { adminClient } from "@/lib/supabase/admin";
 import { getClientContext } from "@/lib/auth-helpers";
 import { assertClientActive } from "@/lib/clients/require-active";
 import { generateSigningToken, hashDocument } from "@/lib/signing";
+import { logAppError } from "@/lib/observability/log";
 
 /**
  * Portal entry point into the tokenized signing flow ("Accept & Sign" on the
@@ -37,6 +38,17 @@ export async function beginProposalSigning(proposalId: string): Promise<void> {
     .eq("client_id", ctx.client_id)
     .maybeSingle();
 
+  if (error) {
+    // A query failure is not "proposal not found" — record it before showing
+    // the client the generic message.
+    await logAppError({
+      area: "client.proposals.begin_signing",
+      source: "action",
+      error,
+      clientId: ctx.client_id,
+      context: { proposalId, stage: "load" },
+    });
+  }
   if (error || !data) throw new Error("Proposal not found");
 
   const proposal = data as {
@@ -77,7 +89,13 @@ export async function beginProposalSigning(proposalId: string): Promise<void> {
     .eq("id", proposal.id);
 
   if (updateError) {
-    console.error("[beginProposalSigning] token update failed:", updateError);
+    await logAppError({
+      area: "client.proposals.begin_signing",
+      source: "action",
+      error: updateError,
+      clientId: ctx.client_id,
+      context: { proposalId, stage: "token_update" },
+    });
     throw new Error("Could not start signing. Please try again.");
   }
 

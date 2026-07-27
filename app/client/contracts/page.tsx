@@ -4,6 +4,7 @@ import { calculateProposalTotal } from "@/lib/supabase/dashboard";
 import { FileDownloadUrl } from "@/components/client/file-download-url";
 import Link from "next/link";
 import { failedClientLoad } from "@/lib/observability/failed-client-load";
+import { logAppErrorAsync } from "@/lib/observability/log";
 
 export const dynamic = "force-dynamic";
 
@@ -59,8 +60,19 @@ export default async function ClientContractsPage() {
       adminClient.storage.from("proposals").createSignedUrls(paths, 60 * 60),
       adminClient.storage.from("proposals").createSignedUrls(paths, 60 * 60, { download: true }),
     ]);
-    if (viewRes.error) {
-      console.error("[contracts] createSignedUrls failed:", viewRes.error.message);
+    // A signing failure strips the view/download buttons off every contract —
+    // the page renders, but the client can't reach their documents, so it must
+    // reach Diagnostics rather than only Vercel's console.
+    const signError = viewRes.error ?? downloadRes.error;
+    if (signError) {
+      logAppErrorAsync({
+        area: "client.contracts.sign_urls",
+        source: "render",
+        severity: "error",
+        error: signError,
+        clientId: ctx.client_id,
+        context: { failedBatch: viewRes.error ? "view" : "download" },
+      });
     }
     for (const item of viewRes.data ?? []) {
       if (item.path && item.signedUrl) viewUrlMap.set(item.path, item.signedUrl);

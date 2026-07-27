@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest"
 // silent pattern.
 
 const pages = [
+  "app/client/page.tsx",
   "app/client/assignments/page.tsx",
   "app/client/assessments/page.tsx",
   "app/client/templates/page.tsx",

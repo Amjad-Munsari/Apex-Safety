@@ -5,6 +5,7 @@ import { adminClient } from "@/lib/supabase/admin"
 import { getClientContext } from "@/lib/auth-helpers"
 import { calculateProposalTotal } from "@/lib/supabase/dashboard"
 import { FileDownloadUrl } from "@/components/client/file-download-url"
+import { failedClientLoad } from "@/lib/observability/failed-client-load"
 
 export const dynamic = "force-dynamic"
 
@@ -43,10 +44,15 @@ export default async function ClientContractDetailPage({
     .not("contract_pdf_path", "is", null)
     .maybeSingle()
 
+  // A query failure is not "this contract doesn't exist" — rendering 404 for
+  // it hid the fault from both the client and Diagnostics.
   if (error) {
-    console.error("[client/contracts/detail] failed to load contract", {
-      contractId: id,
+    return failedClientLoad({
+      area: "client.contracts.detail.load",
+      itemName: "contract",
       error,
+      clientId: ctx.client_id,
+      context: { contractId: id },
     })
   }
   if (!contract?.contract_pdf_path) notFound()
