@@ -1,16 +1,17 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
-import { BRAND } from "@/lib/branding"
+import { Branding, DEFAULT_BRANDING } from "@/lib/branding"
 import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
 
 // PDFs render server-side via @react-pdf, which can't resolve CSS custom
-// properties — so brand accents come from the shared BRAND hexes, not --teal/--gold.
-const SEVERITY_COLORS: Record<string, string> = {
-  Low: BRAND.teal,
-  Medium: BRAND.gold,
+// properties — so brand accents come from the branding prop (saved practice
+// colours from app_settings), falling back to the static BRAND hexes.
+const severityColors = (branding: Branding): Record<string, string> => ({
+  Low: branding.primary,
+  Medium: branding.secondary,
   High: "#dc2626",
   Critical: "#7c3aed",
-}
+})
 
 const styles = StyleSheet.create({
   page: {
@@ -110,13 +111,14 @@ export interface ReportDocumentProps {
     recommendedAction: string
   }[]
   complianceStatus: "Pass" | "Action Required" | "Fail"
+  branding?: Branding
 }
 
-const STATUS_COLOR: Record<string, string> = {
-  Pass: BRAND.teal,
-  "Action Required": BRAND.gold,
+const statusColors = (branding: Branding): Record<string, string> => ({
+  Pass: branding.primary,
+  "Action Required": branding.secondary,
   Fail: "#dc2626",
-}
+})
 
 export const ReportDocument = ({
   clientName,
@@ -125,6 +127,7 @@ export const ReportDocument = ({
   executiveSummary,
   hazards,
   complianceStatus,
+  branding = DEFAULT_BRANDING,
 }: ReportDocumentProps) => (
   <Document title={`FRA Report — ${clientName}`}>
     <Page size="A4" style={styles.page} wrap>
@@ -135,7 +138,7 @@ export const ReportDocument = ({
           <Text style={styles.tagline}>Fire Safety · Health &amp; Safety · Training</Text>
         </View>
         <View style={styles.metaBlock}>
-          <Text style={styles.metaLabel}>FIRE RISK ASSESSMENT</Text>
+          <Text style={[styles.metaLabel, { color: branding.primary }]}>FIRE RISK ASSESSMENT</Text>
           <Text style={styles.metaValue}>FRA Report</Text>
           <Text style={styles.metaDate}>{assessmentDate}</Text>
         </View>
@@ -160,7 +163,7 @@ export const ReportDocument = ({
       <Text style={styles.docTitle}>Fire Risk Assessment.</Text>
       <View style={styles.statusPill}>
         <Text style={styles.statusLabel}>Overall Status:</Text>
-        <Text style={[styles.statusText, { color: STATUS_COLOR[complianceStatus] || "#000" }]}>
+        <Text style={[styles.statusText, { color: statusColors(branding)[complianceStatus] || "#000" }]}>
           {complianceStatus}
         </Text>
       </View>
@@ -176,17 +179,18 @@ export const ReportDocument = ({
         // allow genuinely large blocks to wrap so they can never overflow a page.
         const blockLength = (hazard.description?.length ?? 0) + (hazard.recommendedAction?.length ?? 0)
         const isLargeBlock = blockLength > 600
+        const severityColor = severityColors(branding)[hazard.severity]
         return (
           <View
             key={i}
             wrap={isLargeBlock}
             // nudge a block to the next page rather than orphaning it at the bottom
             minPresenceAhead={isLargeBlock ? undefined : 60}
-            style={[styles.hazardCard, { borderLeftColor: SEVERITY_COLORS[hazard.severity] || "#ccc" }]}
+            style={[styles.hazardCard, { borderLeftColor: severityColor || "#ccc" }]}
           >
             <View style={styles.hazardHeader}>
               <Text style={styles.hazardLocation}>{hazard.location}</Text>
-              <Text style={[styles.severityBadge, { color: SEVERITY_COLORS[hazard.severity] || "#000" }]}>
+              <Text style={[styles.severityBadge, { color: severityColor || "#000" }]}>
                 {hazard.severity}
               </Text>
             </View>

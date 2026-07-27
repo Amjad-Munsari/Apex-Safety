@@ -9,6 +9,7 @@ import {
   SIG_SPACE_PADDING_LEFT,
   SIG_META_MARGIN_TOP,
 } from "@/lib/pdf/signature-layout"
+import { Branding, DEFAULT_BRANDING } from "@/lib/branding"
 import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
 
 // Since we are generating PDFs on the server, we rely on standard fonts built into react-pdf (Helvetica, Times-Roman) 
@@ -232,6 +233,7 @@ export interface ProposalDocumentProps {
   vatAmount: number
   totalAmount: number
   date: string
+  branding?: Branding
 }
 
 export const ProposalDocument = ({
@@ -244,6 +246,7 @@ export const ProposalDocument = ({
   vatAmount,
   totalAmount,
   date,
+  branding = DEFAULT_BRANDING,
 }: ProposalDocumentProps) => (
   <Document title={`Proposal - ${clientName}`}>
     <Page size="A4" style={styles.page}>
@@ -254,7 +257,7 @@ export const ProposalDocument = ({
           <Text style={styles.tagline}>Fire Safety · Health & Safety · Training</Text>
         </View>
         <View style={styles.metaBlock}>
-          <Text style={styles.metaLabel}>PROPOSAL</Text>
+          <Text style={[styles.metaLabel, { color: branding.primary }]}>PROPOSAL</Text>
           <Text style={styles.metaValue}>P-2026-NEW</Text>
           <Text style={styles.metaDate}>{date}</Text>
         </View>

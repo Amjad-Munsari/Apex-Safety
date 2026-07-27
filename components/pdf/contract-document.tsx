@@ -1,5 +1,6 @@
 import React from "react"
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer"
+import { Branding, DEFAULT_BRANDING } from "@/lib/branding"
 import { PUBLIC_CONTACT_LINE } from "@/lib/public-identity"
 
 // Service Agreement PDF — issued once a proposal is signed. Mirrors the
@@ -183,6 +184,7 @@ export interface ContractDocumentProps {
   signedBy: string | null
   /** Date this agreement was issued (en-GB). */
   issuedDate: string
+  branding?: Branding
 }
 
 export const ContractDocument = ({
@@ -197,6 +199,7 @@ export const ContractDocument = ({
   signedDate,
   signedBy,
   issuedDate,
+  branding = DEFAULT_BRANDING,
 }: ContractDocumentProps) => (
   <Document title={`Service Agreement - ${clientName}`}>
     <Page size="A4" style={styles.page}>
@@ -207,7 +210,7 @@ export const ContractDocument = ({
           <Text style={styles.tagline}>Fire Safety · Health & Safety · Training</Text>
         </View>
         <View style={styles.metaBlock}>
-          <Text style={styles.metaLabel}>SERVICE AGREEMENT</Text>
+          <Text style={[styles.metaLabel, { color: branding.primary }]}>SERVICE AGREEMENT</Text>
           <Text style={styles.metaValue}>{reference}</Text>
           <Text style={styles.metaDate}>Issued {issuedDate}</Text>
         </View>
