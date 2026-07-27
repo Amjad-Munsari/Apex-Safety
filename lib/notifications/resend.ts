@@ -27,6 +27,20 @@ export interface SendAttempt {
 
 export const DEFAULT_FROM = `${PLATFORM_NAME} <notifications@merlinsafetysystem.com>`
 
+/**
+ * Builds the From header. The address always comes from EMAIL_FROM (or
+ * DEFAULT_FROM) — it must stay on the Resend-verified sending domain. Only the
+ * display name is variable: a saved sender name from admin Settings replaces
+ * the env value's display name; without one the env value is used verbatim.
+ */
+export function composeFrom(senderName?: string | null): string {
+  const envFrom = process.env.EMAIL_FROM ?? DEFAULT_FROM
+  const display = senderName?.replace(/[<>"\r\n]/g, "").trim()
+  if (!display) return envFrom
+  const address = envFrom.match(/<([^>]+)>/)?.[1] ?? envFrom
+  return `${display} <${address}>`
+}
+
 export function resendApiKey(): string | undefined {
   return process.env.RESEND_API_KEY
 }
@@ -56,14 +70,14 @@ function errorStatus(error: unknown): number | undefined {
 /** Sends one email. Never throws — a thrown transport error becomes ok:false. */
 export async function sendViaResend(
   email: BuiltEmail,
-  options: { idempotencyKey?: string } = {}
+  options: { idempotencyKey?: string; senderName?: string | null } = {}
 ): Promise<SendAttempt> {
   const apiKey = resendApiKey()
   if (!apiKey) {
     return { ok: false, error: "RESEND_API_KEY not configured" }
   }
 
-  const from = process.env.EMAIL_FROM ?? DEFAULT_FROM
+  const from = composeFrom(options.senderName)
   const replyTo = process.env.EMAIL_REPLY_TO ?? PUBLIC_CONTACT.email
 
   try {

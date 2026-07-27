@@ -244,8 +244,8 @@ export function SettingsForm({ initial }: { initial: SettingsFormInitial }) {
           </div>
 
           <div className="flex flex-col gap-6">
-            <TextField label="Saved Sign-off Name" value={signOff} onChange={setSignOff} hint="Stored for the planned email-brand cutover; current emails use deployment settings." />
-            <TextField label="Saved Sender Name" value={senderName} onChange={setSenderName} hint="Stored for the planned email-brand cutover; current From: name uses deployment settings." />
+            <TextField label="Sign-off Name" value={signOff} onChange={setSignOff} hint="Appears as the personal sign-off at the end of every outgoing email." />
+            <TextField label="Sender Name" value={senderName} onChange={setSenderName} hint="Shown as the From: name on outgoing email. The sending address itself doesn't change." />
             <div className="flex items-center justify-between bg-background rounded-sm p-4 ring-1 ring-border">
               <div>
                 <div className="text-sm text-foreground">Send expiry reminders</div>

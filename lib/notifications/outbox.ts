@@ -1,7 +1,7 @@
 import "server-only"
 
 import type { NotificationPayload } from "./dispatch"
-import { buildEmail, EMAIL_TYPES, type BuiltEmail } from "./email-templates"
+import { buildEmail, EMAIL_TYPES, type BuiltEmail, type EmailBranding } from "./email-templates"
 import { sendViaResend, resendApiKey, type SendAttempt } from "./resend"
 import { logAppError, logAppWarning } from "@/lib/observability/log"
 
@@ -505,6 +505,23 @@ function isProd(): boolean {
 }
 
 /**
+ * The saved sender / sign-off names from admin Settings, applied to every
+ * outgoing email. Lazy import for the same reason as the logger's persist():
+ * app-settings pulls in the admin client, whose module throws without env —
+ * and a missing setting must never block a send, so failures degrade to the
+ * env/default branding rather than surfacing.
+ */
+async function emailBranding(): Promise<EmailBranding> {
+  try {
+    const { getAppSettings } = await import("@/lib/settings/app-settings")
+    const settings = await getAppSettings()
+    return { senderName: settings.senderName, signOffName: settings.signOffName }
+  } catch {
+    return { senderName: null, signOffName: null }
+  }
+}
+
+/**
  * Sends one email through the outbox: record, claim, attempt, retry transient
  * failures within a bounded budget, finalise. Never throws.
  */
@@ -512,7 +529,8 @@ export async function sendEmailThroughOutbox(
   payload: NotificationPayload,
   options: OutboxSendOptions = {}
 ): Promise<OutboxSendResult> {
-  const built = buildEmail(payload)
+  const branding = await emailBranding()
+  const built = buildEmail(payload, branding)
 
   const entryInput: OutboxEntryInput = {
     payload,
@@ -592,14 +610,15 @@ export async function sendEmailThroughOutbox(
     }
   }
 
-  return await attemptWithBackoff(built, claim, entryInput, options)
+  return await attemptWithBackoff(built, claim, entryInput, options, branding.senderName)
 }
 
 async function attemptWithBackoff(
   built: BuiltEmail,
   claim: ClaimResult,
   entryInput: OutboxEntryInput,
-  options: OutboxSendOptions
+  options: OutboxSendOptions,
+  senderName: string | null = null
 ): Promise<OutboxSendResult> {
   const maxAttempts = Math.max(1, options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS)
   const backoff = options.backoffMs ?? DEFAULT_BACKOFF_MS
@@ -613,7 +632,7 @@ async function attemptWithBackoff(
 
   while (attemptNumber < maxAttempts) {
     attemptNumber += 1
-    attempt = await sendViaResend(built, { idempotencyKey })
+    attempt = await sendViaResend(built, { idempotencyKey, senderName })
 
     if (attempt.ok) {
       await finaliseOutboxEntry(claim.id, {
@@ -776,7 +795,8 @@ export async function retryOutboxEntry(id: string): Promise<RetryOutboxResult> {
     return { ok: false, outboxId: id, refusal: "payload_unavailable" }
   }
 
-  const built = buildEmail(payload)
+  const branding = await emailBranding()
+  const built = buildEmail(payload, branding)
   if (!built || !built.to || !built.to.includes("@")) {
     await finaliseOutboxEntry(id, {
       status: "abandoned",
@@ -794,6 +814,7 @@ export async function retryOutboxEntry(id: string): Promise<RetryOutboxResult> {
   const attemptCount = row.attempt_count + 1
   const attempt = await sendViaResend(built, {
     idempotencyKey: row.idempotency_key ?? `outbox:${id}`,
+    senderName: branding.senderName,
   })
 
   if (attempt.ok) {

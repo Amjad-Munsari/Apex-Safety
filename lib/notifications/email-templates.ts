@@ -92,8 +92,14 @@ function layout(opts: {
   cta?: { label: string; url: string }
   footerNote?: string
   preheader?: string
+  /** Personal sign-off under the body (admin Settings → Saved Sign-off Name). */
+  signOff?: string | null
 }): string {
-  const { heading, bodyHtml, cta, footerNote, preheader } = opts
+  const { heading, bodyHtml, cta, footerNote, preheader, signOff } = opts
+
+  const signOffBlock = signOff
+    ? `<tr><td style="padding:20px 0 0;color:${C.body};font-size:15px;line-height:1.65;">Kind regards,<br/><span style="font-weight:600;">${escapeHtml(signOff)}</span></td></tr>`
+    : ""
 
   const button = cta
     ? `<tr><td style="padding:20px 0 6px;">
@@ -134,6 +140,7 @@ function layout(opts: {
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="color:${C.body};font-size:15px;line-height:1.65;">
             <tr><td>${bodyHtml}</td></tr>
             ${button}
+            ${signOffBlock}
           </table>
         </td></tr>
         <!-- footer -->
@@ -154,9 +161,20 @@ function p(text: string): string {
 
 // ── per-type builders ────────────────────────────────────────────────────────
 
+export interface EmailBranding {
+  /** From: display name (admin Settings). The address itself never varies. */
+  senderName?: string | null
+  /** Personal sign-off rendered under the email body (admin Settings). */
+  signOffName?: string | null
+}
+
 /** Returns the email to send for an email-shaped payload, or null for the
  *  n8n-only event types (a safety net — dispatch already routes those away). */
-export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
+export function buildEmail(
+  payload: NotificationPayload,
+  branding?: EmailBranding
+): BuiltEmail | null {
+  const signOff = branding?.signOffName?.trim() || null
   switch (payload.type) {
     case "expiry_alert": {
       const when = formatDate(payload.expiry_date)
@@ -169,6 +187,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.client_email,
         subject: `Action needed: ${payload.document_name} ${days <= 0 ? "has expired" : `expires in ${days} day${days === 1 ? "" : "s"}`}`,
         html: layout({
+          signOff,
           heading: "A compliance document needs attention",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(`Your document `)}<strong>${escapeHtml(payload.document_name)}</strong> ${p(urgency)}. ${p("Please arrange a renewal to stay compliant.")}`,
         }),
@@ -194,6 +213,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.admin_email,
         subject: `Expiry alerts sent today: ${count} document${count === 1 ? "" : "s"}`,
         html: layout({
+          signOff,
           heading: "Expiry alerts went out to clients today",
           bodyHtml: `${p(`The daily expiry check emailed clients about ${count} document${count === 1 ? "" : "s"}:`)}<ul>${rows}</ul>`,
         }),
@@ -208,6 +228,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.client_email,
         subject: `New document added: ${payload.document_name}`,
         html: layout({
+          signOff,
           heading: "A new document was added to your account",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(`We've added `)}<strong>${escapeHtml(payload.document_name)}</strong> ${p(`(${payload.document_category}) to your compliance records.`)}${p(expiry)}`,
         }),
@@ -232,6 +253,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
             ? `Overdue: ${payload.template_name}`
             : `Reminder: ${payload.template_name} due ${due}`,
         html: layout({
+          signOff,
           heading: payload.cadence === "overdue" ? "An assessment is overdue" : "Assessment reminder",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(lead)} ${p(`Please complete `)}<strong>${escapeHtml(payload.template_name)}</strong>.${instructions}`,
           cta: { label: "Open assessment", url: payload.assignment_url },
@@ -244,6 +266,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.client_email,
         subject: `Your compliance report is ready (${payload.assessment_date})`,
         html: layout({
+          signOff,
           heading: "Your report is ready",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(`Your compliance report for the assessment on ${payload.assessment_date} is ready to view.`)}`,
           cta: { label: "View report", url: payload.report_url },
@@ -257,6 +280,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.client_email,
         subject: `Please review and sign: ${payload.proposal_title}`,
         html: layout({
+          signOff,
           heading: "A proposal is ready for your signature",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(`Your proposal `)}<strong>${escapeHtml(payload.proposal_title)}</strong> ${p("is ready to review and sign.")}`,
           cta: { label: "Review & sign", url: payload.signing_url },
@@ -270,6 +294,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.client_email,
         subject: `Signed: ${payload.proposal_title}`,
         html: layout({
+          signOff,
           heading: "Thanks — your proposal is signed",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(`We've recorded your signature on `)}<strong>${escapeHtml(payload.proposal_title)}</strong> ${p(`on ${formatDate(payload.signed_at)}. Your service agreement will follow shortly.`)}`,
         }),
@@ -281,6 +306,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.client_email,
         subject: `Your service agreement: ${payload.proposal_title}`,
         html: layout({
+          signOff,
           heading: "Your service agreement is ready",
           bodyHtml: `${p(`Hi ${payload.client_name},`)}<br/><br/>${p(`Your signed service agreement for `)}<strong>${escapeHtml(payload.proposal_title)}</strong> ${p(`was issued on ${formatDate(payload.issued_at)}. You can download it below.`)}`,
           cta: { label: "Download agreement", url: payload.contract_url },
@@ -295,6 +321,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.recipient_email,
         subject: `${payload.status === "resent" ? "Your new sign-in link" : "You've been invited"} — ${payload.client_name} portal`,
         html: layout({
+          signOff,
           heading: `${verb} portal access`,
           bodyHtml: `${p(`Hi ${payload.recipient_name},`)}<br/><br/>${p(`You have portal access for `)}<strong>${escapeHtml(payload.client_name)}</strong>. ${p("Click below to set your password and sign in.")}`,
           cta: { label: "Set password & sign in", url: payload.invite_url },
@@ -308,6 +335,7 @@ export function buildEmail(payload: NotificationPayload): BuiltEmail | null {
         to: payload.recipient_email,
         subject: `Reset your password — ${BRAND}`,
         html: layout({
+          signOff,
           heading: "Reset your password",
           bodyHtml: `${p("We received a request to reset the password for this email address. Click below to choose a new one.")}<br/><br/>${p("If you didn't request this, you can safely ignore this email — your password is unchanged.")}`,
           cta: { label: "Choose a new password", url: payload.reset_url },
