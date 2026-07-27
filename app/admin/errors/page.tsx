@@ -1,12 +1,27 @@
+import Link from "next/link"
+import { Terminal } from "lucide-react"
+
 import { getWorkflowErrors } from "@/lib/supabase/dashboard"
-import { describeWorkflowError } from "@/lib/workflow-errors"
 import { Card } from "@/components/ui/card"
-import { AlertCircle, Terminal } from "lucide-react"
+import { ErrorList } from "./error-list"
 
 export const dynamic = "force-dynamic"
 
-export default async function ErrorsPage() {
-  const errors = await getWorkflowErrors(50)
+export default async function ErrorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ all?: string }>
+}) {
+  const params = await searchParams
+  // Default view is the work still outstanding; resolved rows are kept forever
+  // and reachable through the filter, never deleted.
+  const includeResolved = params.all === "1"
+  const errors = await getWorkflowErrors(50, { includeResolved })
+
+  const chipBase =
+    "px-3 h-7 inline-flex items-center rounded-sm font-mono text-[10px] uppercase tracking-widest transition-colors border"
+  const chipOn = "bg-gold text-gold-foreground border-gold"
+  const chipOff = "text-muted-foreground border-border hover:text-foreground hover:bg-muted"
 
   return (
     <div className="flex flex-col gap-8 pt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -26,53 +41,29 @@ export default async function ErrorsPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          href="/admin/errors"
+          className={`${chipBase} ${!includeResolved ? chipOn : chipOff}`}
+        >
+          Outstanding
+        </Link>
+        <Link
+          href="/admin/errors?all=1"
+          className={`${chipBase} ${includeResolved ? chipOn : chipOff}`}
+        >
+          Include resolved
+        </Link>
+      </div>
+
       <Card className="bg-card border-border rounded-sm overflow-hidden">
         <div className="bg-muted px-6 py-4 flex items-center gap-3 border-b border-border">
           <Terminal className="w-4 h-4 text-muted-foreground" />
-          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">System Output</span>
+          <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+            System Output
+          </span>
         </div>
-        <div className="divide-y divide-border">
-          {errors.map((error) => {
-            const friendly = describeWorkflowError(error.workflow_name)
-            return (
-              <div key={error.id} className="p-8 flex flex-col gap-4 group">
-                <div className="flex gap-5 items-start">
-                  <div className="mt-0.5">
-                    <AlertCircle className="w-5 h-5 text-danger/60" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <h3 className="font-sans font-medium text-sm text-foreground">{friendly.title}</h3>
-                      <span className="text-[10px] font-mono text-danger border border-danger/20 px-2 py-0.5 rounded-[2px] bg-danger/5">FAILED</span>
-                    </div>
-                    <p className="text-sm text-foreground/70 font-sans leading-relaxed mb-5 max-w-xl">
-                      {friendly.message}
-                    </p>
-                    {error.details.length > 0 && (
-                      <div className="flex flex-wrap gap-x-12 gap-y-2 mb-5">
-                        {error.details.map((d) => (
-                          <div key={d.label} className="flex items-baseline gap-2">
-                            <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">{d.label}</span>
-                            <span className="text-xs font-sans text-foreground/85">{d.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
-                      {new Date(error.created_at).toLocaleString('en-GB')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-          {errors.length === 0 && (
-            <div className="py-20 flex flex-col items-center justify-center">
-              <Terminal className="w-12 h-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">No operational errors detected</p>
-            </div>
-          )}
-        </div>
+        <ErrorList errors={errors} />
       </Card>
     </div>
   )

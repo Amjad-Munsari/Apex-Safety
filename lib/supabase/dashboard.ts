@@ -296,6 +296,8 @@ export type WorkflowErrorWithDetails = {
   severity: string | null
   /** Resolved submission id for deep-linking to the assessment review, if any. */
   submissionId: string | null
+  /** True once an admin has triaged this row on /admin/errors. */
+  resolved: boolean
 }
 
 type RawWorkflowErrorRow = {
@@ -304,7 +306,10 @@ type RawWorkflowErrorRow = {
   error_message: string | null
   created_at: string
   payload: unknown
+  resolved?: boolean | null
 }
+
+const WORKFLOW_ERROR_COLUMNS = "id, workflow_name, error_message, payload, created_at, resolved"
 
 function cadenceLabel(cadence: unknown): string | null {
   switch (cadence) {
@@ -419,17 +424,29 @@ async function enrichWorkflowErrors(rows: RawWorkflowErrorRow[]): Promise<Workfl
       details,
       severity: p.severity ? String(p.severity) : null,
       submissionId: subId ? String(subId) : null,
+      resolved: r.resolved === true,
     }
   })
 }
 
 /**
  * Recent workflow errors for the dashboard / errors log, newest first.
+ *
+ * Resolved rows are excluded by default: once an admin has triaged a failure it
+ * should stop competing for attention on the dashboard, but the row itself is
+ * never deleted, so `includeResolved` brings the full history back.
  */
-export async function getWorkflowErrors(limit: number = 5): Promise<WorkflowErrorWithDetails[]> {
-  const { data, error } = await adminClient
-    .from("workflow_errors")
-    .select("id, workflow_name, error_message, payload, created_at")
+export async function getWorkflowErrors(
+  limit: number = 5,
+  options: { includeResolved?: boolean } = {},
+): Promise<WorkflowErrorWithDetails[]> {
+  let query = adminClient.from("workflow_errors").select(WORKFLOW_ERROR_COLUMNS)
+
+  // `not is true` rather than `eq false` because rows written before the column
+  // was used may carry NULL, and those are unresolved in every practical sense.
+  if (!options.includeResolved) query = query.not("resolved", "is", true)
+
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(limit)
 
@@ -450,7 +467,7 @@ export async function getWorkflowErrorsSince(
 ): Promise<WorkflowErrorWithDetails[]> {
   const { data, error } = await adminClient
     .from("workflow_errors")
-    .select("id, workflow_name, error_message, payload, created_at")
+    .select(WORKFLOW_ERROR_COLUMNS)
     .gte("created_at", sinceIso)
     .order("created_at", { ascending: false })
     .limit(limit)
