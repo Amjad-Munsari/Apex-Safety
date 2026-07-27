@@ -15,6 +15,7 @@
 // so the fake honours both.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import type { NotificationPayload } from "@/lib/notifications/dispatch"
 
 vi.mock("server-only", () => ({}))
 
@@ -65,6 +66,10 @@ function selectBuilder() {
   const filters: Array<[string, unknown]> = []
   const chain = {
     eq(column: string, value: unknown) {
+      filters.push([column, value])
+      return chain
+    },
+    is(column: string, value: unknown) {
       filters.push([column, value])
       return chain
     },
@@ -324,6 +329,39 @@ describe("outbox row lifecycle", () => {
 
     expect(outboxRow(invite.outboxId).resend_allowed).toBe(false)
     expect(outboxRow(signed.outboxId).resend_allowed).toBe(true)
+  })
+
+  it.each([
+    {
+      type: "proposal_signature_request" as const,
+      client_name: "Acme Ltd",
+      client_email: "contact@acme.example",
+      proposal_title: "Fire Risk Assessment",
+      signing_url: "https://app.example.com/sign/token",
+      expiry_date: "2026-08-01",
+    },
+    {
+      type: "report_ready" as const,
+      client_name: "Acme Ltd",
+      client_email: "contact@acme.example",
+      report_url: "https://storage.example.com/report",
+      assessment_date: "27 July 2026",
+      report_storage_path: "reports/acme.pdf",
+    },
+    {
+      type: "contract_issued" as const,
+      client_name: "Acme Ltd",
+      client_email: "contact@acme.example",
+      proposal_title: "Fire Risk Assessment",
+      contract_url: "https://storage.example.com/contract",
+      issued_at: "2026-07-27T10:00:00.000Z",
+    },
+  ] satisfies NotificationPayload[])("does not allow retrying $type because its stored URL can expire", async (payload) => {
+    sendSpy.mockResolvedValue({ data: { id: "email_expiring_link" }, error: null })
+    const { dispatchNotification } = await loadDispatch()
+
+    const result = await dispatchNotification(payload, NO_WAIT)
+    expect(outboxRow(result.outboxId).resend_allowed).toBe(false)
   })
 
   it("delivers the email even when the outbox row cannot be written", async () => {

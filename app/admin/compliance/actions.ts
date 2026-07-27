@@ -100,7 +100,7 @@ export async function sendManualExpiryReminder(
     await adminClient.from("workflow_errors").insert({
       workflow_name: "expiry_alert_manual",
       error_message: result.error ?? "unknown dispatch failure",
-      payload: payload,
+      payload: { ...payload, outboxId: result.outboxId ?? null },
     })
     return { ok: false, error: result.error ?? "Dispatch failed" }
   }

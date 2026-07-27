@@ -137,7 +137,7 @@ export async function GET(request: Request) {
       await supabase.from("workflow_errors").insert({
         workflow_name: "assignment_reminder",
         error_message: result.error ?? "unknown dispatch failure",
-        payload: { assignment_id: row.id, cadence },
+        payload: { assignment_id: row.id, cadence, outboxId: result.outboxId ?? null },
       })
       continue
     }

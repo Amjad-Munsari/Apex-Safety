@@ -158,7 +158,11 @@ export async function uploadClientDocumentAction(formData: FormData) {
         area: "notifications.document_uploaded",
         source: "action",
         clientId,
-        payload: { document_id: document?.id, document_name: file.name },
+        payload: {
+          document_id: document?.id,
+          document_name: file.name,
+          outboxId: result.outboxId ?? null,
+        },
       })
     }
   } else if (!settings.notifyOnUpload) {

@@ -56,6 +56,12 @@ export const DEFAULT_BACKOFF_MS = [400, 1_600]
 const SINGLE_USE_LINK_TYPES = new Set<NotificationPayload["type"]>([
   "client_portal_invite",
   "password_reset",
+  // These payloads contain a signing token or a short-lived storage URL. A
+  // saved copy can be invalid by the time an operator sees the failure, so the
+  // originating workflow must mint a fresh link instead of re-sending it.
+  "proposal_signature_request",
+  "report_ready",
+  "contract_issued",
 ])
 
 /**
@@ -298,7 +304,11 @@ async function reclaimByIdempotencyKey(
     }
   }
 
-  const takenOver = await takeOverRow(existing.id, existing.status)
+  const takenOver = await takeOverRow(
+    existing.id,
+    existing.status,
+    existing.last_attempt_at
+  )
   return {
     id: takenOver ? existing.id : null,
     alreadySent: false,
@@ -319,13 +329,26 @@ function claimIsStale(lastAttemptAt: string | null): boolean {
  * `.eq("status", …)` guard is the whole point: it is a compare-and-swap, so the
  * loser of a race gets zero rows back and must not send.
  */
-async function takeOverRow(id: string, fromStatus: OutboxStatus): Promise<boolean> {
+async function takeOverRow(
+  id: string,
+  fromStatus: OutboxStatus,
+  expectedLastAttemptAt: string | null
+): Promise<boolean> {
   try {
     const table = await outboxTable()
-    const { data, error } = await table
+    let query = table
       .update({ status: "sending", last_attempt_at: new Date().toISOString() })
       .eq("id", id)
       .eq("status", fromStatus)
+
+    // Status alone is not a compare-and-swap when the old and new values are
+    // both "sending": two stale workers can otherwise each match and send.
+    // The timestamp observed during the lookup is the claim version.
+    query = expectedLastAttemptAt === null
+      ? query.is("last_attempt_at", null)
+      : query.eq("last_attempt_at", expectedLastAttemptAt)
+
+    const { data, error } = await query
       .select("id")
 
     if (error) {
@@ -764,7 +787,7 @@ export async function retryOutboxEntry(id: string): Promise<RetryOutboxResult> {
     return { ok: false, outboxId: id, refusal: "payload_unavailable" }
   }
 
-  if (!(await takeOverRow(id, row.status))) {
+  if (!(await takeOverRow(id, row.status, row.last_attempt_at))) {
     return { ok: false, outboxId: id, refusal: "in_progress" }
   }
 

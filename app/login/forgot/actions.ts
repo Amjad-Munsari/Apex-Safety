@@ -65,7 +65,7 @@ export async function requestPasswordReset(rawEmail: string): Promise<{ ok: bool
     await adminClient.from("workflow_errors").insert({
       workflow_name: "password_reset",
       error_message: result.error ?? "unknown dispatch failure",
-      payload: { recipient_email: email },
+      payload: { recipient_email: email, outboxId: result.outboxId ?? null },
     })
   }
 

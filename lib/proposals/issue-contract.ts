@@ -192,7 +192,7 @@ export async function issueContractCore(
           area: "notifications.contract_issued",
           source: "action",
           clientId: proposal.client_id ?? null,
-          payload: { proposalId },
+          payload: { proposalId, outboxId: dispatch.outboxId ?? null },
         })
       }
     }

@@ -229,7 +229,7 @@ export async function GET(request: Request) {
         error: result.error ?? "unknown dispatch failure",
         area: "notifications.expiry_alert",
         source: "cron",
-        payload: { ...payload, documentId: doc.id },
+        payload: { ...payload, documentId: doc.id, outboxId: result.outboxId ?? null },
       })
       // Skip notifications_sent insert so the next cron tick retries this doc.
       continue
@@ -284,7 +284,7 @@ export async function GET(request: Request) {
           error: digestResult.error ?? "unknown dispatch failure",
           area: "notifications.expiry_admin_digest",
           source: "cron",
-          payload: digest,
+          payload: { ...digest, outboxId: digestResult.outboxId ?? null },
         })
       }
     }

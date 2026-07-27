@@ -943,7 +943,7 @@ export async function finalizeReport(
     await adminClient.from("workflow_errors").insert({
       workflow_name: "report_delivery_email",
       error_message: dispatchResult.error ?? "unknown dispatch failure",
-      payload: { ...payload, severity: "high" },
+      payload: { ...payload, severity: "high", outboxId: dispatchResult.outboxId ?? null },
     })
     // do NOT throw — PDF is the artefact of record (D-08)
   }

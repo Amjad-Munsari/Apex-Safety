@@ -68,6 +68,7 @@ export const getDashboardStats = cache(async () => {
     adminClient
       .from("workflow_errors")
       .select("*", { count: "exact", head: true })
+      .not("resolved", "is", true)
       .gte("created_at", yesterday),
     // 5. Total Clients
     adminClient

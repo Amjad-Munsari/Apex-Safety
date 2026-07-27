@@ -484,7 +484,12 @@ async function emailPortalInvite(args: {
     await adminClient.from("workflow_errors").insert({
       workflow_name: "client_portal_invite",
       error_message: result.error ?? "unknown dispatch failure",
-      payload: { clientId: args.clientId, recipient_email: args.recipientEmail, status: args.status },
+      payload: {
+        clientId: args.clientId,
+        recipient_email: args.recipientEmail,
+        status: args.status,
+        outboxId: result.outboxId ?? null,
+      },
     })
     return false
   }

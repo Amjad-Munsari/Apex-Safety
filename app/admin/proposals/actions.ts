@@ -216,7 +216,11 @@ export async function sendProposalForSignature(
       area: "notifications.proposal_signature_request",
       source: "action",
       clientId: proposal.client_id ?? null,
-      payload: { proposal_id: proposalId, recipient_email: contactEmail },
+      payload: {
+        proposal_id: proposalId,
+        recipient_email: contactEmail,
+        outboxId: dispatch.outboxId ?? null,
+      },
     })
   }
 
@@ -694,7 +698,7 @@ export async function markProposalSignedManually(
           area: "notifications.proposal_signed",
           source: "action",
           clientId: proposal.client_id ?? null,
-          payload: { proposalId },
+          payload: { proposalId, outboxId: dispatch.outboxId ?? null },
         })
       }
     }

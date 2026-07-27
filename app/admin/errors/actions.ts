@@ -140,11 +140,18 @@ export async function retryWorkflowError(id: string): Promise<RetryWorkflowError
     // Sent, or already sent by someone else — either way the failure is handled,
     // so it drops out of the default view exactly as Resolve would leave it.
     const alreadySent = retry.refusal === "already_sent"
-    await adminClient
+    const { error: resolveError } = await adminClient
       .from("workflow_errors")
       .update({ resolved: true })
       .eq("id", id)
       .not("resolved", "is", true)
+
+    if (resolveError) {
+      return {
+        ok: false,
+        error: "Email was re-sent, but the workflow error could not be marked resolved. Refresh and resolve it manually.",
+      }
+    }
 
     revalidatePath("/admin/errors")
     revalidatePath("/admin")
