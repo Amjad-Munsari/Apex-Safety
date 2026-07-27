@@ -213,3 +213,30 @@ Matt must supply the name as registered at Companies House — most likely "888 
 Training Ltd", but unconfirmed — before the first real contract is issued. A TODO marks
 both lines.
 
+
+---
+
+## Handover-manual caveat fixes (2026-07-27)
+
+Four of the five items from the "fix the things the manual is apologising for" pass are
+done and committed separately (silent client data-load failures now reach app_error_log
+via a shared `failedClientLoad` helper with a static regression test; saved sender /
+sign-off names now shape outgoing email; a webhook timeout is recorded as "unconfirmed —
+the admin email may still arrive" instead of a failure, with the assessment-notice wait
+raised above the workflow's worst case; plus a sweep commit covering the client dashboard,
+contracts signed-URLs, contract detail 404-on-error, and beginProposalSigning).
+
+**Skipped — required photo fields still don't block submission.** The proposal to make
+Required photo fields block per-field with an escape hatch is waiting on Ayman's decision
+(counter-argument: a phone without camera permission would trap someone mid-assessment on
+site). No decision was recorded anywhere in the repo or planning docs as of 2026-07-27, so
+per instruction it was not implemented. The builder still offers a Required toggle on
+Photos fields that the filler treats as "recommended" — decide, then make the two agree.
+
+**Found but not fixed — admin surface has the same silent-error pattern.** Most admin
+server actions (`app/admin/{directory,services,proposals,clients}/actions.ts`) and admin
+list pages (`app/admin/assignments/page.tsx`, `app/admin/{assessments,proposals}/new`)
+handle query failures with `console.error` + a toast/fallback and never write
+`app_error_log`. Matt sees the toast in the moment, but Diagnostics keeps no record. Same
+class as the client fix, much larger surface — worth its own pass with the same helper
+pattern rather than piecemeal edits here.
