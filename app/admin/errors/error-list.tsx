@@ -2,28 +2,33 @@
 
 import * as React from "react"
 import { toast } from "sonner"
-import { AlertCircle, Check, CheckCircle2, RotateCcw, Terminal } from "lucide-react"
+import { AlertCircle, Check, CheckCircle2, RotateCcw, Send, Terminal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { describeWorkflowError } from "@/lib/workflow-errors"
 import type { WorkflowErrorWithDetails } from "@/lib/supabase/dashboard"
-import { resolveWorkflowError, reopenWorkflowError } from "./actions"
+import { resolveWorkflowError, reopenWorkflowError, retryWorkflowError } from "./actions"
 
 /**
  * The operational error log, one row per failed workflow.
  *
- * Each row owns an action area at the bottom rather than a single hard-coded
- * button, because triage here will grow: Retry (re-dispatching the email that
- * failed) lands next to Resolve once the outbox exists.
+ * Each row owns an action area rather than a single hard-coded button: Retry
+ * re-sends the email the outbox saved, and Resolve files the row away when the
+ * fix happened elsewhere.
+ *
+ * Retry is offered on every unresolved row instead of only on rows we can prove
+ * carry an outbox id — the list projection doesn't expose the payload, and the
+ * action already explains precisely why a given failure can't be re-sent.
  */
 export function ErrorList({ errors }: { errors: WorkflowErrorWithDetails[] }) {
-  // One pending id at a time is enough: the disabled button is what stops a
-  // double-click from firing the action twice.
-  const [pendingId, setPendingId] = React.useState<string | null>(null)
+  // One pending action at a time, tracked with its kind so only the button that
+  // was clicked shows progress. The disabled state is what stops a double-click
+  // from firing twice; the outbox claim is the server-side backstop.
+  const [pending, setPending] = React.useState<{ id: string; kind: "triage" | "retry" } | null>(null)
 
   async function handleTriage(id: string, resolved: boolean) {
-    if (pendingId) return
-    setPendingId(id)
+    if (pending) return
+    setPending({ id, kind: "triage" })
     try {
       const result = resolved ? await reopenWorkflowError(id) : await resolveWorkflowError(id)
       if (result.ok) {
@@ -38,7 +43,29 @@ export function ErrorList({ errors }: { errors: WorkflowErrorWithDetails[] }) {
     } catch {
       toast.error("Could not update. Try again.")
     } finally {
-      setPendingId(null)
+      setPending(null)
+    }
+  }
+
+  async function handleRetry(id: string) {
+    if (pending) return
+    setPending({ id, kind: "retry" })
+    try {
+      const result = await retryWorkflowError(id)
+      if (result.ok) {
+        // affected === 0 means the outbox had already delivered it, so nothing
+        // new went out — worth saying rather than claiming a fresh send.
+        if (result.affected === 0) toast.info(result.message)
+        else toast.success(result.message)
+      } else {
+        // Refusals are the interesting case and are usually a sentence long, so
+        // they get room to be read rather than a flash.
+        toast.error(result.error, { duration: 8000 })
+      }
+    } catch {
+      toast.error("Could not re-send. Try again.")
+    } finally {
+      setPending(null)
     }
   }
 
@@ -57,7 +84,9 @@ export function ErrorList({ errors }: { errors: WorkflowErrorWithDetails[] }) {
     <div className="divide-y divide-border">
       {errors.map((error) => {
         const friendly = describeWorkflowError(error.workflow_name)
-        const isPending = pendingId === error.id
+        const rowPending = pending?.id === error.id
+        const isTriaging = rowPending && pending?.kind === "triage"
+        const isRetrying = rowPending && pending?.kind === "retry"
 
         return (
           <div key={error.id} className="p-8 flex flex-col gap-4 group">
@@ -101,17 +130,29 @@ export function ErrorList({ errors }: { errors: WorkflowErrorWithDetails[] }) {
                   <div className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
                     {new Date(error.created_at).toLocaleString("en-GB")}
                   </div>
-                  {/* Per-row action area — Retry joins Resolve here. */}
+                  {/* Per-row action area. */}
                   <div className="flex items-center gap-2">
+                    {!error.resolved && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={rowPending}
+                        onClick={() => handleRetry(error.id)}
+                        className="rounded-sm font-mono text-[10px] uppercase tracking-widest h-8 gap-2"
+                      >
+                        <Send className="w-3 h-3" />
+                        {isRetrying ? "Re-sending…" : "Retry email"}
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="outline"
-                      disabled={isPending}
+                      disabled={rowPending}
                       onClick={() => handleTriage(error.id, error.resolved)}
                       className="rounded-sm font-mono text-[10px] uppercase tracking-widest h-8 gap-2"
                     >
                       {error.resolved ? <RotateCcw className="w-3 h-3" /> : <Check className="w-3 h-3" />}
-                      {isPending ? "Updating…" : error.resolved ? "Reopen" : "Mark resolved"}
+                      {isTriaging ? "Updating…" : error.resolved ? "Reopen" : "Mark resolved"}
                     </Button>
                   </div>
                 </div>
