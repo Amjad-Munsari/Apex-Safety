@@ -82,8 +82,9 @@ export async function fetchActiveContractors(): Promise<Contractor[]> {
     .order("company_name", { ascending: true })
 
   if (error) {
-    console.error("fetchActiveContractors failed:", error)
-    throw new Error("Could not load the contractor directory")
+    // Throw the PostgrestError itself so the caller's log entry keeps the
+    // code/details instead of a generic wrapper message.
+    throw error
   }
 
   return (data ?? []).map(normalizeRow)

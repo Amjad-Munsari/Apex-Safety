@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { NewClientTemplateButton } from "./_components/new-client-template-button";
 import { ClientTemplateCard } from "./_components/client-template-card";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +54,12 @@ export default async function ClientTemplatesPage() {
           </span>
         </div>
         {error ? (
-          <ClientDataLoadError itemName="templates" />
+          failedClientLoad({
+            area: "client.templates.load",
+            itemName: "templates",
+            error,
+            clientId: ctx?.client_id,
+          })
         ) : !mine || mine.length === 0 ? (
           <div className="py-6">
             <h3 className="font-serif text-xl">No templates yet</h3>

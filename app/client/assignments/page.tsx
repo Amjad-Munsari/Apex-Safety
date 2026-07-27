@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AssignmentCard } from "./_components/assignment-card";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +44,12 @@ export default async function ClientAssignmentsPage() {
 
       {/* Tabs */}
       {error ? (
-        <ClientDataLoadError itemName="assigned assessments" />
+        failedClientLoad({
+          area: "client.assignments.load",
+          itemName: "assigned assessments",
+          error,
+          clientId: ctx?.client_id,
+        })
       ) : (
       <Tabs defaultValue="active" className="w-full">
         <TabsList className="border-b border-border w-full justify-start rounded-none bg-transparent gap-6 px-0 h-auto py-0">

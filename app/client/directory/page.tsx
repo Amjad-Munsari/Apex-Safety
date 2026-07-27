@@ -1,18 +1,17 @@
 import { fetchActiveContractors } from "@/lib/data/contractors-server";
 import type { Contractor } from "@/lib/data/contractors";
 import { DirectoryBrowser } from "./_components/directory-browser";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 
 export const dynamic = "force-dynamic";
 
 export default async function DirectoryPage() {
-  let contractors: Contractor[]
-  let loadFailed = false
+  let contractors: Contractor[] = []
+  let loadError: unknown = null
   try {
     contractors = await fetchActiveContractors();
-  } catch {
-    contractors = []
-    loadFailed = true
+  } catch (err) {
+    loadError = err
   }
 
   return (
@@ -32,8 +31,12 @@ export default async function DirectoryPage() {
         </p>
       </section>
 
-      {loadFailed ? (
-        <ClientDataLoadError itemName="contractor directory" />
+      {loadError ? (
+        failedClientLoad({
+          area: "client.directory.load",
+          itemName: "contractor directory",
+          error: loadError,
+        })
       ) : (
         <DirectoryBrowser contractors={contractors} />
       )}

@@ -7,7 +7,7 @@ import {
   type HoursTransactionRow,
 } from "@/lib/billing/history";
 import BillingClient from "./billing-client";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 
 export const dynamic = "force-dynamic";
 
@@ -47,11 +47,13 @@ export default async function BillingPage() {
   ]);
 
   if (clientError || transactionsError) {
-    console.error("[client/billing] failed to load billing data", {
-      clientError,
-      transactionsError,
+    return failedClientLoad({
+      area: "client.billing.load",
+      itemName: "billing history",
+      error: clientError ?? transactionsError,
+      clientId: ctx.client_id,
+      context: { failedQuery: clientError ? "clients" : "hours_transactions" },
     });
-    return <ClientDataLoadError itemName="billing history" />;
   }
 
   const rows = (txRows ?? []) as HoursTransactionRow[];

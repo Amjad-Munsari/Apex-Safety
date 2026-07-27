@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { ComplianceView, type ComplianceCategory, type ComplianceDoc, type ComplianceStatus } from "./compliance-view";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 import {
   complianceStatusForDate,
   todayIsoInTimeZone,
@@ -67,10 +67,11 @@ function groupByCategory(docs: DocumentRow[]): ComplianceCategory[] {
 
 async function fetchClientDocuments(): Promise<{
   categories: ComplianceCategory[];
-  failed: boolean;
+  loadError: unknown;
+  clientId: string | null;
 }> {
   const ctx = await getClientContext();
-  if (!ctx) return { categories: [], failed: false };
+  if (!ctx) return { categories: [], loadError: null, clientId: null };
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -81,18 +82,18 @@ async function fetchClientDocuments(): Promise<{
     .order("expiry_date", { ascending: true, nullsFirst: false });
 
   if (error) {
-    console.error("[client/compliance] failed to load documents", error);
-    return { categories: [], failed: true };
+    return { categories: [], loadError: error, clientId: ctx.client_id };
   }
 
   return {
     categories: groupByCategory((data ?? []) as DocumentRow[]),
-    failed: false,
+    loadError: null,
+    clientId: ctx.client_id,
   };
 }
 
 export default async function CompliancePage() {
-  const { categories, failed } = await fetchClientDocuments();
+  const { categories, loadError, clientId } = await fetchClientDocuments();
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -107,8 +108,13 @@ export default async function CompliancePage() {
         </h2>
       </section>
 
-      {failed ? (
-        <ClientDataLoadError itemName="compliance documents" />
+      {loadError ? (
+        failedClientLoad({
+          area: "client.compliance.load",
+          itemName: "compliance documents",
+          error: loadError,
+          clientId,
+        })
       ) : categories.length === 0 ? (
         <ComplianceEmpty />
       ) : (

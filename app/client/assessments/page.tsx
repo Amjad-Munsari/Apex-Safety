@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { AssessmentsList } from "./assessments-list";
 import { statusForSubmission, type AssessmentRow } from "./status";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +66,12 @@ export default async function AssessmentListPage() {
   return (
     <AssessmentsListShell>
       {error ? (
-        <ClientDataLoadError itemName="assessments" />
+        failedClientLoad({
+          area: "client.assessments.load",
+          itemName: "assessments",
+          error,
+          clientId: ctx.client_id,
+        })
       ) : rows.length === 0 ? (
         <AssessmentsEmpty
           headline="No assessments yet."

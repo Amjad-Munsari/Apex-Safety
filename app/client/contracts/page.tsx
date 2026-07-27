@@ -3,7 +3,7 @@ import { getClientContext } from "@/lib/auth-helpers";
 import { calculateProposalTotal } from "@/lib/supabase/dashboard";
 import { FileDownloadUrl } from "@/components/client/file-download-url";
 import Link from "next/link";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +112,12 @@ export default async function ClientContractsPage() {
 
       {/* List or empty state */}
       {queryError ? (
-        <ClientDataLoadError itemName="contracts" />
+        failedClientLoad({
+          area: "client.contracts.load",
+          itemName: "contracts",
+          error: queryError,
+          clientId: ctx.client_id,
+        })
       ) : mappedContracts.length === 0 ? (
         /* Existing editorial empty-state card — verbatim */
         <div className="bg-card border border-border rounded-sm shadow-[0_1px_2px_rgba(0,0,0,0.02)] px-10 py-16 text-center">

@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getClientContext } from "@/lib/auth-helpers";
 import { ReportsList } from "./reports-list";
-import { ClientDataLoadError } from "@/components/client/data-load-error";
+import { failedClientLoad } from "@/lib/observability/failed-client-load";
 
 export const dynamic = "force-dynamic";
 
@@ -55,13 +55,7 @@ export default async function ReportsPage() {
     .order("submitted_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
-  const loadFailed = Boolean(clientError || submissionsError);
-  if (loadFailed) {
-    console.error("[client/reports] failed to load report data", {
-      clientError,
-      submissionsError,
-    });
-  }
+  const loadError = clientError ?? submissionsError;
 
   const reports: Report[] = (submissions ?? []).map((row, idx) => {
     const tpl = (row.template as { form_templates?: { name?: string } | null } | null)?.form_templates?.name ?? "Assessment";
@@ -90,8 +84,14 @@ export default async function ReportsPage() {
         </h2>
       </section>
 
-      {loadFailed ? (
-        <ClientDataLoadError itemName="reports" />
+      {loadError ? (
+        failedClientLoad({
+          area: "client.reports.load",
+          itemName: "reports",
+          error: loadError,
+          clientId: ctx.client_id,
+          context: { failedQuery: clientError ? "clients" : "form_submissions" },
+        })
       ) : reports.length === 0 ? (
         <ReportsEmpty headline="No reports yet." body="Completed assessments your consultant approves will appear here as downloadable PDFs." />
       ) : (
