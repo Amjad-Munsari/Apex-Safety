@@ -66,8 +66,62 @@ export default async function AdminDashboardPage() {
       .select("status"),
   ]);
 
-  const clients = clientsRes.data;
-  const allProposals = allProposalsRes.data;
+  const MOCK_CLIENTS = [
+    {
+      id: "demo-client-1",
+      name: "Grand Horizon Hotel",
+      hours_balance: 48,
+      documents: [
+        { expiry_date: new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10), document_category: "Fire Risk Assessment", filename: "FRA_2026_GrandHorizon.pdf" }
+      ],
+      proposals: [{ status: "signed" }]
+    },
+    {
+      id: "demo-client-2",
+      name: "Metro West Office Park",
+      hours_balance: 24,
+      documents: [
+        { expiry_date: new Date(Date.now() + 12 * 86400000).toISOString().slice(0, 10), document_category: "Emergency Lighting", filename: "Emergency_Lighting_Cert.pdf" }
+      ],
+      proposals: [{ status: "sent" }]
+    },
+    {
+      id: "demo-client-3",
+      name: "Riverside Logistics Center",
+      hours_balance: 8,
+      documents: [
+        { expiry_date: new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10), document_category: "Extinguisher Inspection", filename: "Extinguisher_Log_2025.pdf" }
+      ],
+      proposals: [{ status: "draft" }]
+    },
+    {
+      id: "demo-client-4",
+      name: "Oakridge Academy",
+      hours_balance: 60,
+      documents: [
+        { expiry_date: new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10), document_category: "Fire Alarm Testing", filename: "Alarm_System_Certificate.pdf" }
+      ],
+      proposals: [{ status: "signed" }]
+    },
+    {
+      id: "demo-client-5",
+      name: "Vanguard Innovation Hub",
+      hours_balance: 32,
+      documents: [
+        { expiry_date: new Date(Date.now() + 45 * 86400000).toISOString().slice(0, 10), document_category: "Evacuation Plan", filename: "Evac_Procedure_2026.pdf" }
+      ],
+      proposals: [{ status: "contract_sent" }]
+    }
+  ];
+
+  const clients = (clientsRes.data && clientsRes.data.length > 0) ? clientsRes.data : MOCK_CLIENTS;
+  const allProposals = (allProposalsRes.data && allProposalsRes.data.length > 0) ? allProposalsRes.data : [
+    { status: "draft" },
+    { status: "sent" },
+    { status: "signed" },
+    { status: "signed" },
+    { status: "contract_sent" }
+  ];
   const todayIso = todayIsoInTimeZone();
 
   const complianceData = [
@@ -86,7 +140,7 @@ export default async function AdminDashboardPage() {
             SINGLE PANE OF GLASS
           </div>
           <h2 className="font-serif text-[26px] md:text-[30px] leading-tight text-muted-foreground">
-            <span className="text-foreground">Welcome back, Matt.</span> {stats.totalItemsNeeded} {stats.totalItemsNeeded === 1 ? 'item needs' : 'items need'} you today.
+            <span className="text-foreground">Welcome back, Alex.</span> {stats.totalItemsNeeded} {stats.totalItemsNeeded === 1 ? 'item needs' : 'items need'} you today.
           </h2>
         </div>
 

@@ -155,6 +155,38 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
+          {/* Prototype Demo Banner */}
+          <div className="pt-6 border-t border-white/10 space-y-3">
+            <div className="text-center">
+              <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-teal font-bold">
+                Portfolio Prototype Access
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  document.cookie = "demo_mode=1; path=/; max-age=86400"
+                  router.push("/admin")
+                  router.refresh()
+                }}
+                className="py-2.5 px-3 bg-white text-black text-[11px] font-medium rounded-sm hover:bg-white/90 transition-colors"
+              >
+                Demo Admin →
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  document.cookie = "demo_mode=1; path=/; max-age=86400"
+                  router.push("/client")
+                  router.refresh()
+                }}
+                className="py-2.5 px-3 bg-white/10 text-white text-[11px] font-medium rounded-sm hover:bg-white/20 transition-colors"
+              >
+                Demo Client →
+              </button>
+            </div>
+          </div>
 
         </div>
       </div>

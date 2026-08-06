@@ -106,11 +106,11 @@ function PageShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border bg-background">
         <div className="max-w-4xl mx-auto px-5 py-5 flex items-center gap-3">
           <span className="font-mono text-[10px] uppercase tracking-[0.35em] text-muted-foreground font-bold">
-            888
+            {DOCUMENT_BRAND.lead}
           </span>
           <span className="text-border select-none">|</span>
           <span className="font-serif text-[17px] text-foreground tracking-tight leading-none">
-            Safety &amp; Training
+            {DOCUMENT_BRAND.rest}
           </span>
         </div>
       </header>
@@ -234,7 +234,7 @@ function SuccessView({
             </div>
           </div>
           <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-muted-foreground text-center">
-            888 Safety &amp; Training will be in touch shortly.
+            {DOCUMENT_BRAND.full} will be in touch shortly.
           </p>
         </div>
       </main>

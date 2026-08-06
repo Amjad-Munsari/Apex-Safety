@@ -235,15 +235,15 @@ export const ContractDocument = ({
               only the system name, so Merlin must NOT appear here. What remains
               unconfirmed is the exact registered form ("888 Safety & Training
               Ltd"?). Get it from Matt before the first real contract issues. */}
-          <Text style={styles.gridName}>888 Safety Solutions Ltd</Text>
-          <Text style={styles.gridDetail}>Lead Consultant: Matt Robinson</Text>
+          <Text style={styles.gridName}>Apex Safety &amp; Compliance Ltd</Text>
+          <Text style={styles.gridDetail}>Lead Consultant: Alex Taylor</Text>
           <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>
         </View>
       </View>
 
       <Text style={styles.docTitle}>Service Agreement.</Text>
       <Text style={styles.paragraph}>
-        This Agreement is made between 888 Safety Solutions Ltd (&quot;the Provider&quot;) and {clientName}
+        This Agreement is made between Apex Safety &amp; Compliance Ltd (&quot;the Provider&quot;) and {clientName}
         {" "}(&quot;the Client&quot;). It confirms the services agreed in the signed proposal
         {signedDate ? ` accepted on ${signedDate}` : ""} and sets out the terms under which the
         Provider will deliver them. The schedule of services and fees below forms part of this Agreement.
@@ -289,7 +289,7 @@ export const ContractDocument = ({
       <View style={styles.termsSection}>
         <Text style={styles.sectionLabel}>TERMS & CONDITIONS</Text>
         <Text style={styles.termItem}>1. The Provider will deliver the services in the schedule above to the standards required by current UK fire safety legislation.</Text>
-        <Text style={styles.termItem}>2. Fees are exclusive of VAT, which is charged at the prevailing rate. Travel within 20 miles of Sheffield is included; mileage beyond is charged at 45p/mile.</Text>
+        <Text style={styles.termItem}>2. Fees are exclusive of VAT, which is charged at the prevailing rate. Travel within 20 miles is included; mileage beyond is charged at standard rate.</Text>
         <Text style={styles.termItem}>3. Written reports are issued within 10 working days of each site visit.</Text>
         <Text style={styles.termItem}>4. Either party may terminate this Agreement with 30 days&apos; written notice. Work completed up to the termination date remains chargeable.</Text>
         <Text style={styles.termItem}>5. Cancellations within 48 hours of a booked visit are charged at 50% of the service fee.</Text>
@@ -308,16 +308,16 @@ export const ContractDocument = ({
           </Text>
         </View>
         <View style={styles.sigBlock}>
-          <Text style={styles.sectionLabel}>SIGNED FOR 888</Text>
+          <Text style={styles.sectionLabel}>SIGNED FOR APEX</Text>
           <View style={styles.sigSpace}>
-            <Text style={styles.sigImg}>Matt Robinson</Text>
+            <Text style={styles.sigImg}>Alex Taylor</Text>
           </View>
-          <Text style={styles.sigMeta}>Matt Robinson, Lead Consultant / {issuedDate}</Text>
+          <Text style={styles.sigMeta}>Alex Taylor, Lead Consultant / {issuedDate}</Text>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>888 SAFETY SOLUTIONS LTD - COMPANY NO. 18552988</Text>
+        <Text style={styles.footerText}>APEX SAFETY &amp; COMPLIANCE LTD - COMPANY NO. 18552988</Text>
         <Text style={styles.footerText}>Page 1 of 1</Text>
       </View>
     </Page>

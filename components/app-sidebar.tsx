@@ -122,7 +122,7 @@ export function AppSidebar({ stats }: { stats?: SidebarStats }) {
         <div className="flex flex-col gap-2.5 font-mono text-[12px]">
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse"></div>
-            <span className="text-sidebar-foreground font-semibold tracking-wide">Matt Robinson</span>
+            <span className="text-sidebar-foreground font-semibold tracking-wide">Alex Taylor</span>
           </div>
           <a className="text-muted-foreground hover:text-sidebar-foreground transition-colors" href={PUBLIC_CONTACT.emailHref}>
             {PUBLIC_CONTACT.email}

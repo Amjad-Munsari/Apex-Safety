@@ -22,8 +22,8 @@ export interface AppSettings {
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
-  signOffName: "Matt Robinson",
-  senderName: "888 Safety & Training",
+  signOffName: "Alex Taylor",
+  senderName: "Apex Safety & Compliance",
   expiryRemindersEnabled: true,
   notifyOnUpload: true,
   logoPath: null,

@@ -273,7 +273,7 @@ export const ProposalDocument = ({
         </View>
         <View style={styles.gridCol}>
           <Text style={styles.gridLabel}>PREPARED BY</Text>
-          <Text style={styles.gridName}>Matt Robinson</Text>
+          <Text style={styles.gridName}>Alex Taylor</Text>
           <Text style={styles.gridDetail}>Lead Consultant · {DOCUMENT_BRAND.full}</Text>
           <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>
         </View>
@@ -322,7 +322,7 @@ export const ProposalDocument = ({
       <View style={styles.termsSection}>
         <Text style={styles.sectionLabel}>TERMS SUMMARY</Text>
         <Text style={styles.termItem}>1. Fees quoted are valid for 30 days from the date of this proposal.</Text>
-        <Text style={styles.termItem}>2. Fees exclude VAT. Travel within 20 miles of Sheffield is included; mileage beyond charged at 45p/mile.</Text>
+        <Text style={styles.termItem}>2. Fees exclude VAT. Travel within 20 miles is included; mileage beyond charged at standard rate.</Text>
         <Text style={styles.termItem}>3. Cancellations within 48 hours of a booked visit are charged at 50% of the service fee.</Text>
         <Text style={styles.termItem}>4. Written reports are issued within 10 working days of the site visit.</Text>
         <Text style={styles.termItem}>5. A Service Agreement will be generated and issued automatically once this proposal is signed.</Text>
@@ -335,16 +335,16 @@ export const ProposalDocument = ({
           <Text style={styles.sigMeta}>Name & role / Date</Text>
         </View>
         <View style={styles.sigBlock}>
-          <Text style={styles.sectionLabel}>SIGNED FOR 888</Text>
+          <Text style={styles.sectionLabel}>SIGNED FOR APEX</Text>
           <View style={styles.sigSpace}>
-            <Text style={styles.sigImg}>Matt Robinson</Text>
+            <Text style={styles.sigImg}>Alex Taylor</Text>
           </View>
-          <Text style={styles.sigMeta}>Matt Robinson, Lead Consultant / {date}</Text>
+          <Text style={styles.sigMeta}>Alex Taylor, Lead Consultant / {date}</Text>
         </View>
       </View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>888 SAFETY SOLUTIONS LTD - COMPANY NO. 18552988</Text>
+        <Text style={styles.footerText}>APEX SAFETY &amp; COMPLIANCE LTD - COMPANY NO. 18552988</Text>
         <Text style={styles.footerText}>Page 1 of 1</Text>
       </View>
     </Page>

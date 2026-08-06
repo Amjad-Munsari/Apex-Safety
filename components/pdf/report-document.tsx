@@ -153,8 +153,8 @@ export const ReportDocument = ({
         </View>
         <View style={styles.gridCol}>
           <Text style={styles.gridLabel}>PREPARED BY</Text>
-          <Text style={styles.gridName}>Matt Robinson</Text>
-          <Text style={styles.gridDetail}>Lead Consultant · 888 Safety & Training</Text>
+          <Text style={styles.gridName}>Alex Taylor</Text>
+          <Text style={styles.gridDetail}>Lead Consultant · {DOCUMENT_BRAND.full}</Text>
           <Text style={styles.gridDetail}>{PUBLIC_CONTACT_LINE}</Text>
         </View>
       </View>
@@ -203,7 +203,7 @@ export const ReportDocument = ({
 
       {/* FOOTER — fixed so it repeats at the bottom of every page */}
       <View style={styles.footer} fixed>
-        <Text style={styles.footerText}>888 SAFETY SOLUTIONS LTD — COMPANY NO. 18552988</Text>
+        <Text style={styles.footerText}>APEX SAFETY &amp; COMPLIANCE LTD — COMPANY NO. 18552988</Text>
         <Text style={styles.footerText}>CONFIDENTIAL — PREPARED FOR {clientName.toUpperCase()}</Text>
         <Text
           style={styles.footerPage}

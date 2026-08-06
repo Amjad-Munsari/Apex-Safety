@@ -135,9 +135,42 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Prototype Demo Banner */}
+        <div className="mt-8 pt-6 border-t border-[#e5e1d8] space-y-3">
+          <div className="text-center">
+            <span className="font-mono text-[9px] uppercase tracking-[0.25em] text-[#3b8273] font-bold">
+              Portfolio Prototype Access
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                document.cookie = "demo_mode=1; path=/; max-age=86400"
+                router.push("/admin")
+                router.refresh()
+              }}
+              className="py-2.5 px-3 bg-[#1a1a1a] text-white text-[11px] font-medium rounded-sm hover:bg-black transition-colors"
+            >
+              Demo Admin →
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                document.cookie = "demo_mode=1; path=/; max-age=86400"
+                router.push("/client")
+                router.refresh()
+              }}
+              className="py-2.5 px-3 bg-[#3b8273] text-white text-[11px] font-medium rounded-sm hover:bg-[#2e685c] transition-colors"
+            >
+              Demo Client →
+            </button>
+          </div>
+        </div>
+
       </div>
 
-      {/* Footer — operator access stays deliberately quiet */}
+      {/* Footer */}
       <div className="w-full flex items-center justify-between text-[11px] text-[#bbb]">
         <span>{PLATFORM_NAME}</span>
         <Link

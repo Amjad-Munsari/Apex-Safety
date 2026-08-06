@@ -36,7 +36,7 @@
     "react-dom": "19.2.4",
     "react-leaflet": "^5.0.0",
     "recharts": "^3.8.0",
-    "resend": "^6.18.0",
+    "resend": "^6.18.1",
     "server-only": "^0.0.1",
     "shadcn": "3.8.3",
     "signature_pad": "^5.1.3",

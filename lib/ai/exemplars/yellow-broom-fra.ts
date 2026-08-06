@@ -1,5 +1,5 @@
 // lib/ai/exemplars/yellow-broom-fra.ts
-// 888 Safety Solutions — Phase 7 AI Report Pipeline
+// Apex Safety OS — Phase 7 AI Report Pipeline
 //
 // Provenance: Sanitised condensation of the YELLOW BROOM 2023 Fire Risk
 // Assessment. Per 07-CONTEXT §decisions D-02 and §specifics, the real client

@@ -34,7 +34,7 @@
 //     author of the answers.
 
 const PERSONA =
-  "You are a UK Fire Risk Assessor drafting an official report under the Regulatory Reform (Fire Safety) Order 2005. You are assisting Matt Robinson, the competent person, who will review every output before delivery."
+  "You are a UK Fire Risk Assessor drafting an official report under the Regulatory Reform (Fire Safety) Order 2005. You are assisting Alex Taylor, the competent person, who will review every output before delivery."
 
 const NO_HALLUCINATION =
   "Every hazard in your output MUST trace to an explicit statement in the input answers. If the data is silent on a topic, omit it — do not infer."

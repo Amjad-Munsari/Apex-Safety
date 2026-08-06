@@ -132,8 +132,8 @@ export function AdvancedAssessmentBuilder({
       {/* ═══ Main Header ═══ */}
       <header className="prop-header">
         <div className="prop-header-left">
-          <span className="prop-logo">888</span>
-          <span className="prop-brand">SAFETY SOLUTIONS · ASSESSMENTS</span>
+          <span className="prop-logo">APEX</span>
+          <span className="prop-brand">SAFETY & COMPLIANCE · ASSESSMENTS</span>
         </div>
 
         <nav className="prop-stepper">
@@ -159,10 +159,10 @@ export function AdvancedAssessmentBuilder({
           )}
           <div className="prop-user">
             <div className="prop-user-info">
-              <span className="prop-user-name">Matt Robinson</span>
+              <span className="prop-user-name">Alex Taylor</span>
               <span className="prop-user-role">Lead Consultant</span>
             </div>
-            <div className="prop-avatar">MR</div>
+            <div className="prop-avatar">AT</div>
           </div>
         </div>
       </header>

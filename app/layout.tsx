@@ -7,6 +7,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PLATFORM_NAME } from "@/lib/public-identity";
 
+import { PrototypeBar } from "@/components/prototype-bar";
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 const serif = Newsreader({
@@ -37,6 +39,7 @@ export default function RootLayout({
     >
 
       <body className="min-h-full flex flex-col font-sans bg-background text-foreground">
+        <PrototypeBar />
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           <TooltipProvider>{children}</TooltipProvider>
           <Toaster position="top-right" richColors />

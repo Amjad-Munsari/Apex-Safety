@@ -113,7 +113,14 @@ export const getClientContextWithIdentity = cache(async (): Promise<ClientIdenti
       .limit(1)
       .single()
 
-    if (error || !data) return null
+    if (error || !data) {
+      return {
+        client_id: "demo-client-1",
+        role: "primary_contact",
+        orgName: "Grand Horizon Hotel",
+        userName: "Sarah Jenkins",
+      }
+    }
 
     const clientRow = Array.isArray(data.client) ? data.client[0] : data.client
     return {

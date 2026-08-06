@@ -11,7 +11,7 @@ export function ClientDataLoadError({ itemName }: { itemName: string }) {
         We couldn&apos;t load your {itemName}.
       </p>
       <p className="font-sans text-[13px] text-muted-foreground max-w-md mx-auto leading-relaxed">
-        Refresh this page once. If the message remains, contact Matt rather than
+        Refresh this page once. If the message remains, contact support rather than
         assuming there are no records.
       </p>
     </div>

@@ -317,10 +317,10 @@ export function AdvancedProposalBuilder({
           )}
           <div className="prop-user">
             <div className="prop-user-info">
-              <span className="prop-user-name">Matt Robinson</span>
+              <span className="prop-user-name">Alex Taylor</span>
               <span className="prop-user-role">Lead Consultant</span>
             </div>
-            <div className="prop-avatar">MR</div>
+            <div className="prop-avatar">AT</div>
           </div>
         </div>
       </header>
@@ -641,7 +641,7 @@ export function AdvancedProposalBuilder({
                       </div>
                       <div>
                         <div className="prop-paper-meta-label">PREPARED BY</div>
-                        <div className="prop-paper-meta-name">Matt Robinson</div>
+                        <div className="prop-paper-meta-name">Alex Taylor</div>
                         <div className="prop-paper-meta-detail">
                           Lead Consultant · {DOCUMENT_BRAND.full}<br />
                           {PUBLIC_CONTACT_LINE}
@@ -713,7 +713,7 @@ export function AdvancedProposalBuilder({
                     <div className="prop-paper-terms">
                       <ol>
                         <li>Fees quoted are valid for 30 days from the date of this proposal.</li>
-                        <li>Fees exclude VAT. Travel within 20 miles of Sheffield is included; mileage beyond charged at 45p/mile.</li>
+                        <li>Fees exclude VAT. Travel within 20 miles is included; mileage beyond charged at standard rate.</li>
                         <li>Cancellations within 48 hours of a booked visit are charged at 50% of the service fee.</li>
                         <li>Written reports are issued within 10 working days of the site visit.</li>
                         <li>A Service Agreement will be generated and issued automatically once this proposal is signed.</li>
@@ -730,19 +730,19 @@ export function AdvancedProposalBuilder({
                         </div>
                       </div>
                       <div className="prop-paper-sig-block">
-                        <div className="prop-paper-section-label">SIGNED FOR 888</div>
+                        <div className="prop-paper-section-label">SIGNED FOR APEX</div>
                         <div className="prop-paper-sig-space">
-                          <span className="prop-paper-sig-img">Matt Robinson</span>
+                          <span className="prop-paper-sig-img">Alex Taylor</span>
                         </div>
                         <div className="prop-paper-sig-meta">
-                          <span>Matt Robinson, Lead Consultant</span>
+                          <span>Alex Taylor, Lead Consultant</span>
                           <span>{new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
                       </div>
                     </div>
 
                     <div className="prop-paper-footer">
-                      <span>888 SAFETY SOLUTIONS LTD - COMPANY NO. 18552988</span>
+                      <span>APEX SAFETY &amp; COMPLIANCE LTD - COMPANY NO. 18552988</span>
                       <span>Page 1 of 1</span>
                     </div>
                   </div>
