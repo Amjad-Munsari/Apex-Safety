@@ -21,7 +21,7 @@ export function PrototypeBar() {
   const isClient = pathname.startsWith("/client")
 
   return (
-    <div className="bg-[#18181b] text-white border-b border-white/10 px-4 py-2 flex items-center justify-between text-xs font-sans shrink-0 min-h-[41px]">
+    <div className="bg-[#18181b] text-white border-b border-white/10 px-4 py-2 flex items-center justify-between text-xs font-sans shrink-0 min-h-[41px] relative z-20">
       <div className="flex items-center gap-2">
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px] uppercase font-semibold tracking-wider border border-emerald-500/30">
           <Eye className="w-3 h-3" /> Prototype Showcase
