@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { requireActorUserId, isAdmin } from "@/lib/auth-helpers";
+import { requireActorUserId, isAdmin, isDemoMode } from "@/lib/auth-helpers";
 import { logAppError } from "@/lib/observability/log";
 
 // Admin-only template mutations. requireActorUserId only proves authentication;
@@ -137,6 +137,12 @@ export async function createTemplate(
     return { ok: false, error: "Choose a template type." };
   }
 
+  // Portfolio showcase: no DB save - just synthesize an id and open builder
+  if (await isDemoMode()) {
+    const fakeId = `demo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    return { ok: true, id: fakeId };
+  }
+
   const supabase = await createClient();
   await assertAdmin();
 
@@ -175,6 +181,10 @@ export async function saveDraftAction(
   rawSchema: unknown,
   templateName: string
 ) {
+  // Portfolio showcase: demo fake ids - no DB, just no-op with toast success
+  if (templateId.startsWith("demo-")) {
+    return;
+  }
   const supabase = await createClient();
   await assertAdmin();
   // Guard: only admin-owned templates may be mutated by this action. A customer-
@@ -244,6 +254,10 @@ export async function publishTemplateAction(
   rawSchema: unknown,
   templateName: string
 ) {
+  // Portfolio showcase: demo fake ids - no DB, just no-op
+  if (templateId.startsWith("demo-")) {
+    return;
+  }
   const supabase = await createClient();
   await assertAdmin();
   // Guard: only admin-owned templates may be published by this action. Publishing

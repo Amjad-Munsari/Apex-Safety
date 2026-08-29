@@ -11,10 +11,28 @@ interface Props {
 
 export default async function TemplateBuilderPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // Portfolio showcase: no login - handle demo fake ids without DB
+  const isDemoFakeId = id.startsWith("demo-");
+  if (isDemoFakeId) {
+    return (
+      <BuilderLoader
+        templateId={id}
+        initialName="Demo Template"
+        templateType="fra"
+        isPublished={false}
+        initialSchema={null}
+        versionNumber={1}
+        hasDraft={false}
+        publishedVersionNumber={null}
+        surface="dark"
+        saveDraftAction={saveDraftAction}
+        publishTemplateAction={publishTemplateAction}
+      />
+    );
+  }
+
+  const supabase = await createClient();
 
   const { data: template } = await supabase
     .from("form_templates")
