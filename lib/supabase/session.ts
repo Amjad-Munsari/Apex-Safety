@@ -52,13 +52,8 @@ export async function updateSession(request: NextRequest) {
     return userIsAdmin
   }
 
-  // Demo mode: allow unauthenticated access for frictionless demos.
-  // Portfolio demo: NEXT_PUBLIC_DEMO_BYPASS=1 enables bypass in production
-  // (Vercel preview). Otherwise NEVER honor the client-set demo_mode cookie
-  // in production — there it would wave any request past auth into /admin.
-  const demoBypass =
-    process.env.NEXT_PUBLIC_DEMO_BYPASS === "1" ||
-    (process.env.NODE_ENV !== "production" && request.cookies.get("demo_mode")?.value === "1")
+  // Portfolio showcase: no login - bypass auth for all admin/client routes
+  const demoBypass = true
 
   if ((pathname.startsWith("/client") || pathname.startsWith("/admin")) && demoBypass) {
     return supabaseResponse

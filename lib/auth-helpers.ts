@@ -19,13 +19,8 @@ export const getUser = cache(async () => {
 })
 
 export async function isDemoMode() {
-  // Portfolio demo: allow NEXT_PUBLIC_DEMO_BYPASS=1 to enable demo mode in
-  // production/preview without a real Supabase Auth session. Otherwise, never
-  // honor the demo cookie in production (RLS bypass would leak data).
-  if (process.env.NEXT_PUBLIC_DEMO_BYPASS === "1") return true
-  if (process.env.NODE_ENV === "production") return false
-  const cookieStore = await cookies()
-  return cookieStore.get("demo_mode")?.value === "1"
+  // Portfolio showcase: no login step - demo mode always on.
+  return true
 }
 
 export async function isAdmin() {
