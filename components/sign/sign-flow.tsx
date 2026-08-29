@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { CheckCircle2, FileText, Loader2 } from "lucide-react"
 import { SignatureField } from "@/components/forms/signature-field"
-import { PUBLIC_CONTACT } from "@/lib/public-identity"
+import { DOCUMENT_BRAND, PUBLIC_CONTACT } from "@/lib/public-identity"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
