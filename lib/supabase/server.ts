@@ -23,13 +23,24 @@ export async function createClient() {
   // In demo mode, we use the service role key to bypass RLS since the user
   // doesn't have a real Supabase Auth session.
   const supabaseKey = isDemoMode
-    ? process.env.SUPABASE_SERVICE_ROLE_KEY!
-    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY
+    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey,
-    {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.warn("[supabase/server] Missing env vars during build - using placeholder")
+    return createServerClient("https://placeholder.supabase.co", "placeholder-key", {
+      cookies: {
+        getAll() {
+          return []
+        },
+        setAll() {},
+      },
+    })
+  }
+
+  return createServerClient(supabaseUrl, supabaseKey, {
       cookies: {
         getAll() {
           // In demo mode, hide any leftover sb-*-auth-token cookies from
@@ -51,6 +62,5 @@ export async function createClient() {
           }
         },
       },
-    }
-  )
+    })
 }
