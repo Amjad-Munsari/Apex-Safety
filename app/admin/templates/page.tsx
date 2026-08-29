@@ -1,20 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { NewTemplateButton } from "./_components/new-template-button";
 import { TemplateCard } from "./_components/template-card";
 
 export default async function TemplatesPage() {
   const supabase = await createClient();
-  const cookieStore = await cookies();
-  // Demo bypass is dev-only — never skip the auth gate in production.
-  const isDemoMode =
-    process.env.NODE_ENV !== "production" && cookieStore.get("demo_mode")?.value === "1";
-  if (!isDemoMode) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect("/login");
-  }
+  // Portfolio showcase: no login - always allow
 
   const { data: templates } = await supabase
     .from("form_templates")

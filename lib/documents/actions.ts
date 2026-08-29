@@ -5,7 +5,6 @@ import { adminClient } from "@/lib/supabase/admin"
 import { isAdmin } from "@/lib/auth-helpers"
 import { assertClientActive } from "@/lib/clients/require-active"
 import { revalidatePath } from "next/cache"
-import { cookies } from "next/headers"
 import { dispatchNotification } from "@/lib/notifications/dispatch"
 import { getAppSettings } from "@/lib/settings/app-settings"
 import { logAppError, logWorkflowFailure } from "@/lib/observability/log"
@@ -31,10 +30,8 @@ const ALLOWED_MIME = new Set([
 export async function uploadClientDocumentAction(formData: FormData) {
   const supabase = await createClient()
 
-  // Demo bypass is dev-only (never honor the client-set cookie in production).
-  const cookieStore = await cookies()
-  const isDemoMode =
-    process.env.NODE_ENV !== "production" && cookieStore.get("demo_mode")?.value === "1"
+  // Portfolio showcase: unconditional demo
+  const isDemoMode = true
 
   let userId: string
 
