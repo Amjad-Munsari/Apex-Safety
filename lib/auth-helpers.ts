@@ -19,10 +19,10 @@ export const getUser = cache(async () => {
 })
 
 export async function isDemoMode() {
-  // Never honor the demo cookie in production. Demo mode synthesizes a client
-  // context by picking an arbitrary org (limit(1)) and rides on the service-role
-  // RLS bypass — both unacceptable in prod (code review CR-02/CR-03). Gating
-  // here disables every demo path (context resolvers, actor id) in one place.
+  // Portfolio demo: allow NEXT_PUBLIC_DEMO_BYPASS=1 to enable demo mode in
+  // production/preview without a real Supabase Auth session. Otherwise, never
+  // honor the demo cookie in production (RLS bypass would leak data).
+  if (process.env.NEXT_PUBLIC_DEMO_BYPASS === "1") return true
   if (process.env.NODE_ENV === "production") return false
   const cookieStore = await cookies()
   return cookieStore.get("demo_mode")?.value === "1"
