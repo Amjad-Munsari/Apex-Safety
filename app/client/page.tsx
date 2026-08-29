@@ -95,6 +95,23 @@ export default async function ClientDashboardPage() {
       .order("expiry_date", { ascending: true, nullsFirst: false }),
   ]);
 
+  if (clientError) {
+    return failedClientLoad({
+      area: "client.dashboard.client",
+      itemName: "client",
+      error: clientError,
+      clientId: ctx.client_id,
+    });
+  }
+  if (docsError) {
+    return failedClientLoad({
+      area: "client.dashboard.documents",
+      itemName: "documents",
+      error: docsError,
+      clientId: ctx.client_id,
+    });
+  }
+
   // In demo mode or offline prototype, fallback to rich sample data instead of erroring
   const demoFallbackDocs: DocumentRow[] = [
     { id: "doc-1", filename: "Fire Risk Assessment 2026.pdf", expiry_date: new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10) },

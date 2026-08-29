@@ -39,8 +39,8 @@ describe("dispatchNotification — Resend email transport", () => {
 
   it("sends an email via Resend for an email-shaped payload and returns ok:true", async () => {
     vi.stubEnv("RESEND_API_KEY", "re_test_key")
-    vi.stubEnv("EMAIL_FROM", "Merlin Safety System <notifications@merlinsafetysystem.com>")
-    vi.stubEnv("EMAIL_REPLY_TO", "info@888safetyandtraining.com")
+    vi.stubEnv("EMAIL_FROM", "Merlin Safety System <notifications@apexsafety.demo>")
+    vi.stubEnv("EMAIL_REPLY_TO", "contact@apexsafety.demo")
     sendSpy.mockResolvedValue({ data: { id: "email_123" }, error: null })
 
     const { dispatchNotification } = await import("@/lib/notifications/dispatch")
@@ -57,9 +57,9 @@ describe("dispatchNotification — Resend email transport", () => {
       replyTo?: string
     }
     expect(opts.to).toBe("contact@acme.example")
-    expect(opts.from).toContain("merlinsafetysystem.com")
+    expect(opts.from).toContain("apexsafety.demo")
     expect(opts.subject).toContain("Fire Risk Assessment Proposal")
-    expect(opts.replyTo).toBe("info@888safetyandtraining.com")
+    expect(opts.replyTo).toBe("contact@apexsafety.demo")
     // The raw signing URL must appear in the email body (it's the CTA), but never
     // in the log — logging redaction is asserted separately at the unit level.
     expect(opts.html).toContain("abc123rawtoken")
@@ -88,9 +88,9 @@ describe("dispatchNotification — Resend email transport", () => {
       html: string
       replyTo: string
     }
-    expect(opts.replyTo).toBe("info@888safetyandtraining.com")
-    expect(opts.html).toContain("info@888safetyandtraining.com")
-    expect(opts.html).toContain("0333 049 8979")
+    expect(opts.replyTo).toBe("contact@apexsafety.demo")
+    expect(opts.html).toContain("contact@apexsafety.demo")
+    expect(opts.html).toContain("+44 20 7946 0912")
   })
 
   it("returns ok:false in production when RESEND_API_KEY is missing (no send attempted)", async () => {

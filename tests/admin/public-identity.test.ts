@@ -58,12 +58,12 @@ function repositoryIdentityCorpus(): string {
 }
 
 describe("public identity", () => {
-  it("keeps Merlin as the platform brand and one canonical public contact", () => {
-    expect(PLATFORM_NAME).toBe("Merlin Safety System")
-    expect(PUBLIC_CONTACT.email).toBe("info@888safetyandtraining.com")
-    expect(PUBLIC_CONTACT.phone).toBe("0333 049 8979")
+  it("keeps Apex as the platform brand and one canonical public contact", () => {
+    expect(PLATFORM_NAME).toBe("Apex Safety OS")
+    expect(PUBLIC_CONTACT.email).toBe("contact@apexsafety.demo")
+    expect(PUBLIC_CONTACT.phone).toBe("+44 20 7946 0912")
     expect(PUBLIC_CONTACT_LINE).toBe(
-      "info@888safetyandtraining.com · 0333 049 8979"
+      "contact@apexsafety.demo · +44 20 7946 0912"
     )
   })
 

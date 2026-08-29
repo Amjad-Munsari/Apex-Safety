@@ -101,6 +101,16 @@ vi.mock("next/headers", () => ({
   cookies: () => Promise.resolve({ get: () => undefined }),
 }));
 
+vi.mock("@/lib/auth-helpers", async () => {
+  const actual = await vi.importActual("@/lib/auth-helpers") as any;
+  return {
+    ...actual,
+    isDemoMode: () => Promise.resolve(false),
+    requireActorUserId: () => Promise.resolve("user-123"),
+    isAdmin: () => Promise.resolve(true),
+  };
+});
+
 // `after()` requires a Next.js request scope. In unit tests there is none —
 // run the callback inline so the auto-AI-draft path is exercised but never
 // throws "called outside a request scope".
@@ -139,17 +149,12 @@ describe("Submission Version Pinning", () => {
       },
     });
 
-    // Mock update: returns success — chain is .eq(id).eq(status).eq(submitted_by).select(id)
-    mockUpdate.mockReturnValue({
-      eq: () => ({
-        eq: () => ({
-          eq: () => ({
-            select: () =>
-              Promise.resolve({ data: [{ id: SUBMISSION_ID }], error: null }),
-          }),
-        }),
-      }),
-    });
+    // Mock update: supports both 2 and 3 eq chains (demo vs non-demo) — each level exposes select
+    const selectMock = () => Promise.resolve({ data: [{ id: SUBMISSION_ID }], error: null });
+    const eq3 = { select: selectMock };
+    const eq2 = { eq: () => eq3, select: selectMock };
+    const eq1 = { eq: () => eq2, select: selectMock };
+    mockUpdate.mockReturnValue({ eq: () => eq1 });
   });
 
   it("submitAssessmentAction fetches the schema from template_versions using submission.template_version_id (the PINNED version, not the latest)", async () => {
