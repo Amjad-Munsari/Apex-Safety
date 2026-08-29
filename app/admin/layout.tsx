@@ -33,6 +33,7 @@ export default async function AdminLayout({
     <SidebarProvider
       // Slim the admin nav rail so the main content (esp. the Clients table) gets
       // more horizontal room. Overrides the shared 16rem default for this surface.
+      className="flex min-h-screen w-full"
       style={{ "--sidebar-width": "13rem" } as CSSProperties}
     >
       <div
@@ -41,12 +42,12 @@ export default async function AdminLayout({
           "--teal": brandingPrimary,
           "--gold": brandingSecondary,
         } as CSSProperties}
-        className="fixed inset-0 flex overflow-hidden bg-background text-foreground antialiased"
+        className="flex min-h-screen w-full bg-background text-foreground antialiased"
       >
         <Suspense fallback={<AppSidebar stats={{ clients: 0, expiries: 0, reports: 0, compliance: 0, proposals: 0, errors: 0 }} />}>
           <SidebarStats />
         </Suspense>
-        <div className="flex-1 flex flex-col h-full max-h-full min-h-0 overflow-hidden">
+        <div className="flex-1 flex flex-col">
           {/* Top Bar */}
           <header className="h-[72px] min-h-[72px] flex items-center justify-between px-8 border-b border-border shrink-0 bg-background/50">
             {/* Search */}
@@ -75,7 +76,7 @@ export default async function AdminLayout({
           {/* Main Content Area — explicit bg so the dark surface covers the full
               scroll height (the root <body> is the light theme background; without
               this, content scrolled past the first viewport reveals white). */}
-          <main className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-8 pb-8 bg-background">
+          <main className="px-8 pb-8 bg-background overflow-x-hidden">
             {children}
           </main>
         </div>
